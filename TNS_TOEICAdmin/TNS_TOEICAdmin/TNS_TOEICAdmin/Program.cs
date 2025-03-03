@@ -6,25 +6,25 @@ using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 🔹 Thêm dịch vụ vào container
 builder.Services.AddRazorPages(options =>
 {
-    options.Conventions.AuthorizeFolder("/Tasks"); // Yêu cầu Authentication cho thư mục /Tasks
-    options.Conventions.AuthorizePage("/Index");   // Yêu cầu Authentication cho trang /Index
+    options.Conventions.AuthorizeFolder("/Tasks");
+    options.Conventions.AuthorizePage("/Index");
 });
 
-// Thêm Controllers nếu cần
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = null;
+    });
 
-// 🔹 Cấu hình Authentication bằng Cookie
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie();
 
-builder.Services.AddHttpContextAccessor(); // Đăng ký IHttpContextAccessor
+builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
 
-// 🔹 Cấu hình Middleware
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
@@ -35,10 +35,10 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 
-app.UseAuthentication(); // Thêm Middleware Authentication
+app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapControllers();  // Nếu có API Controller
-app.MapRazorPages();   // Map Razor Pages
+app.MapControllers();
+app.MapRazorPages();
 
 app.Run();

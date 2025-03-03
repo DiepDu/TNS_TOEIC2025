@@ -3,9 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.11.35431.28
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TNS_TOEICAdmin", "TNS_TOEICAdmin\TNS_TOEICAdmin.csproj", "{6C667092-2D08-43B9-96BD-E549EABC95C3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TNS_TOEICAdmin", "TNS_TOEICAdmin\TNS_TOEICAdmin.csproj", "{6C667092-2D08-43B9-96BD-E549EABC95C3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TNS_DBConnection", "TNS_DBConnection\TNS_DBConnection.csproj", "{6C03AA5D-C4BD-4AF4-AA86-3AB2C604E9C4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TNS_DBConnection", "..\TNS_Lib\TNS_DBConnection\TNS_DBConnection.csproj", "{8B6E181A-3565-49F2-B096-B10A73116486}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TNS_TOEICPart1", "TNS_TOEICPart1\TNS_TOEICPart1.csproj", "{D89A4E60-4D9F-4B1F-9B2B-9EEB7C0A4E30}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +19,14 @@ Global
 		{6C667092-2D08-43B9-96BD-E549EABC95C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6C667092-2D08-43B9-96BD-E549EABC95C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6C667092-2D08-43B9-96BD-E549EABC95C3}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6C03AA5D-C4BD-4AF4-AA86-3AB2C604E9C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6C03AA5D-C4BD-4AF4-AA86-3AB2C604E9C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6C03AA5D-C4BD-4AF4-AA86-3AB2C604E9C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6C03AA5D-C4BD-4AF4-AA86-3AB2C604E9C4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8B6E181A-3565-49F2-B096-B10A73116486}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8B6E181A-3565-49F2-B096-B10A73116486}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8B6E181A-3565-49F2-B096-B10A73116486}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8B6E181A-3565-49F2-B096-B10A73116486}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D89A4E60-4D9F-4B1F-9B2B-9EEB7C0A4E30}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D89A4E60-4D9F-4B1F-9B2B-9EEB7C0A4E30}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D89A4E60-4D9F-4B1F-9B2B-9EEB7C0A4E30}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D89A4E60-4D9F-4B1F-9B2B-9EEB7C0A4E30}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

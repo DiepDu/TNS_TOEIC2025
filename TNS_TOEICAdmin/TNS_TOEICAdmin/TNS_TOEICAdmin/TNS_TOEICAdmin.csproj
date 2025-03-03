@@ -10,4 +10,15 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\TNS_Lib\TNS_DBConnection\TNS_DBConnection.csproj" />
+    <ProjectReference Include="..\TNS_TOEICPart1\TNS_TOEICPart1.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="TNS_Auth">
+      <HintPath>..\..\TNS_Lib\TNS_DLL\TNS_Auth.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>
