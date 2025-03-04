@@ -1,0 +1,381 @@
+﻿@page
+@model TNS_TOEICPart1.Areas.TOEICPart1.Pages.QuestionModel
+@{
+    Layout = "_Layout";
+}
+<link href="~/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+<div style="width:100%; margin:-20px 0 0 -20px">
+    <div style="padding:5px; font-weight:bold; font-size:13px">
+        <a href="~/Index" style="text-decoration:none; color:#4c4c4c">Home</a>
+        <span class="uil-angle-double-right"></span>
+        <a href="/TOEICPart1/QuestionList" style="text-decoration:none; color:#4c4c4c">TOEIC</a>
+        <span class="uil-angle-double-right"></span>
+        <span style="color:maroon">PART 1</span>
+    </div>
+</div>
+
+<div class="row" style="font-size:15px">
+    <div class="col-9">
+        <div class="card">
+            <div class="card-body">
+                <div class="row" style="padding-bottom:10px">
+                    <div class="card border border-primary">
+                        <div class="card-header bg-transparent border-primary">
+                            <span class="my-0 text-primary"><i class="uil uil-users-alt me-3"></i>Text</span>
+                        </div>
+                        <textarea id="txtQuestionText" name="area"></textarea>
+                    </div>
+                </div>
+                <div class="row" style="padding-bottom:10px">
+                    <div class="card border border-success">
+                        <div class="card-header bg-transparent border-success">
+                            <span class="my-0 text-primary"><i class="uil uil-users-alt me-3"></i>Image</span>
+                        </div>
+                        <div>
+                            <img id="objQuestionImage" src="~/images/icon_Pic.png" />
+                        </div>
+                        <div id="FormUploadImage" class="mb-3" style="padding-top:10px">
+                            <form method="post" enctype="multipart/form-data">
+                                <div class="input-group">
+                                    <input id="txtUploadImage" class="form-control" type="file" accept="image/*">
+                                    <button type="button" class="btn btn-primary" aria-label="Upload" onclick="UploadImage_Ajax()"><i class='mdi mdi-upload'></i></button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="row" style="padding-bottom:10px">
+                    <div class="card border border-danger">
+                        <div class="card-header bg-transparent border-danger">
+                            <span class="my-0 text-primary"><i class="uil uil-users-alt me-3"></i>Voice</span>
+                        </div>
+                        <div>
+                            <audio id="objQuestionVoice" controls> <source src="" type="audio/mpeg"></audio>
+                        </div>
+                        <div id="FormUploadVoice" class="mb-3" style="padding-top:10px">
+                            <form method="post" enctype="multipart/form-data">
+                                <div class="input-group">
+                                    <input id="txtUploadVoice" class="form-control" type="file" accept="audio/*">
+                                    <button type="button" class="btn btn-primary" aria-label="Upload" onclick="UploadVoice_Ajax()"><i class='mdi mdi-upload'></i></button>
+                                </div>
+                            </form>
+                        </div>
+                        <div><img id="ImgQuestionVoiceWaiting" src="/images/waiting.gif" style="display:none" /> </div>
+                    </div>
+                </div>
+                <div class="row" style="padding-bottom:10px">
+                    <div class="card border border-info">
+                        <div class="card-header bg-transparent border-info">
+                            <span class="my-0 text-primary"><i class="uil uil-users-alt me-3"></i>Level</span>
+                        </div>
+                        <div>
+                            <input id="txtSkillLevel" type="number" class="form-control" value="0" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div style="padding-top:20px">
+            <div class="row">
+                <div class="col">
+                    <button type="button" id="btnDel" class="btn btn-danger" onclick="btnDel_Click()">Delete</button>
+                    <button type="button" id="btnUpdate" class="btn btn-primary" onclick="btnUpdate_Click()">Update</button>
+                    <button type="button" id="btnCreate" class="btn btn-primary" onclick="btnCreate_Click()">Create</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="row">
+            <div class="card border border-primary">
+                <div class="card-header bg-transparent border-primary" onclick="TaskShareSearch_DisplayForm()" style="cursor:pointer">
+                    <span class="my-0 text-primary"><i class="uil uil-users-alt me-3"></i>Information</span>
+                </div>
+                <div class="card-body">
+                    <!-- Có thể thêm thông tin bổ sung như CreatedOn, CreatedBy, v.v. nếu cần -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="ModalMessage" tabindex="-1" aria-labelledby="ModalMessage_Label" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="ModalMessage_Title">Message</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3 row">
+                    <table>
+                        <tr>
+                            <td style='width:90px' id="ModalMessage_Icon"></td>
+                            <td id="ModalMessage_Content"></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container">
+    <div class="row text-wrap text-break" style="padding:20px">
+        <div id="Message"></div>
+    </div>
+</div>
+<div id="Log_ViewData"></div>
+<div style="display:none">
+    <div id="QuestionKey">@Model.QuestionKey</div>
+</div>
+
+<script src="~/lib/jquery/jquery.min.js"></script>
+<script src="~/lib/bootstrap/js/bootstrap.min.js"></script>
+<script src="~/lib/tinymce/tinymce.min.js"></script>
+<script src="~/js/editor.js"></script>
+<script>
+    $(document).ready(function () {
+        InitEditor('txtQuestionText');
+        var zQuestionKey = $("#QuestionKey").text();
+        RecordRead(zQuestionKey);
+    });
+</script>
+<script>
+    var _Record;
+    var _Role = { Create: true, Read: true, Update: true, Del: true };
+    function RecordRead(Key) {
+        var zDataRequest = { questionKey: Key };
+        $.ajax({
+            type: 'POST',
+            url: "/TOEICPart1/Question?handler=RecordRead",
+            data: JSON.stringify(zDataRequest),
+            contentType: "application/json",
+            dataType: "json",
+        })
+            .done(function (dataResponse) {
+                _Record = dataResponse;
+                console.log(_Record); // Kiểm tra dữ liệu
+                RecordView();
+
+                if (_Record.isNewRecord === false) {
+                    $("#btnCreate").hide();
+                    if (_Role.Update) $("#btnUpdate").show();
+                    if (_Role.Del) $("#btnDel").show();
+                } else {
+                    if (_Role.Create) $("#btnCreate").show();
+                    $("#btnUpdate").hide();
+                    $("#btnDel").hide();
+                }
+            })
+            .fail(function (error) {
+                alert(error.responseText);
+            });
+    }
+    function RecordCreate() {
+        $("#ModalMessage_Icon").html("<img src='/images/Waiting.gif' width='80px'/>");
+        $("#ModalMessage_Content").html("Waiting");
+        $("#ModalMessage").modal('show');
+        RecordInput();
+        $.ajax({
+            type: 'POST',
+            url: "/TOEICPart1/Question?handler=RecordCreate",
+            data: JSON.stringify(_Record),
+            contentType: "application/json",
+            dataType: "json",
+        })
+        .done(function (dataResponse) {
+            if (dataResponse.status === "OK") {
+                $("#ModalMessage_Icon").html("<img src='/images/icon_success.png'/>");
+                $("#ModalMessage_Content").html("Question created successfully");
+            } else {
+                $("#ModalMessage_Icon").html("<img src='/images/icon_error.png'/>");
+                $("#ModalMessage_Content").html(dataResponse.message);
+            }
+        })
+        .fail(function (error) {
+            alert(error.responseText);
+        });
+    }
+    function RecordUpdate() {
+        $("#ModalMessage_Icon").html("<img src='/images/Waiting.gif' width='80px'/>");
+        $("#ModalMessage_Content").html("Waiting");
+        $("#ModalMessage").modal('show');
+        RecordInput();
+        $.ajax({
+            type: 'POST',
+            url: "/TOEICPart1/Question?handler=RecordUpdate",
+            data: JSON.stringify(_Record),
+            contentType: "application/json",
+            dataType: "json",
+        })
+        .done(function (dataResponse) {
+            if (dataResponse.status === "OK") {
+                $("#ModalMessage_Icon").html("<img src='/images/icon_success.png'/>");
+                $("#ModalMessage_Content").html("Question updated successfully");
+            } else {
+                $("#ModalMessage_Icon").html("<img src='/images/icon_error.png'/>");
+                $("#ModalMessage_Content").html(dataResponse.message);
+            }
+        })
+        .fail(function (error) {
+            alert(error.responseText);
+        });
+    }
+    function RecordDel() {
+        $("#ModalMessage_Icon").html("<img src='/images/Waiting.gif' width='80px'/>");
+        $("#ModalMessage_Content").html("Waiting");
+        $("#ModalMessage").modal('show');
+        var zDataRequest = { questionKey: _Record.questionKey };
+        $.ajax({
+            type: 'POST',
+            url: "/TOEICPart1/Question?handler=RecordDel",
+            data: JSON.stringify(zDataRequest),
+            contentType: "application/json",
+            dataType: "json",
+        })
+        .done(function (dataResponse) {
+            if (dataResponse.status === "OK") {
+                $("#ModalMessage_Icon").html("<img src='/images/icon_warning.png'/>");
+                $("#ModalMessage_Content").html("Question deleted successfully");
+                window.location.href = "/TOEICPart1/QuestionList"; // Quay lại danh sách sau khi xóa
+            } else {
+                $("#ModalMessage_Icon").html("<img src='/images/icon_error.png'/>");
+                $("#ModalMessage_Content").html(dataResponse.message);
+            }
+        })
+        .fail(function (error) {
+            alert(error.responseText);
+        });
+    }
+    function RecordView() {
+        if (tinymce.get('txtQuestionText')) {
+            tinymce.get('txtQuestionText').setContent(_Record.QuestionText || "");
+        } else {
+            console.error("TinyMCE chưa khởi tạo!");
+        }
+
+        if (_Record.QuestionImage === "" || !_Record.QuestionImage) {
+            $("#objQuestionImage").attr("src", "/images/icon_Pic.png");
+        } else {
+            $("#objQuestionImage").attr("src", _Record.QuestionImage);
+        }
+
+        if (_Record.QuestionVoice === "" || !_Record.QuestionVoice) {
+            $("#objQuestionVoice").find("source").attr("src", "");
+        } else {
+            $("#objQuestionVoice").find("source").attr("src", _Record.QuestionVoice);
+            $("#objQuestionVoice")[0].load();
+        }
+
+        $("#txtSkillLevel").val(_Record.SkillLevel || 0);
+    }
+    function RecordInput() {
+        _Record.questionText = tinymce.get('txtQuestionText').getContent();
+        _Record.questionImage = $("#objQuestionImage").attr("src") === "/images/icon_Pic.png" ? "" : $("#objQuestionImage").attr("src");
+        _Record.questionVoice = $("#objQuestionVoice").attr("src") || "";
+        _Record.skillLevel = parseInt($("#txtSkillLevel").val()) || 0;
+    }
+</script>
+<script>
+    function UploadImage_Ajax() {
+        var zFileUpload = $("#txtUploadImage").get(0);
+        var zFiles = zFileUpload.files;
+        var zFormData = new FormData();
+        zFormData.append("QuestionKey", _Record.questionKey || "new"); // Sử dụng "new" nếu chưa có QuestionKey
+        for (var i = 0; i < zFiles.length; i++) {
+            zFormData.append(zFiles[i].name, zFiles[i]);
+            _Record.questionImage = "/upload/question/" + (_Record.questionKey || "new") + "/" + zFiles[i].name;
+        }
+        $("#objQuestionImage").attr("src", "/images/waiting.gif");
+        $("#FormUploadImage").hide();
+
+        $.ajax({
+            type: "POST",
+            url: "/TOEICPart1/Question?handler=FileUpload",
+            contentType: false,
+            processData: false,
+            data: zFormData,
+            failure: function (result) {
+                alert("failure");
+            },
+            error: function (result) {
+                alert("error");
+            },
+        }).done(function (dataResponse) {
+            $("#FormUploadImage").show();
+            if (dataResponse[0] === "ERR") {
+                alert(JSON.stringify(dataResponse[1]));
+                $("#objQuestionImage").attr("src", "/images/icon_Pic.png");
+            } else {
+                $("#objQuestionImage").attr("src", _Record.questionImage);
+            }
+        });
+    }
+    function UploadVoice_Ajax() {
+        var zFileUpload = $("#txtUploadVoice").get(0);
+        var zFiles = zFileUpload.files;
+        var zFormData = new FormData();
+        zFormData.append("QuestionKey", _Record.questionKey || "new");
+        for (var i = 0; i < zFiles.length; i++) {
+            zFormData.append(zFiles[i].name, zFiles[i]);
+            _Record.questionVoice = "/upload/question/" + (_Record.questionKey || "new") + "/" + zFiles[i].name;
+        }
+        $("#ImgQuestionVoiceWaiting").show();
+        $("#FormUploadVoice").hide();
+
+        $.ajax({
+            type: "POST",
+            url: "/TOEICPart1/Question?handler=FileUpload",
+            contentType: false,
+            processData: false,
+            data: zFormData,
+            failure: function (result) {
+                alert("failure");
+            },
+            error: function (result) {
+                alert("error");
+            },
+        }).done(function (dataResponse) {
+            $("#FormUploadVoice").show();
+            $("#ImgQuestionVoiceWaiting").hide();
+            if (dataResponse[0] === "ERR") {
+                alert(JSON.stringify(dataResponse[1]));
+            } else {
+                $("#objQuestionVoice").attr("src", _Record.questionVoice);
+            }
+        });
+    }
+</script>
+<style>
+    .lbl-item-name {
+        width: 150px;
+        float: left;
+    }
+
+    .lbl-item-value {
+        font-weight: bold;
+        color: navy;
+        float: left
+    }
+
+    .tns-row {
+        clear: both;
+        padding: 10px 10px 10px 0px;
+    }
+
+    .tns-table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+        .tns-table th {
+            border: 1px solid #ddd;
+            padding: 3px;
+            text-align: center;
+        }
+
+        .tns-table td {
+            border: 1px solid #ddd;
+            padding: 3px;
+        }
+</style>

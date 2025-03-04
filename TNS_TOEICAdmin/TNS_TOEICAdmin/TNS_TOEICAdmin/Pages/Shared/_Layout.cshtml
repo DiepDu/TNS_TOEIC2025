@@ -7,32 +7,40 @@
     <meta content="App for Bank" name="description" />
     <meta content="Themesbrand" name="TN Solution" />
     <link rel="shortcut icon" href="~/images/favicon.ico">
-    <link href="~/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" />
     <link href="~/lib/minible/css/icons.min.css" rel="stylesheet" type="text/css" />
     <link href="~/lib/minible/css/app.min.css" id="app-style" rel="stylesheet" type="text/css" />
     <link href="~/css/site.css" rel="stylesheet" />
+    <style>
+        .badge {
+            min-width: 20px;
+            height: 20px;
+            line-height: 20px;
+            text-align: center;
+        }
+    </style>
 </head>
-<body style="background-color:#f8f9fa">
+<body style="background-color: #f8f9fa">
     <div id="layout-wrapper">
         <header id="page-topbar">
             <div class="navbar-header">
-                <div class="d-flex">
+                <div class="d-flex align-items-center">
                     <!-- LOGO -->
                     <div class="navbar-brand-box">
                         <a href="~/Index" class="logo logo-dark">
                             <span class="logo-sm">
-                                <img src="~/images/logo-sm.png" alt="" height="22">
+                                <img src="~/images/logo-sm.png" alt="Small Dark Logo" height="22">
                             </span>
                             <span class="logo-lg">
-                                <img src="~/images/logo-dark.png" alt="" height="20">
+                                <img src="~/images/logo-dark.png" alt="Large Dark Logo" height="20">
                             </span>
                         </a>
                         <a href="~/Index" class="logo logo-light">
                             <span class="logo-sm">
-                                <img src="~/images/logo-sm.png" alt="" height="22">
+                                <img src="~/images/logo-sm.png" alt="Small Light Logo" height="22">
                             </span>
                             <span class="logo-lg">
-                                <img src="~/images/logo-light.png" alt="" height="20">
+                                <img src="~/images/logo-light.png" alt="Large Light Logo" height="20">
                             </span>
                         </a>
                     </div>
@@ -40,81 +48,106 @@
                         <i class="fa fa-fw fa-bars"></i>
                     </button>
                 </div>
-                <div class="d-flex">
+                <div class="d-flex align-items-center">
+                    <!-- Notification Dropdown -->
                     <div class="dropdown d-inline-block">
-                        <button type="button" class="btn header-item noti-icon waves-effect" id="page-header-notifications-dropdown"
-                                data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <button type="button" class="btn header-item noti-icon waves-effect"
+                                id="page-header-notifications-dropdown"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false">
                             <i class="uil-bell"></i>
                             <span class="badge bg-danger rounded-pill" id="txtAmountNoticeNotRead">0</span>
                         </button>
-                        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-end p-0"
-                             aria-labelledby="page-header-notifications-dropdown">
-                            <div class="p-3">
-                                <div class="row align-items-center">
-                                    <div class="col">
-                                        <h5 class="m-0 font-size-16">Notifications</h5>
-                                    </div>
-                                </div>
-                            </div>
-                            <div data-simplebar style="max-height: 230px;">
-                                <a href="javascript:void(0);" class="text-dark notification-item">
-                                    <div class="d-flex align-items-start">
+                        <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-end p-0"
+                            aria-labelledby="page-header-notifications-dropdown">
+                            <li class="p-3">
+                                <h5 class="m-0 font-size-16">Notifications</h5>
+                            </li>
+                            <li>
+                                <div data-simplebar style="max-height: 230px;">
+                                    <a href="#" class="dropdown-item text-dark notification-item d-flex align-items-start p-2">
                                         <div class="flex-shrink-0 me-3">
-                                            <div class="avatar-xs">
-                                                <span class="avatar-title bg-primary rounded-circle font-size-16">
-                                                    <i class="uil-shopping-basket"></i>
-                                                </span>
-                                            </div>
+                                            <span class="avatar-title bg-primary rounded-circle font-size-16">
+                                                <i class="uil-shopping-basket"></i>
+                                            </span>
                                         </div>
                                         <div class="flex-grow-1">
-                                            <!-- Thêm nội dung thông báo nếu cần -->
+                                            <h6 class="mt-0 mb-1">New Notification</h6>
+                                            <p class="mb-0">This is a sample notification.</p>
                                         </div>
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="p-2 border-top">
-                                <div class="d-grid">
-                                    <a class="btn btn-sm btn-link font-size-14 text-center" href="javascript:void(0)">
-                                        <i class="uil-arrow-circle-right me-1"></i> View More..
                                     </a>
                                 </div>
-                            </div>
-                        </div>
+                            </li>
+                            <li class="p-2 border-top">
+                                <a class="dropdown-item btn btn-sm btn-link font-size-14 text-center" href="#">
+                                    <i class="uil-arrow-circle-right me-1"></i> View More
+                                </a>
+                            </li>
+                        </ul>
                     </div>
 
+                    <!-- User Dropdown -->
                     <div class="dropdown d-inline-block">
-                        <button type="button" class="btn header-item waves-effect" id="page-header-user-dropdown"
-                                data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <img id="imgEmployeeAvatar" class="rounded-circle header-profile-user" src="~/images/avatar/avatar-1.jpg" alt="Header Avatar">
-                            <span id="txtEmployeeName" class="d-none d-xl-inline-block ms-1 fw-medium font-size-15"></span>
+                        <button type="button" class="btn header-item waves-effect"
+                                id="page-header-user-dropdown"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false">
+                            <img id="imgEmployeeAvatar" class="rounded-circle header-profile-user"
+                                 src="~/images/avatar/default-avatar.jpg"
+                                 alt="User Avatar" />
+                            <span id="txtEmployeeName" class="d-none d-xl-inline-block ms-1 fw-medium font-size-15">User</span>
                             <i class="uil-angle-down d-none d-xl-inline-block font-size-15"></i>
                         </button>
-                        <div class="dropdown-menu dropdown-menu-end">
-                            <a class="dropdown-item" href="~/Employee/Profile"><i class="uil uil-user-circle font-size-18 align-middle text-muted me-1"></i> <span class="align-middle">View Profile</span></a>
-                            <a class="dropdown-item d-block" href="#"><i class="uil uil-cog font-size-18 align-middle me-1 text-muted"></i> <span class="align-middle">Settings</span> <span class="badge bg-success-subtle text-success rounded-pill mt-1 ms-2">03</span></a>
-                            <a class="dropdown-item" href="#"><i class="uil uil-lock-alt font-size-18 align-middle me-1 text-muted"></i> <span class="align-middle">Lock screen</span></a>
-                            <a class="dropdown-item" href="~/Account/SignedOut"><i class="uil uil-sign-out-alt font-size-18 align-middle me-1 text-muted"></i> <span class="align-middle">Sign out</span></a>
-                        </div>
+                        <ul class="dropdown-menu dropdown-menu-end"
+                            aria-labelledby="page-header-user-dropdown">
+                            <li>
+                                <a class="dropdown-item" href="~/Employee/Profile">
+                                    <i class="uil uil-user-circle font-size-18 align-middle text-muted me-1"></i>
+                                    View Profile
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="#">
+                                    <i class="uil uil-cog font-size-18 align-middle text-muted me-1"></i>
+                                    Settings
+                                    <span class="badge bg-success-subtle text-success rounded-pill ms-2">03</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="#">
+                                    <i class="uil uil-lock-alt font-size-18 align-middle text-muted me-1"></i>
+                                    Lock Screen
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="~/Account/SignedOut">
+                                    <i class="uil uil-sign-out-alt font-size-18 align-middle text-muted me-1"></i>
+                                    Sign Out
+                                </a>
+                            </li>
+                        </ul>
                     </div>
                 </div>
             </div>
         </header>
+
+        <!-- Sidebar -->
         <div class="vertical-menu">
             <div class="navbar-brand-box">
                 <a href="~/Index" class="logo logo-dark">
                     <span class="logo-sm">
-                        <img src="~/images/logo-sm.png" alt="" height="32">
+                        <img src="~/images/logo-sm.png" alt="Small Dark Logo" height="32">
                     </span>
                     <span class="logo-lg">
-                        <img src="~/images/logo-dark.png" alt="" height="30">
+                        <img src="~/images/logo-dark.png" alt="Large Dark Logo" height="30">
                     </span>
                 </a>
                 <a href="~/Index" class="logo logo-light">
                     <span class="logo-sm">
-                        <img src="~/images/logo-sm.png" alt="" height="32">
+                        <img src="~/images/logo-sm.png" alt="Small Light Logo" height="32">
                     </span>
                     <span class="logo-lg">
-                        <img src="~/images/logo-light.png" alt="" height="30">
+                        <img src="~/images/logo-light.png" alt="Large Light Logo" height="30">
                     </span>
                 </a>
             </div>
@@ -125,47 +158,40 @@
                 <div id="sidebar-menu">
                     <ul class="metismenu list-unstyled" id="side-menu">
                         <li>
-                            <a href="javascript: void(0);" class="has-arrow waves-effect" style="text-decoration:none">
+                            <a href="#" class="has-arrow waves-effect" style="text-decoration: none;">
                                 <i class="uil-notebooks"></i>
                                 <span>DATA TOEIC</span>
                             </a>
-                            <ul class="sub-menu" aria-expanded="false" style="text-decoration:none">
-                                <li>
-                                    <a href="/TOEICPart1/QuestionList" style="text-decoration:none">
-                                        <span>Part 1</span>
-                                    </a>
-                                </li>
-
-
-
-                                <li><a href="~/ToeicPart2/QuestionList" style="text-decoration:none"><span>Part 2</span></a></li>
-                                <li><a href="~/ToeicPart3/QuestionList" style="text-decoration:none"><span>Part 3</span></a></li>
-                                <li><a href="~/Notice/NoticeList" style="text-decoration:none"><span>Part 4</span></a></li>
-                                <li><a href="~/ToeicPart5/QuestionList" style="text-decoration:none"><span>Part 5</span></a></li>
-                                <li><a href="~/ToeicPart6/QuestionList" style="text-decoration:none"><span>Part 6</span></a></li>
-                                <li><a href="~/ToeicPart7/QuestionList" style="text-decoration:none"><span>Part 7</span></a></li>
+                            <ul class="sub-menu" aria-expanded="false">
+                                <li><a href="/TOEICPart1/QuestionList" style="text-decoration: none;">Part 1</a></li>
+                                <li><a href="~/ToeicPart2/QuestionList" style="text-decoration: none;">Part 2</a></li>
+                                <li><a href="~/ToeicPart3/QuestionList" style="text-decoration: none;">Part 3</a></li>
+                                <li><a href="~/Notice/NoticeList" style="text-decoration: none;">Part 4</a></li>
+                                <li><a href="~/ToeicPart5/QuestionList" style="text-decoration: none;">Part 5</a></li>
+                                <li><a href="~/ToeicPart6/QuestionList" style="text-decoration: none;">Part 6</a></li>
+                                <li><a href="~/ToeicPart7/QuestionList" style="text-decoration: none;">Part 7</a></li>
                             </ul>
                         </li>
                         <li>
-                            <a href="javascript: void(0);" class="has-arrow waves-effect" style="text-decoration:none">
+                            <a href="#" class="has-arrow waves-effect" style="text-decoration: none;">
                                 <i class="uil-book-alt"></i>
                                 <span>TEACHERS</span>
                             </a>
                             <ul class="sub-menu" aria-expanded="false">
-                                <li><a style="text-decoration:none" href="~/Employee/EmployeeList">Employee List</a></li>
+                                <li><a href="~/Employee/EmployeeList" style="text-decoration: none;">Employee List</a></li>
                             </ul>
                         </li>
                         <li>
-                            <a href="javascript: void(0);" class="has-arrow waves-effect" style="text-decoration:none">
+                            <a href="#" class="has-arrow waves-effect" style="text-decoration: none;">
                                 <i class="uil-book-alt"></i>
                                 <span>STUDENTS</span>
                             </a>
                             <ul class="sub-menu" aria-expanded="false">
-                                <li><a style="text-decoration:none" href="~/Employee/EmployeeList">Student List</a></li>
+                                <li><a href="~/Employee/EmployeeList" style="text-decoration: none;">Student List</a></li>
                             </ul>
                         </li>
                         <li>
-                            <a href="~/Guide/Index" style="text-decoration:none">
+                            <a href="~/Guide/Index" style="text-decoration: none;">
                                 <i class="uil-youtube"></i>
                                 <span>GUIDE</span>
                             </a>
@@ -184,40 +210,58 @@
         </div>
     </div>
 
-    <!-- JAVASCRIPT -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/2.10.2/umd/popper.min.js"></script>
-    <script src="~/lib/jquery/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous"></script>
     <script src="~/lib/metismenu/metisMenu.min.js"></script>
 
     <script>
-        $(document).ready(function () {
-            $.ajax({
-                url: "/Reports/Personal",
-                type: "GET"
-            }).done(function (data) {
-                $("#txtAmountNoticeNotRead").html(data.noticeNotRead);
-                $("#txtAmountTaskNotFinish").html(data.taskNotFinish);
-                $("#txtEmployeeName").html(data.employeeName);
-                $("#imgEmployeeAvatar").attr("src", data.employeeAvatar);
-            }).fail(function (r) {
-                alert("error : " + r.responseText);
+        document.addEventListener('DOMContentLoaded', function () {
+            // Function to load user data dynamically after login
+            function loadUserData() {
+                $.ajax({
+                    url: "/Reports/Personal",
+                    type: "GET",
+                    success: function (data) {
+                        if (data && data.EmployeeName) {
+                            $("#txtAmountNoticeNotRead").text(data.NoticeNotRead || 0);
+                            let avatarUrl = data.EmployeeAvatar || "~/images/avatar/default-avatar.jpg";
+                            // Ensure the path starts with '/' if it's a relative path
+                            if (avatarUrl && !avatarUrl.startsWith('http') && !avatarUrl.startsWith('/')) {
+                                avatarUrl = `/images/avatar/${avatarUrl}`;
+                            }
+                            $("#imgEmployeeAvatar").attr("src", avatarUrl);
+                            $("#txtEmployeeName").text(data.EmployeeName || "User");
+                        } else {
+                            console.warn("No user data returned from /Reports/Personal");
+                            $("#txtEmployeeName").text("User");
+                            $("#imgEmployeeAvatar").attr("src", "~/images/avatar/default-avatar.jpg");
+                        }
+                    },
+                    error: function (xhr) {
+                        console.error("Error fetching user data:", xhr.responseText);
+                        alert("Error loading user data: " + xhr.responseText);
+                        $("#txtEmployeeName").text("User");
+                        $("#imgEmployeeAvatar").attr("src", "~/images/avatar/default-avatar.jpg");
+                    }
+                });
+            }
+
+            // Call loadUserData on page load
+            loadUserData();
+
+            // Refresh user data periodically (optional)
+            function CallRefresh() {
+                loadUserData();
+            }
+
+            // Manually initialize Bootstrap dropdowns
+            var dropdownToggles = document.querySelectorAll('[data-bs-toggle="dropdown"]');
+            dropdownToggles.forEach(function (toggle) {
+                new bootstrap.Dropdown(toggle);
             });
         });
-
-        function CallRefresh() {
-            $.ajax({
-                url: "/Reports/Personal",
-                type: "GET"
-            }).done(function (data) {
-                $("#txtAmountNoticeNotRead").html(data.noticeNotRead);
-                $("#txtAmountTaskNotFinish").html(data.taskNotFinish);
-                $("#txtEmployeeName").html(data.employeeName);
-                $("#imgEmployeeAvatar").attr("src", data.employeeAvatar);
-            }).fail(function (r) {
-                alert("error : " + r.responseText);
-            });
-        }
     </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

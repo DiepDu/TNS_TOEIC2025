@@ -21,4 +21,9 @@
     </Reference>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\lib\tinymce\plugins\NewFolder\" />
+    <Folder Include="wwwroot\lib\tinymce\skins\content\" />
+  </ItemGroup>
+
 </Project>
