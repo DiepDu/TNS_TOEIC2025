@@ -37,6 +37,7 @@
 </style>
 <link href="~/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
 <link href="~/lib/datatables/css/dataTables.min.css" rel="stylesheet" type="text/css" />
+
 <div style="width:100%; margin:-20px 0 0 -20px">
     <div style="padding:5px; font-weight:bold; font-size:13px">
         <a href="~/Index" style="text-decoration:none; color:#4c4c4c">Home</a>
@@ -109,115 +110,121 @@
     </div>
 </div>
 
-<script src="~/lib/jquery/jquery.min.js"></script>
-<script src="~/lib/bootstrap/js/bootstrap.min.js"></script>
-<script src="~/lib/datatables/js/dataTables.min.js"></script>
-<script>
-    $(document).ready(function () {
-        LV_LoadData_Ajax();
-    });
+@* Xóa các script trực tiếp trong <body> vì đã include trong _Layout.cshtml *@
+@* <script src="~/lib/jquery/jquery.min.js"></script> *@
+@* <script src="~/lib/bootstrap/js/bootstrap.min.js"></script> *@
+@* <script src="~/lib/datatables/js/dataTables.min.js"></script> *@
 
-    function Log_Show() {
-        $("#Log_ViewData").css("display", "");
-    }
-</script>
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            LV_LoadData_Ajax();
+        });
 
-<script>
-    var _DataView;
-    var _PageSize = 25;
-    var _PageNumber = 1;
-    function btn_Search_Click() {
-        $("#LV_DataBody").html("");
-        _PageNumber = 1;
-        LV_LoadData_Ajax();
-    }
-    function LV_LoadData_Ajax() {
-        $("#LV_Waiting").css("display", "");
-        var zSearch = $("#txtSearch").val();
-        var zFromDate = $('#txtFromDate').val();
-        var zToDate = $('#txtToDate').val();
-        var zLevel = $('#txtLevel').val();
-        if (zLevel.length == 0)
-            zLevel = 0;
-        var zDataRequest = {
-            "Search": zSearch, "Level": zLevel,
-            "fromDate": zFromDate, "toDate": zToDate,
-            "pageSize": _PageSize, "pageNumber": _PageNumber
-        };
+        function Log_Show() {
+            $("#Log_ViewData").css("display", "");
+        }
 
-        $.ajax({
-            type: 'POST',
-            url: "/TOEICPart1/QuestionList?handler=LoadData",
-            data: JSON.stringify(zDataRequest),
-            contentType: "application/json",
-            dataType: "json",
-        })
-            .done(function (dataResponse) {
-                _DataView = dataResponse;
-                LV_DisplayData();
-                $("#LV_Waiting").css("display", "none");
-                $("#Info_View").html("Total: " + dataResponse.length + " items");
+        var _DataView;
+        var _PageSize = 25;
+        var _PageNumber = 1;
+
+        function btn_Search_Click() {
+            $("#LV_DataBody").html("");
+            _PageNumber = 1;
+            LV_LoadData_Ajax();
+        }
+
+        function LV_LoadData_Ajax() {
+            $("#LV_Waiting").css("display", "");
+            var zSearch = $("#txtSearch").val();
+            var zFromDate = $('#txtFromDate').val();
+            var zToDate = $('#txtToDate').val();
+            var zLevel = $('#txtLevel').val();
+            if (zLevel.length == 0)
+                zLevel = 0;
+            var zDataRequest = {
+                "Search": zSearch, "Level": zLevel,
+                "fromDate": zFromDate, "toDate": zToDate,
+                "pageSize": _PageSize, "pageNumber": _PageNumber
+            };
+
+            $.ajax({
+                type: 'POST',
+                url: "/TOEICPart1/QuestionList?handler=LoadData",
+                data: JSON.stringify(zDataRequest),
+                contentType: "application/json",
+                dataType: "json",
             })
-            .fail(function (error) {
-                alert('Error : ' + error.responseText);
-            });
-    }
-    function LV_DisplayData() {
-        var zContent = "";
-        var n = 0;
-        if (_DataView != null) {
-            n = _DataView.length;
-        }
-        var zNo = 1 + (_PageNumber - 1) * _PageSize;
-        for (i = 0; i < n; i++) {
-            zContent += "       <tr >";
-            zContent += "           <td class='centered-cell'>";
-            zContent += "               <div> " + zNo + " </div>";
-            zContent += "           </td>";
-            zContent += "           <td class='centered-cell' onclick='EditRecord(\"" + _DataView[i].QuestionKey + "\")' style='cursor:pointer'>" + _DataView[i].QuestionText + "</td>";
-            zContent += "           <td class='centered-cell'><audio controls class='audio-player'><source src='" + _DataView[i].QuestionVoice + "' type='audio/mp3'></audio></td>"; // Thay AudioPath bằng QuestionVoice
-            zContent += "           <td class='centered-cell'><img src='" + _DataView[i].QuestionImage + "' class='centered-image' width='100' height='100' /></td>";
-            zContent += "           <td class='centered-cell'>" + _DataView[i].SkillLevel + "</td>";
-            zContent += "           <td class='centered-cell'>" + _DataView[i].AmountAccess + "</td>";
-            zContent += "           <td class='centered-cell'> <button type='button' class='btn btn-warning' onclick='showAnswers(\"" + _DataView[i].QuestionKey + "\")'>View Answers</button></td>";
-            zContent += "       </tr>";
-            zNo++;
-        }
-        var zDataCurrent = $("#LV_DataBody").html();
-        $("#LV_DataBody").html(zDataCurrent + zContent);
-    }
-</script>
-<script>
-    function EditRecord(QuestionKey) {
-        zUrl = "/TOEICPart1/Question?Key=" + QuestionKey;
-        window.location = zUrl;
-    }
-    function btnAnswer_Click(QuestionKey) {
-        zUrl = "/TOEICPart1/AnswerList?Key=" + QuestionKey;
-        window.location = zUrl;
-    }
-    function LV_LoadData_More() {
-        _PageNumber++;
-        LV_LoadData_Ajax();
-    }
-
-    function showAnswers(questionKey) {
-        $.ajax({
-            type: 'GET',
-            url: "/api/toeic/part1/answers?questionKey=" + questionKey,
-            contentType: "application/json",
-            dataType: "json",
-        })
-            .done(function (dataResponse) {
-                var answersHtml = "<div class='answer-container'><h4>Answers:</h4>";
-                dataResponse.forEach(function (answer, index) {
-                    answersHtml += "<div class='answer-label'>Option " + String.fromCharCode(65 + index) + ": (Empty - Listen to Audio)</div>";
+                .done(function (dataResponse) {
+                    _DataView = dataResponse;
+                    LV_DisplayData();
+                    $("#LV_Waiting").css("display", "none");
+                    $("#Info_View").html("Total: " + dataResponse.length + " items");
+                })
+                .fail(function (error) {
+                    alert('Error : ' + error.responseText);
                 });
-                answersHtml += "</div>";
-                $("#Log_ViewData").html(answersHtml).css("display", "");
+        }
+
+        function LV_DisplayData() {
+            var zContent = "";
+            var n = 0;
+            if (_DataView != null) {
+                n = _DataView.length;
+            }
+            var zNo = 1 + (_PageNumber - 1) * _PageSize;
+            for (i = 0; i < n; i++) {
+                zContent += "       <tr >";
+                zContent += "           <td class='centered-cell'>";
+                zContent += "               <div> " + zNo + " </div>";
+                zContent += "           </td>";
+                zContent += "           <td class='centered-cell' onclick='EditRecord(\"" + _DataView[i].QuestionKey + "\")' style='cursor:pointer'>" + _DataView[i].QuestionText + "</td>";
+                zContent += "           <td class='centered-cell'><audio controls class='audio-player'><source src='" + _DataView[i].QuestionVoice + "' type='audio/mp3'></audio></td>";
+                zContent += "           <td class='centered-cell'><img src='" + _DataView[i].QuestionImage + "' class='centered-image' width='100' height='100' /></td>";
+                zContent += "           <td class='centered-cell'>" + _DataView[i].SkillLevel + "</td>";
+                zContent += "           <td class='centered-cell'>" + _DataView[i].AmountAccess + "</td>";
+                zContent += "           <td class='centered-cell'> <button type='button' class='btn btn-warning' onclick='showAnswers(\"" + _DataView[i].QuestionKey + "\")'>View Answers</button></td>";
+                zContent += "       </tr>";
+                zNo++;
+            }
+            var zDataCurrent = $("#LV_DataBody").html();
+            $("#LV_DataBody").html(zDataCurrent + zContent);
+        }
+
+        function EditRecord(QuestionKey) {
+            zUrl = "/TOEICPart1/Question?Key=" + QuestionKey;
+            window.location = zUrl;
+        }
+
+        function btnAnswer_Click(QuestionKey) {
+            zUrl = "/TOEICPart1/AnswerList?Key=" + QuestionKey;
+            window.location = zUrl;
+        }
+
+        function LV_LoadData_More() {
+            _PageNumber++;
+            LV_LoadData_Ajax();
+        }
+
+        function showAnswers(questionKey) {
+            $.ajax({
+                type: 'GET',
+                url: "/api/toeic/part1/answers?questionKey=" + questionKey,
+                contentType: "application/json",
+                dataType: "json",
             })
-            .fail(function (error) {
-                alert('Error loading answers: ' + error.responseText);
-            });
-    }
-</script>
+                .done(function (dataResponse) {
+                    var answersHtml = "<div class='answer-container'><h4>Answers:</h4>";
+                    dataResponse.forEach(function (answer, index) {
+                        answersHtml += "<div class='answer-label'>Option " + String.fromCharCode(65 + index) + ": (Empty - Listen to Audio)</div>";
+                    });
+                    answersHtml += "</div>";
+                    $("#Log_ViewData").html(answersHtml).css("display", "");
+                })
+                .fail(function (error) {
+                    alert('Error loading answers: ' + error.responseText);
+                });
+        }
+    </script>
+}

@@ -7,7 +7,7 @@
     <meta content="App for Bank" name="description" />
     <meta content="Themesbrand" name="TN Solution" />
     <link rel="shortcut icon" href="~/images/favicon.ico">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" />
+    <link href="~/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
     <link href="~/lib/minible/css/icons.min.css" rel="stylesheet" type="text/css" />
     <link href="~/lib/minible/css/app.min.css" id="app-style" rel="stylesheet" type="text/css" />
     <link href="~/css/site.css" rel="stylesheet" />
@@ -211,56 +211,81 @@
     </div>
 
     <!-- Scripts -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous"></script>
+    <!-- Load local jQuery first -->
+    <script src="~/lib/jquery/jquery.min.js"></script>
+    <!-- Load Bootstrap (includes Popper.js) -->
+    <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <!-- Load MetisMenu -->
     <script src="~/lib/metismenu/metisMenu.min.js"></script>
+    <!-- Load DataTables -->
+    <script src="~/lib/datatables/js/dataTables.min.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // Function to load user data dynamically after login
-            function loadUserData() {
-                $.ajax({
-                    url: "/Reports/Personal",
-                    type: "GET",
-                    success: function (data) {
-                        if (data && data.EmployeeName) {
-                            $("#txtAmountNoticeNotRead").text(data.NoticeNotRead || 0);
-                            let avatarUrl = data.EmployeeAvatar || "~/images/avatar/default-avatar.jpg";
-                            // Ensure the path starts with '/' if it's a relative path
-                            if (avatarUrl && !avatarUrl.startsWith('http') && !avatarUrl.startsWith('/')) {
-                                avatarUrl = `/images/avatar/${avatarUrl}`;
+            // Check if jQuery is loaded before proceeding
+            if (typeof jQuery === 'undefined') {
+                console.error('jQuery is not loaded. Check the file ~/lib/jquery/jquery.min.js.');
+                alert('jQuery could not be loaded. Please ensure the file exists in ~/lib/jquery/.');
+            } else {
+                initializeScripts();
+            }
+
+            function initializeScripts() {
+                // Function to load user data dynamically after login
+                function loadUserData() {
+                    $.ajax({
+                        url: "/Reports/Personal",
+                        type: "GET",
+                        success: function (data) {
+                            if (data && data.EmployeeName) {
+                                $("#txtAmountNoticeNotRead").text(data.NoticeNotRead || 0);
+                                let avatarUrl = data.EmployeeAvatar || "~/images/avatar/default-avatar.jpg";
+                                // Ensure the path starts with '/' if it's a relative path
+                                if (avatarUrl && !avatarUrl.startsWith('http') && !avatarUrl.startsWith('/')) {
+                                    avatarUrl = `/images/avatar/${avatarUrl}`;
+                                }
+                                $("#imgEmployeeAvatar").attr("src", avatarUrl);
+                                $("#txtEmployeeName").text(data.EmployeeName || "User");
+                            } else {
+                                console.warn("No user data returned from /Reports/Personal");
+                                $("#txtEmployeeName").text("User");
+                                $("#imgEmployeeAvatar").attr("src", "~/images/avatar/default-avatar.jpg");
                             }
-                            $("#imgEmployeeAvatar").attr("src", avatarUrl);
-                            $("#txtEmployeeName").text(data.EmployeeName || "User");
-                        } else {
-                            console.warn("No user data returned from /Reports/Personal");
+                        },
+                        error: function (xhr) {
+                            console.error("Error fetching user data:", xhr.responseText);
+                            alert("Error loading user data: " + xhr.responseText);
                             $("#txtEmployeeName").text("User");
                             $("#imgEmployeeAvatar").attr("src", "~/images/avatar/default-avatar.jpg");
                         }
-                    },
-                    error: function (xhr) {
-                        console.error("Error fetching user data:", xhr.responseText);
-                        alert("Error loading user data: " + xhr.responseText);
-                        $("#txtEmployeeName").text("User");
-                        $("#imgEmployeeAvatar").attr("src", "~/images/avatar/default-avatar.jpg");
+                    });
+                }
+
+                // Call loadUserData on page load
+                loadUserData();
+
+                // Refresh user data periodically (optional)
+                function CallRefresh() {
+                    loadUserData();
+                }
+
+                // Manually initialize Bootstrap dropdowns
+                var dropdownToggles = document.querySelectorAll('[data-bs-toggle="dropdown"]');
+                dropdownToggles.forEach(function (toggle) {
+                    try {
+                        new bootstrap.Dropdown(toggle);
+                    } catch (e) {
+                        console.error("Error initializing dropdown:", e);
                     }
                 });
+
+                // Initialize DataTables globally (if needed)
+                if ($.fn.DataTable) {
+                    $('table.dataTable').DataTable({
+                        // Configuration options here
+                    });
+                }
             }
-
-            // Call loadUserData on page load
-            loadUserData();
-
-            // Refresh user data periodically (optional)
-            function CallRefresh() {
-                loadUserData();
-            }
-
-            // Manually initialize Bootstrap dropdowns
-            var dropdownToggles = document.querySelectorAll('[data-bs-toggle="dropdown"]');
-            dropdownToggles.forEach(function (toggle) {
-                new bootstrap.Dropdown(toggle);
-            });
         });
     </script>
     @await RenderSectionAsync("Scripts", required: false)

@@ -129,10 +129,11 @@
     <div id="QuestionKey">@Model.QuestionKey</div>
 </div>
 
-<script src="~/lib/jquery/jquery.min.js"></script>
-<script src="~/lib/bootstrap/js/bootstrap.min.js"></script>
+@* <script src="~/lib/jquery/jquery.min.js"></script> *@
+@* <script src="~/lib/bootstrap/js/bootstrap.min.js"></script> *@
 <script src="~/lib/tinymce/tinymce.min.js"></script>
 <script src="~/js/editor.js"></script>
+@section Scripts {
 <script>
     $(document).ready(function () {
         InitEditor('txtQuestionText');
@@ -346,6 +347,7 @@
         });
     }
 </script>
+}
 <style>
     .lbl-item-name {
         width: 150px;
