@@ -18,59 +18,9 @@ namespace TNS_TOEICAdmin.Models
             Message = "";
             this.UserKey = userKey;
             this.EmployeeKey = employeeKey;
-            NoticeNotRead = GetAmountNoticeNotRead(userKey);
+            //NoticeNotRead = GetAmountNoticeNotRead(userKey);
             // TaskNotFinish = GetAmountTaskNotFinish();
             GetEmployeeInfo(employeeKey);
-        }
-        private int GetAmountNoticeNotRead(string userKey)
-        {
-            int zQuantity = 0;
-            string zSQL = "SELECT COUNT(*) FROM [dbo].[HRM_Notices] "
-                        + "WHERE [dbo].[NoticeReadStatus](NoticeKey,@UserKey) = 0";
-            string zConnectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
-            try
-            {
-                SqlConnection zConnect = new SqlConnection(zConnectionString);
-                zConnect.Open();
-                SqlCommand zCommand = new SqlCommand(zSQL, zConnect);
-                zCommand.Parameters.Add("@UserKey", SqlDbType.UniqueIdentifier).Value = new Guid(userKey);
-                string zResult = zCommand.ExecuteScalar().ToString();
-                int.TryParse(zResult, out zQuantity);
-
-                zCommand.Dispose();
-                zConnect.Close();
-            }
-            catch (Exception ex)
-            {
-                string zstrMessage = ex.ToString();
-            }
-
-            return zQuantity;
-        }
-        private int GetAmountTaskNotFinish(string employeeKey)
-        {
-            int zQuantity = 0;
-            string zSQL = "SELECT Count(*) FROM [dbo].[CRM_Task] "
-                        + "WHERE OwnerBy = @EmployeeKey AND StatusKey <= 2 ";
-            string zConnectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
-            try
-            {
-                SqlConnection zConnect = new SqlConnection(zConnectionString);
-                zConnect.Open();
-                SqlCommand zCommand = new SqlCommand(zSQL, zConnect);
-                zCommand.Parameters.Add("@EmployeeKey", SqlDbType.UniqueIdentifier).Value = new Guid(employeeKey);
-                string zResult = zCommand.ExecuteScalar().ToString();
-                int.TryParse(zResult, out zQuantity);
-
-                zCommand.Dispose();
-                zConnect.Close();
-            }
-            catch (Exception ex)
-            {
-                string zstrMessage = ex.ToString();
-            }
-
-            return zQuantity;
         }
         private void GetEmployeeInfo(string employeeKey)
         {
@@ -107,6 +57,57 @@ namespace TNS_TOEICAdmin.Models
             {
                 zConnect.Close();
             }
+
+            //private int GetAmountNoticeNotRead(string userKey)
+            //{
+            //    int zQuantity = 0;
+            //    string zSQL = "SELECT COUNT(*) FROM [dbo].[HRM_Notices] "
+            //                + "WHERE [dbo].[NoticeReadStatus](NoticeKey,@UserKey) = 0";
+            //    string zConnectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
+            //    try
+            //    {
+            //        SqlConnection zConnect = new SqlConnection(zConnectionString);
+            //        zConnect.Open();
+            //        SqlCommand zCommand = new SqlCommand(zSQL, zConnect);
+            //        zCommand.Parameters.Add("@UserKey", SqlDbType.UniqueIdentifier).Value = new Guid(userKey);
+            //        string zResult = zCommand.ExecuteScalar().ToString();
+            //        int.TryParse(zResult, out zQuantity);
+
+            //        zCommand.Dispose();
+            //        zConnect.Close();
+            //    }
+            //    catch (Exception ex)
+            //    {
+            //        string zstrMessage = ex.ToString();
+            //    }
+
+            //    return zQuantity;
+            //}
+            //private int GetAmountTaskNotFinish(string employeeKey)
+            //{
+            //    int zQuantity = 0;
+            //    string zSQL = "SELECT Count(*) FROM [dbo].[CRM_Task] "
+            //                + "WHERE OwnerBy = @EmployeeKey AND StatusKey <= 2 ";
+            //    string zConnectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
+            //    try
+            //    {
+            //        SqlConnection zConnect = new SqlConnection(zConnectionString);
+            //        zConnect.Open();
+            //        SqlCommand zCommand = new SqlCommand(zSQL, zConnect);
+            //        zCommand.Parameters.Add("@EmployeeKey", SqlDbType.UniqueIdentifier).Value = new Guid(employeeKey);
+            //        string zResult = zCommand.ExecuteScalar().ToString();
+            //        int.TryParse(zResult, out zQuantity);
+
+            //        zCommand.Dispose();
+            //        zConnect.Close();
+            //    }
+            //    catch (Exception ex)
+            //    {
+            //        string zstrMessage = ex.ToString();
+            //    }
+
+            //    return zQuantity;
+            //}
 
 
         }
