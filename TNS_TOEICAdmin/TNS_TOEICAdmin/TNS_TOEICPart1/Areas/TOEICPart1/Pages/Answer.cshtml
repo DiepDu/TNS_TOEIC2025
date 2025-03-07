@@ -1,0 +1,169 @@
+﻿@section Scripts {
+    <script src="~/lib/tinymce/tinymce.min.js"></script>
+    <script src="~/js/editor.js"></script>
+    <script>
+        $(document).ready(function () {
+            InitEditor('txtAnswerText');
+            var zAnswerKey = $("#AnswerKey").text();
+            console.log("Initial AnswerKey: ", zAnswerKey);
+            console.log("Initial QuestionKey: ", $("#QuestionKey").text());
+            RecordRead(zAnswerKey);
+        });
+
+        function btnCreate_Click() {
+            $("#ModalMessage_Icon").html("<img src='/images/Waiting.gif' width='80px'/>");
+            $("#ModalMessage_Content").html("Waiting");
+            $("#ModalMessage").modal('show');
+            RecordInput();
+            if (_Record && _Record.questionKey) {
+                RecordCreate();
+            } else {
+                alert("Invalid QuestionKey. Please return and try again.");
+            }
+        }
+
+        function btnUpdate_Click() {
+            $("#ModalMessage_Icon").html("<img src='/images/Waiting.gif' width='80px'/>");
+            $("#ModalMessage_Content").html("Waiting");
+            $("#ModalMessage").modal('show');
+            RecordInput();
+            if (_Record && _Record.questionKey) {
+                RecordUpdate();
+            } else {
+                alert("Invalid QuestionKey. Please return and try again.");
+            }
+        }
+
+        function btnDel_Click() {
+            $("#ModalMessage_Icon").html("<img src='/images/Waiting.gif' width='80px'/>");
+            $("#ModalMessage_Content").html("Waiting");
+            $("#ModalMessage").modal('show');
+            RecordDel();
+        }
+
+        function ReturnAnswer_Click() {
+            var zUrl = "/TOEICPart1/AnswerList?Key=" + $("#QuestionKey").text();
+            window.location = zUrl;
+        }
+
+        var _Record;
+        var _Role = { Create: true, Read: true, Update: true, Del: true };
+
+        function RecordRead(Key) {
+            var zDataRequest = { answerKey: Key };
+            $.ajax({
+                type: 'POST',
+                url: "/TOEICPart1/Answer?handler=RecordRead",
+                data: JSON.stringify(zDataRequest),
+                contentType: "application/json",
+                dataType: "json",
+            })
+                .done(function (dataResponse) {
+                    _Record = dataResponse;
+                    console.log("RecordRead Response: ", _Record);
+                    RecordView();
+                    if (_Record.isNewRecord == false) {
+                        $("#btnCreate").hide();
+                        if (_Role.Update) $("#btnUpdate").show();
+                        if (_Role.Del) $("#btnDel").show();
+                    } else {
+                        if (_Role.Create) $("#btnCreate").show();
+                        $("#btnUpdate").hide();
+                        $("#btnDel").hide();
+                    }
+                })
+                .fail(function (error) {
+                    alert(error.responseText);
+                });
+        }
+
+        function RecordCreate() {
+            $.ajax({
+                type: 'POST',
+                url: "/TOEICPart1/Answer?handler=RecordCreate",
+                data: JSON.stringify(_Record),
+                contentType: "application/json",
+                dataType: "json",
+            })
+                .done(function (dataResponse) {
+                    console.log("RecordCreate Response: ", dataResponse);
+                    if (dataResponse.status == "OK") {
+                        $("#ModalMessage_Icon").html("<img src='/images/icon_success.png'/>");
+                        $("#ModalMessage_Content").html("Answer created successfully");
+                    } else {
+                        $("#ModalMessage_Icon").html("<img src='/images/icon_error.png'/>");
+                        $("#ModalMessage_Content").html(dataResponse.message);
+                    }
+                })
+                .fail(function (error) {
+                    alert(error.responseText);
+                });
+        }
+
+        function RecordUpdate() {
+            $.ajax({
+                type: 'POST',
+                url: "/TOEICPart1/Answer?handler=RecordUpdate",
+                data: JSON.stringify(_Record),
+                contentType: "application/json",
+                dataType: "json",
+            })
+                .done(function (dataResponse) {
+                    console.log("RecordUpdate Response: ", dataResponse);
+                    if (dataResponse.status == "OK") {
+                        $("#ModalMessage_Icon").html("<img src='/images/icon_success.png'/>");
+                        $("#ModalMessage_Content").html("Answer updated successfully");
+                    } else {
+                        $("#ModalMessage_Icon").html("<img src='/images/icon_error.png'/>");
+                        $("#ModalMessage_Content").html(dataResponse.message);
+                    }
+                })
+                .fail(function (error) {
+                    alert(error.responseText);
+                });
+        }
+
+        function RecordDel() {
+            var zDataRequest = { answerKey: _Record.answerKey };
+            $.ajax({
+                type: 'POST',
+                url: "/TOEICPart1/Answer?handler=RecordDel",
+                data: JSON.stringify(zDataRequest),
+                contentType: "application/json",
+                dataType: "json",
+            })
+                .done(function (dataResponse) {
+                    console.log("RecordDel Response: ", dataResponse);
+                    if (dataResponse.status == "OK") {
+                        $("#ModalMessage_Icon").html("<img src='/images/icon_warning.png'/>");
+                        $("#ModalMessage_Content").html("Answer deleted successfully");
+                        setTimeout(() => { ReturnAnswer_Click(); }, 1000);
+                    } else {
+                        $("#ModalMessage_Icon").html("<img src='/images/icon_error.png'/>");
+                        $("#ModalMessage_Content").html(dataResponse.message);
+                    }
+                })
+                .fail(function (error) {
+                    alert(error.responseText);
+                });
+        }
+
+        function RecordView() {
+            tinymce.get('txtAnswerText').setContent(_Record.answerText || "");
+            $("#chkAnswerCorrect").prop('checked', _Record.answerCorrect);
+        }
+
+        function RecordInput() {
+            _Record.answerText = tinymce.get('txtAnswerText').getContent();
+            _Record.answerCorrect = $("#chkAnswerCorrect").is(':checked');
+            var questionKey = $("#QuestionKey").text();
+            console.log("RecordInput QuestionKey: ", questionKey);
+            if (questionKey && questionKey.length === 36 && Guid.tryParse(questionKey)) {
+                _Record.questionKey = questionKey;
+            } else {
+                alert("Invalid QuestionKey format: " + questionKey);
+                return; // Ngăn không cho gửi nếu QuestionKey không hợp lệ
+            }
+        }
+    </script>
+}

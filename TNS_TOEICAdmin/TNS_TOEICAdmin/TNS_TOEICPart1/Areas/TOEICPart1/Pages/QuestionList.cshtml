@@ -193,7 +193,7 @@
                 zContent += "           <td class='centered-cell'><img src='" + _DataView[i].QuestionImage + "' class='centered-image' width='100' height='100' /></td>";
                 zContent += "           <td class='centered-cell'>" + _DataView[i].SkillLevel + "</td>";
                 zContent += "           <td class='centered-cell'>" + _DataView[i].AmountAccess + "</td>";
-                zContent += "           <td class='centered-cell'> <button type='button' class='btn btn-warning' onclick='showAnswers(\"" + _DataView[i].QuestionKey + "\")'>View Answers</button></td>";
+                zContent += "           <td class='centered-cell'> <button type='button' class='btn btn-warning' onclick='btnAnswer_Click(\"" + _DataView[i].QuestionKey + "\")'>Answers</button></td>";
                 zContent += "       </tr>";
                 zNo++;
             }
@@ -216,24 +216,9 @@
             LV_LoadData_Ajax();
         }
 
-        function showAnswers(questionKey) {
-            $.ajax({
-                type: 'GET',
-                url: "/api/toeic/part1/answers?questionKey=" + questionKey,
-                contentType: "application/json",
-                dataType: "json",
-            })
-                .done(function (dataResponse) {
-                    var answersHtml = "<div class='answer-container'><h4>Answers:</h4>";
-                    dataResponse.forEach(function (answer, index) {
-                        answersHtml += "<div class='answer-label'>Option " + String.fromCharCode(65 + index) + ": (Empty - Listen to Audio)</div>";
-                    });
-                    answersHtml += "</div>";
-                    $("#Log_ViewData").html(answersHtml).css("display", "");
-                })
-                .fail(function (error) {
-                    alert('Error loading answers: ' + error.responseText);
-                });
+        function btnAnswer_Click(QuestionKey) {
+            zUrl = "/TOEICPart1/AnswerList?Key=" + QuestionKey;
+            window.location = zUrl;
         }
     </script>
 }
