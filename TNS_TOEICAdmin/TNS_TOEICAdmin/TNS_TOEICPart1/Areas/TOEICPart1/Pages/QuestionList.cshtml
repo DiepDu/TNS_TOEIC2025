@@ -60,6 +60,14 @@
                 <input id="txtLevel" type="text" class="form-control" placeholder="Level" aria-label="Level" aria-describedby="button-addon2">
                 <input id="txtFromDate" class="form-control" type="date">
                 <input id="txtToDate" class="form-control" type="date">
+                <div class="form-group">
+                    <select class="form-control" id="statusFilter" name="statusFilter">
+                        <option value="">All</option>
+        <option value="Using">Using</option>
+        <option value="Unpublished">Unpublished</option>
+        <option value="Deleted">Deleted</option>
+                    </select>
+                </div>
                 <button class="btn btn-primary" onclick="btn_Search_Click()">
                     <i class="fas fa-search"></i>
                 </button>
@@ -141,12 +149,13 @@
             var zFromDate = $('#txtFromDate').val();
             var zToDate = $('#txtToDate').val();
             var zLevel = $('#txtLevel').val();
+            var zStatusFilter = $('#statusFilter').val();
             if (zLevel.length == 0)
                 zLevel = 0;
             var zDataRequest = {
                 "Search": zSearch, "Level": zLevel,
                 "fromDate": zFromDate, "toDate": zToDate,
-                "pageSize": _PageSize, "pageNumber": _PageNumber
+                "pageSize": _PageSize, "pageNumber": _PageNumber,"StatusFilter": zStatusFilter 
             };
 
             $.ajax({
