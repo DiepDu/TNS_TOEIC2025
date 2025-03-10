@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using TNS_TOEICPart1.Areas.TOEICPart1.Models;
+using Microsoft.Data.SqlClient;
 using System;
+using TNS_TOEICPart1.Areas.TOEICPart1.Models;
 
 namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
 {
@@ -15,7 +17,6 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
         {
             UserLogin = new TNS.Auth.UserLogin_Info(User);
             UserLogin.GetRole("TOEIC_Part1");
-            // For Testing
             UserLogin.Role.IsRead = true;
             UserLogin.Role.IsCreate = true;
             UserLogin.Role.IsUpdate = true;
@@ -26,119 +27,215 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
         public string AnswerKey { get; set; }
         public string QuestionKey { get; set; }
 
-        public IActionResult OnGet(string Key, string QuestionKey)
+        private readonly IWebHostEnvironment _environment;
+
+        public AnswerModel(IWebHostEnvironment environment)
+        {
+            _environment = environment;
+        }
+
+        public IActionResult OnGet(string key = null, string questionKey = null)
         {
             CheckAuth();
-            if (UserLogin.Role.IsRead)
-            {
-                this.AnswerKey = Key;
-                // Kiểm tra định dạng GUID cho QuestionKey
-                if (!string.IsNullOrEmpty(QuestionKey) && !Guid.TryParse(QuestionKey, out _))
-                {
-                    return RedirectToPage("/QuestionList", new { error = "InvalidQuestionKey" });
-                }
-                this.QuestionKey = QuestionKey;
-                if (string.IsNullOrEmpty(this.QuestionKey))
-                    return RedirectToPage("/QuestionList"); // Redirect nếu không có QuestionKey
-                return Page();
-            }
-            else
-            {
+            if (!UserLogin.Role.IsRead)
                 return LocalRedirect("~/Warning?id=403");
+
+            AnswerKey = key?.Trim();
+            QuestionKey = questionKey?.Trim();
+
+            if (string.IsNullOrEmpty(QuestionKey) || QuestionKey.Length != 36)
+            {
+                return RedirectToPage("/QuestionList");
             }
+
+            return Page();
         }
 
-        #region [Record CRUD]
-        public IActionResult OnPostRecordRead([FromBody] ItemRequestAnswer request)
+        public IActionResult OnPostRead([FromBody] ItemRequest request)
         {
             CheckAuth();
-            JsonResult zResult;
-            if (UserLogin.Role.IsRead)
+            if (!UserLogin.Role.IsRead)
+                return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
+
+            if (string.IsNullOrEmpty(request.QuestionKey) || request.QuestionKey.Length != 36)
+                return new JsonResult(new { Status = "ERROR", Message = "Invalid QuestionKey" });
+
+            AnswerDataAccess.Part1_Answer_Info record;
+            try
             {
-                AnswerDataAccess.Part1_Answer_Info zRecord;
                 if (string.IsNullOrEmpty(request.AnswerKey) || request.AnswerKey.Length != 36)
-                    zRecord = new AnswerDataAccess.Part1_Answer_Info();
+                {
+                    record = new AnswerDataAccess.Part1_Answer_Info(request.QuestionKey);
+                    record.Message = "No existing record, initialized as new.";
+                }
                 else
-                    zRecord = new AnswerDataAccess.Part1_Answer_Info(request.AnswerKey);
-                zResult = new JsonResult(zRecord);
-            }
-            else
-            {
-                zResult = new JsonResult(new { Status = "ERROR", Result = "ACCESS DENIED" });
-            }
-            return zResult;
-        }
-
-        public IActionResult OnPostRecordCreate([FromBody] AnswerDataAccess.Part1_Answer_Info request)
-        {
-            CheckAuth();
-            JsonResult zResult;
-            if (UserLogin.Role.IsCreate)
-            {
-                AnswerDataAccess.Part1_Answer_Info zRecord = request;
-                if (string.IsNullOrEmpty(zRecord.QuestionKey) || !Guid.TryParse(zRecord.QuestionKey, out _))
                 {
-                    zResult = new JsonResult(new { status = "ERROR", message = "Invalid QuestionKey format" });
-                    return zResult;
+                    record = new AnswerDataAccess.Part1_Answer_Info(request.AnswerKey, request.QuestionKey);
+                    if (record.Status == "ERROR" && record.Message == "No record found")
+                    {
+                        record = new AnswerDataAccess.Part1_Answer_Info(request.QuestionKey);
+                        record.AnswerKey = Guid.NewGuid().ToString();
+                        record.IsNewRecord = true;
+                        record.Message = "No record found, initialized as new.";
+                    }
                 }
-                zRecord.CreatedBy = UserLogin.Employee.Key;
-                zRecord.CreatedName = UserLogin.Employee.Name;
-                zRecord.Create();
-                zResult = new JsonResult(new { status = zRecord.Status, message = zRecord.Message });
+                return new JsonResult(new { Status = "OK", Record = record, Message = record.Message });
             }
-            else
+            catch (Exception ex)
             {
-                zResult = new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
+                return new JsonResult(new { Status = "ERROR", Message = $"Error loading record: {ex.Message}" });
             }
-            return zResult;
         }
 
-        public IActionResult OnPostRecordUpdate([FromBody] AnswerDataAccess.Part1_Answer_Info request)
+        public IActionResult OnPostCreate([FromBody] AnswerDataAccess.Part1_Answer_Info request)
         {
             CheckAuth();
-            JsonResult zResult;
-            if (UserLogin.Role.IsUpdate)
+            if (!UserLogin.Role.IsCreate)
+                return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
+
+            if (request == null)
+                return new JsonResult(new { Status = "ERROR", Message = "Request body is null" });
+
+            if (string.IsNullOrEmpty(request.QuestionKey) || request.QuestionKey.Length != 36)
+                return new JsonResult(new { Status = "ERROR", Message = "Invalid QuestionKey" });
+
+            try
             {
-                AnswerDataAccess.Part1_Answer_Info zRecord = request;
-                if (string.IsNullOrEmpty(zRecord.QuestionKey) || !Guid.TryParse(zRecord.QuestionKey, out _))
+                var record = request;
+                record.CreatedBy = UserLogin.Employee.Key;
+                record.CreatedName = UserLogin.Employee.Name;
+                record.Create();
+
+                if (record.Status == "ERROR")
+                    return new JsonResult(new { Status = "ERROR", Message = record.Message });
+
+                if (record.AnswerCorrect)
                 {
-                    zResult = new JsonResult(new { status = "ERROR", message = "Invalid QuestionKey format" });
-                    return zResult;
+                    UpdateOtherAnswersToFalse(record.QuestionKey, record.AnswerKey);
                 }
-                zRecord.ModifiedBy = UserLogin.Employee.Key;
-                zRecord.ModifiedName = UserLogin.Employee.Name;
-                zRecord.Update();
-                zResult = new JsonResult(new { status = zRecord.Status, message = zRecord.Message });
+
+                return new JsonResult(new { Status = "OK", Message = "Answer created", Record = record });
             }
-            else
+            catch (Exception ex)
             {
-                zResult = new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
+                return new JsonResult(new { Status = "ERROR", Message = $"Error creating record: {ex.Message}" });
             }
-            return zResult;
         }
 
-        public IActionResult OnPostRecordDel([FromBody] ItemRequestAnswer request)
+        public IActionResult OnPostUpdate([FromBody] AnswerDataAccess.Part1_Answer_Info request)
         {
             CheckAuth();
-            JsonResult zResult;
-            if (UserLogin.Role.IsDelete)
-            {
-                AnswerDataAccess.Part1_Answer_Info zRecord = new AnswerDataAccess.Part1_Answer_Info();
-                zRecord.AnswerKey = request.AnswerKey;
-                zRecord.Delete();
-                zResult = new JsonResult(new { status = zRecord.Status, message = zRecord.Message });
-            }
-            else
-            {
-                zResult = new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
-            }
-            return zResult;
-        }
-        #endregion
-    }
+            if (!UserLogin.Role.IsUpdate)
+                return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
 
-    public class ItemRequestAnswer
-    {
-        public string AnswerKey { get; set; }
+            if (request == null)
+                return new JsonResult(new { Status = "ERROR", Message = "Request body is null" });
+
+            if (string.IsNullOrEmpty(request.AnswerKey) || request.AnswerKey.Length != 36)
+                return new JsonResult(new { Status = "ERROR", Message = "Invalid AnswerKey" });
+
+            try
+            {
+                var record = request;
+                record.ModifiedBy = UserLogin.Employee.Key;
+                record.ModifiedName = UserLogin.Employee.Name;
+                record.Update();
+
+                if (record.Status == "ERROR")
+                    return new JsonResult(new { Status = "ERROR", Message = record.Message });
+
+                if (record.AnswerCorrect)
+                {
+                    UpdateOtherAnswersToFalse(record.QuestionKey, record.AnswerKey);
+                }
+
+                return new JsonResult(new { Status = "OK", Message = "Answer updated", Record = record });
+            }
+            catch (Exception ex)
+            {
+                return new JsonResult(new { Status = "ERROR", Message = $"Error updating record: {ex.Message}" });
+            }
+        }
+
+        public IActionResult OnPostDelete([FromBody] ItemRequest request)
+        {
+            CheckAuth();
+            if (!UserLogin.Role.IsDelete)
+                return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
+
+            if (string.IsNullOrEmpty(request.AnswerKey) || request.AnswerKey.Length != 36)
+                return new JsonResult(new { Status = "ERROR", Message = "Invalid AnswerKey" });
+
+            try
+            {
+                var record = new AnswerDataAccess.Part1_Answer_Info(request.AnswerKey, null);
+                record.Delete();
+
+                if (record.Status == "ERROR")
+                    return new JsonResult(new { Status = "ERROR", Message = record.Message });
+
+                // Không cần cập nhật lại các answer khác khi xóa
+                return new JsonResult(new { Status = "OK", Message = "Answer deleted" });
+            }
+            catch (Exception ex)
+            {
+                return new JsonResult(new { Status = "ERROR", Message = $"Error deleting record: {ex.Message}" });
+            }
+        }
+
+        [HttpPost]
+        public IActionResult OnPostUpdateOtherAnswers([FromBody] UpdateOtherAnswersRequest request)
+        {
+            CheckAuth();
+            if (!UserLogin.Role.IsUpdate)
+                return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
+
+            if (string.IsNullOrEmpty(request.QuestionKey) || request.QuestionKey.Length != 36)
+                return new JsonResult(new { Status = "ERROR", Message = "Invalid QuestionKey" });
+
+            try
+            {
+                UpdateOtherAnswersToFalse(request.QuestionKey, request.CurrentAnswerKey);
+                return new JsonResult(new { Status = "OK", Message = "Other answers updated successfully" });
+            }
+            catch (Exception ex)
+            {
+                return new JsonResult(new { Status = "ERROR", Message = $"Error updating other answers: {ex.Message}" });
+            }
+        }
+
+        private void UpdateOtherAnswersToFalse(string questionKey, string currentAnswerKey)
+        {
+            string sql = @"UPDATE [dbo].[TEC_Part1_Answer] 
+                           SET AnswerCorrect = 0, ModifiedOn = GETDATE(), ModifiedBy = @ModifiedBy, ModifiedName = @ModifiedName
+                           WHERE QuestionKey = @QuestionKey AND AnswerKey != @CurrentAnswerKey AND RecordStatus != 99";
+
+            string connectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
+            using (var conn = new SqlConnection(connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@QuestionKey", Guid.Parse(questionKey));
+                    cmd.Parameters.AddWithValue("@CurrentAnswerKey", Guid.Parse(currentAnswerKey));
+                    cmd.Parameters.AddWithValue("@ModifiedBy", UserLogin.Employee.Key);
+                    cmd.Parameters.AddWithValue("@ModifiedName", UserLogin.Employee.Name);
+
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        public class ItemRequest
+        {
+            public string AnswerKey { get; set; }
+            public string QuestionKey { get; set; }
+        }
+
+        public class UpdateOtherAnswersRequest
+        {
+            public string QuestionKey { get; set; }
+            public string CurrentAnswerKey { get; set; }
+        }
     }
 }

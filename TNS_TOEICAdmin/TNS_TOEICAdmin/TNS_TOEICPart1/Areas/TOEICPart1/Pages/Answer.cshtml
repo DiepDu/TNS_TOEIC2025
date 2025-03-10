@@ -1,169 +1,393 @@
-﻿@section Scripts {
-    <script src="~/lib/tinymce/tinymce.min.js"></script>
-    <script src="~/js/editor.js"></script>
+﻿@page
+@model TNS_TOEICPart1.Areas.TOEICPart1.Pages.AnswerModel
+@{
+    Layout = "_Layout";
+}
+
+<style>
+    .lbl-item-name {
+        width: 150px;
+        float: left;
+    }
+
+    .lbl-item-value {
+        font-weight: bold;
+        color: navy;
+        float: left;
+    }
+
+    .tns-row {
+        clear: both;
+        padding: 10px 10px 10px 0px;
+    }
+
+    .tns-table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+        .tns-table th, .tns-table td {
+            border: 1px solid #ddd;
+            padding: 3px;
+            text-align: center;
+        }
+</style>
+
+<link href="~/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+
+<div style="width:100%; margin:-20px 0 0 -20px">
+    <div style="padding:5px; font-weight:bold; font-size:13px">
+        <a href="~/Index" style="text-decoration:none; color:#4c4c4c">Home</a>
+        <span class="uil-angle-double-right"></span>
+        <a href="/TOEICPart1/QuestionList" style="text-decoration:none; color:#4c4c4c">TOEIC</a>
+        <span class="uil-angle-double-right"></span>
+        <a href="/TOEICPart1/QuestionList" style="text-decoration:none; color:#4c4c4c">PART 1</a>
+        <span class="uil-angle-double-right"></span>
+        <a href="/TOEICPart1/AnswerList?Key=@Model.QuestionKey" style="text-decoration:none; color:#4c4c4c">Answer List</a>
+        <span class="uil-angle-double-right"></span>
+        <span style="color:maroon">Answer</span>
+        <span class="uil-angle-double-right"></span>
+        <span style="color:maroon; cursor:pointer" onclick="ReturnAnswer_Click()">Return</span>
+    </div>
+</div>
+
+<div class="row" style="font-size:15px">
+    <div class="col-9">
+        <div class="card">
+            <div class="card-body">
+                <div class="row" style="padding-bottom:10px">
+                    <div class="card border border-primary">
+                        <div class="card-header bg-transparent border-primary">
+                            <span class="my-0 text-primary"><i class="uil uil-users-alt me-3"></i>Answer Text</span>
+                        </div>
+                        <textarea id="txtAnswerText" name="area"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div style="padding-top:20px">
+            <div class="row">
+                <div class="col">
+                    <button type="button" id="btnDel" class="btn btn-danger" onclick="btnDel_Click()">Delete</button>
+                    <button type="button" id="btnUpdate" class="btn btn-primary" onclick="btnUpdate_Click()">Update</button>
+                    <button type="button" id="btnCreate" class="btn btn-primary" onclick="btnCreate_Click()">Create</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="row">
+            <div class="card border border-primary">
+                <div class="card-header bg-transparent border-primary" style="cursor:pointer">
+                    <span class="my-0 text-primary"><i class="uil uil-users-alt me-3"></i>Information</span>
+                </div>
+                <div class="card-body">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" id="chkAnswerCorrect">
+                        <label class="form-check-label" for="chkAnswerCorrect">Answer Correct</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="ModalMessage" tabindex="-1" aria-labelledby="ModalMessage_Label" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="ModalMessage_Title">Message</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3 row">
+                    <table>
+                        <tr>
+                            <td style="width:90px" id="ModalMessage_Icon"></td>
+                            <td id="ModalMessage_Content"></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div style="display:none">
+    <div id="AnswerKey">@Model.AnswerKey</div>
+    <div id="QuestionKey">@Model.QuestionKey</div>
+</div>
+
+<script src="~/lib/jquery/jquery.min.js"></script>
+<script src="~/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="~/lib/tinymce/tinymce.min.js"></script>
+@section Scripts {
     <script>
-        $(document).ready(function () {
-            InitEditor('txtAnswerText');
-            var zAnswerKey = $("#AnswerKey").text();
-            console.log("Initial AnswerKey: ", zAnswerKey);
-            console.log("Initial QuestionKey: ", $("#QuestionKey").text());
-            RecordRead(zAnswerKey);
+        let _Record = {};
+        const _Role = { Create: true, Read: true, Update: true, Delete: true };
+
+        $(document).ready(() => {
+            const answerKey = $('#AnswerKey').text().trim();
+            const questionKey = $('#QuestionKey').text().trim();
+
+            console.log('AnswerKey:', answerKey);
+            console.log('QuestionKey:', questionKey);
+
+            if (!questionKey || questionKey.length !== 36) {
+                alert('Invalid QuestionKey');
+                window.location.href = '/TOEICPart1/QuestionList';
+                return;
+            }
+
+            _Record.QuestionKey = questionKey;
+
+            tinymce.init({
+                selector: '#txtAnswerText',
+                height: 300,
+                menubar: false,
+                plugins: 'lists link',
+                toolbar: 'undo redo | bold italic | bullist numlist | link',
+                init_instance_callback: (editor) => {
+                    console.log('TinyMCE initialized');
+                    if (answerKey && answerKey.length === 36) {
+                        RecordRead(answerKey);
+                    } else {
+                        _Record = { IsNewRecord: true, AnswerKey: newGuid(), QuestionKey: questionKey };
+                        RecordView();
+                        updateButtons();
+                    }
+                }
+            });
         });
 
-        function btnCreate_Click() {
-            $("#ModalMessage_Icon").html("<img src='/images/Waiting.gif' width='80px'/>");
-            $("#ModalMessage_Content").html("Waiting");
-            $("#ModalMessage").modal('show');
-            RecordInput();
-            if (_Record && _Record.questionKey) {
-                RecordCreate();
-            } else {
-                alert("Invalid QuestionKey. Please return and try again.");
-            }
-        }
-
-        function btnUpdate_Click() {
-            $("#ModalMessage_Icon").html("<img src='/images/Waiting.gif' width='80px'/>");
-            $("#ModalMessage_Content").html("Waiting");
-            $("#ModalMessage").modal('show');
-            RecordInput();
-            if (_Record && _Record.questionKey) {
-                RecordUpdate();
-            } else {
-                alert("Invalid QuestionKey. Please return and try again.");
-            }
-        }
-
-        function btnDel_Click() {
-            $("#ModalMessage_Icon").html("<img src='/images/Waiting.gif' width='80px'/>");
-            $("#ModalMessage_Content").html("Waiting");
-            $("#ModalMessage").modal('show');
-            RecordDel();
-        }
-
-        function ReturnAnswer_Click() {
-            var zUrl = "/TOEICPart1/AnswerList?Key=" + $("#QuestionKey").text();
-            window.location = zUrl;
-        }
-
-        var _Record;
-        var _Role = { Create: true, Read: true, Update: true, Del: true };
-
-        function RecordRead(Key) {
-            var zDataRequest = { answerKey: Key };
+        function RecordRead(key) {
             $.ajax({
                 type: 'POST',
-                url: "/TOEICPart1/Answer?handler=RecordRead",
-                data: JSON.stringify(zDataRequest),
-                contentType: "application/json",
-                dataType: "json",
-            })
-                .done(function (dataResponse) {
-                    _Record = dataResponse;
-                    console.log("RecordRead Response: ", _Record);
+                url: '/TOEICPart1/Answer?handler=Read',
+                data: JSON.stringify({ AnswerKey: key, QuestionKey: _Record.QuestionKey }),
+                contentType: 'application/json',
+                dataType: 'json',
+                headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() }
+            }).done(data => {
+                console.log('Read response:', data);
+                if (data.Status === 'OK' && data.Record) {
+                    _Record = {
+                        AnswerKey: data.Record.AnswerKey,
+                        QuestionKey: data.Record.QuestionKey,
+                        AnswerText: data.Record.AnswerText || '',
+                        AnswerCorrect: data.Record.AnswerCorrect || false,
+                        IsNewRecord: data.Record.IsNewRecord,
+                        Status: data.Record.Status,
+                        Message: data.Record.Message,
+                        RecordStatus: data.Record.RecordStatus || 0,
+                        CreatedBy: data.Record.CreatedBy || '',
+                        CreatedName: data.Record.CreatedName || '',
+                        ModifiedBy: data.Record.ModifiedBy || '',
+                        ModifiedName: data.Record.ModifiedName || ''
+                    };
+                    console.log('Processed _Record:', _Record);
                     RecordView();
-                    if (_Record.isNewRecord == false) {
-                        $("#btnCreate").hide();
-                        if (_Role.Update) $("#btnUpdate").show();
-                        if (_Role.Del) $("#btnDel").show();
-                    } else {
-                        if (_Role.Create) $("#btnCreate").show();
-                        $("#btnUpdate").hide();
-                        $("#btnDel").hide();
-                    }
-                })
-                .fail(function (error) {
-                    alert(error.responseText);
-                });
-        }
-
-        function RecordCreate() {
-            $.ajax({
-                type: 'POST',
-                url: "/TOEICPart1/Answer?handler=RecordCreate",
-                data: JSON.stringify(_Record),
-                contentType: "application/json",
-                dataType: "json",
-            })
-                .done(function (dataResponse) {
-                    console.log("RecordCreate Response: ", dataResponse);
-                    if (dataResponse.status == "OK") {
-                        $("#ModalMessage_Icon").html("<img src='/images/icon_success.png'/>");
-                        $("#ModalMessage_Content").html("Answer created successfully");
-                    } else {
-                        $("#ModalMessage_Icon").html("<img src='/images/icon_error.png'/>");
-                        $("#ModalMessage_Content").html(dataResponse.message);
-                    }
-                })
-                .fail(function (error) {
-                    alert(error.responseText);
-                });
-        }
-
-        function RecordUpdate() {
-            $.ajax({
-                type: 'POST',
-                url: "/TOEICPart1/Answer?handler=RecordUpdate",
-                data: JSON.stringify(_Record),
-                contentType: "application/json",
-                dataType: "json",
-            })
-                .done(function (dataResponse) {
-                    console.log("RecordUpdate Response: ", dataResponse);
-                    if (dataResponse.status == "OK") {
-                        $("#ModalMessage_Icon").html("<img src='/images/icon_success.png'/>");
-                        $("#ModalMessage_Content").html("Answer updated successfully");
-                    } else {
-                        $("#ModalMessage_Icon").html("<img src='/images/icon_error.png'/>");
-                        $("#ModalMessage_Content").html(dataResponse.message);
-                    }
-                })
-                .fail(function (error) {
-                    alert(error.responseText);
-                });
-        }
-
-        function RecordDel() {
-            var zDataRequest = { answerKey: _Record.answerKey };
-            $.ajax({
-                type: 'POST',
-                url: "/TOEICPart1/Answer?handler=RecordDel",
-                data: JSON.stringify(zDataRequest),
-                contentType: "application/json",
-                dataType: "json",
-            })
-                .done(function (dataResponse) {
-                    console.log("RecordDel Response: ", dataResponse);
-                    if (dataResponse.status == "OK") {
-                        $("#ModalMessage_Icon").html("<img src='/images/icon_warning.png'/>");
-                        $("#ModalMessage_Content").html("Answer deleted successfully");
-                        setTimeout(() => { ReturnAnswer_Click(); }, 1000);
-                    } else {
-                        $("#ModalMessage_Icon").html("<img src='/images/icon_error.png'/>");
-                        $("#ModalMessage_Content").html(dataResponse.message);
-                    }
-                })
-                .fail(function (error) {
-                    alert(error.responseText);
-                });
+                    updateButtons();
+                } else {
+                    console.log('Record not found or invalid response:', data.Message);
+                    alert(data.Message || 'Failed to load record. Creating new record.');
+                    _Record = { IsNewRecord: true, AnswerKey: newGuid(), QuestionKey: _Record.QuestionKey };
+                    RecordView();
+                    updateButtons();
+                }
+            }).fail(error => {
+                console.error('Read error:', error.responseText);
+                alert('Server error. Creating new record.');
+                _Record = { IsNewRecord: true, AnswerKey: newGuid(), QuestionKey: _Record.QuestionKey };
+                RecordView();
+                updateButtons();
+            });
         }
 
         function RecordView() {
-            tinymce.get('txtAnswerText').setContent(_Record.answerText || "");
-            $("#chkAnswerCorrect").prop('checked', _Record.answerCorrect);
+            const editor = tinymce.get('txtAnswerText');
+            if (editor) {
+                editor.setContent(_Record.AnswerText || '');
+            } else {
+                console.error('TinyMCE editor not initialized');
+            }
+            $('#chkAnswerCorrect').prop('checked', _Record.AnswerCorrect || false);
         }
 
         function RecordInput() {
-            _Record.answerText = tinymce.get('txtAnswerText').getContent();
-            _Record.answerCorrect = $("#chkAnswerCorrect").is(':checked');
-            var questionKey = $("#QuestionKey").text();
-            console.log("RecordInput QuestionKey: ", questionKey);
-            if (questionKey && questionKey.length === 36 && Guid.tryParse(questionKey)) {
-                _Record.questionKey = questionKey;
+            const editor = tinymce.get('txtAnswerText');
+            if (editor) {
+                _Record.AnswerText = editor.getContent();
             } else {
-                alert("Invalid QuestionKey format: " + questionKey);
-                return; // Ngăn không cho gửi nếu QuestionKey không hợp lệ
+                console.error('TinyMCE editor not initialized');
+                _Record.AnswerText = '';
             }
+            _Record.AnswerCorrect = $('#chkAnswerCorrect').is(':checked');
+            if (_Record.IsNewRecord) {
+                _Record.QuestionKey = $('#QuestionKey').text().trim();
+            }
+        }
+
+        function btnCreate_Click() {
+            $('#ModalMessage_Icon').html('<img src="/images/Waiting.gif" width="80px"/>');
+            $('#ModalMessage_Content').text('Waiting');
+            $('#ModalMessage').modal('show');
+            RecordInput();
+            RecordCreate();
+        }
+
+        function btnUpdate_Click() {
+            $('#ModalMessage_Icon').html('<img src="/images/Waiting.gif" width="80px"/>');
+            $('#ModalMessage_Content').text('Waiting');
+            $('#ModalMessage').modal('show');
+            RecordInput();
+            RecordUpdate();
+        }
+
+        function btnDel_Click() {
+            $('#ModalMessage_Icon').html('<img src="/images/Waiting.gif" width="80px"/>');
+            $('#ModalMessage_Content').text('Waiting');
+            $('#ModalMessage').modal('show');
+            RecordDelete();
+        }
+
+        function RecordCreate() {
+            console.log('Create request data:', _Record);
+            RecordInput();
+            $.ajax({
+                type: 'POST',
+                url: '/TOEICPart1/Answer?handler=Create',
+                data: JSON.stringify(_Record),
+                contentType: 'application/json',
+                dataType: 'json',
+                headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() }
+            }).done(data => {
+                console.log('Create response:', data);
+                if (data.Status === 'OK') {
+                    if (_Record.AnswerCorrect) {
+                        UpdateOtherAnswersToFalse();
+                    }
+                    $('#ModalMessage_Icon').html('<img src="/images/icon_success.png"/>');
+                    $('#ModalMessage_Content').text('Answer created successfully');
+                    _Record = data.Record;
+                    RecordView();
+                    updateButtons();
+                    setTimeout(() => {
+                        $('#ModalMessage').modal('hide');
+                        window.location.href = '/TOEICPart1/AnswerList?Key=' + _Record.QuestionKey;
+                    }, 2000);
+                } else {
+                    $('#ModalMessage_Icon').html('<img src="/images/icon_error.png"/>');
+                    $('#ModalMessage_Content').text(data.Message || 'Failed to create');
+                    setTimeout(() => $('#ModalMessage').modal('hide'), 2000);
+                }
+            }).fail(error => {
+                console.error('Create error:', error.responseText);
+                alert('Server error');
+                $('#ModalMessage').modal('hide');
+            });
+        }
+
+        function RecordUpdate() {
+            console.log('Update request data:', _Record);
+            RecordInput();
+            $.ajax({
+                type: 'POST',
+                url: '/TOEICPart1/Answer?handler=Update',
+                data: JSON.stringify(_Record),
+                contentType: 'application/json',
+                dataType: 'json',
+                headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() }
+            }).done(data => {
+                console.log('Update response:', data);
+                if (data.Status === 'OK') {
+                    if (_Record.AnswerCorrect) {
+                        UpdateOtherAnswersToFalse();
+                    }
+                    $('#ModalMessage_Icon').html('<img src="/images/icon_success.png"/>');
+                    $('#ModalMessage_Content').text('Answer updated successfully');
+                    _Record = data.Record;
+                    RecordView();
+                    setTimeout(() => $('#ModalMessage').modal('hide'), 2000);
+                } else {
+                    $('#ModalMessage_Icon').html('<img src="/images/icon_error.png"/>');
+                    $('#ModalMessage_Content').text(data.Message || 'Failed to update');
+                    setTimeout(() => $('#ModalMessage').modal('hide'), 2000);
+                }
+            }).fail(error => {
+                console.error('Update error:', error.responseText);
+                alert('Server error');
+                $('#ModalMessage').modal('hide');
+            });
+        }
+
+        function UpdateOtherAnswersToFalse() {
+            $.ajax({
+                type: 'POST',
+                url: '/TOEICPart1/Answer?handler=UpdateOtherAnswers',
+                data: JSON.stringify({ QuestionKey: _Record.QuestionKey, CurrentAnswerKey: _Record.AnswerKey }),
+                contentType: 'application/json',
+                dataType: 'json',
+                headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() }
+            }).done(data => {
+                console.log('Update other answers response:', data);
+                if (data.Status !== 'OK') {
+                    console.error('Failed to update other answers:', data.Message);
+                }
+            }).fail(error => {
+                console.error('Update other answers error:', error.responseText);
+            });
+        }
+
+        function RecordDelete() {
+            $.ajax({
+                type: 'POST',
+                url: '/TOEICPart1/Answer?handler=Delete',
+                data: JSON.stringify({ AnswerKey: _Record.AnswerKey }),
+                contentType: 'application/json',
+                dataType: 'json',
+                headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() }
+            }).done(data => {
+                if (data.Status === 'OK') {
+                    $('#ModalMessage_Icon').html('<img src="/images/icon_success.png"/>');
+                    $('#ModalMessage_Content').text('Answer deleted successfully');
+                    setTimeout(() => {
+                        $('#ModalMessage').modal('hide');
+                        window.location.href = '/TOEICPart1/AnswerList?Key=' + _Record.QuestionKey;
+                    }, 2000);
+                } else {
+                    $('#ModalMessage_Icon').html('<img src="/images/icon_error.png"/>');
+                    $('#ModalMessage_Content').text(data.Message || 'Failed to delete');
+                    setTimeout(() => $('#ModalMessage').modal('hide'), 2000);
+                }
+            }).fail(error => {
+                console.error('Delete error:', error.responseText);
+                alert('Server error');
+                $('#ModalMessage').modal('hide');
+            });
+        }
+
+        function updateButtons() {
+            if (_Record.IsNewRecord) {
+                $('#btnCreate').show();
+                $('#btnUpdate').hide();
+                $('#btnDel').hide();
+            } else {
+                $('#btnCreate').hide();
+                if (_Role.Update) $('#btnUpdate').show();
+                if (_Role.Delete) $('#btnDel').show();
+            }
+        }
+
+        function ReturnAnswer_Click() {
+            window.location.href = '/TOEICPart1/AnswerList?Key=' + $('#QuestionKey').text().trim();
+        }
+
+        function newGuid() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+                const r = Math.random() * 16 | 0;
+                return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+            });
         }
     </script>
 }
