@@ -52,7 +52,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                     return;
                 }
 
-                string zSQL = "SELECT * FROM [dbo].[TEC_Part1_Question] WHERE QuestionKey = @QuestionKey AND RecordStatus != 99 ";
+                string zSQL = "SELECT * FROM [dbo].[TEC_Part1_Question] WHERE QuestionKey = @QuestionKey /*/*/*AND RecordStatus != 99*/*/*/ ";
                 string zConnectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
                 SqlConnection zConnect = new SqlConnection(zConnectionString);
                 zConnect.Open();
@@ -73,7 +73,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                         _AmountAccess = int.Parse(zReader["AmountAccess"].ToString());
                         _Parent = zReader["Parent"].ToString();
                         _Publish = (bool)zReader["Publish"];
-                        _RecordStatus = int.Parse(zReader["RecordStatus"].ToString());
+                        //_RecordStatus = int.Parse(zReader["RecordStatus"].ToString());
                         if (zReader["CreatedOn"] != DBNull.Value)
                             _CreatedOn = (DateTime)zReader["CreatedOn"];
                         _CreatedBy = zReader["CreatedBy"].ToString();
@@ -202,11 +202,8 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
             #region [ Constructor Update Information ]
             public string Create()
             {
-                //---------- String SQL Access Database ---------------
-                string zSQL = "INSERT INTO [dbo].[TEC_Part1_Question] ("
-            + " QuestionKey ,QuestionImage,QuestionText ,QuestionVoice ,SkillLevel  ,Parent ,Publish ,RecordStatus ,CreatedBy ,CreatedName ,ModifiedBy ,ModifiedName ) "
-             + " VALUES ( "
-             + "@QuestionKey ,@QuestionImage,@QuestionText ,@QuestionVoice ,@SkillLevel ,@Parent ,@Publish ,@RecordStatus ,@CreatedBy ,@CreatedName ,@ModifiedBy ,@ModifiedName ) ";
+                string zSQL = "INSERT INTO [dbo].[TEC_Part1_Question] (QuestionKey, QuestionImage, QuestionText, QuestionVoice, SkillLevel, Parent, Publish, RecordStatus, CreatedBy, CreatedName, ModifiedBy, ModifiedName) " +
+                              "VALUES (@QuestionKey, @QuestionImage, @QuestionText, @QuestionVoice, @SkillLevel, @Parent, @Publish, @RecordStatus, @CreatedBy, @CreatedName, @ModifiedBy, @ModifiedName)";
                 string zResult = "";
                 string zConnectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
                 SqlConnection zConnect = new SqlConnection(zConnectionString);
@@ -224,7 +221,6 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                     zCommand.Parameters.Add("@QuestionVoice", SqlDbType.NVarChar).Value = _QuestionVoice;
                     zCommand.Parameters.Add("@SkillLevel", SqlDbType.Int).Value = _SkillLevel;
                     zCommand.Parameters.Add("@AmountAccess", SqlDbType.Int).Value = _AmountAccess;
-
                     if (_Parent.Length == 36)
                         zCommand.Parameters.Add("@Parent", SqlDbType.UniqueIdentifier).Value = new Guid(_Parent);
                     else
@@ -245,6 +241,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                     zCommand.Dispose();
                     _Status = "OK";
                     _Message = "201 Created";
+                    _IsNewRecord = false; // Thêm dòng này để đánh dấu bản ghi không còn mới
                 }
                 catch (Exception Err)
                 {

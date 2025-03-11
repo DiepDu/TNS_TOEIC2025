@@ -34,6 +34,25 @@
         border-radius: 4px;
         cursor: pointer;
     }
+
+    .btn-toggle-publish {
+        padding: 5px 10px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        min-width: 60px;
+    }
+
+    .btn-on {
+        background-color: #28a745; /* Màu xanh khi bật */
+        color: white;
+    }
+
+    .btn-off {
+        background-color: #6c757d; /* Màu xám khi tắt */
+        color: white;
+    }
 </style>
 <link href="~/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
 <link href="~/lib/datatables/css/dataTables.min.css" rel="stylesheet" type="text/css" />
@@ -63,9 +82,9 @@
                 <div class="form-group">
                     <select class="form-control" id="statusFilter" name="statusFilter">
                         <option value="">All</option>
-        <option value="Using">Using</option>
-        <option value="Unpublished">Unpublished</option>
-        <option value="Deleted">Deleted</option>
+                        <option value="Using">Using</option>
+                        <option value="Unpublished">Unpublished</option>
+                        <option value="Deleted">Deleted</option>
                     </select>
                 </div>
                 <button class="btn btn-primary" onclick="btn_Search_Click()">
@@ -93,6 +112,7 @@
                 <th class="text-center align-middle text-light bg-primary" style="width:90px">Level</th>
                 <th class="text-center align-middle text-light bg-primary" style="width:120px">Access</th>
                 <th class="text-center align-middle text-light bg-primary" style="width:100px">Answer</th>
+                <th class="text-center align-middle text-light bg-primary" style="width:100px">Status</th> <!-- Thêm cột Status -->
             </tr>
         </thead>
         <tbody id="LV_DataBody">
@@ -117,11 +137,6 @@
     <div id="Log_ViewData" class="row" style="display:none; padding:20px;">
     </div>
 </div>
-
-@* Xóa các script trực tiếp trong <body> vì đã include trong _Layout.cshtml *@
-@* <script src="~/lib/jquery/jquery.min.js"></script> *@
-@* <script src="~/lib/bootstrap/js/bootstrap.min.js"></script> *@
-@* <script src="~/lib/datatables/js/dataTables.min.js"></script> *@
 
 @section Scripts {
     <script>
@@ -155,7 +170,7 @@
             var zDataRequest = {
                 "Search": zSearch, "Level": zLevel,
                 "fromDate": zFromDate, "toDate": zToDate,
-                "pageSize": _PageSize, "pageNumber": _PageNumber,"StatusFilter": zStatusFilter 
+                "pageSize": _PageSize, "pageNumber": _PageNumber, "StatusFilter": zStatusFilter
             };
 
             $.ajax({
@@ -184,7 +199,8 @@
             }
             var zNo = 1 + (_PageNumber - 1) * _PageSize;
             for (i = 0; i < n; i++) {
-                zContent += "       <tr >";
+                var isPublished = _DataView[i].Publish && _DataView[i].RecordStatus !== 99;
+                zContent += "       <tr>";
                 zContent += "           <td class='centered-cell'>";
                 zContent += "               <div> " + zNo + " </div>";
                 zContent += "           </td>";
@@ -194,6 +210,7 @@
                 zContent += "           <td class='centered-cell'>" + _DataView[i].SkillLevel + "</td>";
                 zContent += "           <td class='centered-cell'>" + _DataView[i].AmountAccess + "</td>";
                 zContent += "           <td class='centered-cell'> <button type='button' class='btn btn-warning' onclick='btnAnswer_Click(\"" + _DataView[i].QuestionKey + "\")'>Answers</button></td>";
+                zContent += "           <td class='centered-cell'><button class='btn-toggle-publish " + (isPublished ? "btn-on" : "btn-off") + "' data-question-key='" + _DataView[i].QuestionKey + "' onclick='togglePublish(this, \"" + _DataView[i].QuestionKey + "\")'>" + (isPublished ? "ON" : "OFF") + "</button></td>";
                 zContent += "       </tr>";
                 zNo++;
             }
@@ -216,9 +233,35 @@
             LV_LoadData_Ajax();
         }
 
-        function btnAnswer_Click(QuestionKey) {
-            zUrl = "/TOEICPart1/AnswerList?Key=" + QuestionKey;
-            window.location = zUrl;
+        function togglePublish(button, questionKey) {
+            const isOn = $(button).hasClass('btn-on');
+            const newState = !isOn;
+            const confirmMessage = newState ? "Bạn có chắc chắn muốn bật câu hỏi này?" : "Bạn có chắc chắn muốn tắt câu hỏi này?";
+
+            if (confirm(confirmMessage)) {
+                $.ajax({
+                    type: 'POST',
+                    url: '/TOEICPart1/QuestionList?handler=TogglePublish',
+                    data: JSON.stringify({ questionKey: questionKey, publish: newState }),
+                    contentType: 'application/json',
+                    dataType: 'json'
+                }).done(data => {
+                    if (data.status === 'OK') {
+                        if (newState) {
+                            $(button).removeClass('btn-off').addClass('btn-on').text('ON');
+                            _DataView.find(q => q.QuestionKey === questionKey).Publish = true;
+                            _DataView.find(q => q.QuestionKey === questionKey).RecordStatus = 0;
+                        } else {
+                            $(button).removeClass('btn-on').addClass('btn-off').text('OFF');
+                            _DataView.find(q => q.QuestionKey === questionKey).Publish = false;
+                        }
+                    } else {
+                        alert('Lỗi: ' + data.message);
+                    }
+                }).fail(error => {
+                    alert('Lỗi: ' + error.responseText);
+                });
+            }
         }
     </script>
 }

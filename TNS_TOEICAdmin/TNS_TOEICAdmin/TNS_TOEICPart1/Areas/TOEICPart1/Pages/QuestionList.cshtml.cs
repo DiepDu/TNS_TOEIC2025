@@ -1,10 +1,6 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System;
-using System.Data;
-using System.Data.SqlClient;
-using static System.Net.Mime.MediaTypeNames;
-using System.Linq;
 using TNS_TOEICPart1.Areas.TOEICPart1.Models;
 
 namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
@@ -65,6 +61,32 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
             return zResult;
         }
 
-     
+        public IActionResult OnPostTogglePublish([FromBody] ToggleRequest request)
+        {
+            CheckAuth();
+            if (!UserLogin.Role.IsUpdate)
+                return new JsonResult(new { status = "ERROR", message = "ACCESS DENIED" });
+
+            var zRecord = new QuestionAccessData.Part1_Question_Info(request.QuestionKey);
+            if (zRecord.Status != "OK")
+                return new JsonResult(new { status = "ERROR", message = "Question not found" });
+
+            zRecord.Publish = request.Publish;
+            if (request.Publish) // Khi bật
+                zRecord.RecordStatus = 0; // Đặt RecordStatus = 0
+            // Khi tắt, giữ nguyên RecordStatus (không thay đổi trừ khi bạn muốn RecordStatus = 99)
+
+            zRecord.ModifiedBy = UserLogin.Employee.Key;
+            zRecord.ModifiedName = UserLogin.Employee.Name;
+
+            zRecord.Update();
+            return new JsonResult(new { status = zRecord.Status, message = zRecord.Message });
+        }
+
+        public class ToggleRequest
+        {
+            public string QuestionKey { get; set; }
+            public bool Publish { get; set; }
+        }
     }
 }

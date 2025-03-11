@@ -4,21 +4,18 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
 {
-
-        public class ItemRequest
-        {
-            public string FromDate { get; set; }
-            public string ToDate { get; set; }
-            public string Search { get; set; }
-            public int Level { get; set; }
-            public int PageSize { get; set; }
-            public int PageNumber { get; set; }
-            public string? StatusFilter { get; set; }
+    public class ItemRequest
+    {
+        public string FromDate { get; set; }
+        public string ToDate { get; set; }
+        public string Search { get; set; }
+        public int Level { get; set; }
+        public int PageSize { get; set; }
+        public int PageNumber { get; set; }
+        public string? StatusFilter { get; set; }
     }
 
     public static class QuestionListDataAccess
@@ -27,12 +24,11 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
         public static JsonResult GetList(string Search, int Level, int PageSize, int PageNumber, string StatusFilter)
         {
             string zMessage = "";
-            string zSQL = @"SELECT QuestionKey, QuestionText, QuestionImage, QuestionVoice, SkillLevel, AmountAccess 
+            string zSQL = @"SELECT QuestionKey, QuestionText, QuestionImage, QuestionVoice, SkillLevel, AmountAccess, Publish, RecordStatus 
                        FROM [dbo].[TEC_Part1_Question] 
                        WHERE QuestionText LIKE @Search 
                        AND (QuestionKey IS NOT NULL) ";
 
-            // Xử lý StatusFilter
             if (!string.IsNullOrEmpty(StatusFilter))
             {
                 if (StatusFilter == "Using")
@@ -48,8 +44,6 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                     zSQL += " AND RecordStatus = 99 ";
                 }
             }
-            // Khi StatusFilter rỗng (All), không thêm điều kiện lọc Publish hay RecordStatus
-            // để lấy tất cả câu hỏi bất kể trạng thái
 
             if (Level > 0)
                 zSQL += " AND SkillLevel = @Level ";
@@ -89,7 +83,9 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                 QuestionImage = row["QuestionImage"].ToString() ?? "",
                 QuestionVoice = row["QuestionVoice"].ToString() ?? "",
                 SkillLevel = row["SkillLevel"] != DBNull.Value ? Convert.ToInt32(row["SkillLevel"]) : 0,
-                AmountAccess = row["AmountAccess"] != DBNull.Value ? Convert.ToInt32(row["AmountAccess"]) : 0
+                AmountAccess = row["AmountAccess"] != DBNull.Value ? Convert.ToInt32(row["AmountAccess"]) : 0,
+                Publish = row["Publish"] != DBNull.Value ? Convert.ToBoolean(row["Publish"]) : false,
+                RecordStatus = row["RecordStatus"] != DBNull.Value ? Convert.ToInt32(row["RecordStatus"]) : 0
             }).ToList();
 
             return new JsonResult(zDataList);
@@ -99,13 +95,12 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
         public static JsonResult GetList(string Search, int Level, DateTime FromDate, DateTime ToDate, int PageSize, int PageNumber, string StatusFilter)
         {
             string zMessage = "";
-            string zSQL = @"SELECT QuestionKey, QuestionText, QuestionImage, QuestionVoice, SkillLevel, AmountAccess 
+            string zSQL = @"SELECT QuestionKey, QuestionText, QuestionImage, QuestionVoice, SkillLevel, AmountAccess, Publish, RecordStatus 
                        FROM [dbo].[TEC_Part1_Question] 
                        WHERE (CreatedOn >= @FromDate AND CreatedOn <= @ToDate) 
                        AND QuestionText LIKE @Search 
                        AND (QuestionKey IS NOT NULL) ";
 
-            // Xử lý StatusFilter
             if (!string.IsNullOrEmpty(StatusFilter))
             {
                 if (StatusFilter == "Using")
@@ -121,8 +116,6 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                     zSQL += " AND RecordStatus = 99 ";
                 }
             }
-            // Khi StatusFilter rỗng (All), không thêm điều kiện lọc Publish hay RecordStatus
-            // để lấy tất cả câu hỏi bất kể trạng thái
 
             if (Level > 0)
                 zSQL += " AND SkillLevel = @Level ";
@@ -164,11 +157,12 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                 QuestionImage = row["QuestionImage"].ToString() ?? "",
                 QuestionVoice = row["QuestionVoice"].ToString() ?? "",
                 SkillLevel = row["SkillLevel"] != DBNull.Value ? Convert.ToInt32(row["SkillLevel"]) : 0,
-                AmountAccess = row["AmountAccess"] != DBNull.Value ? Convert.ToInt32(row["AmountAccess"]) : 0
+                AmountAccess = row["AmountAccess"] != DBNull.Value ? Convert.ToInt32(row["AmountAccess"]) : 0,
+                Publish = row["Publish"] != DBNull.Value ? Convert.ToBoolean(row["Publish"]) : false,
+                RecordStatus = row["RecordStatus"] != DBNull.Value ? Convert.ToInt32(row["RecordStatus"]) : 0
             }).ToList();
 
             return new JsonResult(zDataList);
         }
     }
 }
-

@@ -1,221 +1,221 @@
-﻿@page
-@model TNS_TOEICPart1.Areas.TOEICPart1.Pages.QuestionModel
-@{
-    Layout = "_Layout";
-}
-<link href="~/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
-<div style="width:100%; margin:-20px 0 0 -20px">
-    <div style="padding:5px; font-weight:bold; font-size:13px">
-        <a href="~/Index" style="text-decoration:none; color:#4c4c4c">Home</a>
-        <span class="uil-angle-double-right"></span>
-        <a href="/TOEICPart1/QuestionList" style="text-decoration:none; color:#4c4c4c">TOEIC</a>
-        <span class="uil-angle-double-right"></span>
-        <span style="color:maroon">PART 1</span>
+﻿    @page
+    @model TNS_TOEICPart1.Areas.TOEICPart1.Pages.QuestionModel
+    @{
+        Layout = "_Layout";
+    }
+    <link href="~/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+    <div style="width:100%; margin:-20px 0 0 -20px">
+        <div style="padding:5px; font-weight:bold; font-size:13px">
+            <a href="~/Index" style="text-decoration:none; color:#4c4c4c">Home</a>
+            <span class="uil-angle-double-right"></span>
+            <a href="/TOEICPart1/QuestionList" style="text-decoration:none; color:#4c4c4c">TOEIC</a>
+            <span class="uil-angle-double-right"></span>
+            <span style="color:maroon">PART 1</span>
+        </div>
     </div>
-</div>
 
-<div class="row" style="font-size:15px">
-    <div class="col-9">
-        <div class="card">
-            <div class="card-body">
-                <div class="row" style="padding-bottom:10px">
-                    <div class="card border border-primary">
-                        <div class="card-header bg-transparent border-primary">
-                            <span class="my-0 text-primary"><i class="uil uil-users-alt me-3"></i>Text</span>
-                        </div>
-                        <textarea id="txtQuestionText" name="area"></textarea>
-                    </div>
-                </div>
-                <div class="row" style="padding-bottom:10px">
-                    <div class="card border border-success">
-                        <div class="card-header bg-transparent border-success">
-                            <span class="my-0 text-primary"><i class="uil uil-users-alt me-3"></i>Image</span>
-                        </div>
-                        <div>
-                            <img id="objQuestionImage" src="~/images/icon_Pic.png" style="max-width:100%;" />
-                        </div>
-                        <div id="FormUploadImage" class="mb-3" style="padding-top:10px">
-                            <form method="post" enctype="multipart/form-data">
-                                <div class="input-group">
-                                    <input id="txtUploadImage" class="form-control" type="file" accept="image/*">
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-                <div class="row" style="padding-bottom:10px">
-                    <div class="card border border-danger">
-                        <div class="card-header bg-transparent border-danger">
-                            <span class="my-0 text-primary"><i class="uil uil-users-alt me-3"></i>Voice</span>
-                        </div>
-                        <div>
-                            <audio id="objQuestionVoice" controls>
-                                <source src="" type="audio/mpeg">
-                                Trình duyệt của bạn không hỗ trợ thẻ audio.
-                            </audio>
-                        </div>
-                        <div id="FormUploadVoice" class="mb-3" style="padding-top:10px">
-                            <form method="post" enctype="multipart/form-data">
-                                <div class="input-group">
-                                    <input id="txtUploadVoice" class="form-control" type="file" accept="audio/*">
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-                <div class="row" style="padding-bottom:10px">
-                    <div class="card border border-info">
-                        <div class="card-header bg-transparent border-info">
-                            <span class="my-0 text-primary"><i class="uil uil-users-alt me-3"></i>Level</span>
-                        </div>
-                        <div>
-                            <input id="txtSkillLevel" type="number" class="form-control" value="0" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div style="padding-top:20px">
-            <div class="row">
-                <div class="col">
-                    <button type="button" id="btnDel" class="btn btn-danger" onclick="btnDel_Click()">Delete</button>
-                    <button type="button" id="btnUpdate" class="btn btn-primary" onclick="btnUpdate_Click()">Update</button>
-                    <button type="button" id="btnCreate" class="btn btn-primary" onclick="btnCreate_Click()">Create</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-3">
-        <div class="row">
-            <div class="card border border-primary">
-                <div class="card-header bg-transparent border-primary" onclick="TaskShareSearch_DisplayForm()" style="cursor:pointer">
-                    <span class="my-0 text-primary"><i class="uil uil-users-alt me-3"></i>Information</span>
-                </div>
+    <div class="row" style="font-size:15px">
+        <div class="col-9">
+            <div class="card">
                 <div class="card-body">
-                    <!-- Có thể thêm thông tin bổ sung như CreatedOn, CreatedBy, v.v. nếu cần -->
+                    <div class="row" style="padding-bottom:10px">
+                        <div class="card border border-primary">
+                            <div class="card-header bg-transparent border-primary">
+                                <span class="my-0 text-primary"><i class="uil uil-users-alt me-3"></i>Text</span>
+                            </div>
+                            <textarea id="txtQuestionText" name="area"></textarea>
+                        </div>
+                    </div>
+                    <div class="row" style="padding-bottom:10px">
+                        <div class="card border border-success">
+                            <div class="card-header bg-transparent border-success">
+                                <span class="my-0 text-primary"><i class="uil uil-users-alt me-3"></i>Image</span>
+                            </div>
+                            <div>
+                                <img id="objQuestionImage" src="~/images/icon_Pic.png" style="max-width:100%;" />
+                            </div>
+                            <div id="FormUploadImage" class="mb-3" style="padding-top:10px">
+                                <form method="post" enctype="multipart/form-data">
+                                    <div class="input-group">
+                                        <input id="txtUploadImage" class="form-control" type="file" accept="image/*">
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row" style="padding-bottom:10px">
+                        <div class="card border border-danger">
+                            <div class="card-header bg-transparent border-danger">
+                                <span class="my-0 text-primary"><i class="uil uil-users-alt me-3"></i>Voice</span>
+                            </div>
+                            <div>
+                                <audio id="objQuestionVoice" controls>
+                                    <source src="" type="audio/mpeg">
+                                    Trình duyệt của bạn không hỗ trợ thẻ audio.
+                                </audio>
+                            </div>
+                            <div id="FormUploadVoice" class="mb-3" style="padding-top:10px">
+                                <form method="post" enctype="multipart/form-data">
+                                    <div class="input-group">
+                                        <input id="txtUploadVoice" class="form-control" type="file" accept="audio/*">
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row" style="padding-bottom:10px">
+                        <div class="card border border-info">
+                            <div class="card-header bg-transparent border-info">
+                                <span class="my-0 text-primary"><i class="uil uil-users-alt me-3"></i>Level</span>
+                            </div>
+                            <div>
+                                <input id="txtSkillLevel" type="number" class="form-control" value="0" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="padding-top:20px">
+                <div class="row">
+                    <div class="col">
+                        <button type="button" id="btnDel" class="btn btn-danger" onclick="btnDel_Click()">Delete</button>
+                        <button type="button" id="btnUpdate" class="btn btn-primary" onclick="btnUpdate_Click()">Update</button>
+                        <button type="button" id="btnCreate" class="btn btn-primary" onclick="btnCreate_Click()">Create</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-3">
+            <div class="row">
+                <div class="card border border-primary">
+                    <div class="card-header bg-transparent border-primary" onclick="TaskShareSearch_DisplayForm()" style="cursor:pointer">
+                        <span class="my-0 text-primary"><i class="uil uil-users-alt me-3"></i>Information</span>
+                    </div>
+                    <div class="card-body">
+                        <!-- Có thể thêm thông tin bổ sung như CreatedOn, CreatedBy, v.v. nếu cần -->
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<div class="modal fade" id="ModalMessage" tabindex="-1" aria-labelledby="ModalMessage_Label" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="ModalMessage_Title">Message</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3 row">
-                    <table>
-                        <tr>
-                            <td style='width:90px' id="ModalMessage_Icon"></td>
-                            <td id="ModalMessage_Content"></td>
-                        </tr>
-                    </table>
+    <div class="modal fade" id="ModalMessage" tabindex="-1" aria-labelledby="ModalMessage_Label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="ModalMessage_Title">Message</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3 row">
+                        <table>
+                            <tr>
+                                <td style='width:90px' id="ModalMessage_Icon"></td>
+                                <td id="ModalMessage_Content"></td>
+                            </tr>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
-<div class="container">
-    <div class="row text-wrap text-break" style="padding:20px">
-        <div id="Message"></div>
+    <div class="container">
+        <div class="row text-wrap text-break" style="padding:20px">
+            <div id="Message"></div>
+        </div>
     </div>
-</div>
-<div id="Log_ViewData"></div>
-<div style="display:none">
-    <div id="QuestionKey">@Model.QuestionKey</div>
-</div>
+    <div id="Log_ViewData"></div>
+    <div style="display:none">
+        <div id="QuestionKey">@Model.QuestionKey</div>
+    </div>
 
-<script src="~/lib/tinymce/tinymce.min.js"></script>
-<script src="~/js/editor.js"></script>
-@section Scripts {
-    <script>
-        console.log('Script đã load');
-    </script>
     <script src="~/lib/tinymce/tinymce.min.js"></script>
     <script src="~/js/editor.js"></script>
-    <script>
-        function InitEditor(elementId) {
-            tinymce.init({
-                selector: '#' + elementId,
-                plugins: 'advlist autolink lists link image charmap print preview',
-                toolbar: 'undo redo | bold italic | alignleft aligncenter alignright | bullist numlist outdent indent',
-                setup: function (editor) {
-                    editor.on('init', function () {
-                        console.log('TinyMCE initialized for ' + elementId);
+    @section Scripts {
+        <script>
+            console.log('Script đã load');
+        </script>
+        <script src="~/lib/tinymce/tinymce.min.js"></script>
+        <script src="~/js/editor.js"></script>
+        <script>
+            function InitEditor(elementId) {
+                tinymce.init({
+                    selector: '#' + elementId,
+                    plugins: 'advlist autolink lists link image charmap print preview',
+                    toolbar: 'undo redo | bold italic | alignleft aligncenter alignright | bullist numlist outdent indent',
+                    setup: function (editor) {
+                        editor.on('init', function () {
+                            console.log('TinyMCE initialized for ' + elementId);
+                        });
+                    }
+                });
+            }
+
+            $(document).ready(() => {
+                console.log('DOM đã sẵn sàng');
+                InitEditor('txtQuestionText');
+                tinymce.get('txtQuestionText').on('init', function () {
+                    const questionKey = $('#QuestionKey').text();
+                    RecordRead(questionKey);
+                });
+
+                // Gắn sự kiện change cho input file hình ảnh
+                const txtUploadImage = document.getElementById('txtUploadImage');
+                if (txtUploadImage) {
+                    txtUploadImage.addEventListener('change', function () {
+                        console.log('Sự kiện change được kích hoạt cho txtUploadImage');
+                        PreviewImage_Ajax();
                     });
+                } else {
+                    console.log('Không tìm thấy txtUploadImage');
+                }
+
+                // Gắn sự kiện change cho input file âm thanh
+                const txtUploadVoice = document.getElementById('txtUploadVoice');
+                if (txtUploadVoice) {
+                    txtUploadVoice.addEventListener('change', function () {
+                        console.log('Sự kiện change được kích hoạt cho txtUploadVoice');
+                        PreviewVoice_Ajax();
+                    });
+                } else {
+                    console.log('Không tìm thấy txtUploadVoice');
                 }
             });
-        }
 
-        $(document).ready(() => {
-            console.log('DOM đã sẵn sàng');
-            InitEditor('txtQuestionText');
-            tinymce.get('txtQuestionText').on('init', function () {
-                const questionKey = $('#QuestionKey').text();
-                RecordRead(questionKey);
-            });
+            let record = {};
+            const roles = { create: true, read: true, update: true, delete: true };
+            let tempImageFile = null; // Lưu file ảnh tạm
+            let tempVoiceFile = null; // Lưu file âm thanh tạm
 
-            // Gắn sự kiện change cho input file hình ảnh
-            const txtUploadImage = document.getElementById('txtUploadImage');
-            if (txtUploadImage) {
-                txtUploadImage.addEventListener('change', function () {
-                    console.log('Sự kiện change được kích hoạt cho txtUploadImage');
-                    PreviewImage_Ajax();
-                });
-            } else {
-                console.log('Không tìm thấy txtUploadImage');
+            // Load record from server
+            function RecordRead(key) {
+                $.ajax({
+                    type: 'POST',
+                    url: '/TOEICPart1/Question?handler=RecordRead',
+                    data: JSON.stringify({ questionKey: key }),
+                    contentType: 'application/json',
+                    dataType: 'json'
+                }).done(data => {
+                    record = data;
+                    console.log('Record data:', record);
+                    RecordView();
+                    updateButtons();
+                }).fail(error => alert(error.responseText));
             }
 
-            // Gắn sự kiện change cho input file âm thanh
-            const txtUploadVoice = document.getElementById('txtUploadVoice');
-            if (txtUploadVoice) {
-                txtUploadVoice.addEventListener('change', function () {
-                    console.log('Sự kiện change được kích hoạt cho txtUploadVoice');
-                    PreviewVoice_Ajax();
-                });
-            } else {
-                console.log('Không tìm thấy txtUploadVoice');
+            // Display record data
+            function RecordView() {
+                tinymce.get('txtQuestionText')?.setContent(record.QuestionText || '');
+                $('#objQuestionImage').attr('src', record.QuestionImage || '/images/icon_Pic.png');
+                $('#objQuestionVoice source').attr('src', record.QuestionVoice || '').parent()[0].load();
+                $('#txtSkillLevel').val(record.SkillLevel || 0);
             }
-        });
 
-        let record = {};
-        const roles = { create: true, read: true, update: true, delete: true };
-        let tempImageFile = null; // Lưu file ảnh tạm
-        let tempVoiceFile = null; // Lưu file âm thanh tạm
-
-        // Load record from server
-        function RecordRead(key) {
-            $.ajax({
-                type: 'POST',
-                url: '/TOEICPart1/Question?handler=RecordRead',
-                data: JSON.stringify({ questionKey: key }),
-                contentType: 'application/json',
-                dataType: 'json'
-            }).done(data => {
-                record = data;
-                console.log('Record data:', record);
-                RecordView();
-                updateButtons();
-            }).fail(error => alert(error.responseText));
-        }
-
-        // Display record data
-        function RecordView() {
-            tinymce.get('txtQuestionText')?.setContent(record.QuestionText || '');
-            $('#objQuestionImage').attr('src', record.QuestionImage || '/images/icon_Pic.png');
-            $('#objQuestionVoice source').attr('src', record.QuestionVoice || '').parent()[0].load();
-            $('#txtSkillLevel').val(record.SkillLevel || 0);
-        }
-
-        // Collect input data
-        function RecordInput() {
-            record.QuestionText = tinymce.get('txtQuestionText')?.getContent() || '';
-            record.SkillLevel = parseInt($('#txtSkillLevel').val()) || 0;
-        }
+            // Collect input data
+            function RecordInput() {
+                record.QuestionText = tinymce.get('txtQuestionText')?.getContent() || '';
+                record.SkillLevel = parseInt($('#txtSkillLevel').val()) || 0;
+            }
 
         function handleOperation(handler, message, redirect = null) {
             $('#ModalMessage_Icon').html('<img src="/images/Waiting.gif" width="80px"/>');
@@ -242,15 +242,12 @@
                     tempImageFile = null;
                     tempVoiceFile = null;
                     RecordView();
-                    // Đóng modal sau 2 giây và xử lý focus sau khi modal ẩn hoàn toàn
+                    updateButtons(); // Thêm dòng này để cập nhật nút
                     setTimeout(() => {
                         $('#ModalMessage').modal('hide');
-                        // Sử dụng sự kiện hidden.bs.modal để xử lý focus
                         $('#ModalMessage').one('hidden.bs.modal', () => {
-                            $('body').focus(); // Chuyển focus về body sau khi modal ẩn
-                            if (redirect) {
-                                window.location.href = redirect;
-                            }
+                            $('body').focus();
+                            if (redirect) window.location.href = redirect;
                         });
                     }, 2000);
                 } else {
@@ -266,134 +263,131 @@
             }).fail(error => {
                 alert(error.responseText);
                 $('#ModalMessage').modal('hide');
-                $('#ModalMessage').one('hidden.bs.modal', () => {
-                    $('body').focus();
-                });
             });
         }
 
-        // CRUD functions
-        function createRecord() { handleOperation('RecordCreate', 'Question created successfully'); }
-        function updateRecord() { handleOperation('RecordUpdate', 'Question updated successfully'); }
-        function deleteRecord() {
-            $('#ModalMessage_Icon').html('<img src="/images/Waiting.gif" width="80px"/>');
-            $('#ModalMessage_Content').html('Waiting');
-            $('#ModalMessage').modal('show');
+            // CRUD functions
+            function createRecord() { handleOperation('RecordCreate', 'Question created successfully'); }
+            function updateRecord() { handleOperation('RecordUpdate', 'Question updated successfully'); }
+            function deleteRecord() {
+                $('#ModalMessage_Icon').html('<img src="/images/Waiting.gif" width="80px"/>');
+                $('#ModalMessage_Content').html('Waiting');
+                $('#ModalMessage').modal('show');
 
-            const requestData = { questionKey: record.QuestionKey };
+                const requestData = { questionKey: record.QuestionKey };
 
-            $.ajax({
-                type: 'POST',
-                url: '/TOEICPart1/Question?handler=RecordDel',
-                data: JSON.stringify(requestData),
-                contentType: 'application/json',
-                dataType: 'json'
-            }).done(data => {
-                if (data.Status === 'OK') {
-                    $('#ModalMessage_Icon').html('<img src="/images/icon_success.png"/>');
-                    $('#ModalMessage_Content').html('Question deleted successfully');
-                    setTimeout(() => {
-                        $('#ModalMessage').modal('hide');
-                        $('body').focus(); // Chuyển focus
-                        window.location.href = '/TOEICPart1/QuestionList';
-                    }, 2000);
-                } else {
+                $.ajax({
+                    type: 'POST',
+                    url: '/TOEICPart1/Question?handler=RecordDel',
+                    data: JSON.stringify(requestData),
+                    contentType: 'application/json',
+                    dataType: 'json'
+                }).done(data => {
+                    if (data.Status === 'OK') {
+                        $('#ModalMessage_Icon').html('<img src="/images/icon_success.png"/>');
+                        $('#ModalMessage_Content').html('Question deleted successfully');
+                        setTimeout(() => {
+                            $('#ModalMessage').modal('hide');
+                            $('body').focus(); // Chuyển focus
+                            window.location.href = '/TOEICPart1/QuestionList';
+                        }, 2000);
+                    } else {
+                        $('#ModalMessage_Icon').html('<img src="/images/icon_error.png"/>');
+                        $('#ModalMessage_Content').html(data.Message || 'Failed to delete question');
+                        setTimeout(() => {
+                            $('#ModalMessage').modal('hide');
+                            $('body').focus();
+                        }, 2000);
+                    }
+                }).fail(error => {
                     $('#ModalMessage_Icon').html('<img src="/images/icon_error.png"/>');
-                    $('#ModalMessage_Content').html(data.Message || 'Failed to delete question');
+                    $('#ModalMessage_Content').html('Error: ' + error.responseText);
                     setTimeout(() => {
                         $('#ModalMessage').modal('hide');
                         $('body').focus();
                     }, 2000);
-                }
-            }).fail(error => {
-                $('#ModalMessage_Icon').html('<img src="/images/icon_error.png"/>');
-                $('#ModalMessage_Content').html('Error: ' + error.responseText);
-                setTimeout(() => {
-                    $('#ModalMessage').modal('hide');
-                    $('body').focus();
-                }, 2000);
-            });
-        }
-
-        // Update button visibility
-        function updateButtons() {
-            const isNew = record.IsNewRecord === true || !record.QuestionKey;
-            $('#btnCreate').toggle(roles.create && isNew);
-            $('#btnUpdate').toggle(roles.update && !isNew);
-            $('#btnDel').toggle(roles.delete && !isNew);
-        }
-
-        function PreviewImage_Ajax() {
-            const fileInput = document.getElementById('txtUploadImage');
-            if (fileInput && fileInput.files.length > 0) {
-                tempImageFile = fileInput.files[0];
-                console.log('Hình ảnh đã chọn:', tempImageFile.name);
-                const imageElement = document.getElementById('objQuestionImage');
-                if (imageElement) {
-                    imageElement.src = URL.createObjectURL(tempImageFile);
-                } else {
-                    console.log('Không tìm thấy objQuestionImage');
-                }
-            } else {
-                console.log('Không có hình ảnh nào được chọn');
+                });
             }
-        }
 
-        function PreviewVoice_Ajax() {
-            const fileInput = document.getElementById('txtUploadVoice');
-            if (fileInput && fileInput.files.length > 0) {
-                tempVoiceFile = fileInput.files[0];
-                console.log('Âm thanh đã chọn:', tempVoiceFile.name);
-                const source = document.querySelector('#objQuestionVoice source');
-                if (source) {
-                    source.src = URL.createObjectURL(tempVoiceFile);
-                    const audio = document.getElementById('objQuestionVoice');
-                    audio.load();
-                } else {
-                    console.log('Không tìm thấy source trong objQuestionVoice');
-                }
-            } else {
-                console.log('Không có âm thanh nào được chọn');
+            // Update button visibility
+            function updateButtons() {
+                const isNew = record.IsNewRecord === true || !record.QuestionKey;
+                $('#btnCreate').toggle(roles.create && isNew);
+                $('#btnUpdate').toggle(roles.update && !isNew);
+                $('#btnDel').toggle(roles.delete && !isNew);
             }
+
+            function PreviewImage_Ajax() {
+                const fileInput = document.getElementById('txtUploadImage');
+                if (fileInput && fileInput.files.length > 0) {
+                    tempImageFile = fileInput.files[0];
+                    console.log('Hình ảnh đã chọn:', tempImageFile.name);
+                    const imageElement = document.getElementById('objQuestionImage');
+                    if (imageElement) {
+                        imageElement.src = URL.createObjectURL(tempImageFile);
+                    } else {
+                        console.log('Không tìm thấy objQuestionImage');
+                    }
+                } else {
+                    console.log('Không có hình ảnh nào được chọn');
+                }
+            }
+
+            function PreviewVoice_Ajax() {
+                const fileInput = document.getElementById('txtUploadVoice');
+                if (fileInput && fileInput.files.length > 0) {
+                    tempVoiceFile = fileInput.files[0];
+                    console.log('Âm thanh đã chọn:', tempVoiceFile.name);
+                    const source = document.querySelector('#objQuestionVoice source');
+                    if (source) {
+                        source.src = URL.createObjectURL(tempVoiceFile);
+                        const audio = document.getElementById('objQuestionVoice');
+                        audio.load();
+                    } else {
+                        console.log('Không tìm thấy source trong objQuestionVoice');
+                    }
+                } else {
+                    console.log('Không có âm thanh nào được chọn');
+                }
+            }
+
+            // Alias for backward compatibility
+            const btnDel_Click = deleteRecord;
+            const btnUpdate_Click = updateRecord;
+            const btnCreate_Click = createRecord;
+            const TaskShareSearch_DisplayForm = () => $('#infoBody').toggle();
+        </script>
+    }
+    <style>
+        .lbl-item-name {
+            width: 150px;
+            float: left;
         }
 
-        // Alias for backward compatibility
-        const btnDel_Click = deleteRecord;
-        const btnUpdate_Click = updateRecord;
-        const btnCreate_Click = createRecord;
-        const TaskShareSearch_DisplayForm = () => $('#infoBody').toggle();
-    </script>
-}
-<style>
-    .lbl-item-name {
-        width: 150px;
-        float: left;
-    }
-
-    .lbl-item-value {
-        font-weight: bold;
-        color: navy;
-        float: left
-    }
-
-    .tns-row {
-        clear: both;
-        padding: 10px 10px 10px 0px;
-    }
-
-    .tns-table {
-        border-collapse: collapse;
-        width: 100%;
-    }
-
-        .tns-table th {
-            border: 1px solid #ddd;
-            padding: 3px;
-            text-align: center;
+        .lbl-item-value {
+            font-weight: bold;
+            color: navy;
+            float: left
         }
 
-        .tns-table td {
-            border: 1px solid #ddd;
-            padding: 3px;
+        .tns-row {
+            clear: both;
+            padding: 10px 10px 10px 0px;
         }
-</style>
+
+        .tns-table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+            .tns-table th {
+                border: 1px solid #ddd;
+                padding: 3px;
+                text-align: center;
+            }
+
+            .tns-table td {
+                border: 1px solid #ddd;
+                padding: 3px;
+            }
+    </style>
