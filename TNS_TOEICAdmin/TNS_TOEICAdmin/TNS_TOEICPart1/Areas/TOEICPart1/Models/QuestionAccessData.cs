@@ -1,10 +1,6 @@
 ﻿using Microsoft.Data.SqlClient;
 using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
 {
@@ -12,7 +8,6 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
     {
         public class Part1_Question_Info
         {
-
             #region [ Field Name ]
             private string _QuestionKey = "";
             private string _QuestionText = "";
@@ -32,6 +27,10 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
             private string _Message = "";
             private bool _IsNewRecord = true;
             private string _Status = "";
+            private string _Category = ""; // Thêm Category
+            private string _GrammarTopic = ""; // Thêm GrammarTopic
+            private string _VocabularyTopic = ""; // Thêm VocabularyTopic
+            private string _ErrorType = ""; // Thêm ErrorType
             #endregion
 
             #region [ Constructor Get Information ]
@@ -52,7 +51,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                     return;
                 }
 
-                string zSQL = "SELECT * FROM [dbo].[TEC_Part1_Question] WHERE QuestionKey = @QuestionKey /*/*/*AND RecordStatus != 99*/*/*/ ";
+                string zSQL = "SELECT * FROM [dbo].[TEC_Part1_Question] WHERE QuestionKey = @QuestionKey";
                 string zConnectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
                 SqlConnection zConnect = new SqlConnection(zConnectionString);
                 zConnect.Open();
@@ -73,7 +72,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                         _AmountAccess = int.Parse(zReader["AmountAccess"].ToString());
                         _Parent = zReader["Parent"].ToString();
                         _Publish = (bool)zReader["Publish"];
-                        //_RecordStatus = int.Parse(zReader["RecordStatus"].ToString());
+                        _RecordStatus = int.Parse(zReader["RecordStatus"].ToString());
                         if (zReader["CreatedOn"] != DBNull.Value)
                             _CreatedOn = (DateTime)zReader["CreatedOn"];
                         _CreatedBy = zReader["CreatedBy"].ToString();
@@ -82,21 +81,25 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                             _ModifiedOn = (DateTime)zReader["ModifiedOn"];
                         _ModifiedBy = zReader["ModifiedBy"].ToString();
                         _ModifiedName = zReader["ModifiedName"].ToString();
+                        _Category = zReader["Category"].ToString();
+                        _GrammarTopic = zReader["GrammarTopic"].ToString();
+                        _VocabularyTopic = zReader["VocabularyTopic"].ToString();
+                        _ErrorType = zReader["ErrorType"].ToString();
                         _IsNewRecord = false;
-                        _Status = "OK";// Record found
-                        _Message = "Record found !";
+                        _Status = "OK";
+                        _Message = "Record found!";
                     }
                     else
                     {
                         _Status = "ERROR";
-                        _Message = "No record found !";
+                        _Message = "No record found!";
                     }
                     zReader.Close();
                     zCommand.Dispose();
                 }
                 catch (Exception Err)
                 {
-                    _Status = "ERROR";  // Error when connect to SQL Server
+                    _Status = "ERROR";
                     _Message = Err.ToString();
                 }
                 finally
@@ -104,7 +107,6 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                     zConnect.Close();
                 }
             }
-
             #endregion
 
             #region [ Properties ]
@@ -183,7 +185,26 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                 get { return _ModifiedName; }
                 set { _ModifiedName = value; }
             }
-
+            public string Category
+            {
+                get { return _Category; }
+                set { _Category = value; }
+            }
+            public string GrammarTopic
+            {
+                get { return _GrammarTopic; }
+                set { _GrammarTopic = value; }
+            }
+            public string VocabularyTopic
+            {
+                get { return _VocabularyTopic; }
+                set { _VocabularyTopic = value; }
+            }
+            public string ErrorType
+            {
+                get { return _ErrorType; }
+                set { _ErrorType = value; }
+            }
             public bool IsNewRecord
             {
                 get { return _IsNewRecord; }
@@ -202,8 +223,14 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
             #region [ Constructor Update Information ]
             public string Create()
             {
-                string zSQL = "INSERT INTO [dbo].[TEC_Part1_Question] (QuestionKey, QuestionImage, QuestionText, QuestionVoice, SkillLevel, Parent, Publish, RecordStatus, CreatedBy, CreatedName, ModifiedBy, ModifiedName) " +
-                              "VALUES (@QuestionKey, @QuestionImage, @QuestionText, @QuestionVoice, @SkillLevel, @Parent, @Publish, @RecordStatus, @CreatedBy, @CreatedName, @ModifiedBy, @ModifiedName)";
+                if (string.IsNullOrEmpty(this.QuestionKey))
+                {
+                    this.QuestionKey = Guid.NewGuid().ToString(); 
+                }
+
+                Guid questionKey = new Guid(this.QuestionKey);
+                string zSQL = "INSERT INTO [dbo].[TEC_Part1_Question] (QuestionKey, QuestionImage, QuestionText, QuestionVoice, SkillLevel, Parent, Publish, RecordStatus, CreatedBy, CreatedName, ModifiedBy, ModifiedName, Category, GrammarTopic, VocabularyTopic, ErrorType) " +
+                              "VALUES (@QuestionKey, @QuestionImage, @QuestionText, @QuestionVoice, @SkillLevel, @Parent, @Publish, @RecordStatus, @CreatedBy, @CreatedName, @ModifiedBy, @ModifiedName, @Category, @GrammarTopic, @VocabularyTopic, @ErrorType)";
                 string zResult = "";
                 string zConnectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
                 SqlConnection zConnect = new SqlConnection(zConnectionString);
@@ -212,36 +239,28 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                 {
                     SqlCommand zCommand = new SqlCommand(zSQL, zConnect);
                     zCommand.CommandType = CommandType.Text;
-                    if (_QuestionKey.Length == 36)
-                        zCommand.Parameters.Add("@QuestionKey", SqlDbType.UniqueIdentifier).Value = new Guid(_QuestionKey);
-                    else
-                        zCommand.Parameters.Add("@QuestionKey", SqlDbType.UniqueIdentifier).Value = DBNull.Value;
-                    zCommand.Parameters.Add("@QuestionText", SqlDbType.NVarChar).Value = _QuestionText;
-                    zCommand.Parameters.Add("@QuestionImage", SqlDbType.NVarChar).Value = _QuestionImage;
-                    zCommand.Parameters.Add("@QuestionVoice", SqlDbType.NVarChar).Value = _QuestionVoice;
+                    zCommand.Parameters.Add("@QuestionKey", SqlDbType.UniqueIdentifier).Value = new Guid(_QuestionKey);
+                    zCommand.Parameters.Add("@QuestionText", SqlDbType.NVarChar).Value = _QuestionText ?? (object)DBNull.Value;
+                    zCommand.Parameters.Add("@QuestionImage", SqlDbType.NVarChar).Value = _QuestionImage ?? (object)DBNull.Value;
+                    zCommand.Parameters.Add("@QuestionVoice", SqlDbType.NVarChar).Value = _QuestionVoice ?? (object)DBNull.Value;
                     zCommand.Parameters.Add("@SkillLevel", SqlDbType.Int).Value = _SkillLevel;
                     zCommand.Parameters.Add("@AmountAccess", SqlDbType.Int).Value = _AmountAccess;
-                    if (_Parent.Length == 36)
-                        zCommand.Parameters.Add("@Parent", SqlDbType.UniqueIdentifier).Value = new Guid(_Parent);
-                    else
-                        zCommand.Parameters.Add("@Parent", SqlDbType.UniqueIdentifier).Value = DBNull.Value;
+                    zCommand.Parameters.Add("@Parent", SqlDbType.UniqueIdentifier).Value = string.IsNullOrEmpty(_Parent) ? (object)DBNull.Value : new Guid(_Parent);
                     zCommand.Parameters.Add("@Publish", SqlDbType.Bit).Value = _Publish;
                     zCommand.Parameters.Add("@RecordStatus", SqlDbType.Int).Value = _RecordStatus;
-                    if (_CreatedBy.Length == 36)
-                        zCommand.Parameters.Add("@CreatedBy", SqlDbType.UniqueIdentifier).Value = new Guid(_CreatedBy);
-                    else
-                        zCommand.Parameters.Add("@CreatedBy", SqlDbType.UniqueIdentifier).Value = DBNull.Value;
-                    zCommand.Parameters.Add("@CreatedName", SqlDbType.NVarChar).Value = _CreatedName;
-                    if (_ModifiedBy.Length == 36)
-                        zCommand.Parameters.Add("@ModifiedBy", SqlDbType.UniqueIdentifier).Value = new Guid(_ModifiedBy);
-                    else
-                        zCommand.Parameters.Add("@ModifiedBy", SqlDbType.UniqueIdentifier).Value = DBNull.Value;
-                    zCommand.Parameters.Add("@ModifiedName", SqlDbType.NVarChar).Value = _ModifiedName;
+                    zCommand.Parameters.Add("@CreatedBy", SqlDbType.UniqueIdentifier).Value = string.IsNullOrEmpty(_CreatedBy) ? (object)DBNull.Value : new Guid(_CreatedBy);
+                    zCommand.Parameters.Add("@CreatedName", SqlDbType.NVarChar).Value = _CreatedName ?? (object)DBNull.Value;
+                    zCommand.Parameters.Add("@ModifiedBy", SqlDbType.UniqueIdentifier).Value = string.IsNullOrEmpty(_ModifiedBy) ? (object)DBNull.Value : new Guid(_ModifiedBy);
+                    zCommand.Parameters.Add("@ModifiedName", SqlDbType.NVarChar).Value = _ModifiedName ?? (object)DBNull.Value;
+                    zCommand.Parameters.Add("@Category", SqlDbType.UniqueIdentifier).Value = string.IsNullOrEmpty(_Category) ? (object)DBNull.Value : new Guid(_Category);
+                    zCommand.Parameters.Add("@GrammarTopic", SqlDbType.UniqueIdentifier).Value = string.IsNullOrEmpty(_GrammarTopic) ? (object)DBNull.Value : new Guid(_GrammarTopic);
+                    zCommand.Parameters.Add("@VocabularyTopic", SqlDbType.UniqueIdentifier).Value = string.IsNullOrEmpty(_VocabularyTopic) ? (object)DBNull.Value : new Guid(_VocabularyTopic);
+                    zCommand.Parameters.Add("@ErrorType", SqlDbType.UniqueIdentifier).Value = string.IsNullOrEmpty(_ErrorType) ? (object)DBNull.Value : new Guid(_ErrorType);
                     zResult = zCommand.ExecuteNonQuery().ToString();
                     zCommand.Dispose();
                     _Status = "OK";
                     _Message = "201 Created";
-                    _IsNewRecord = false; // Thêm dòng này để đánh dấu bản ghi không còn mới
+                    _IsNewRecord = false;
                 }
                 catch (Exception Err)
                 {
@@ -253,7 +272,6 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                 }
                 return zResult;
             }
-
 
             public string Update()
             {
@@ -267,7 +285,11 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                               "RecordStatus = @RecordStatus, " +
                               "ModifiedOn = GETDATE(), " +
                               "ModifiedBy = @ModifiedBy, " +
-                              "ModifiedName = @ModifiedName " +
+                              "ModifiedName = @ModifiedName, " +
+                              "Category = @Category, " +
+                              "GrammarTopic = @GrammarTopic, " +
+                              "VocabularyTopic = @VocabularyTopic, " +
+                              "ErrorType = @ErrorType " +
                               "WHERE QuestionKey = @QuestionKey";
 
                 string zConnectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
@@ -286,6 +308,10 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                         zCommand.Parameters.Add("@RecordStatus", SqlDbType.Int).Value = _RecordStatus;
                         zCommand.Parameters.Add("@ModifiedBy", SqlDbType.UniqueIdentifier).Value = string.IsNullOrEmpty(_ModifiedBy) ? (object)DBNull.Value : new Guid(_ModifiedBy);
                         zCommand.Parameters.Add("@ModifiedName", SqlDbType.NVarChar).Value = _ModifiedName ?? (object)DBNull.Value;
+                        zCommand.Parameters.Add("@Category", SqlDbType.UniqueIdentifier).Value = string.IsNullOrEmpty(_Category) ? (object)DBNull.Value : new Guid(_Category);
+                        zCommand.Parameters.Add("@GrammarTopic", SqlDbType.UniqueIdentifier).Value = string.IsNullOrEmpty(_GrammarTopic) ? (object)DBNull.Value : new Guid(_GrammarTopic);
+                        zCommand.Parameters.Add("@VocabularyTopic", SqlDbType.UniqueIdentifier).Value = string.IsNullOrEmpty(_VocabularyTopic) ? (object)DBNull.Value : new Guid(_VocabularyTopic);
+                        zCommand.Parameters.Add("@ErrorType", SqlDbType.UniqueIdentifier).Value = string.IsNullOrEmpty(_ErrorType) ? (object)DBNull.Value : new Guid(_ErrorType);
 
                         int rowsAffected = zCommand.ExecuteNonQuery();
                         if (rowsAffected > 0)
@@ -303,11 +329,9 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                 }
             }
 
-
             public string Delete()
             {
                 string zResult = "";
-                //---------- String SQL Access Database ---------------
                 string zSQL = "UPDATE [dbo].[TEC_Part1_Question] Set RecordStatus = 99 WHERE QuestionKey = @QuestionKey";
                 string zConnectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
                 SqlConnection zConnect = new SqlConnection(zConnectionString);
@@ -331,10 +355,10 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                 }
                 return zResult;
             }
+
             public string Empty()
             {
                 string zResult = "";
-                //---------- String SQL Access Database ---------------
                 string zSQL = "DELETE FROM [dbo].[TEC_Part1_Question] WHERE QuestionKey = @QuestionKey";
                 string zConnectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
                 SqlConnection zConnect = new SqlConnection(zConnectionString);

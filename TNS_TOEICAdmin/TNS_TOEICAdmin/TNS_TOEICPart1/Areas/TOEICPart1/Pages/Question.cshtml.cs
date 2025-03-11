@@ -6,6 +6,9 @@ using System.IO;
 using System;
 using TNS_TOEICPart1.Areas.TOEICPart1.Models;
 using System.Text.Json;
+using Microsoft.Data.SqlClient;
+using System.Data;
+using System.Collections.Generic;
 
 namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
 {
@@ -19,7 +22,6 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
         {
             UserLogin = new TNS.Auth.UserLogin_Info(User);
             UserLogin.GetRole("TOEIC_Part1");
-            // For Testing
             UserLogin.Role.IsRead = true;
             UserLogin.Role.IsCreate = true;
             UserLogin.Role.IsUpdate = true;
@@ -65,6 +67,80 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
             return zResult;
         }
 
+        public IActionResult OnPostLoadDropdowns()
+        {
+            CheckAuth();
+            if (!UserLogin.Role.IsRead)
+                return new JsonResult(new { status = "ERROR", message = "ACCESS DENIED" });
+
+            string connectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                conn.Open();
+                var categories = new List<object>();
+                var grammarTopics = new List<object>();
+                var vocabularyTopics = new List<object>();
+                var errorTypes = new List<object>();
+
+                // Load Categories
+                //using (SqlCommand cmd = new SqlCommand("SELECT CategoryKey, CategoryName FROM [dbo].[TEC_Category] WHERE Part = 1", conn))
+                using (SqlCommand cmd = new SqlCommand("SELECT CategoryKey, CategoryName FROM [dbo].[TEC_Category]", conn))
+                {
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            categories.Add(new { CategoryKey = reader["CategoryKey"].ToString(), CategoryName = reader["CategoryName"].ToString() });
+                        }
+                    }
+                }
+
+                // Load Grammar Topics
+                using (SqlCommand cmd = new SqlCommand("SELECT GrammarTopicID, TopicName FROM [dbo].[GrammarTopics]", conn))
+                {
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            grammarTopics.Add(new { GrammarTopicID = reader["GrammarTopicID"].ToString(), TopicName = reader["TopicName"].ToString() });
+                        }
+                    }
+                }
+
+                // Load Vocabulary Topics
+                using (SqlCommand cmd = new SqlCommand("SELECT VocabularyTopicID, TopicName FROM [dbo].[VocabularyTopics]", conn))
+                {
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            vocabularyTopics.Add(new { VocabularyTopicID = reader["VocabularyTopicID"].ToString(), TopicName = reader["TopicName"].ToString() });
+                        }
+                    }
+                }
+
+                // Load Error Types
+                using (SqlCommand cmd = new SqlCommand("SELECT ErrorTypeID, ErrorDescription FROM [dbo].[ErrorTypes]", conn))
+                {
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            errorTypes.Add(new { ErrorTypeID = reader["ErrorTypeID"].ToString(), ErrorDescription = reader["ErrorDescription"].ToString() });
+                        }
+                    }
+                }
+
+                return new JsonResult(new
+                {
+                    categories,
+                    grammarTopics,
+                    vocabularyTopics,
+                    errorTypes
+                });
+            }
+        }
+
         public IActionResult OnPostRecordCreate()
         {
             CheckAuth();
@@ -77,7 +153,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
             zRecord.CreatedName = UserLogin.Employee.Name;
 
             string wwwPath = _env.WebRootPath;
-            string zQuestionKey = zRecord.QuestionKey ?? Guid.NewGuid().ToString(); // Đảm bảo QuestionKey không null
+            string zQuestionKey = zRecord.QuestionKey ?? Guid.NewGuid().ToString();
             string imgPath = Path.Combine(wwwPath, $"upload/question/{zQuestionKey}/img");
             string audioPath = Path.Combine(wwwPath, $"upload/question/{zQuestionKey}/audio");
 
@@ -204,12 +280,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
             }
             return zResult;
         }
-        #endregion
 
-        public class ItemRequest
-        {
-            public string QuestionKey { get; set; }
-        }
         public IActionResult OnPostRecordDell([FromBody] ItemRequest request)
         {
             CheckAuth();
@@ -223,9 +294,8 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
                 else
                 {
                     QuestionAccessData.Part1_Question_Info zRecord = new QuestionAccessData.Part1_Question_Info(request.QuestionKey);
-                    if (zRecord.Status == "OK") // Đảm bảo bản ghi tồn tại
+                    if (zRecord.Status == "OK")
                     {
-                        // Xóa file trên server nếu tồn tại
                         string wwwPath = _env.WebRootPath;
                         if (!string.IsNullOrEmpty(zRecord.QuestionImage))
                         {
@@ -240,12 +310,11 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
                                 System.IO.File.Delete(voicePath);
                         }
 
-                        // Xóa thư mục nếu rỗng
                         string questionDir = Path.Combine(wwwPath, $"upload/question/{request.QuestionKey}");
                         if (Directory.Exists(questionDir) && Directory.GetFiles(questionDir, "*", SearchOption.AllDirectories).Length == 0)
                             Directory.Delete(questionDir, true);
 
-                        zRecord.Empty(); // Xóa hẳn bản ghi
+                        zRecord.Empty();
                         if (zRecord.Status == "OK")
                             zResult = new JsonResult(new { Status = "OK", Message = "Question deleted permanently" });
                         else
@@ -262,6 +331,12 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
                 zResult = new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
             }
             return zResult;
+        }
+        #endregion
+
+        public class ItemRequest
+        {
+            public string QuestionKey { get; set; }
         }
     }
 }
