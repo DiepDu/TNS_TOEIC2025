@@ -4,94 +4,111 @@
     Layout = "_Layout";
 }
 
-<style>
-    .lbl-item-name {
-        width: 150px;
-        float: left;
-    }
-
-    .lbl-item-value {
-        font-weight: bold;
-        color: navy;
-        float: left;
-    }
-
-    .tns-row {
-        clear: both;
-        padding: 10px 10px 10px 0px;
-    }
-
-    .tns-table {
-        border-collapse: collapse;
-        width: 100%;
-    }
-
-        .tns-table th, .tns-table td {
-            border: 1px solid #ddd;
-            padding: 3px;
-            text-align: center;
-        }
-</style>
-
 <link href="~/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
 
-<div style="width:100%; margin:-20px 0 0 -20px">
-    <div style="padding:5px; font-weight:bold; font-size:13px">
-        <a href="~/Index" style="text-decoration:none; color:#4c4c4c">Home</a>
+<!-- Breadcrumb -->
+<div style="width: 100%; margin: -20px 0 0 -20px">
+    <div style="padding: 5px; font-weight: bold; font-size: 13px; background-color: #f8f9fa; border-radius: 5px;">
+        <a href="~/Index" style="text-decoration: none; color: #4c4c4c">Home</a>
         <span class="uil-angle-double-right"></span>
-        <a href="/TOEICPart1/QuestionList" style="text-decoration:none; color:#4c4c4c">TOEIC</a>
+        <a href="/TOEICPart1/QuestionList" style="text-decoration: none; color: #4c4c4c">TOEIC</a>
         <span class="uil-angle-double-right"></span>
-        <a href="/TOEICPart1/QuestionList" style="text-decoration:none; color:#4c4c4c">PART 1</a>
+        <a href="/TOEICPart1/QuestionList" style="text-decoration: none; color: #4c4c4c">PART 1</a>
         <span class="uil-angle-double-right"></span>
-        <a href="/TOEICPart1/AnswerList?Key=@Model.QuestionKey" style="text-decoration:none; color:#4c4c4c">Answer List</a>
+        <a href="/TOEICPart1/AnswerList?Key=@Model.QuestionKey" style="text-decoration: none; color: #4c4c4c">Answer List</a>
         <span class="uil-angle-double-right"></span>
-        <span style="color:maroon">Answer</span>
+        <span style="color: maroon">Answer</span>
         <span class="uil-angle-double-right"></span>
-        <span style="color:maroon; cursor:pointer" onclick="ReturnAnswer_Click()">Return</span>
+        <span style="color: maroon; cursor: pointer" onclick="ReturnAnswer_Click()">Return</span>
     </div>
 </div>
 
-<div class="row" style="font-size:15px">
-    <div class="col-9">
-        <div class="card">
+<!-- Main Content -->
+<div class="row mt-3" style="font-size: 15px">
+    <div class="col-md-9">
+        <div class="card shadow-sm">
             <div class="card-body">
-                <div class="row" style="padding-bottom:10px">
-                    <div class="card border border-primary">
-                        <div class="card-header bg-transparent border-primary">
-                            <span class="my-0 text-primary"><i class="uil uil-users-alt me-3"></i>Answer Text</span>
+                <!-- Answer Text Section -->
+                <div class="mb-4">
+                    <div class="card border-primary">
+                        <div class="card-header bg-primary text-white">
+                            <i class="fas fa-text-height me-2"></i> Answer Text
                         </div>
-                        <textarea id="txtAnswerText" name="area"></textarea>
+                        <div class="card-body">
+                            <textarea id="txtAnswerText" name="area" class="form-control" rows="5"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category Section -->
+                <div class="mb-4">
+                    <div class="card border-warning">
+                        <div class="card-header bg-warning text-dark">
+                            <i class="fas fa-folder me-2"></i> Category
+                        </div>
+                        <div class="card-body">
+                            <select id="ddlCategory" class="form-control custom-select">
+                                <option value="">Select...</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grammar Topic Section -->
+                <div class="mb-4">
+                    <div class="card border-secondary">
+                        <div class="card-header bg-secondary text-white">
+                            <i class="fas fa-book me-2"></i> Grammar Topic
+                        </div>
+                        <div class="card-body">
+                            <select id="ddlGrammarTopic" class="form-control custom-select">
+                                <option value="">Select...</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error Type Section -->
+                <div class="mb-4">
+                    <div class="card border-light">
+                        <div class="card-header bg-light text-dark border-bottom">
+                            <i class="fas fa-exclamation-triangle me-2"></i> Error Type
+                        </div>
+                        <div class="card-body">
+                            <select id="ddlErrorType" class="form-control custom-select">
+                                <option value="">Select...</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-        <div style="padding-top:20px">
-            <div class="row">
-                <div class="col">
-                    <button type="button" id="btnDel" class="btn btn-danger" onclick="btnDel_Click()">Delete</button>
-                    <button type="button" id="btnUpdate" class="btn btn-primary" onclick="btnUpdate_Click()">Update</button>
-                    <button type="button" id="btnCreate" class="btn btn-primary" onclick="btnCreate_Click()">Create</button>
-                </div>
+            <!-- Buttons -->
+            <div class="card-footer bg-white text-end">
+                <button type="button" id="btnDel" class="btn btn-danger me-2" onclick="btnDel_Click()">Delete</button>
+                <button type="button" id="btnUpdate" class="btn btn-primary me-2" onclick="btnUpdate_Click()">Update</button>
+                <button type="button" id="btnCreate" class="btn btn-success" onclick="btnCreate_Click()">Create</button>
             </div>
         </div>
     </div>
-    <div class="col-3">
-        <div class="row">
-            <div class="card border border-primary">
-                <div class="card-header bg-transparent border-primary" style="cursor:pointer">
-                    <span class="my-0 text-primary"><i class="uil uil-users-alt me-3"></i>Information</span>
-                </div>
-                <div class="card-body">
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" role="switch" id="chkAnswerCorrect">
-                        <label class="form-check-label" for="chkAnswerCorrect">Answer Correct</label>
-                    </div>
+
+    <!-- Sidebar -->
+    <div class="col-md-3">
+        <div class="card shadow-sm border-primary">
+            <div class="card-header bg-primary text-white">
+                <i class="fas fa-info-circle me-2"></i> Information
+            </div>
+            <div class="card-body">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="chkAnswerCorrect">
+                    <label class="form-check-label" for="chkAnswerCorrect">Answer Correct</label>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Modal -->
 <div class="modal fade" id="ModalMessage" tabindex="-1" aria-labelledby="ModalMessage_Label" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -100,20 +117,16 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="mb-3 row">
-                    <table>
-                        <tr>
-                            <td style="width:90px" id="ModalMessage_Icon"></td>
-                            <td id="ModalMessage_Content"></td>
-                        </tr>
-                    </table>
+                <div class="d-flex align-items-center">
+                    <div id="ModalMessage_Icon" class="me-3"></div>
+                    <div id="ModalMessage_Content"></div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div style="display:none">
+<div style="display: none">
     <div id="AnswerKey">@Model.AnswerKey</div>
     <div id="QuestionKey">@Model.QuestionKey</div>
 </div>
@@ -121,6 +134,7 @@
 <script src="~/lib/jquery/jquery.min.js"></script>
 <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="~/lib/tinymce/tinymce.min.js"></script>
+
 @section Scripts {
     <script>
         let _Record = {};
@@ -129,9 +143,6 @@
         $(document).ready(() => {
             const answerKey = $('#AnswerKey').text().trim();
             const questionKey = $('#QuestionKey').text().trim();
-
-            console.log('AnswerKey:', answerKey);
-            console.log('QuestionKey:', questionKey);
 
             if (!questionKey || questionKey.length !== 36) {
                 alert('Invalid QuestionKey');
@@ -147,18 +158,61 @@
                 menubar: false,
                 plugins: 'lists link',
                 toolbar: 'undo redo | bold italic | bullist numlist | link',
-                init_instance_callback: (editor) => {
-                    console.log('TinyMCE initialized');
-                    if (answerKey && answerKey.length === 36) {
-                        RecordRead(answerKey);
-                    } else {
-                        _Record = { IsNewRecord: true, AnswerKey: newGuid(), QuestionKey: questionKey };
-                        RecordView();
-                        updateButtons();
-                    }
+                setup: editor => {
+                    editor.on('init', () => {
+                        loadDropdowns();
+                        if (answerKey && answerKey.length === 36) {
+                            RecordRead(answerKey);
+                        } else {
+                            _Record = { IsNewRecord: true, AnswerKey: newGuid(), QuestionKey: questionKey };
+                            RecordView();
+                            updateButtons();
+                        }
+                    });
                 }
             });
         });
+
+        function loadDropdowns() {
+            $.ajax({
+                type: 'POST',
+                url: '/TOEICPart1/Answer?handler=LoadDropdowns',
+                contentType: 'application/json',
+                dataType: 'json',
+                headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() }
+            }).done(data => {
+                console.log('Dropdown data:', data);
+                if (data && data.categories && data.grammarTopics && data.errorTypes) {
+                    populateDropdown('#ddlCategory', data.categories, 'Key', 'Value');
+                    populateDropdown('#ddlGrammarTopic', data.grammarTopics, 'Key', 'Value');
+                    populateDropdown('#ddlErrorType', data.errorTypes, 'Key', 'Value');
+                } else {
+                    console.error('Invalid dropdown data structure:', data);
+                    alert('Failed to load dropdown data');
+                }
+            }).fail(error => {
+                console.error('Error loading dropdowns:', error.responseText);
+                alert('Failed to load dropdowns: ' + error.responseText);
+            });
+        }
+
+        function populateDropdown(selector, data, valueField, textField) {
+            const $dropdown = $(selector);
+            $dropdown.empty();
+            $dropdown.append('<option value="">Select...</option>');
+
+            if (!data || !Array.isArray(data)) {
+                console.error(`No valid data for ${selector}:`, data);
+                return;
+            }
+
+            data.forEach(item => {
+                const value = item[valueField] || '';
+                const text = item[textField] || 'Undefined';
+                console.log(`Adding option to ${selector}: value=${value}, text=${text}`);
+                $dropdown.append(`<option value="${value}">${text}</option>`);
+            });
+        }
 
         function RecordRead(key) {
             $.ajax({
@@ -169,38 +223,20 @@
                 dataType: 'json',
                 headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() }
             }).done(data => {
-                console.log('Read response:', data);
+                console.log('RecordRead response:', data); // Log dữ liệu trả về
                 if (data.Status === 'OK' && data.Record) {
-                    _Record = {
-                        AnswerKey: data.Record.AnswerKey,
-                        QuestionKey: data.Record.QuestionKey,
-                        AnswerText: data.Record.AnswerText || '',
-                        AnswerCorrect: data.Record.AnswerCorrect || false,
-                        IsNewRecord: data.Record.IsNewRecord,
-                        Status: data.Record.Status,
-                        Message: data.Record.Message,
-                        RecordStatus: data.Record.RecordStatus || 0,
-                        CreatedBy: data.Record.CreatedBy || '',
-                        CreatedName: data.Record.CreatedName || '',
-                        ModifiedBy: data.Record.ModifiedBy || '',
-                        ModifiedName: data.Record.ModifiedName || ''
-                    };
-                    console.log('Processed _Record:', _Record);
+                    _Record = data.Record;
                     RecordView();
                     updateButtons();
                 } else {
-                    console.log('Record not found or invalid response:', data.Message);
-                    alert(data.Message || 'Failed to load record. Creating new record.');
+                    alert(data.Message || 'Failed to load record');
                     _Record = { IsNewRecord: true, AnswerKey: newGuid(), QuestionKey: _Record.QuestionKey };
                     RecordView();
                     updateButtons();
                 }
             }).fail(error => {
                 console.error('Read error:', error.responseText);
-                alert('Server error. Creating new record.');
-                _Record = { IsNewRecord: true, AnswerKey: newGuid(), QuestionKey: _Record.QuestionKey };
-                RecordView();
-                updateButtons();
+                alert('Server error');
             });
         }
 
@@ -208,24 +244,27 @@
             const editor = tinymce.get('txtAnswerText');
             if (editor) {
                 editor.setContent(_Record.AnswerText || '');
-            } else {
-                console.error('TinyMCE editor not initialized');
             }
             $('#chkAnswerCorrect').prop('checked', _Record.AnswerCorrect || false);
+            console.log('Setting Category:', _Record.Category);
+            console.log('Setting GrammarTopic:', _Record.GrammarTopic);
+            console.log('Setting ErrorType:', _Record.ErrorType);
+            $('#ddlCategory').val(_Record.Category || '');
+            $('#ddlGrammarTopic').val(_Record.GrammarTopic || '');
+            $('#ddlErrorType').val(_Record.ErrorType || '');
         }
 
         function RecordInput() {
             const editor = tinymce.get('txtAnswerText');
-            if (editor) {
-                _Record.AnswerText = editor.getContent();
-            } else {
-                console.error('TinyMCE editor not initialized');
-                _Record.AnswerText = '';
-            }
+            _Record.AnswerText = editor ? editor.getContent() : '';
             _Record.AnswerCorrect = $('#chkAnswerCorrect').is(':checked');
+            _Record.Category = $('#ddlCategory').val() || '';
+            _Record.GrammarTopic = $('#ddlGrammarTopic').val() || '';
+            _Record.ErrorType = $('#ddlErrorType').val() || '';
             if (_Record.IsNewRecord) {
                 _Record.QuestionKey = $('#QuestionKey').text().trim();
             }
+            console.log('RecordInput:', _Record); // Log dữ liệu trước khi gửi
         }
 
         function btnCreate_Click() {
@@ -252,21 +291,17 @@
         }
 
         function RecordCreate() {
-            console.log('Create request data:', _Record);
-            RecordInput();
             $.ajax({
                 type: 'POST',
                 url: '/TOEICPart1/Answer?handler=Create',
-                data: JSON.stringify(_Record),
+                data: JSON.stringify(_Record), // Sửa từ dataabricks thành data
                 contentType: 'application/json',
                 dataType: 'json',
                 headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() }
             }).done(data => {
-                console.log('Create response:', data);
+                console.log('RecordCreate response:', data);
                 if (data.Status === 'OK') {
-                    if (_Record.AnswerCorrect) {
-                        UpdateOtherAnswersToFalse();
-                    }
+                    if (_Record.AnswerCorrect) UpdateOtherAnswersToFalse();
                     $('#ModalMessage_Icon').html('<img src="/images/icon_success.png"/>');
                     $('#ModalMessage_Content').text('Answer created successfully');
                     _Record = data.Record;
@@ -289,8 +324,6 @@
         }
 
         function RecordUpdate() {
-            console.log('Update request data:', _Record);
-            RecordInput();
             $.ajax({
                 type: 'POST',
                 url: '/TOEICPart1/Answer?handler=Update',
@@ -299,11 +332,9 @@
                 dataType: 'json',
                 headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() }
             }).done(data => {
-                console.log('Update response:', data);
+                console.log('RecordUpdate response:', data);
                 if (data.Status === 'OK') {
-                    if (_Record.AnswerCorrect) {
-                        UpdateOtherAnswersToFalse();
-                    }
+                    if (_Record.AnswerCorrect) UpdateOtherAnswersToFalse();
                     $('#ModalMessage_Icon').html('<img src="/images/icon_success.png"/>');
                     $('#ModalMessage_Content').text('Answer updated successfully');
                     _Record = data.Record;
@@ -330,7 +361,6 @@
                 dataType: 'json',
                 headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() }
             }).done(data => {
-                console.log('Update other answers response:', data);
                 if (data.Status !== 'OK') {
                     console.error('Failed to update other answers:', data.Message);
                 }
@@ -391,3 +421,43 @@
         }
     </script>
 }
+
+<style>
+    .card {
+        border-radius: 10px;
+        transition: all 0.3s;
+    }
+
+        .card:hover {
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+
+    .card-header {
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+    }
+
+    .form-control {
+        border-radius: 5px;
+    }
+
+    .custom-select {
+        border-radius: 5px;
+        padding: 8px;
+        appearance: none;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-chevron-down" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg>') no-repeat right 0.75rem center/12px 12px;
+        background-color: #fff;
+        border: 1px solid #ced4da;
+    }
+
+        .custom-select:focus {
+            border-color: #86b7fe;
+            outline: 0;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+
+    .btn {
+        border-radius: 5px;
+        padding: 8px 20px;
+    }
+</style>

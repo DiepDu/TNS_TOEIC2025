@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Data.SqlClient;
 using System;
+using System.Collections.Generic;
 using TNS_TOEICPart1.Areas.TOEICPart1.Models;
 
 namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
@@ -174,7 +175,6 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
                 if (record.Status == "ERROR")
                     return new JsonResult(new { Status = "ERROR", Message = record.Message });
 
-                // Không cần cập nhật lại các answer khác khi xóa
                 return new JsonResult(new { Status = "OK", Message = "Answer deleted" });
             }
             catch (Exception ex)
@@ -204,6 +204,31 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
             }
         }
 
+        [HttpPost]
+        public IActionResult OnPostLoadDropdowns()
+        {
+            CheckAuth();
+            if (!UserLogin.Role.IsRead)
+                return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
+
+            try
+            {
+                string connectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
+                using var conn = new SqlConnection(connectionString);
+                conn.Open();
+
+                var categories = LoadDropdown(conn, "TEC_Category", "CategoryKey", "CategoryName");
+                var grammarTopics = LoadDropdown(conn, "GrammarTopics", "GrammarTopicID", "TopicName");
+                var errorTypes = LoadDropdown(conn, "ErrorTypes", "ErrorTypeID", "ErrorDescription");
+
+                return new JsonResult(new { categories, grammarTopics, errorTypes });
+            }
+            catch (Exception ex)
+            {
+                return new JsonResult(new { Status = "ERROR", Message = $"Error loading dropdowns: {ex.Message}" });
+            }
+        }
+
         private void UpdateOtherAnswersToFalse(string questionKey, string currentAnswerKey)
         {
             string sql = @"UPDATE [dbo].[TEC_Part1_Answer] 
@@ -224,6 +249,18 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
                     cmd.ExecuteNonQuery();
                 }
             }
+        }
+
+        private List<object> LoadDropdown(SqlConnection conn, string table, string keyField, string valueField)
+        {
+            var result = new List<object>();
+            using var cmd = new SqlCommand($"SELECT {keyField}, {valueField} FROM [dbo].[{table}]", conn);
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                result.Add(new { Key = reader[keyField].ToString(), Value = reader[valueField].ToString() });
+            }
+            return result;
         }
 
         public class ItemRequest

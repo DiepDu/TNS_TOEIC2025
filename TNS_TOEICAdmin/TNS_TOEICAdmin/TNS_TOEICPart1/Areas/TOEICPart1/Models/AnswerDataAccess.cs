@@ -12,6 +12,9 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
             private string _QuestionKey = "";
             private string _AnswerText = "";
             private bool _AnswerCorrect;
+            private string _Category = "";
+            private string _GrammarTopic = "";
+            private string _ErrorType = "";
             private int _RecordStatus = 0;
             private DateTime? _CreatedOn = null;
             private string _CreatedBy = "";
@@ -31,6 +34,9 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                 _QuestionKey = "";
                 _AnswerText = "";
                 _AnswerCorrect = false;
+                _Category = "";
+                _GrammarTopic = "";
+                _ErrorType = "";
                 _RecordStatus = 0;
                 _CreatedOn = null;
                 _CreatedBy = "";
@@ -91,6 +97,9 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                                 _QuestionKey = reader["QuestionKey"].ToString();
                                 _AnswerText = reader["AnswerText"]?.ToString() ?? "";
                                 _AnswerCorrect = reader["AnswerCorrect"] != DBNull.Value && (bool)reader["AnswerCorrect"];
+                                _Category = reader["Category"]?.ToString() ?? "";
+                                _GrammarTopic = reader["GrammaTopic"]?.ToString() ?? ""; // Lưu ý: Cột trong DB là GrammaTopic
+                                _ErrorType = reader["ErrorType"]?.ToString() ?? "";
                                 _RecordStatus = (int)reader["RecordStatus"];
                                 _CreatedOn = reader["CreatedOn"] != DBNull.Value ? (DateTime?)reader["CreatedOn"] : null;
                                 _CreatedBy = reader["CreatedBy"]?.ToString() ?? "";
@@ -118,6 +127,9 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
             public string QuestionKey { get => _QuestionKey; set => _QuestionKey = value; }
             public string AnswerText { get => _AnswerText; set => _AnswerText = value; }
             public bool AnswerCorrect { get => _AnswerCorrect; set => _AnswerCorrect = value; }
+            public string Category { get => _Category; set => _Category = value; }
+            public string GrammarTopic { get => _GrammarTopic; set => _GrammarTopic = value; }
+            public string ErrorType { get => _ErrorType; set => _ErrorType = value; }
             public int RecordStatus { get => _RecordStatus; set => _RecordStatus = value; }
             public DateTime? CreatedOn { get => _CreatedOn; set => _CreatedOn = value; }
             public string CreatedBy { get => _CreatedBy; set => _CreatedBy = value; }
@@ -141,9 +153,9 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                 }
 
                 string sql = @"INSERT INTO [dbo].[TEC_Part1_Answer] 
-                    (QuestionKey, AnswerKey, AnswerText, AnswerCorrect, RecordStatus, CreatedBy, CreatedName, ModifiedBy, ModifiedName)
+                    (QuestionKey, AnswerKey, AnswerText, AnswerCorrect, Category, GrammaTopic, ErrorType, RecordStatus, CreatedBy, CreatedName, ModifiedBy, ModifiedName)
                     VALUES 
-                    (@QuestionKey, @AnswerKey, @AnswerText, @AnswerCorrect, @RecordStatus, @CreatedBy, @CreatedName, @ModifiedBy, @ModifiedName)";
+                    (@QuestionKey, @AnswerKey, @AnswerText, @AnswerCorrect, @Category, @GrammarTopic, @ErrorType, @RecordStatus, @CreatedBy, @CreatedName, @ModifiedBy, @ModifiedName)";
 
                 string connectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
                 using (var conn = new SqlConnection(connectionString))
@@ -157,6 +169,9 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                             cmd.Parameters.AddWithValue("@AnswerKey", Guid.Parse(_AnswerKey));
                             cmd.Parameters.AddWithValue("@AnswerText", (object)_AnswerText ?? DBNull.Value);
                             cmd.Parameters.AddWithValue("@AnswerCorrect", _AnswerCorrect);
+                            cmd.Parameters.AddWithValue("@Category", (object)_Category ?? DBNull.Value);
+                            cmd.Parameters.AddWithValue("@GrammarTopic", (object)_GrammarTopic ?? DBNull.Value);
+                            cmd.Parameters.AddWithValue("@ErrorType", (object)_ErrorType ?? DBNull.Value);
                             cmd.Parameters.AddWithValue("@RecordStatus", _RecordStatus);
                             cmd.Parameters.AddWithValue("@CreatedBy", string.IsNullOrEmpty(_CreatedBy) ? DBNull.Value : Guid.Parse(_CreatedBy));
                             cmd.Parameters.AddWithValue("@CreatedName", (object)_CreatedName ?? DBNull.Value);
@@ -182,10 +197,6 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                         _Status = "ERROR";
                         _Message = $"Error creating answer: {ex.Message}";
                     }
-                    finally
-                    {
-                        conn.Close();
-                    }
                 }
             }
 
@@ -199,8 +210,8 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                 }
 
                 string sql = @"UPDATE [dbo].[TEC_Part1_Answer] 
-                    SET AnswerText = @AnswerText, AnswerCorrect = @AnswerCorrect, RecordStatus = @RecordStatus, 
-                        ModifiedOn = GETDATE(), ModifiedBy = @ModifiedBy, ModifiedName = @ModifiedName
+                    SET AnswerText = @AnswerText, AnswerCorrect = @AnswerCorrect, Category = @Category, GrammaTopic = @GrammarTopic, ErrorType = @ErrorType, 
+                        RecordStatus = @RecordStatus, ModifiedOn = GETDATE(), ModifiedBy = @ModifiedBy, ModifiedName = @ModifiedName
                     WHERE AnswerKey = @AnswerKey AND RecordStatus != 99";
 
                 string connectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
@@ -214,6 +225,9 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                             cmd.Parameters.AddWithValue("@AnswerKey", Guid.Parse(_AnswerKey));
                             cmd.Parameters.AddWithValue("@AnswerText", (object)_AnswerText ?? DBNull.Value);
                             cmd.Parameters.AddWithValue("@AnswerCorrect", _AnswerCorrect);
+                            cmd.Parameters.AddWithValue("@Category", (object)_Category ?? DBNull.Value);
+                            cmd.Parameters.AddWithValue("@GrammarTopic", (object)_GrammarTopic ?? DBNull.Value);
+                            cmd.Parameters.AddWithValue("@ErrorType", (object)_ErrorType ?? DBNull.Value);
                             cmd.Parameters.AddWithValue("@RecordStatus", _RecordStatus);
                             cmd.Parameters.AddWithValue("@ModifiedBy", string.IsNullOrEmpty(_ModifiedBy) ? DBNull.Value : Guid.Parse(_ModifiedBy));
                             cmd.Parameters.AddWithValue("@ModifiedName", (object)_ModifiedName ?? DBNull.Value);
@@ -235,10 +249,6 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                     {
                         _Status = "ERROR";
                         _Message = $"Error updating answer: {ex.Message}";
-                    }
-                    finally
-                    {
-                        conn.Close();
                     }
                 }
             }
@@ -279,10 +289,6 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                     {
                         _Status = "ERROR";
                         _Message = $"Error deleting answer: {ex.Message}";
-                    }
-                    finally
-                    {
-                        conn.Close();
                     }
                 }
             }
