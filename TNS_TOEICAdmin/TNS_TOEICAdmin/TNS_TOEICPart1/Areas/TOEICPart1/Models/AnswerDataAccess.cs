@@ -98,7 +98,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                                 _AnswerText = reader["AnswerText"]?.ToString() ?? "";
                                 _AnswerCorrect = reader["AnswerCorrect"] != DBNull.Value && (bool)reader["AnswerCorrect"];
                                 _Category = reader["Category"]?.ToString() ?? "";
-                                _GrammarTopic = reader["GrammaTopic"]?.ToString() ?? ""; // Lưu ý: Cột trong DB là GrammaTopic
+                                _GrammarTopic = reader["GrammarTopic"]?.ToString() ?? ""; // Lưu ý: Cột trong DB là GrammarTopic
                                 _ErrorType = reader["ErrorType"]?.ToString() ?? "";
                                 _RecordStatus = (int)reader["RecordStatus"];
                                 _CreatedOn = reader["CreatedOn"] != DBNull.Value ? (DateTime?)reader["CreatedOn"] : null;
@@ -153,7 +153,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                 }
 
                 string sql = @"INSERT INTO [dbo].[TEC_Part1_Answer] 
-                    (QuestionKey, AnswerKey, AnswerText, AnswerCorrect, Category, GrammaTopic, ErrorType, RecordStatus, CreatedBy, CreatedName, ModifiedBy, ModifiedName)
+                    (QuestionKey, AnswerKey, AnswerText, AnswerCorrect, Category, GrammarTopic, ErrorType, RecordStatus, CreatedBy, CreatedName, ModifiedBy, ModifiedName)
                     VALUES 
                     (@QuestionKey, @AnswerKey, @AnswerText, @AnswerCorrect, @Category, @GrammarTopic, @ErrorType, @RecordStatus, @CreatedBy, @CreatedName, @ModifiedBy, @ModifiedName)";
 
@@ -210,7 +210,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                 }
 
                 string sql = @"UPDATE [dbo].[TEC_Part1_Answer] 
-                    SET AnswerText = @AnswerText, AnswerCorrect = @AnswerCorrect, Category = @Category, GrammaTopic = @GrammarTopic, ErrorType = @ErrorType, 
+                    SET AnswerText = @AnswerText, AnswerCorrect = @AnswerCorrect, Category = @Category, GrammarTopic = @GrammarTopic, ErrorType = @ErrorType, 
                         RecordStatus = @RecordStatus, ModifiedOn = GETDATE(), ModifiedBy = @ModifiedBy, ModifiedName = @ModifiedName
                     WHERE AnswerKey = @AnswerKey AND RecordStatus != 99";
 

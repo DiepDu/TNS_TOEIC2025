@@ -278,9 +278,9 @@
                 headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() }
             }).done(data => {
                 console.log('CountAnswers response:', data); // Log để debug
-                if (data.count >= 4) { // Giới hạn 4 đáp án
+                if (data.count >= 3) { // Giới hạn 4 đáp án
                     $('#ModalMessage_Icon').html('<img src="/images/icon_error.png"/>');
-                    $('#ModalMessage_Content').text('Đã đạt giới hạn số lượng đáp án (tối đa 4)');
+                    $('#ModalMessage_Content').text('Đã đạt giới hạn số lượng đáp án (tối đa 3)');
                     $('#ModalMessage').modal('show');
                     setTimeout(() => $('#ModalMessage').modal('hide'), 2000);
                     return; // Dừng lại nếu vượt giới hạn
