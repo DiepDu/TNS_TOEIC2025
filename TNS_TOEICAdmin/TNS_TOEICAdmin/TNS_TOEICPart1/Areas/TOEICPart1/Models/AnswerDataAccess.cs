@@ -169,9 +169,9 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                             cmd.Parameters.AddWithValue("@AnswerKey", Guid.Parse(_AnswerKey));
                             cmd.Parameters.AddWithValue("@AnswerText", (object)_AnswerText ?? DBNull.Value);
                             cmd.Parameters.AddWithValue("@AnswerCorrect", _AnswerCorrect);
-                            cmd.Parameters.AddWithValue("@Category", (object)_Category ?? DBNull.Value);
-                            cmd.Parameters.AddWithValue("@GrammarTopic", (object)_GrammarTopic ?? DBNull.Value);
-                            cmd.Parameters.AddWithValue("@ErrorType", (object)_ErrorType ?? DBNull.Value);
+                            cmd.Parameters.AddWithValue("@Category", string.IsNullOrEmpty(_Category) ? DBNull.Value : Guid.Parse(_Category));
+                            cmd.Parameters.AddWithValue("@GrammarTopic", string.IsNullOrEmpty(_GrammarTopic) ? DBNull.Value : Guid.Parse(_GrammarTopic));
+                            cmd.Parameters.AddWithValue("@ErrorType", string.IsNullOrEmpty(_ErrorType) ? DBNull.Value : Guid.Parse(_ErrorType));
                             cmd.Parameters.AddWithValue("@RecordStatus", _RecordStatus);
                             cmd.Parameters.AddWithValue("@CreatedBy", string.IsNullOrEmpty(_CreatedBy) ? DBNull.Value : Guid.Parse(_CreatedBy));
                             cmd.Parameters.AddWithValue("@CreatedName", (object)_CreatedName ?? DBNull.Value);
@@ -225,9 +225,9 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                             cmd.Parameters.AddWithValue("@AnswerKey", Guid.Parse(_AnswerKey));
                             cmd.Parameters.AddWithValue("@AnswerText", (object)_AnswerText ?? DBNull.Value);
                             cmd.Parameters.AddWithValue("@AnswerCorrect", _AnswerCorrect);
-                            cmd.Parameters.AddWithValue("@Category", (object)_Category ?? DBNull.Value);
-                            cmd.Parameters.AddWithValue("@GrammarTopic", (object)_GrammarTopic ?? DBNull.Value);
-                            cmd.Parameters.AddWithValue("@ErrorType", (object)_ErrorType ?? DBNull.Value);
+                            cmd.Parameters.AddWithValue("@Category", string.IsNullOrEmpty(_Category) ? DBNull.Value : Guid.Parse(_Category));
+                            cmd.Parameters.AddWithValue("@GrammarTopic", string.IsNullOrEmpty(_GrammarTopic) ? DBNull.Value : Guid.Parse(_GrammarTopic));
+                            cmd.Parameters.AddWithValue("@ErrorType", string.IsNullOrEmpty(_ErrorType) ? DBNull.Value : Guid.Parse(_ErrorType));
                             cmd.Parameters.AddWithValue("@RecordStatus", _RecordStatus);
                             cmd.Parameters.AddWithValue("@ModifiedBy", string.IsNullOrEmpty(_ModifiedBy) ? DBNull.Value : Guid.Parse(_ModifiedBy));
                             cmd.Parameters.AddWithValue("@ModifiedName", (object)_ModifiedName ?? DBNull.Value);

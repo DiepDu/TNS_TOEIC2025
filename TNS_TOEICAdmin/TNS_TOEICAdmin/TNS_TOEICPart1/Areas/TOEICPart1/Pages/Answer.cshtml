@@ -267,13 +267,39 @@
             console.log('RecordInput:', _Record); // Log dữ liệu trước khi gửi
         }
 
-        function btnCreate_Click() {
-            $('#ModalMessage_Icon').html('<img src="/images/Waiting.gif" width="80px"/>');
-            $('#ModalMessage_Content').text('Waiting');
+      function btnCreate_Click() {
+    // Gọi AJAX để đếm số lượng đáp án hiện tại
+    $.ajax({
+        type: 'POST',
+        url: '/TOEICPart1/Answer?handler=CountAnswers',
+        data: JSON.stringify({ QuestionKey: _Record.QuestionKey }),
+        contentType: 'application/json',
+        dataType: 'json',
+        headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() }
+    }).done(data => {
+        console.log('CountAnswers response:', data); // Log để debug
+        if (data.count >= 4) { // Giới hạn 4 đáp án
+            $('#ModalMessage_Icon').html('<img src="/images/icon_error.png"/>');
+            $('#ModalMessage_Content').text('Đã đạt giới hạn số lượng đáp án (tối đa 4)');
             $('#ModalMessage').modal('show');
-            RecordInput();
-            RecordCreate();
+            setTimeout(() => $('#ModalMessage').modal('hide'), 2000);
+            return; // Dừng lại nếu vượt giới hạn
         }
+
+        // Nếu chưa vượt giới hạn, tiếp tục tạo mới
+        $('#ModalMessage_Icon').html('<img src="/images/Waiting.gif" width="80px"/>');
+        $('#ModalMessage_Content').text('Waiting');
+        $('#ModalMessage').modal('show');
+        RecordInput();
+        RecordCreate();
+    }).fail(error => {
+        console.error('Error counting answers:', error.responseText);
+        $('#ModalMessage_Icon').html('<img src="/images/icon_error.png"/>');
+        $('#ModalMessage_Content').text('Không thể kiểm tra số lượng đáp án');
+        $('#ModalMessage').modal('show');
+        setTimeout(() => $('#ModalMessage').modal('hide'), 2000);
+    });
+}
 
         function btnUpdate_Click() {
             $('#ModalMessage_Icon').html('<img src="/images/Waiting.gif" width="80px"/>');

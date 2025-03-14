@@ -262,6 +262,25 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
             }
             return result;
         }
+        public IActionResult OnPostCountAnswers([FromBody] ItemRequest request)
+        {
+            CheckAuth();
+            if (!UserLogin.Role.IsRead)
+                return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
+
+            string sql = "SELECT COUNT(*) FROM [dbo].[TEC_Part1_Answer] WHERE QuestionKey = @QuestionKey AND RecordStatus != 99";
+            string connectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
+            using (var conn = new SqlConnection(connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@QuestionKey", Guid.Parse(request.QuestionKey));
+                    int count = (int)cmd.ExecuteScalar();
+                    return new JsonResult(new { count });
+                }
+            }
+        }
 
         public class ItemRequest
         {
