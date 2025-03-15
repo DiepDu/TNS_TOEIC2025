@@ -1,0 +1,266 @@
+﻿@page
+@model TNS_TOEICPart3.Areas.TOEICPart3.Pages.QuestionListModel
+@{
+    Layout = "_Layout";
+}
+
+<link href="~/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+<link href="~/lib/datatables/css/dataTables.min.css" rel="stylesheet" type="text/css" />
+
+<div style="width:100%; margin:-20px 0 0 -20px">
+    <div style="padding:5px; font-weight:bold; font-size:13px">
+        <a href="~/Index" style="text-decoration:none; color:#4c4c4c">Home</a>
+        <span class="uil-angle-double-right"></span>
+        <a href="~/Index" style="text-decoration:none; color:#4c4c4c">TOEIC</a>
+        <span class="uil-angle-double-right"></span>
+        <span style="color:maroon">PART 3</span>
+    </div>
+</div>
+<div class="row">
+    <div class="col-12 text-center text-primary" style="font-size:26px; font-weight:bold">
+        QUESTION PART 3
+    </div>
+</div>
+<div class="row mb-2">
+    <div class="col-md-10">
+        <div>
+            <div class="input-group">
+                <input id="txtSearch" type="text" class="form-control w-auto" placeholder="Search" aria-label="Search" aria-describedby="button-addon2">
+                <input id="txtLevel" type="text" class="form-control" placeholder="Level" aria-label="Level" aria-describedby="button-addon2">
+                <input id="txtFromDate" class="form-control" type="date">
+                <input id="txtToDate" class="form-control" type="date">
+                <div class="form-group">
+                    <select class="form-control" id="statusFilter" name="statusFilter">
+                        <option value="">All</option>
+                        <option value="Using">Using</option>
+                        <option value="Unpublished">Unpublished</option>
+                        <option value="Deleted">Deleted</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" onclick="btn_Search_Click()">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+        <div style="color:maroon; font-weight:bold; padding-left:10px">
+            <div id="Info_View"></div>
+        </div>
+    </div>
+    <div class="col-md-2 text-end">
+        <a href="/TOEICPart3/Question" class="btn btn-success" role="button" aria-pressed="true"> <i class="uil-file-blank"></i>Add New</a>
+    </div>
+</div>
+
+<div class="row">
+    <table id="LV_Datatable" class="table table-striped table-bordered" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
+        <thead>
+            <tr>
+                <th class="text-center align-middle text-light bg-primary" style="width:80px">No</th>
+                <th class="text-center align-middle text-light bg-primary">Question</th>
+                <th class="text-center align-middle text-light bg-primary" style="width:120px">Audio</th>
+                <th class="text-center align-middle text-light bg-primary" style="width:90px">Level</th>
+                <th class="text-center align-middle text-light bg-primary" style="width:120px">Access</th>
+                <th class="text-center align-middle text-light bg-primary" style="width:100px">QuestionSubList</th>
+                <th class="text-center align-middle text-light bg-primary" style="width:100px">Status</th>
+            </tr>
+        </thead>
+        <tbody id="LV_DataBody">
+        </tbody>
+    </table>
+    <div class="row">
+        <div class="col-12 text-end" style="cursor:pointer" onclick="LV_LoadData_More()">More...</div>
+    </div>
+    <div id="LV_Waiting" style="display:none">
+        <div class='text-center'>
+            <div class='spinner-border text-primary m-5' role='status'>
+                <span class='sr-only'>Loading...</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div>
+    <div style="cursor:pointer" onclick="Log_Show()">
+        <i class="uil-apple"></i>
+    </div>
+    <div id="Log_ViewData" class="row" style="display:none; padding:20px;">
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            LV_LoadData_Ajax();
+        });
+
+        function Log_Show() {
+            $("#Log_ViewData").css("display", "");
+        }
+
+        var _DataView;
+        var _PageSize = 25;
+        var _PageNumber = 1;
+
+        function btn_Search_Click() {
+            $("#LV_DataBody").html("");
+            _PageNumber = 1;
+            LV_LoadData_Ajax();
+        }
+
+        function LV_LoadData_Ajax() {
+            $("#LV_Waiting").css("display", "");
+            var zSearch = $("#txtSearch").val();
+            var zFromDate = $('#txtFromDate').val();
+            var zToDate = $('#txtToDate').val();
+            var zLevel = $('#txtLevel').val();
+            var zStatusFilter = $('#statusFilter').val();
+            if (zLevel.length == 0)
+                zLevel = 0;
+            var zDataRequest = {
+                "Search": zSearch, "Level": zLevel,
+                "fromDate": zFromDate, "toDate": zToDate,
+                "pageSize": _PageSize, "pageNumber": _PageNumber, "StatusFilter": zStatusFilter
+            };
+
+            $.ajax({
+                type: 'POST',
+                url: "/TOEICPart3/QuestionList?handler=LoadData",
+                data: JSON.stringify(zDataRequest),
+                contentType: "application/json",
+                dataType: "json",
+            })
+                .done(function (dataResponse) {
+                    _DataView = dataResponse;
+                    LV_DisplayData();
+                    $("#LV_Waiting").css("display", "none");
+                    $("#Info_View").html("Total: " + dataResponse.length + " items");
+                })
+                .fail(function (error) {
+                    alert('Error : ' + error.responseText);
+                });
+        }
+
+        function LV_DisplayData() {
+            var zContent = "";
+            var n = 0;
+            if (_DataView != null) {
+                n = _DataView.length;
+            }
+            var zNo = 1 + (_PageNumber - 1) * _PageSize;
+            for (i = 0; i < n; i++) {
+                var isPublished = _DataView[i].Publish && _DataView[i].RecordStatus !== 99;
+                zContent += "       <tr>";
+                zContent += "           <td class='centered-cell'>";
+                zContent += "               <div> " + zNo + " </div>";
+                zContent += "           </td>";
+                zContent += "           <td class='centered-cell' onclick='EditRecord(\"" + _DataView[i].QuestionKey + "\")' style='cursor:pointer'>" + _DataView[i].QuestionText + "</td>";
+                zContent += "           <td class='centered-cell'><audio controls class='audio-player'><source src='" + _DataView[i].QuestionVoice + "' type='audio/mp3'></audio></td>";
+                zContent += "           <td class='centered-cell'>" + _DataView[i].SkillLevel + "</td>";
+                zContent += "           <td class='centered-cell'>" + _DataView[i].AmountAccess + "</td>";
+                zContent += "           <td class='centered-cell'> <button type='button' class='btn btn-warning' onclick='btnQuestionSubList_Click(\"" + _DataView[i].QuestionKey + "\")'>QuestionSubList</button></td>";
+                zContent += "           <td class='centered-cell'><button class='btn-toggle-publish " + (isPublished ? "btn-on" : "btn-off") + "' data-question-key='" + _DataView[i].QuestionKey + "' onclick='togglePublish(this, \"" + _DataView[i].QuestionKey + "\")'>" + (isPublished ? "ON" : "OFF") + "</button></td>";
+                zContent += "       </tr>";
+                zNo++;
+            }
+            var zDataCurrent = $("#LV_DataBody").html();
+            $("#LV_DataBody").html(zDataCurrent + zContent);
+        }
+
+        function EditRecord(QuestionKey) {
+            zUrl = "/TOEICPart3/Question?Key=" + QuestionKey;
+            window.location = zUrl;
+        }
+
+        function btnQuestionSubList_Click(QuestionKey) {
+            zUrl = "/TOEICPart3/QuestionSubList?Key=" + QuestionKey;
+            window.location = zUrl;
+        }
+
+        function LV_LoadData_More() {
+            _PageNumber++;
+            LV_LoadData_Ajax();
+        }
+
+        function togglePublish(button, questionKey) {
+            const isOn = $(button).hasClass('btn-on');
+            const newState = !isOn;
+            const confirmMessage = newState ? "Bạn có chắc chắn muốn bật câu hỏi này?" : "Bạn có chắc chắn muốn tắt câu hỏi này?";
+
+            if (confirm(confirmMessage)) {
+                $.ajax({
+                    type: 'POST',
+                    url: '/TOEICPart3/QuestionList?handler=TogglePublish',
+                    data: JSON.stringify({ questionKey: questionKey, publish: newState }),
+                    contentType: 'application/json',
+                    dataType: 'json'
+                }).done(data => {
+                    if (data.status === 'OK') {
+                        if (newState) {
+                            $(button).removeClass('btn-off').addClass('btn-on').text('ON');
+                            _DataView.find(q => q.QuestionKey === questionKey).Publish = true;
+                            _DataView.find(q => q.QuestionKey === questionKey).RecordStatus = 0;
+                        } else {
+                            $(button).removeClass('btn-on').addClass('btn-off').text('OFF');
+                            _DataView.find(q => q.QuestionKey === questionKey).Publish = false;
+                        }
+                    } else {
+                        alert('Lỗi: ' + data.message);
+                    }
+                }).fail(error => {
+                    alert('Lỗi: ' + error.responseText);
+                });
+            }
+        }
+    </script>
+}
+
+<style>
+    .tns-field-name {
+        width: 140px;
+    }
+
+    .centered-cell {
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .centered-image {
+        display: block;
+        margin: auto;
+        width: 77px;
+        height: 77px;
+    }
+
+    .audio-player {
+        display: block;
+        margin: auto;
+    }
+
+    .answer-label {
+        display: inline-block;
+        margin: 0 5px;
+        padding: 5px 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .btn-toggle-publish {
+        padding: 5px 10px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        min-width: 60px;
+    }
+
+    .btn-on {
+        background-color: #28a745; /* Màu xanh khi bật */
+        color: white;
+    }
+
+    .btn-off {
+        background-color: #6c757d; /* Màu xám khi tắt */
+        color: white;
+    }
+    </style>
