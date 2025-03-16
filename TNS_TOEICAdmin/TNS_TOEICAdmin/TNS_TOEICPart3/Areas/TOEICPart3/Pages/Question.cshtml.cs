@@ -16,6 +16,8 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Pages
         #region [ Security ]
         public TNS.Auth.UserLogin_Info UserLogin;
         public string QuestionKey;
+        public string Parent { get; set; }
+        public string Source { get; set; }
         private void CheckAuth()
         {
             UserLogin = new TNS.Auth.UserLogin_Info(User);
@@ -32,12 +34,14 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Pages
             _env = env;
         }
 
-        public IActionResult OnGet(string key = null)
+        public IActionResult OnGet(string key = null, [FromQuery(Name = "ParentKey")] string parent = null, [FromQuery] string source = null)
         {
             CheckAuth();
             if (UserLogin.Role.IsRead)
             {
                 QuestionKey = key;
+                Parent = parent;
+                Source = source;
                 return Page();
             }
             else
@@ -56,6 +60,7 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Pages
                     zRecord = new QuestionAccessData.Part3_Question_Info();
                 else
                     zRecord = new QuestionAccessData.Part3_Question_Info(request.QuestionKey);
+                //zRecord.Parent = Parent;
                 zResult = new JsonResult(zRecord);
             }
             else
@@ -149,27 +154,27 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Pages
             var zRecord = JsonSerializer.Deserialize<QuestionAccessData.Part3_Question_Info>(recordJson);
             zRecord.CreatedBy = UserLogin.Employee.Key;
             zRecord.CreatedName = UserLogin.Employee.Name;
-
+            //zRecord.Parent = Parent;
             string wwwPath = _env.WebRootPath;
             string zQuestionKey = zRecord.QuestionKey ?? Guid.NewGuid().ToString();
-            //string imgPath = Path.Combine(wwwPath, $"upload/question/{zQuestionKey}/img");
+            string imgPath = Path.Combine(wwwPath, $"upload/question/{zQuestionKey}/img");
             string audioPath = Path.Combine(wwwPath, $"upload/question/{zQuestionKey}/audio");
 
             try
             {
-                //Directory.CreateDirectory(imgPath);
+                Directory.CreateDirectory(imgPath);
                 Directory.CreateDirectory(audioPath);
 
-                //var imageFile = HttpContext.Request.Form.Files["image"];
-                //if (imageFile != null && imageFile.Length > 0)
-                //{
-                //    string filePath = Path.Combine(imgPath, imageFile.FileName);
-                //    using (var stream = new FileStream(filePath, FileMode.Create))
-                //    {
-                //        imageFile.CopyTo(stream);
-                //    }
-                //    zRecord.QuestionImage = $"/upload/question/{zQuestionKey}/img/{imageFile.FileName}";
-                //}
+                var imageFile = HttpContext.Request.Form.Files["image"];
+                if (imageFile != null && imageFile.Length > 0)
+                {
+                    string filePath = Path.Combine(imgPath, imageFile.FileName);
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        imageFile.CopyTo(stream);
+                    }
+                    zRecord.QuestionImage = $"/upload/question/{zQuestionKey}/img/{imageFile.FileName}";
+                }
 
                 var voiceFile = HttpContext.Request.Form.Files["voice"];
                 if (voiceFile != null && voiceFile.Length > 0)
@@ -201,31 +206,31 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Pages
             var zRecord = JsonSerializer.Deserialize<QuestionAccessData.Part3_Question_Info>(recordJson);
             zRecord.ModifiedBy = UserLogin.Employee.Key;
             zRecord.ModifiedName = UserLogin.Employee.Name;
-
+            //zRecord.Parent = Parent;
             string wwwPath = _env.WebRootPath;
             string zQuestionKey = zRecord.QuestionKey;
-            //string imgPath = Path.Combine(wwwPath, $"upload/question/{zQuestionKey}/img");
+            string imgPath = Path.Combine(wwwPath, $"upload/question/{zQuestionKey}/img");
             string audioPath = Path.Combine(wwwPath, $"upload/question/{zQuestionKey}/audio");
 
             try
             {
-                //Directory.CreateDirectory(imgPath);
+                Directory.CreateDirectory(imgPath);
                 Directory.CreateDirectory(audioPath);
 
-                //var imageFile = HttpContext.Request.Form.Files["image"];
-                //if (imageFile != null && imageFile.Length > 0)
-                //{
-                //    if (!string.IsNullOrEmpty(zRecord.QuestionImage) && System.IO.File.Exists(Path.Combine(wwwPath, zRecord.QuestionImage.TrimStart('/'))))
-                //    {
-                //        System.IO.File.Delete(Path.Combine(wwwPath, zRecord.QuestionImage.TrimStart('/')));
-                //    }
-                //    string filePath = Path.Combine(imgPath, imageFile.FileName);
-                //    using (var stream = new FileStream(filePath, FileMode.Create))
-                //    {
-                //        imageFile.CopyTo(stream);
-                //    }
-                //    zRecord.QuestionImage = $"/upload/question/{zQuestionKey}/img/{imageFile.FileName}";
-                //}
+                var imageFile = HttpContext.Request.Form.Files["image"];
+                if (imageFile != null && imageFile.Length > 0)
+                {
+                    if (!string.IsNullOrEmpty(zRecord.QuestionImage) && System.IO.File.Exists(Path.Combine(wwwPath, zRecord.QuestionImage.TrimStart('/'))))
+                    {
+                        System.IO.File.Delete(Path.Combine(wwwPath, zRecord.QuestionImage.TrimStart('/')));
+                    }
+                    string filePath = Path.Combine(imgPath, imageFile.FileName);
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        imageFile.CopyTo(stream);
+                    }
+                    zRecord.QuestionImage = $"/upload/question/{zQuestionKey}/img/{imageFile.FileName}";
+                }
 
                 var voiceFile = HttpContext.Request.Form.Files["voice"];
                 if (voiceFile != null && voiceFile.Length > 0)
@@ -295,12 +300,12 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Pages
                     if (zRecord.Status == "OK")
                     {
                         string wwwPath = _env.WebRootPath;
-                        //if (!string.IsNullOrEmpty(zRecord.QuestionImage))
-                        //{
-                        //    string imagePath = Path.Combine(wwwPath, zRecord.QuestionImage.TrimStart('/'));
-                        //    if (System.IO.File.Exists(imagePath))
-                        //        System.IO.File.Delete(imagePath);
-                        //}
+                        if (!string.IsNullOrEmpty(zRecord.QuestionImage))
+                        {
+                            string imagePath = Path.Combine(wwwPath, zRecord.QuestionImage.TrimStart('/'));
+                            if (System.IO.File.Exists(imagePath))
+                                System.IO.File.Delete(imagePath);
+                        }
                         if (!string.IsNullOrEmpty(zRecord.QuestionVoice))
                         {
                             string voicePath = Path.Combine(wwwPath, zRecord.QuestionVoice.TrimStart('/'));

@@ -1,10 +1,6 @@
 ﻿using Microsoft.Data.SqlClient;
 using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TNS_TOEICPart3.Areas.TOEICPart3.Models
 {
@@ -15,8 +11,10 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Models
             #region [ Field Name ]
             private string _QuestionKey = "";
             private string _QuestionText = "";
+            private string _QuestionImage = "";
             private string _QuestionVoice = "";
             private int _SkillLevel = 0;
+            private int _Ranking = 0;
             private int _AmountAccess = 0;
             private string _Parent = "";
             private bool _Publish;
@@ -69,9 +67,10 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Models
                         zReader.Read();
                         _QuestionKey = zReader["QuestionKey"].ToString();
                         _QuestionText = zReader["QuestionText"].ToString();
-
+                        _QuestionImage = zReader["QuestionImage"].ToString();
                         _QuestionVoice = zReader["QuestionVoice"].ToString();
                         _SkillLevel = int.Parse(zReader["SkillLevel"].ToString());
+                        _Ranking = zReader["Ranking"] != DBNull.Value ? int.Parse(zReader["Ranking"].ToString()) : 0; // Lấy Ranking từ DB
                         _AmountAccess = int.Parse(zReader["AmountAccess"].ToString());
                         _Parent = zReader["Parent"].ToString();
                         _Publish = (bool)zReader["Publish"];
@@ -123,7 +122,11 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Models
                 get { return _QuestionText; }
                 set { _QuestionText = value; }
             }
-
+            public string QuestionImage
+            {
+                get { return _QuestionImage; }
+                set { _QuestionImage = value; }
+            }
             public string QuestionVoice
             {
                 get { return _QuestionVoice; }
@@ -134,6 +137,7 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Models
                 get { return _SkillLevel; }
                 set { _SkillLevel = value; }
             }
+            public int Ranking { get => _Ranking; set => _Ranking = value; }
             public int AmountAccess
             {
                 get { return _AmountAccess; }
@@ -228,8 +232,8 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Models
                 }
 
                 Guid questionKey = new Guid(this.QuestionKey);
-                string zSQL = "INSERT INTO [dbo].[TEC_Part3_Question] (QuestionKey, QuestionText, QuestionVoice, SkillLevel, Parent, Publish, RecordStatus, CreatedBy, CreatedName, ModifiedBy, ModifiedName, Category, GrammarTopic, VocabularyTopic, ErrorType) " +
-                              "VALUES (@QuestionKey, @QuestionText, @QuestionVoice, @SkillLevel, @Parent, @Publish, @RecordStatus, @CreatedBy, @CreatedName, @ModifiedBy, @ModifiedName, @Category, @GrammarTopic, @VocabularyTopic, @ErrorType)";
+                string zSQL = "INSERT INTO [dbo].[TEC_Part3_Question] (QuestionKey, QuestionImage, QuestionText, QuestionVoice, SkillLevel, Ranking,Parent, Publish, RecordStatus, CreatedBy, CreatedName, ModifiedBy, ModifiedName, Category, GrammarTopic, VocabularyTopic, ErrorType) " +
+                              "VALUES (@QuestionKey, @QuestionImage, @QuestionText, @QuestionVoice, @SkillLevel, @Ranking, @Parent, @Publish, @RecordStatus, @CreatedBy, @CreatedName, @ModifiedBy, @ModifiedName, @Category, @GrammarTopic, @VocabularyTopic, @ErrorType)";
                 string zResult = "";
                 string zConnectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
                 SqlConnection zConnect = new SqlConnection(zConnectionString);
@@ -240,9 +244,10 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Models
                     zCommand.CommandType = CommandType.Text;
                     zCommand.Parameters.Add("@QuestionKey", SqlDbType.UniqueIdentifier).Value = new Guid(_QuestionKey);
                     zCommand.Parameters.Add("@QuestionText", SqlDbType.NVarChar).Value = _QuestionText ?? (object)DBNull.Value;
-
+                    zCommand.Parameters.Add("@QuestionImage", SqlDbType.NVarChar).Value = _QuestionImage ?? (object)DBNull.Value;
                     zCommand.Parameters.Add("@QuestionVoice", SqlDbType.NVarChar).Value = _QuestionVoice ?? (object)DBNull.Value;
                     zCommand.Parameters.Add("@SkillLevel", SqlDbType.Int).Value = _SkillLevel;
+                    zCommand.Parameters.Add("@Ranking", SqlDbType.Int).Value = _Ranking; 
                     zCommand.Parameters.Add("@AmountAccess", SqlDbType.Int).Value = _AmountAccess;
                     zCommand.Parameters.Add("@Parent", SqlDbType.UniqueIdentifier).Value = string.IsNullOrEmpty(_Parent) ? (object)DBNull.Value : new Guid(_Parent);
                     zCommand.Parameters.Add("@Publish", SqlDbType.Bit).Value = _Publish;
@@ -276,9 +281,10 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Models
             {
                 string zSQL = "UPDATE [dbo].[TEC_Part3_Question] SET " +
                               "QuestionText = @QuestionText, " +
-
+                               "QuestionImage = @QuestionImage, " +
                               "QuestionVoice = @QuestionVoice, " +
                               "SkillLevel = @SkillLevel, " +
+                               "Ranking = @Ranking, " +
                               "Parent = @Parent, " +
                               "Publish = @Publish, " +
                               "RecordStatus = @RecordStatus, " +
@@ -299,9 +305,10 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Models
                     {
                         zCommand.Parameters.Add("@QuestionKey", SqlDbType.UniqueIdentifier).Value = new Guid(_QuestionKey);
                         zCommand.Parameters.Add("@QuestionText", SqlDbType.NVarChar).Value = _QuestionText ?? (object)DBNull.Value;
-
+                        zCommand.Parameters.Add("@QuestionImage", SqlDbType.NVarChar).Value = _QuestionImage ?? (object)DBNull.Value;
                         zCommand.Parameters.Add("@QuestionVoice", SqlDbType.NVarChar).Value = _QuestionVoice ?? (object)DBNull.Value;
                         zCommand.Parameters.Add("@SkillLevel", SqlDbType.Int).Value = _SkillLevel;
+                        zCommand.Parameters.Add("@Ranking", SqlDbType.Int).Value = _Ranking;
                         zCommand.Parameters.Add("@Parent", SqlDbType.UniqueIdentifier).Value = string.IsNullOrEmpty(_Parent) ? (object)DBNull.Value : new Guid(_Parent);
                         zCommand.Parameters.Add("@Publish", SqlDbType.Bit).Value = _Publish;
                         zCommand.Parameters.Add("@RecordStatus", SqlDbType.Int).Value = _RecordStatus;

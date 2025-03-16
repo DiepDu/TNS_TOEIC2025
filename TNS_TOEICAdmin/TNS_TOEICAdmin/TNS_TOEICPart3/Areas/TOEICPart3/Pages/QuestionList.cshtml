@@ -47,7 +47,7 @@
         </div>
     </div>
     <div class="col-md-2 text-end">
-        <a href="/TOEICPart3/Question" class="btn btn-success" role="button" aria-pressed="true"> <i class="uil-file-blank"></i>Add New</a>
+        <a href="/TOEICPart3/Question?source=QuestionList" class="btn btn-success" role="button" aria-pressed="true"> <i class="uil-file-blank"></i>Add New</a>
     </div>
 </div>
 
@@ -167,7 +167,7 @@
         }
 
         function EditRecord(QuestionKey) {
-            zUrl = "/TOEICPart3/Question?Key=" + QuestionKey;
+zUrl = "/TOEICPart3/Question?Key=" + QuestionKey + "&source=QuestionList";
             window.location = zUrl;
         }
 

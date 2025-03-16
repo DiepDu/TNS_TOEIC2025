@@ -123,10 +123,10 @@
             $("#LV_DataBody").html(zContent);
         }
 
-        function EditRecord(QuestionKey) {
-            var zUrl = "/ToeicPart3/Question?Key=" + QuestionKey;
-            window.location = zUrl;
-        }
+     function EditRecord(QuestionKey) {
+    var zUrl = "/ToeicPart3/Question?Key=" + QuestionKey + "&source=QuestionSubList"; // Hoặc QuestionSubList tùy ngữ cảnh
+    window.location = zUrl;
+}
 
         function btnAnswer_Click(QuestionKey) {
             var zUrl = "/ToeicPart3/AnswerList?Key=" + QuestionKey;
@@ -135,7 +135,7 @@
 
         function AddRecord_Click() {
             var zQuestionKey = $("#QuestionKey").text();
-            var zUrl = "/ToeicPart3/Question?ParentKey=" + zQuestionKey;
+            var zUrl = "/ToeicPart3/Question?ParentKey=" + zQuestionKey + "&source=QuestionSubList";
             window.location = zUrl;
         }
 
