@@ -1,5 +1,5 @@
 ﻿@page
-@model TNS_TOEICPart2.Areas.TOEICPart2.Pages.AnswerListModel
+@model TNS_TOEICPart3.Areas.TOEICPart3.Pages.AnswerListModel
 @{
     Layout = "_Layout";
 }
@@ -92,7 +92,7 @@
 
             $.ajax({
                 type: 'POST',
-                url: "/TOEICPart2/AnswerList?handler=LoadData",
+                url: "/TOEICPart3/AnswerList?handler=LoadData",
                 data: JSON.stringify(zDataRequest),
                 contentType: "application/json",
                 dataType: "json",
@@ -125,13 +125,13 @@
         }
 
         function EditRecord(answerKey) {
-            var zUrl = "/TOEICPart2/Answer?Key=" + answerKey + "&QuestionKey=" + $("#QuestionKey").text();
+            var zUrl = "/TOEICPart3/Answer?Key=" + answerKey + "&QuestionKey=" + $("#QuestionKey").text();
             window.location = zUrl;
         }
 
         function AddRecord_Click() {
             var zQuestionKey = $("#QuestionKey").text();
-            var zUrl = "/TOEICPart2/Answer?QuestionKey=" + zQuestionKey;
+            var zUrl = "/TOEICPart3/Answer?QuestionKey=" + zQuestionKey;
             window.location = zUrl;
         }
     </script>
