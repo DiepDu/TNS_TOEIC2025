@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TNS_TOEICPart2", "TNS_TOEIC
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TNS_TOEICPart3", "TNS_TOEICPart3\TNS_TOEICPart3.csproj", "{871D5095-F476-4D88-9C1E-B319D2E8279F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TNS_TOEICPart4", "TNS_TOEICPart4\TNS_TOEICPart4.csproj", "{B3C0A436-4F7A-4892-A7DF-E6884CF87FCE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{871D5095-F476-4D88-9C1E-B319D2E8279F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{871D5095-F476-4D88-9C1E-B319D2E8279F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{871D5095-F476-4D88-9C1E-B319D2E8279F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B3C0A436-4F7A-4892-A7DF-E6884CF87FCE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B3C0A436-4F7A-4892-A7DF-E6884CF87FCE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B3C0A436-4F7A-4892-A7DF-E6884CF87FCE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B3C0A436-4F7A-4892-A7DF-E6884CF87FCE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

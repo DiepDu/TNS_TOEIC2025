@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<AddRazorSupportForMvc>true</AddRazorSupportForMvc>
+		<RazorCompileOnBuild>true</RazorCompileOnBuild>
+		<RazorCompileOnPublish>true</RazorCompileOnPublish>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+		<FrameworkReference Include="Microsoft.NETCore.App" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\TNS_Lib\TNS_DBConnection\TNS_DBConnection.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Reference Include="TNS_Auth">
+			<HintPath>..\..\TNS_Lib\TNS_DLL\TNS_Auth.dll</HintPath>
+		</Reference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Update="Areas\TOEICPart4\**\*.cshtml">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+</Project>

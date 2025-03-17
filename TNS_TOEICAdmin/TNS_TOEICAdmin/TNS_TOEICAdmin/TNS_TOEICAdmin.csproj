@@ -15,6 +15,7 @@
     <ProjectReference Include="..\TNS_TOEICPart1\TNS_TOEICPart1.csproj" />
     <ProjectReference Include="..\TNS_TOEICPart2\TNS_TOEICPart2.csproj" />
     <ProjectReference Include="..\TNS_TOEICPart3\TNS_TOEICPart3.csproj" />
+    <ProjectReference Include="..\TNS_TOEICPart4\TNS_TOEICPart4.csproj" />
   </ItemGroup>
 
   <ItemGroup>
