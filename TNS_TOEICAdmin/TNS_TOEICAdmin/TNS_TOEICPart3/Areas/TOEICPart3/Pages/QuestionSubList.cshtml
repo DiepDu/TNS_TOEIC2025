@@ -42,6 +42,7 @@
             <tr>
                 <th class="text-center align-middle text-light bg-primary" style="width:80px">No</th>
                 <th class="text-center align-middle text-light bg-primary">Question</th>
+                 <th class="text-center align-middle text-light bg-primary" style="width:120px">Image</th> 
                 <th class="text-center align-middle text-light bg-primary" style="width:90px">Ranking</th>
                 <th class="text-center align-middle text-light bg-primary" style="width:100px">Answer</th>
             </tr>
@@ -108,12 +109,13 @@
             var n = _DataView ? _DataView.length : 0;
             var zNo = 1;
             if (n === 0) {
-                zContent = "<tr><td colspan='4' class='text-center'>No data available</td></tr>";
+                zContent = "<tr><td colspan='5' class='text-center'>No data available</td></tr>";
             } else {
                 for (var i = 0; i < n; i++) {
                     zContent += "<tr>";
                     zContent += "<td class='text-center'>" + zNo + "</td>";
                     zContent += "<td onclick='EditRecord(\"" + _DataView[i].QuestionKey + "\")' style='cursor:pointer'>" + (_DataView[i].QuestionText || "") + "</td>";
+                    zContent += "           <td class='centered-cell'><img src='" + _DataView[i].QuestionImage + "' class='centered-image' width='100' height='100' /></td>";
                     zContent += "<td class='text-center'>" + (_DataView[i].Ranking || 0) + "</td>";
                     zContent += "<td class='text-center'><button type='button' class='btn btn-warning' onclick='btnAnswer_Click(\"" + _DataView[i].QuestionKey + "\")'>Answer</button></td>";
                     zContent += "</tr>";
@@ -124,7 +126,7 @@
         }
 
      function EditRecord(QuestionKey) {
-    var zUrl = "/ToeicPart3/Question?Key=" + QuestionKey + "&source=QuestionSubList"; // Hoặc QuestionSubList tùy ngữ cảnh
+    var zUrl = "/ToeicPart3/Question?Key=" + QuestionKey + "&source=QuestionSubList"; 
     window.location = zUrl;
 }
 
@@ -145,3 +147,20 @@
         }
     </script>
 }
+<style>
+    .tns-field-name {
+        width: 140px;
+    }
+    .image-cell {
+        width: 120px; /* Giới hạn chiều rộng ô */
+        max-width: 120px; /* Đảm bảo không vượt quá */
+        text-align: center; /* Căn giữa nội dung */
+    }
+    .question-image {
+        width: 100px; /* Kích thước cố định */
+        height: 100px; /* Kích thước cố định */
+        object-fit: cover; /* Giữ tỷ lệ hình ảnh */
+        display: block; /* Đảm bảo hình ảnh là block để căn giữa */
+        margin: 0 auto; /* Căn giữa hình ảnh trong ô */
+    }
+</style>

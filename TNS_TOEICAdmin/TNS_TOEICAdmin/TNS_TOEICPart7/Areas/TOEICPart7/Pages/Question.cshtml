@@ -1,5 +1,5 @@
 ﻿@page
-@model TNS_TOEICPart2.Areas.TOEICPart2.Pages.QuestionModel
+@model TNS_TOEICPart7.Areas.TOEICPart7.Pages.QuestionModel
 @{
     Layout = "_Layout";
 }
@@ -10,9 +10,9 @@
     <div style="padding: 5px; font-weight: bold; font-size: 13px; background-color: #f8f9fa; border-radius: 5px;">
         <a href="~/Index" style="text-decoration: none; color: #4c4c4c">Home</a>
         <span class="uil-angle-double-right"></span>
-        <a href="/TOEICPart2/QuestionList" style="text-decoration: none; color: #4c4c4c">TOEIC</a>
+        <a href="/TOEICPart7/QuestionList" style="text-decoration: none; color: #4c4c4c">TOEIC</a>
         <span class="uil-angle-double-right"></span>
-        <span style="color: maroon">PART 2</span>
+        <span style="color: maroon">PART 7</span>
     </div>
 </div>
 
@@ -33,8 +33,7 @@
                     </div>
                 </div>
 
-                <!-- Image Section -->
-               @*  <div class="mb-4">
+                <div class="mb-4" id="imageSection">
                     <div class="card border-success">
                         <div class="card-header bg-success text-white">
                             <i class="fas fa-image me-2"></i> Image
@@ -51,10 +50,10 @@
                             </div>
                         </div>
                     </div>
-                </div> *@
+                </div>
 
                 <!-- Voice Section -->
-                <div class="mb-4">
+                <div class="mb-4" id="voiceSection">
                     <div class="card border-danger">
                         <div class="card-header bg-danger text-white">
                             <i class="fas fa-volume-up me-2"></i> Voice
@@ -154,12 +153,20 @@
 
     <!-- Sidebar -->
     <div class="col-md-3">
-        <div class="card shadow-sm border-primary">
+        <div class="card shadow-sm border-primary mb-4">
             <div class="card-header bg-primary text-white" onclick="TaskShareSearch_DisplayForm()" style="cursor: pointer;">
                 <i class="fas fa-info-circle me-2"></i> Information
             </div>
             <div class="card-body">
                 <!-- Có thể thêm thông tin bổ sung như CreatedOn, CreatedBy, v.v. nếu cần -->
+            </div>
+        </div>
+        <div class="card shadow-sm border-primary">
+            <div class="card-header bg-primary text-white">
+                <i class="fas fa-sort-numeric-up me-2"></i> Ranking
+            </div>
+            <div class="card-body p-2">
+                <input id="txtRanking" type="number" class="form-control" value="0" min="1" max="3" style="font-size: 14px; padding: 5px;" />
             </div>
         </div>
     </div>
@@ -191,6 +198,8 @@
 <div id="Log_ViewData"></div>
 <div style="display: none">
     <div id="QuestionKey">@Model.QuestionKey</div>
+    <div id="Parent">@Model.Parent</div>
+    <div id="Source">@Model.Source</div>
 </div>
 
 <script src="~/lib/tinymce/tinymce.min.js"></script>
@@ -220,13 +229,30 @@
             InitEditor('txtQuestionText');
             loadDropdowns();
 
+             const source = $('#Source').text().trim();
+            console.log('Source:', source);
+
+            // Hiển thị/ẩn section dựa trên Source
+            if (source === 'QuestionList') {
+                $('#imageSection').hide();
+                $('#voiceSection').hide();
+            } else if (source === 'QuestionSubList') {
+                $('#imageSection').hide();
+                $('#voiceSection').hide();
+            } else {
+                // Nếu không có source, hiển thị cả hai (mặc định)
+                $('#imageSection').hide();
+                $('#voiceSection').hide();
+            }
+
             // Kiểm tra QuestionKey từ Model
             const questionKey = $('#QuestionKey').text().trim();
+              const parentKey = $('#Parent').text().trim();
 
             // Nếu không có QuestionKey hợp lệ (rỗng hoặc undefined), khởi tạo trạng thái mới
             if (!questionKey || questionKey === 'undefined' || questionKey === '') {
-                record = { QuestionKey: null };
-                console.log('No valid QuestionKey, initializing new record');
+                record = { QuestionKey: null,  Parent: parentKey || null };
+               console.log('No valid QuestionKey, initializing new record with Parent:', parentKey);
                 RecordView();
                 updateButtons();
             } else {
@@ -234,13 +260,13 @@
                 RecordRead(questionKey);
             }
 
-            // const txtUploadImage = document.getElementById('txtUploadImage');
-            // if (txtUploadImage) {
-            //     txtUploadImage.addEventListener('change', function () {
-            //         console.log('Sự kiện change được kích hoạt cho txtUploadImage');
-            //         PreviewImage_Ajax();
-            //     });
-            // }
+            const txtUploadImage = document.getElementById('txtUploadImage');
+            if (txtUploadImage) {
+                txtUploadImage.addEventListener('change', function () {
+                    console.log('Sự kiện change được kích hoạt cho txtUploadImage');
+                    PreviewImage_Ajax();
+                });
+            }
 
             const txtUploadVoice = document.getElementById('txtUploadVoice');
             if (txtUploadVoice) {
@@ -260,7 +286,7 @@
         function loadDropdowns() {
             $.ajax({
                 type: 'POST',
-                url: '/TOEICPart2/Question?handler=LoadDropdowns',
+                url: '/TOEICPart7/Question?handler=LoadDropdowns',
                 contentType: 'application/json',
                 dataType: 'json'
             }).done(data => {
@@ -283,7 +309,7 @@
         function RecordRead(key) {
             $.ajax({
                 type: 'POST',
-                url: '/TOEICPart2/Question?handler=RecordRead',
+                url: '/TOEICPart7/Question?handler=RecordRead',
                 data: JSON.stringify({ questionKey: key }),
                 contentType: 'application/json',
                 dataType: 'json'
@@ -308,22 +334,26 @@
 
         function RecordView() {
             tinymce.get('txtQuestionText')?.setContent(record.QuestionText || '');
-            // $('#objQuestionImage').attr('src', record.QuestionImage || '/images/icon_Pic.png');
+            $('#objQuestionImage').attr('src', record.QuestionImage || '/images/icon_Pic.png');
             $('#objQuestionVoice source').attr('src', record.QuestionVoice || '').parent()[0].load();
             $('#txtSkillLevel').val(record.SkillLevel || 0);
+             $('#txtRanking').val(record.Ranking || 0);
             $('#ddlCategory').val(record.Category || '');
             $('#ddlGrammarTopic').val(record.GrammarTopic || '');
             $('#ddlVocabularyTopic').val(record.VocabularyTopic || '');
             $('#ddlErrorType').val(record.ErrorType || '');
+              $('#Parent').text(record.Parent || '');
         }
 
         function RecordInput() {
             record.QuestionText = tinymce.get('txtQuestionText')?.getContent() || '';
             record.SkillLevel = parseInt($('#txtSkillLevel').val()) || 0;
+              record.Ranking = parseInt($('#txtRanking').val()) || 0;
             record.Category = $('#ddlCategory').val() || null;
             record.GrammarTopic = $('#ddlGrammarTopic').val() || null;
             record.VocabularyTopic = $('#ddlVocabularyTopic').val() || null;
             record.ErrorType = $('#ddlErrorType').val() || null;
+            record.Parent = $('#Parent').text().trim() || null;
         }
 
         function handleOperation(handler, message, redirect = null) {
@@ -339,7 +369,7 @@
 
             $.ajax({
                 type: 'POST',
-                url: `/TOEICPart2/Question?handler=${handler}`,
+                url: `/TOEICPart7/Question?handler=${handler}`,
                 contentType: false,
                 processData: false,
                 data: formData
@@ -386,7 +416,7 @@
 
             $.ajax({
                 type: 'POST',
-                url: '/TOEICPart2/Question?handler=RecordDel',
+                url: '/TOEICPart7/Question?handler=RecordDel',
                 data: JSON.stringify(requestData),
                 contentType: 'application/json',
                 dataType: 'json'
@@ -397,7 +427,7 @@
                     setTimeout(() => {
                         $('#ModalMessage').modal('hide');
                         $('body').focus();
-                        window.location.href = '/TOEICPart2/QuestionList';
+                        window.location.href = '/TOEICPart7/QuestionList';
                     }, 2000);
                 } else {
                     $('#ModalMessage_Icon').html('<img src="/images/icon_error.png"/>');

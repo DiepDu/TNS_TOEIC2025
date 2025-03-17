@@ -1,5 +1,5 @@
 ﻿@page
-@model TNS_TOEICPart2.Areas.TOEICPart2.Pages.AnswerListModel
+@model TNS_TOEICPart6.Areas.TOEICPart6.Pages.AnswerListModel
 @{
     Layout = "_Layout";
 }
@@ -21,9 +21,9 @@
     <div style="padding:5px; font-weight:bold; font-size:13px">
         <a href="~/Index" style="text-decoration:none; color:#4c4c4c">Home</a>
         <span class="uil-angle-double-right"></span>
-        <a href="/TOEICPart2/QuestionList" style="text-decoration:none; color:#4c4c4c">TOEIC</a>
+        <a href="/TOEICPart6/QuestionList" style="text-decoration:none; color:#4c4c4c">TOEIC</a>
         <span class="uil-angle-double-right"></span>
-        <a href="/TOEICPart2/QuestionList" style="text-decoration:none; color:#4c4c4c">PART 2</a>
+        <a href="/TOEICPart6/QuestionList" style="text-decoration:none; color:#4c4c4c">PART 6</a>
         <span class="uil-angle-double-right"></span>
         <span style="color:maroon">Answer</span>
     </div>
@@ -92,7 +92,7 @@
 
             $.ajax({
                 type: 'POST',
-                url: "/TOEICPart2/AnswerList?handler=LoadData",
+                url: "/TOEICPart6/AnswerList?handler=LoadData",
                 data: JSON.stringify(zDataRequest),
                 contentType: "application/json",
                 dataType: "json",
@@ -125,13 +125,13 @@
         }
 
         function EditRecord(answerKey) {
-            var zUrl = "/TOEICPart2/Answer?Key=" + answerKey + "&QuestionKey=" + $("#QuestionKey").text();
+            var zUrl = "/TOEICPart6/Answer?Key=" + answerKey + "&QuestionKey=" + $("#QuestionKey").text();
             window.location = zUrl;
         }
 
         function AddRecord_Click() {
             var zQuestionKey = $("#QuestionKey").text();
-            var zUrl = "/TOEICPart2/Answer?QuestionKey=" + zQuestionKey;
+            var zUrl = "/TOEICPart6/Answer?QuestionKey=" + zQuestionKey;
             window.location = zUrl;
         }
     </script>

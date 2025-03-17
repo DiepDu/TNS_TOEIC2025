@@ -1,6 +1,5 @@
 ﻿@page
-@model TNS_TOEICPart3.Areas.TOEICPart3.Pages.AnswerModel
-
+@model TNS_TOEICPart5.Areas.TOEICPart5.Pages.AnswerModel
 <link href="~/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
 
@@ -9,11 +8,11 @@
     <div style="padding: 5px; font-weight: bold; font-size: 13px; background-color: #f8f9fa; border-radius: 5px;">
         <a href="~/Index" style="text-decoration: none; color: #4c4c4c">Home</a>
         <span class="uil-angle-double-right"></span>
-        <a href="/TOEICPart3/QuestionList" style="text-decoration: none; color: #4c4c4c">TOEIC</a>
+        <a href="/TOEICPart5/QuestionList" style="text-decoration: none; color: #4c4c4c">TOEIC</a>
         <span class="uil-angle-double-right"></span>
-        <a href="/TOEICPart3/QuestionList" style="text-decoration: none; color: #4c4c4c">PART 3</a>
+        <a href="/TOEICPart5/QuestionList" style="text-decoration: none; color: #4c4c4c">PART 5</a>
         <span class="uil-angle-double-right"></span>
-        <a href="/TOEICPart3/AnswerList?Key=@Model.QuestionKey" style="text-decoration: none; color: #4c4c4c">Answer List</a>
+        <a href="/TOEICPart5/AnswerList?Key=@Model.QuestionKey" style="text-decoration: none; color: #4c4c4c">Answer List</a>
         <span class="uil-angle-double-right"></span>
         <span style="color: maroon">Answer</span>
         <span class="uil-angle-double-right"></span>
@@ -143,7 +142,7 @@
 
                     if (!questionKey || questionKey.length !== 36) {
                         alert('Invalid QuestionKey');
-                        window.location.href = '/TOEICPart3/QuestionList';
+                        window.location.href = '/TOEICPart5/QuestionList';
                         return;
                     }
 
@@ -173,7 +172,7 @@
                 function loadDropdowns() {
                     $.ajax({
                         type: 'POST',
-                        url: '/TOEICPart3/Answer?handler=LoadDropdowns',
+                        url: '/TOEICPart5/Answer?handler=LoadDropdowns',
                         contentType: 'application/json',
                         dataType: 'json',
                         headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() }
@@ -214,7 +213,7 @@
                 function RecordRead(key) {
                     $.ajax({
                         type: 'POST',
-                        url: '/TOEICPart3/Answer?handler=Read',
+                        url: '/TOEICPart5/Answer?handler=Read',
                         data: JSON.stringify({ AnswerKey: key, QuestionKey: _Record.QuestionKey }),
                         contentType: 'application/json',
                         dataType: 'json',
@@ -268,7 +267,7 @@
             // Gọi AJAX để đếm số lượng đáp án hiện tại
             $.ajax({
                 type: 'POST',
-                url: '/TOEICPart3/Answer?handler=CountAnswers',
+                url: '/TOEICPart5/Answer?handler=CountAnswers',
                 data: JSON.stringify({ QuestionKey: _Record.QuestionKey }),
                 contentType: 'application/json',
                 dataType: 'json',
@@ -316,7 +315,7 @@
                 function RecordCreate() {
                     $.ajax({
                         type: 'POST',
-                        url: '/TOEICPart3/Answer?handler=Create',
+                        url: '/TOEICPart5/Answer?handler=Create',
                         data: JSON.stringify(_Record), // Sửa từ dataabricks thành data
                         contentType: 'application/json',
                         dataType: 'json',
@@ -332,7 +331,7 @@
                             updateButtons();
                             setTimeout(() => {
                                 $('#ModalMessage').modal('hide');
-                                window.location.href = '/TOEICPart3/AnswerList?Key=' + _Record.QuestionKey;
+                                window.location.href = '/TOEICPart5/AnswerList?Key=' + _Record.QuestionKey;
                             }, 2000);
                         } else {
                             $('#ModalMessage_Icon').html('<img src="/images/icon_error.png"/>');
@@ -349,7 +348,7 @@
                 function RecordUpdate() {
                     $.ajax({
                         type: 'POST',
-                        url: '/TOEICPart3/Answer?handler=Update',
+                        url: '/TOEICPart5/Answer?handler=Update',
                         data: JSON.stringify(_Record),
                         contentType: 'application/json',
                         dataType: 'json',
@@ -378,7 +377,7 @@
                 function UpdateOtherAnswersToFalse() {
                     $.ajax({
                         type: 'POST',
-                        url: '/TOEICPart3/Answer?handler=UpdateOtherAnswers',
+                        url: '/TOEICPart5/Answer?handler=UpdateOtherAnswers',
                         data: JSON.stringify({ QuestionKey: _Record.QuestionKey, CurrentAnswerKey: _Record.AnswerKey }),
                         contentType: 'application/json',
                         dataType: 'json',
@@ -395,7 +394,7 @@
                 function RecordDelete() {
                     $.ajax({
                         type: 'POST',
-                        url: '/TOEICPart3/Answer?handler=Delete',
+                        url: '/TOEICPart5/Answer?handler=Delete',
                         data: JSON.stringify({ AnswerKey: _Record.AnswerKey }),
                         contentType: 'application/json',
                         dataType: 'json',
@@ -406,7 +405,7 @@
                             $('#ModalMessage_Content').text('Answer deleted successfully');
                             setTimeout(() => {
                                 $('#ModalMessage').modal('hide');
-                                window.location.href = '/TOEICPart3/AnswerList?Key=' + _Record.QuestionKey;
+                                window.location.href = '/TOEICPart5/AnswerList?Key=' + _Record.QuestionKey;
                             }, 2000);
                         } else {
                             $('#ModalMessage_Icon').html('<img src="/images/icon_error.png"/>');
@@ -433,7 +432,7 @@
                 }
 
                 function ReturnAnswer_Click() {
-                    window.location.href = '/TOEICPart3/AnswerList?Key=' + $('#QuestionKey').text().trim();
+                    window.location.href = '/TOEICPart5/AnswerList?Key=' + $('#QuestionKey').text().trim();
                 }
 
                 function newGuid() {
@@ -484,3 +483,4 @@
         padding: 8px 20px;
     }
 </style>
+

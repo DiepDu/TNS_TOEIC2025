@@ -7,15 +7,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TNS_TOEICPart3.Areas.TOEICPart3.Models
+namespace TNS_TOEICPart7.Areas.TOEICPart7.Models
 {
     public class QuestionSubListAccessData
     {
         public static JsonResult GetList(string QuestionKey)
         {
             string zMessage = "";
-            string zSQL = @"SELECT QuestionKey, QuestionText,QuestionImage, Ranking";
-            zSQL += " FROM [dbo].[TEC_Part3_Question] ";
+            string zSQL = @"SELECT QuestionKey, QuestionText, Ranking";
+            zSQL += " FROM [dbo].[TEC_Part7_Question] ";
             zSQL += " WHERE RecordStatus != 99 AND Parent = @QuestionKey";
             zSQL += " ORDER BY Ranking ";
             DataTable zTable = new DataTable();
@@ -41,7 +41,6 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Models
 
             return new JsonResult(zDataList);
 
-        }      
+        }
     }
-      
 }

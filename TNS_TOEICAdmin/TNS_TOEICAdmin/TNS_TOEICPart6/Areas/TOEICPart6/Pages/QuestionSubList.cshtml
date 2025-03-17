@@ -1,0 +1,147 @@
+﻿@page
+@model TNS_TOEICPart6.Areas.TOEICPart6.Pages.QuestionSubListModel
+@{
+    Layout = "_Layout";
+}
+
+<style>
+    .tns-field-name {
+        width: 140px;
+    }
+</style>
+
+<div style="width:100%; margin:-20px 0 0 -20px">
+    <div style="padding:5px; font-weight:bold; font-size:13px">
+        <a href="~/Index" style="text-decoration:none; color:#4c4c4c">Home</a>
+        <span class="uil-angle-double-right"></span>
+        <a href="~/ToeicPart6/Index" style="text-decoration:none; color:#4c4c4c">TOEIC</a>
+        <span class="uil-angle-double-right"></span>
+        <a href="~/ToeicPart6/QuestionList" style="text-decoration:none; color:#4c4c4c">PART 6</a>
+        <span class="uil-angle-double-right"></span>
+        <span style="color:maroon">Question</span>
+    </div>
+</div>
+
+<div class="row mb-2">
+    <div class="col-md-10">
+        <div class="col-12 text-center text-primary" style="font-size:26px; font-weight:bold">
+            SUB QUESTION PART 6
+        </div>
+        <div style="color:maroon; font-weight:bold; padding-left:10px">
+            <div id="Info_View"></div>
+        </div>
+    </div>
+    <div class="col-md-2 text-end">
+        <button type="button" id="btnDel" class="btn btn-success" onclick="AddRecord_Click()">Add New</button>
+    </div>
+</div>
+
+<div class="row">
+    <table id="LV_Datatable" class="table table-striped table-bordered" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
+        <thead>
+            <tr>
+                <th class="text-center align-middle text-light bg-primary" style="width:80px">No</th>
+                <th class="text-center align-middle text-light bg-primary">Question</th>
+                <th class="text-center align-middle text-light bg-primary" style="width:90px">Ranking</th>
+                <th class="text-center align-middle text-light bg-primary" style="width:100px">Answer</th>
+            </tr>
+        </thead>
+        <tbody id="LV_DataBody"></tbody>
+    </table>
+
+    <div id="LV_Waiting" style="display:none">
+        <div class='text-center'>
+            <div class='spinner-border text-primary m-5' role='status'>
+                <span class='sr-only'>Loading...</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div style="display:none">
+    <div id="QuestionKey">@Model.QuestionKey</div>
+</div>
+
+<div>
+    <div style="cursor:pointer" onclick="Log_Show()">
+        <i class="uil-apple"></i>
+    </div>
+    <div id="Log_ViewData" class="row" style="display:none; padding:20px;"></div>
+</div>
+
+@section Scripts {
+    <script>
+                $(document).ready(function () {
+                    LV_LoadData_Ajax();
+                });
+
+                function Log_Show() {
+                    $("#Log_ViewData").css("display", "");
+                }
+
+                var _DataView;
+                function LV_LoadData_Ajax() {
+                    $("#LV_Waiting").css("display", "");
+                    var zQuestionKey = $("#QuestionKey").text();
+                    var zDataRequest = { "QuestionKey": zQuestionKey };
+                    $.ajax({
+                        type: 'POST',
+                        url: "/ToeicPart6/QuestionSubList?handler=LoadData",
+                        data: JSON.stringify(zDataRequest),
+                        contentType: "application/json",
+                        dataType: "json",
+                        headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() }
+                    })
+                        .done(function (dataResponse) {
+                            $("#Log_ViewData").html(JSON.stringify(dataResponse));
+                            _DataView = dataResponse;
+                            LV_DisplayData();
+                            $("#LV_Waiting").css("display", "none");
+                        })
+                        .fail(function (error) {
+                            alert('Error: ' + error.responseText);
+                        });
+                }
+
+                function LV_DisplayData() {
+                    var zContent = "";
+                    var n = _DataView ? _DataView.length : 0;
+                    var zNo = 1;
+                    if (n === 0) {
+                        zContent = "<tr><td colspan='4' class='text-center'>No data available</td></tr>";
+                    } else {
+                        for (var i = 0; i < n; i++) {
+                            zContent += "<tr>";
+                            zContent += "<td class='text-center'>" + zNo + "</td>";
+                            zContent += "<td onclick='EditRecord(\"" + _DataView[i].QuestionKey + "\")' style='cursor:pointer'>" + (_DataView[i].QuestionText || "") + "</td>";
+                            zContent += "<td class='text-center'>" + (_DataView[i].Ranking || 0) + "</td>";
+                            zContent += "<td class='text-center'><button type='button' class='btn btn-warning' onclick='btnAnswer_Click(\"" + _DataView[i].QuestionKey + "\")'>Answer</button></td>";
+                            zContent += "</tr>";
+                            zNo++;
+                        }
+                    }
+                    $("#LV_DataBody").html(zContent);
+                }
+
+             function EditRecord(QuestionKey) {
+            var zUrl = "/ToeicPart6/Question?Key=" + QuestionKey + "&source=QuestionSubList"; // Hoặc QuestionSubList tùy ngữ cảnh
+            window.location = zUrl;
+        }
+
+                function btnAnswer_Click(QuestionKey) {
+                    var zUrl = "/ToeicPart6/AnswerList?Key=" + QuestionKey;
+                    window.location = zUrl;
+                }
+
+                function AddRecord_Click() {
+                    var zQuestionKey = $("#QuestionKey").text();
+                    var zUrl = "/ToeicPart6/Question?ParentKey=" + zQuestionKey + "&source=QuestionSubList";
+                    window.location = zUrl;
+                }
+
+                function LV_LoadData_More() {
+                    _PageNumber++;
+                    LV_LoadData_Ajax();
+                }
+    </script>
+}

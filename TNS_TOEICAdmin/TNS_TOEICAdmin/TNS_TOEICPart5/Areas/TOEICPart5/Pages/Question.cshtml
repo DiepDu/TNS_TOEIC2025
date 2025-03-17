@@ -1,5 +1,5 @@
 ﻿@page
-@model TNS_TOEICPart2.Areas.TOEICPart2.Pages.QuestionModel
+@model TNS_TOEICPart5.Areas.TOEICPart5.Pages.QuestionModel
 @{
     Layout = "_Layout";
 }
@@ -10,9 +10,9 @@
     <div style="padding: 5px; font-weight: bold; font-size: 13px; background-color: #f8f9fa; border-radius: 5px;">
         <a href="~/Index" style="text-decoration: none; color: #4c4c4c">Home</a>
         <span class="uil-angle-double-right"></span>
-        <a href="/TOEICPart2/QuestionList" style="text-decoration: none; color: #4c4c4c">TOEIC</a>
+        <a href="/TOEICPart5/QuestionList" style="text-decoration: none; color: #4c4c4c">TOEIC</a>
         <span class="uil-angle-double-right"></span>
-        <span style="color: maroon">PART 2</span>
+        <span style="color: maroon">PART 5</span>
     </div>
 </div>
 
@@ -34,27 +34,27 @@
                 </div>
 
                 <!-- Image Section -->
-               @*  <div class="mb-4">
-                    <div class="card border-success">
-                        <div class="card-header bg-success text-white">
-                            <i class="fas fa-image me-2"></i> Image
-                        </div>
-                        <div class="card-body">
-                            <img id="objQuestionImage" src="~/images/icon_Pic.png" class="img-fluid rounded mb-2"
-                                 style="width: 161px; height: 161px; object-fit: cover;" />
-                            <div id="FormUploadImage" class="mb-3">
-                                <form method="post" enctype="multipart/form-data">
-                                    <div class="input-group">
-                                        <input id="txtUploadImage" class="form-control" type="file" accept="image/*">
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
+                @*  <div class="mb-4">
+                <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                <i class="fas fa-image me-2"></i> Image
+                </div>
+                <div class="card-body">
+                <img id="objQuestionImage" src="~/images/icon_Pic.png" class="img-fluid rounded mb-2"
+                style="width: 161px; height: 161px; object-fit: cover;" />
+                <div id="FormUploadImage" class="mb-3">
+                <form method="post" enctype="multipart/form-data">
+                <div class="input-group">
+                <input id="txtUploadImage" class="form-control" type="file" accept="image/*">
+                </div>
+                </form>
+                </div>
+                </div>
+                </div>
                 </div> *@
 
                 <!-- Voice Section -->
-                <div class="mb-4">
+              @*   <div class="mb-4">
                     <div class="card border-danger">
                         <div class="card-header bg-danger text-white">
                             <i class="fas fa-volume-up me-2"></i> Voice
@@ -73,7 +73,7 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                </div> *@
 
                 <!-- Level Section -->
                 <div class="mb-4">
@@ -242,25 +242,25 @@
             //     });
             // }
 
-            const txtUploadVoice = document.getElementById('txtUploadVoice');
-            if (txtUploadVoice) {
-                txtUploadVoice.addEventListener('change', function () {
-                    console.log('Sự kiện change được kích hoạt cho txtUploadVoice');
-                    PreviewVoice_Ajax();
-                });
-            }
+            // const txtUploadVoice = document.getElementById('txtUploadVoice');
+            // if (txtUploadVoice) {
+            //     txtUploadVoice.addEventListener('change', function () {
+            //         console.log('Sự kiện change được kích hoạt cho txtUploadVoice');
+            //         PreviewVoice_Ajax();
+            //     });
+            // }
         });
 
         let record = {};
         const roles = { create: true, read: true, update: true, delete: true };
-        let tempImageFile = null;
-        let tempVoiceFile = null;
+        // let tempImageFile = null;
+        // let tempVoiceFile = null;
 
         // Tải dữ liệu cho các combobox
         function loadDropdowns() {
             $.ajax({
                 type: 'POST',
-                url: '/TOEICPart2/Question?handler=LoadDropdowns',
+                url: '/TOEICPart5/Question?handler=LoadDropdowns',
                 contentType: 'application/json',
                 dataType: 'json'
             }).done(data => {
@@ -283,7 +283,7 @@
         function RecordRead(key) {
             $.ajax({
                 type: 'POST',
-                url: '/TOEICPart2/Question?handler=RecordRead',
+                url: '/TOEICPart5/Question?handler=RecordRead',
                 data: JSON.stringify({ questionKey: key }),
                 contentType: 'application/json',
                 dataType: 'json'
@@ -309,7 +309,7 @@
         function RecordView() {
             tinymce.get('txtQuestionText')?.setContent(record.QuestionText || '');
             // $('#objQuestionImage').attr('src', record.QuestionImage || '/images/icon_Pic.png');
-            $('#objQuestionVoice source').attr('src', record.QuestionVoice || '').parent()[0].load();
+            // $('#objQuestionVoice source').attr('src', record.QuestionVoice || '').parent()[0].load();
             $('#txtSkillLevel').val(record.SkillLevel || 0);
             $('#ddlCategory').val(record.Category || '');
             $('#ddlGrammarTopic').val(record.GrammarTopic || '');
@@ -334,12 +334,12 @@
 
             const formData = new FormData();
             formData.append('record', JSON.stringify(record));
-            if (tempImageFile) formData.append('image', tempImageFile);
-            if (tempVoiceFile) formData.append('voice', tempVoiceFile);
+            // if (tempImageFile) formData.append('image', tempImageFile);
+            // if (tempVoiceFile) formData.append('voice', tempVoiceFile);
 
             $.ajax({
                 type: 'POST',
-                url: `/TOEICPart2/Question?handler=${handler}`,
+                url: `/TOEICPart5/Question?handler=${handler}`,
                 contentType: false,
                 processData: false,
                 data: formData
@@ -348,8 +348,8 @@
                     $('#ModalMessage_Icon').html('<img src="/images/icon_success.png"/>');
                     $('#ModalMessage_Content').html(message);
                     record = data.record || record;
-                    tempImageFile = null;
-                    tempVoiceFile = null;
+                    // tempImageFile = null;
+                    // tempVoiceFile = null;
                     RecordView();
                     updateButtons();
                     setTimeout(() => {
@@ -386,7 +386,7 @@
 
             $.ajax({
                 type: 'POST',
-                url: '/TOEICPart2/Question?handler=RecordDel',
+                url: '/TOEICPart5/Question?handler=RecordDel',
                 data: JSON.stringify(requestData),
                 contentType: 'application/json',
                 dataType: 'json'
@@ -397,7 +397,7 @@
                     setTimeout(() => {
                         $('#ModalMessage').modal('hide');
                         $('body').focus();
-                        window.location.href = '/TOEICPart2/QuestionList';
+                        window.location.href = '/TOEICPart5/QuestionList';
                     }, 2000);
                 } else {
                     $('#ModalMessage_Icon').html('<img src="/images/icon_error.png"/>');
@@ -425,31 +425,31 @@
             console.log('Button state updated - isNew:', isNew);
         }
 
-        function PreviewImage_Ajax() {
-            const fileInput = document.getElementById('txtUploadImage');
-            if (fileInput && fileInput.files.length > 0) {
-                tempImageFile = fileInput.files[0];
-                console.log('Hình ảnh đã chọn:', tempImageFile.name);
-                const imageElement = document.getElementById('objQuestionImage');
-                if (imageElement) {
-                    imageElement.src = URL.createObjectURL(tempImageFile);
-                }
-            }
-        }
+        // function PreviewImage_Ajax() {
+        //     const fileInput = document.getElementById('txtUploadImage');
+        //     if (fileInput && fileInput.files.length > 0) {
+        //         tempImageFile = fileInput.files[0];
+        //         console.log('Hình ảnh đã chọn:', tempImageFile.name);
+        //         const imageElement = document.getElementById('objQuestionImage');
+        //         if (imageElement) {
+        //             imageElement.src = URL.createObjectURL(tempImageFile);
+        //         }
+        //     }
+        // }
 
-        function PreviewVoice_Ajax() {
-            const fileInput = document.getElementById('txtUploadVoice');
-            if (fileInput && fileInput.files.length > 0) {
-                tempVoiceFile = fileInput.files[0];
-                console.log('Âm thanh đã chọn:', tempVoiceFile.name);
-                const source = document.querySelector('#objQuestionVoice source');
-                if (source) {
-                    source.src = URL.createObjectURL(tempVoiceFile);
-                    const audio = document.getElementById('objQuestionVoice');
-                    audio.load();
-                }
-            }
-        }
+        // function PreviewVoice_Ajax() {
+        //     const fileInput = document.getElementById('txtUploadVoice');
+        //     if (fileInput && fileInput.files.length > 0) {
+        //         tempVoiceFile = fileInput.files[0];
+        //         console.log('Âm thanh đã chọn:', tempVoiceFile.name);
+        //         const source = document.querySelector('#objQuestionVoice source');
+        //         if (source) {
+        //             source.src = URL.createObjectURL(tempVoiceFile);
+        //             const audio = document.getElementById('objQuestionVoice');
+        //             audio.load();
+        //         }
+        //     }
+        // }
 
         // Gán sự kiện cho các nút
         const btnDel_Click = deleteRecord;
