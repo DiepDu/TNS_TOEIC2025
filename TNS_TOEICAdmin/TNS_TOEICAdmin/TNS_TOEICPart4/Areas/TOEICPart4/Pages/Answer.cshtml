@@ -89,15 +89,27 @@
     </div>
 
     <!-- Sidebar -->
-    <div class="col-md-3">
+   <div class="col-md-3">
         <div class="card shadow-sm border-primary">
-            <div class="card-header bg-primary text-white">
+            <div class="card-header bg-primary text-white" style="cursor:pointer;" onclick="toggleInfo()">
                 <i class="fas fa-info-circle me-2"></i> Information
             </div>
             <div class="card-body">
-                <div class="form-check form-switch">
+                <div class="form-check form-switch mb-3">
                     <input class="form-check-input" type="checkbox" id="chkAnswerCorrect">
                     <label class="form-check-label" for="chkAnswerCorrect">Answer Correct</label>
+                </div>
+                <div id="metadata" style="display: none;">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5 text-muted">Created On</dt>
+                        <dd class="col-sm-7" id="createdOn">N/A</dd>
+                        <dt class="col-sm-5 text-muted">Created By</dt>
+                        <dd class="col-sm-7" id="createdBy">N/A</dd>
+                        <dt class="col-sm-5 text-muted">Modified On</dt>
+                        <dd class="col-sm-7" id="modifiedOn">N/A</dd>
+                        <dt class="col-sm-5 text-muted">Modified By</dt>
+                        <dd class="col-sm-7" id="modifiedBy">N/A</dd>
+                    </dl>
                 </div>
             </div>
         </div>
@@ -159,15 +171,50 @@
                                 loadDropdowns();
                                 if (answerKey && answerKey.length === 36) {
                                     RecordRead(answerKey);
+                                    loadInformation(answerKey, questionKey);
                                 } else {
                                     _Record = { IsNewRecord: true, AnswerKey: newGuid(), QuestionKey: questionKey };
                                     RecordView();
                                     updateButtons();
+                                    loadInfoData({});
                                 }
                             });
                         }
                     });
                 });
+
+                 function loadInformation(answerKey, questionKey) {
+            if (!answerKey || answerKey.length !== 36) {
+                loadInfoData({});
+                return;
+            }
+            $.ajax({
+                type: 'POST',
+                url: '/TOEICPart4/Answer?handler=GetInfo',
+                data: JSON.stringify({ answerKey: answerKey, questionKey: questionKey }), // Gửi cả questionKey
+                contentType: 'application/json',
+                dataType: 'json',
+                headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() }
+            }).done(data => {
+                console.log('loadInformation data:', data); // Debug dữ liệu
+                loadInfoData(data);
+            }).fail(error => {
+                console.error('Error loading info:', error.responseText);
+                loadInfoData({});
+            });
+        }
+
+
+        function loadInfoData(record) {
+            $('#createdOn').text(record.CreatedOn || 'N/A');
+            $('#createdBy').text(record.CreatedBy || 'N/A');
+            $('#modifiedOn').text(record.ModifiedOn || 'N/A');
+            $('#modifiedBy').text(record.ModifiedBy || 'N/A');
+        }
+
+        function toggleInfo() {
+            $('#metadata').slideToggle('fast');
+        } 
 
                 function loadDropdowns() {
                     $.ajax({
@@ -276,7 +323,7 @@
                 console.log('CountAnswers response:', data); // Log để debug
                 if (data.count >= 4) { // Giới hạn 4 đáp án
                     $('#ModalMessage_Icon').html('<img src="/images/icon_error.png"/>');
-                    $('#ModalMessage_Content').text('Đã đạt giới hạn số lượng đáp án (tối đa 3)');
+                    $('#ModalMessage_Content').text('Đã đạt giới hạn số lượng đáp án (tối đa 4)');
                     $('#ModalMessage').modal('show');
                     setTimeout(() => $('#ModalMessage').modal('hide'), 2000);
                     return; // Dừng lại nếu vượt giới hạn

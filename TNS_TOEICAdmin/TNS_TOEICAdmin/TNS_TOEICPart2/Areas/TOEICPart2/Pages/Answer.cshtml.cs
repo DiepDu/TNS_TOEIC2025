@@ -88,6 +88,45 @@ namespace TNS_TOEICPart2.Areas.TOEICPart2.Pages
             }
         }
 
+        public IActionResult OnPostGetInfo([FromBody] ItemRequest request)
+        {
+            CheckAuth();
+            if (!UserLogin.Role.IsRead)
+                return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
+
+            if (string.IsNullOrEmpty(request.AnswerKey) || request.AnswerKey.Length != 36 ||
+                string.IsNullOrEmpty(request.QuestionKey) || request.QuestionKey.Length != 36)
+                return new JsonResult(new { Status = "ERROR", Message = "Invalid AnswerKey or QuestionKey" });
+
+            try
+            {
+                var record = new AnswerAccessData.Part2_Answer_Info(request.AnswerKey, request.QuestionKey);
+                if (record.Status == "ERROR")
+                {
+                    return new JsonResult(new
+                    {
+                        CreatedOn = (string)null,
+                        CreatedBy = (string)null,
+                        ModifiedOn = (string)null,
+                        ModifiedBy = (string)null,
+                        AnswerCorrect = false
+                    });
+                }
+
+                return new JsonResult(new
+                {
+                    CreatedOn = record.CreatedOn?.ToString("yyyy-MM-dd HH:mm:ss"),
+                    CreatedBy = record.CreatedName,
+                    ModifiedOn = record.ModifiedOn?.ToString("yyyy-MM-dd HH:mm:ss"),
+                    ModifiedBy = record.ModifiedName,
+                    AnswerCorrect = record.AnswerCorrect
+                });
+            }
+            catch (Exception ex)
+            {
+                return new JsonResult(new { Status = "ERROR", Message = $"Error loading info: {ex.Message}" });
+            }
+        }
         public IActionResult OnPostCreate([FromBody] AnswerAccessData.Part2_Answer_Info request)
         {
             CheckAuth();

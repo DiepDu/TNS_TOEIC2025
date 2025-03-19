@@ -67,6 +67,21 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
             return zResult;
         }
 
+        public IActionResult OnPostGetInfo([FromBody] ItemRequest request)
+        {
+            CheckAuth();
+            if (!UserLogin.Role.IsRead)
+                return new JsonResult(new { status = "ERROR", message = "ACCESS DENIED" });
+
+            var record = new QuestionAccessData.Part1_Question_Info(request.QuestionKey);
+            return new JsonResult(new
+            {
+                CreatedOn = record.CreatedOn?.ToString("yyyy-MM-dd HH:mm:ss"),
+                CreatedBy = record.CreatedName,
+                ModifiedOn = record.ModifiedOn?.ToString("yyyy-MM-dd HH:mm:ss"),
+                ModifiedBy = record.ModifiedName
+            });
+        }
         public IActionResult OnPostLoadDropdowns()
         {
             CheckAuth();

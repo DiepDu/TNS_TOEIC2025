@@ -75,6 +75,17 @@
                     </div>
                 </div>
 
+                <div class="mb-4">
+                    <div class="card border-warning">
+                        <div class="card-header bg-warning text-dark">
+                            <i class="fas fa-book-open me-2"></i> Explanation
+                        </div>
+                        <div class="card-body">
+                            <textarea id="txtExplanation" class="form-control" rows="5"></textarea>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Level Section -->
                 <div class="mb-4">
                     <div class="card border-info">
@@ -82,7 +93,7 @@
                             <i class="fas fa-level-up-alt me-2"></i> Level
                         </div>
                         <div class="card-body">
-                            <input id="txtSkillLevel" type="number" class="form-control" value="0" min="0" max="100" />
+                            <input id="txtSkillLevel" type="number" class="form-control" value="0" min="0" max="5" />
                         </div>
                     </div>
                 </div>
@@ -155,346 +166,410 @@
     <!-- Sidebar -->
     <div class="col-md-3">
         <div class="card shadow-sm border-primary">
-            <div class="card-header bg-primary text-white" onclick="TaskShareSearch_DisplayForm()" style="cursor: pointer;">
+            <div class="card-header bg-primary text-white" onclick="toggleInfo()" style="cursor: pointer;">
                 <i class="fas fa-info-circle me-2"></i> Information
             </div>
-            <div class="card-body">
-                <!-- Có thể thêm thông tin bổ sung như CreatedOn, CreatedBy, v.v. nếu cần -->
+            <div class="card-body" id="infoBody" style="display: none;">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5 text-muted">Created On</dt>
+                    <dd class="col-sm-7" id="createdOn"></dd>
+                    <dt class="col-sm-5 text-muted">Created By</dt>
+                    <dd class="col-sm-7" id="createdBy"></dd>
+                    <dt class="col-sm-5 text-muted">Modified On</dt>
+                    <dd class="col-sm-7" id="modifiedOn"></dd>
+                    <dt class="col-sm-5 text-muted">Modified By</dt>
+                    <dd class="col-sm-7" id="modifiedBy"></dd>
+                </dl>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Modal -->
-<div class="modal fade" id="ModalMessage" tabindex="-1" aria-labelledby="ModalMessage_Label" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="ModalMessage_Title">Message</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="d-flex align-items-center">
-                    <div id="ModalMessage_Icon" class="me-3"></div>
-                    <div id="ModalMessage_Content"></div>
+    <!-- Modal -->
+    <div class="modal fade" id="ModalMessage" tabindex="-1" aria-labelledby="ModalMessage_Label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="ModalMessage_Title">Message</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-flex align-items-center">
+                        <div id="ModalMessage_Icon" class="me-3"></div>
+                        <div id="ModalMessage_Content"></div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<div class="container">
-    <div class="row text-wrap text-break" style="padding: 20px">
-        <div id="Message"></div>
+    <div class="container">
+        <div class="row text-wrap text-break" style="padding: 20px">
+            <div id="Message"></div>
+        </div>
     </div>
-</div>
-<div id="Log_ViewData"></div>
-<div style="display: none">
-    <div id="QuestionKey">@Model.QuestionKey</div>
-</div>
+    <div id="Log_ViewData"></div>
+    <div style="display: none">
+        <div id="QuestionKey">@Model.QuestionKey</div>
+    </div>
 
-<script src="~/lib/tinymce/tinymce.min.js"></script>
-<script src="~/lib/jquery/jquery-3.7.0.js"></script>
-<script src="~/js/editor.js"></script>
+    <script src="~/lib/tinymce/tinymce.min.js"></script>
+    <script src="~/lib/jquery/jquery-3.7.0.js"></script>
+    <script src="~/js/editor.js"></script>
 
-@section Scripts {
-    <script>
-        console.log('Script đã load');
+    @section Scripts {
+        <script>
+            console.log('Script đã load');
 
-        function InitEditor(elementId) {
-            tinymce.init({
-                selector: '#' + elementId,
-                plugins: 'advlist autolink lists link image charmap print preview',
-                toolbar: 'undo redo | bold italic | alignleft aligncenter alignright | bullist numlist outdent indent',
-                height: 200,
-                setup: function (editor) {
-                    editor.on('init', function () {
-                        console.log('TinyMCE initialized for ' + elementId);
+            function InitEditor(elementId) {
+                tinymce.init({
+                    selector: '#' + elementId,
+                    plugins: 'advlist autolink lists link image charmap print preview',
+                    toolbar: 'undo redo | bold italic | alignleft aligncenter alignright | bullist numlist outdent indent',
+                    height: 200,
+                    setup: function (editor) {
+                        editor.on('init', function () {
+                            console.log('TinyMCE initialized for ' + elementId);
+                        });
+                    }
+                });
+            }
+
+            function toggleInfo() {
+                $('#infoBody').slideToggle('fast');
+            }
+            function loadInfoData(record) {
+                $('#createdOn').text(record.CreatedOn || 'N/A');
+                $('#createdBy').text(record.CreatedBy || 'N/A');
+                $('#modifiedOn').text(record.ModifiedOn || 'N/A');
+                $('#modifiedBy').text(record.ModifiedBy || 'N/A');
+            }
+
+            $(document).ready(() => {
+                console.log('DOM đã sẵn sàng');
+                InitEditor('txtQuestionText');
+                InitEditor('txtExplanation');
+                loadDropdowns();
+
+                const questionKey = $('#QuestionKey').text().trim();
+
+                // Nếu không có QuestionKey hợp lệ (rỗng hoặc undefined), khởi tạo trạng thái mới
+                if (!questionKey || questionKey === 'undefined' || questionKey === '') {
+                    record = { QuestionKey: null };
+                    console.log('No valid QuestionKey, initializing new record');
+                    RecordView();
+                    updateButtons();
+                    loadInfoData({}); // Hiển thị mặc định (N/A) khi không có record
+                } else {
+                    // Nếu có QuestionKey, gọi API để đọc dữ liệu chính
+                    RecordRead(questionKey);
+                    // Gọi API để lấy metadata cho Information
+                    loadInformation(questionKey);
+                }
+
+                const txtUploadImage = document.getElementById('txtUploadImage');
+                if (txtUploadImage) {
+                    txtUploadImage.addEventListener('change', function () {
+                        console.log('Sự kiện change được kích hoạt cho txtUploadImage');
+                        PreviewImage_Ajax();
+                    });
+                }
+
+                const txtUploadVoice = document.getElementById('txtUploadVoice');
+                if (txtUploadVoice) {
+                    txtUploadVoice.addEventListener('change', function () {
+                        console.log('Sự kiện change được kích hoạt cho txtUploadVoice');
+                        PreviewVoice_Ajax();
                     });
                 }
             });
-        }
 
-        $(document).ready(() => {
-            console.log('DOM đã sẵn sàng');
-            InitEditor('txtQuestionText');
-            loadDropdowns();
 
-            // Kiểm tra QuestionKey từ Model
-            const questionKey = $('#QuestionKey').text().trim();
-
-            // Nếu không có QuestionKey hợp lệ (rỗng hoặc undefined), khởi tạo trạng thái mới
-            if (!questionKey || questionKey === 'undefined' || questionKey === '') {
-                record = { QuestionKey: null };
-                console.log('No valid QuestionKey, initializing new record');
-                RecordView();
-                updateButtons();
-            } else {
-                // Nếu có QuestionKey, gọi API để đọc dữ liệu
-                RecordRead(questionKey);
-            }
-
-            const txtUploadImage = document.getElementById('txtUploadImage');
-            if (txtUploadImage) {
-                txtUploadImage.addEventListener('change', function () {
-                    console.log('Sự kiện change được kích hoạt cho txtUploadImage');
-                    PreviewImage_Ajax();
+            function loadInformation(questionKey) {
+                $.ajax({
+                    type: 'POST',
+                    url: '/TOEICPart1/Question?handler=GetInfo', // Điều chỉnh URL theo Part bạn đang làm
+                    data: JSON.stringify({ questionKey: questionKey }),
+                    contentType: 'application/json',
+                    dataType: 'json',
+                    headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() }
+                }).done(data => {
+                    loadInfoData(data); // Hiển thị dữ liệu vào card-body
+                }).fail(error => {
+                    console.error('Error loading info:', error.responseText);
+                    loadInfoData({}); // Hiển thị N/A nếu lỗi
                 });
             }
 
-            const txtUploadVoice = document.getElementById('txtUploadVoice');
-            if (txtUploadVoice) {
-                txtUploadVoice.addEventListener('change', function () {
-                    console.log('Sự kiện change được kích hoạt cho txtUploadVoice');
-                    PreviewVoice_Ajax();
+            let record = {};
+            const roles = { create: true, read: true, update: true, delete: true };
+            let tempImageFile = null;
+            let tempVoiceFile = null;
+
+            // Tải dữ liệu cho các combobox
+            function loadDropdowns() {
+                $.ajax({
+                    type: 'POST',
+                    url: '/TOEICPart1/Question?handler=LoadDropdowns',
+                    contentType: 'application/json',
+                    dataType: 'json'
+                }).done(data => {
+                    populateDropdown('#ddlCategory', data.categories, 'CategoryKey', 'CategoryName');
+                    populateDropdown('#ddlGrammarTopic', data.grammarTopics, 'GrammarTopicID', 'TopicName');
+                    populateDropdown('#ddlVocabularyTopic', data.vocabularyTopics, 'VocabularyTopicID', 'TopicName');
+                    populateDropdown('#ddlErrorType', data.errorTypes, 'ErrorTypeID', 'ErrorDescription');
+                }).fail(error => alert('Error loading dropdowns: ' + error.responseText));
+            }
+
+            function populateDropdown(selector, data, valueField, textField) {
+                const $dropdown = $(selector);
+                $dropdown.empty();
+                $dropdown.append('<option value="">Select...</option>');
+                data.forEach(item => {
+                    $dropdown.append(`<option value="${item[valueField]}">${item[textField]}</option>`);
                 });
             }
-        });
 
-        let record = {};
-        const roles = { create: true, read: true, update: true, delete: true };
-        let tempImageFile = null;
-        let tempVoiceFile = null;
-
-        // Tải dữ liệu cho các combobox
-        function loadDropdowns() {
-            $.ajax({
-                type: 'POST',
-                url: '/TOEICPart1/Question?handler=LoadDropdowns',
-                contentType: 'application/json',
-                dataType: 'json'
-            }).done(data => {
-                populateDropdown('#ddlCategory', data.categories, 'CategoryKey', 'CategoryName');
-                populateDropdown('#ddlGrammarTopic', data.grammarTopics, 'GrammarTopicID', 'TopicName');
-                populateDropdown('#ddlVocabularyTopic', data.vocabularyTopics, 'VocabularyTopicID', 'TopicName');
-                populateDropdown('#ddlErrorType', data.errorTypes, 'ErrorTypeID', 'ErrorDescription');
-            }).fail(error => alert('Error loading dropdowns: ' + error.responseText));
-        }
-
-        function populateDropdown(selector, data, valueField, textField) {
-            const $dropdown = $(selector);
-            $dropdown.empty();
-            $dropdown.append('<option value="">Select...</option>');
-            data.forEach(item => {
-                $dropdown.append(`<option value="${item[valueField]}">${item[textField]}</option>`);
-            });
-        }
-
-        function RecordRead(key) {
-            $.ajax({
-                type: 'POST',
-                url: '/TOEICPart1/Question?handler=RecordRead',
-                data: JSON.stringify({ questionKey: key }),
-                contentType: 'application/json',
-                dataType: 'json'
-            }).done(data => {
-                // Nếu API trả về null hoặc không có dữ liệu, khởi tạo record mới
-                if (!data || !data.QuestionKey) {
-                    record = { QuestionKey: null };
-                    console.log('Record not found, initializing new record');
-                } else {
-                    record = data;
-                    console.log('Record data:', JSON.stringify(record, null, 2));
-                }
-                RecordView();
-                updateButtons();
-            }).fail(error => {
-                console.error('Error fetching record:', error.responseText);
-                record = { QuestionKey: null }; // Khởi tạo mới nếu API lỗi
-                RecordView();
-                updateButtons();
-            });
-        }
-
-        function RecordView() {
-            tinymce.get('txtQuestionText')?.setContent(record.QuestionText || '');
-            $('#objQuestionImage').attr('src', record.QuestionImage || '/images/icon_Pic.png');
-            $('#objQuestionVoice source').attr('src', record.QuestionVoice || '').parent()[0].load();
-            $('#txtSkillLevel').val(record.SkillLevel || 0);
-            $('#ddlCategory').val(record.Category || '');
-            $('#ddlGrammarTopic').val(record.GrammarTopic || '');
-            $('#ddlVocabularyTopic').val(record.VocabularyTopic || '');
-            $('#ddlErrorType').val(record.ErrorType || '');
-        }
-
-        function RecordInput() {
-            record.QuestionText = tinymce.get('txtQuestionText')?.getContent() || '';
-            record.SkillLevel = parseInt($('#txtSkillLevel').val()) || 0;
-            record.Category = $('#ddlCategory').val() || null;
-            record.GrammarTopic = $('#ddlGrammarTopic').val() || null;
-            record.VocabularyTopic = $('#ddlVocabularyTopic').val() || null;
-            record.ErrorType = $('#ddlErrorType').val() || null;
-        }
-
-        function handleOperation(handler, message, redirect = null) {
-            $('#ModalMessage_Icon').html('<img src="/images/Waiting.gif" width="80px"/>');
-            $('#ModalMessage_Content').html('Waiting');
-            $('#ModalMessage').modal('show');
-            RecordInput();
-
-            const formData = new FormData();
-            formData.append('record', JSON.stringify(record));
-            if (tempImageFile) formData.append('image', tempImageFile);
-            if (tempVoiceFile) formData.append('voice', tempVoiceFile);
-
-            $.ajax({
-                type: 'POST',
-                url: `/TOEICPart1/Question?handler=${handler}`,
-                contentType: false,
-                processData: false,
-                data: formData
-            }).done(data => {
-                if (data.status === 'OK') {
-                    $('#ModalMessage_Icon').html('<img src="/images/icon_success.png"/>');
-                    $('#ModalMessage_Content').html(message);
-                    record = data.record || record;
-                    tempImageFile = null;
-                    tempVoiceFile = null;
+            function RecordRead(key) {
+                $.ajax({
+                    type: 'POST',
+                    url: '/TOEICPart1/Question?handler=RecordRead',
+                    data: JSON.stringify({ questionKey: key }),
+                    contentType: 'application/json',
+                    dataType: 'json'
+                }).done(data => {
+                    // Nếu API trả về null hoặc không có dữ liệu, khởi tạo record mới
+                    if (!data || !data.QuestionKey) {
+                        record = { QuestionKey: null };
+                        console.log('Record not found, initializing new record');
+                    } else {
+                        record = data;
+                        console.log('Record data:', JSON.stringify(record, null, 2));
+                    }
                     RecordView();
                     updateButtons();
-                    setTimeout(() => {
-                        $('#ModalMessage').modal('hide');
-                        $('#ModalMessage').one('hidden.bs.modal', () => {
-                            $('body').focus();
-                            if (redirect) window.location.href = redirect;
-                        });
-                    }, 2000);
-                } else {
-                    $('#ModalMessage_Icon').html('<img src="/images/icon_error.png"/>');
-                    $('#ModalMessage_Content').html(data.message);
-                    setTimeout(() => {
-                        $('#ModalMessage').modal('hide');
-                        $('#ModalMessage').one('hidden.bs.modal', () => {
-                            $('body').focus();
-                        });
-                    }, 2000);
-                }
-            }).fail(error => {
-                alert(error.responseText);
-                $('#ModalMessage').modal('hide');
-            });
-        }
+                }).fail(error => {
+                    console.error('Error fetching record:', error.responseText);
+                    record = { QuestionKey: null }; // Khởi tạo mới nếu API lỗi
+                    RecordView();
+                    updateButtons();
+                });
+            }
 
-        function createRecord() { handleOperation('RecordCreate', 'Question created successfully'); }
-        function updateRecord() { handleOperation('RecordUpdate', 'Question updated successfully'); }
-        function deleteRecord() {
-            $('#ModalMessage_Icon').html('<img src="/images/Waiting.gif" width="80px"/>');
-            $('#ModalMessage_Content').html('Waiting');
-            $('#ModalMessage').modal('show');
+            function RecordView() {
+                tinymce.get('txtQuestionText')?.setContent(record.QuestionText || '');
+                $('#objQuestionImage').attr('src', record.QuestionImage || '/images/icon_Pic.png');
+                $('#objQuestionVoice source').attr('src', record.QuestionVoice || '').parent()[0].load();
+                tinymce.get('txtExplanation')?.setContent(record.Explanation || '');
+                $('#txtSkillLevel').val(record.SkillLevel || 0);
+                $('#ddlCategory').val(record.Category || '');
+                $('#ddlGrammarTopic').val(record.GrammarTopic || '');
+                $('#ddlVocabularyTopic').val(record.VocabularyTopic || '');
+                $('#ddlErrorType').val(record.ErrorType || '');
+             
+            }
 
-            const requestData = { questionKey: record.QuestionKey };
+            function RecordInput() {
+                record.QuestionText = tinymce.get('txtQuestionText')?.getContent() || '';
+                record.Explanation = tinymce.get('txtExplanation')?.getContent() || '';
+                record.SkillLevel = parseInt($('#txtSkillLevel').val()) || 0;
+           
+                record.Category = $('#ddlCategory').val() || null;
+                record.GrammarTopic = $('#ddlGrammarTopic').val() || null;
+                record.VocabularyTopic = $('#ddlVocabularyTopic').val() || null;
+                record.ErrorType = $('#ddlErrorType').val() || null;
+              
+            }
 
-            $.ajax({
-                type: 'POST',
-                url: '/TOEICPart1/Question?handler=RecordDel',
-                data: JSON.stringify(requestData),
-                contentType: 'application/json',
-                dataType: 'json'
-            }).done(data => {
-                if (data.Status === 'OK') {
-                    $('#ModalMessage_Icon').html('<img src="/images/icon_success.png"/>');
-                    $('#ModalMessage_Content').html('Question deleted successfully');
-                    setTimeout(() => {
-                        $('#ModalMessage').modal('hide');
-                        $('body').focus();
-                        window.location.href = '/TOEICPart1/QuestionList';
-                    }, 2000);
-                } else {
-                    $('#ModalMessage_Icon').html('<img src="/images/icon_error.png"/>');
-                    $('#ModalMessage_Content').html(data.Message || 'Failed to delete question');
-                    setTimeout(() => {
-                        $('#ModalMessage').modal('hide');
-                        $('body').focus();
-                    }, 2000);
-                }
-            }).fail(error => {
-                $('#ModalMessage_Icon').html('<img src="/images/icon_error.png"/>');
-                $('#ModalMessage_Content').html('Error: ' + error.responseText);
-                setTimeout(() => {
+            function handleOperation(handler, message, redirect = null) {
+                $('#ModalMessage_Icon').html('<img src="/images/Waiting.gif" width="80px"/>');
+                $('#ModalMessage_Content').html('Waiting');
+                $('#ModalMessage').modal('show');
+                RecordInput();
+
+                const formData = new FormData();
+                formData.append('record', JSON.stringify(record));
+                if (tempImageFile) formData.append('image', tempImageFile);
+                if (tempVoiceFile) formData.append('voice', tempVoiceFile);
+
+                $.ajax({
+                    type: 'POST',
+                    url: `/TOEICPart1/Question?handler=${handler}`,
+                    contentType: false,
+                    processData: false,
+                    data: formData
+                }).done(data => {
+                    if (data.status === 'OK') {
+                        $('#ModalMessage_Icon').html('<img src="/images/icon_success.png"/>');
+                        $('#ModalMessage_Content').html(message);
+                        record = data.record || record;
+                        tempImageFile = null;
+                        tempVoiceFile = null;
+                        RecordView();
+                        updateButtons();
+                        setTimeout(() => {
+                            $('#ModalMessage').modal('hide');
+                            $('#ModalMessage').one('hidden.bs.modal', () => {
+                                $('body').focus();
+                                if (redirect) window.location.href = redirect;
+                            });
+                        }, 2000);
+                    } else {
+                        $('#ModalMessage_Icon').html('<img src="/images/icon_error.png"/>');
+                        $('#ModalMessage_Content').html(data.message);
+                        setTimeout(() => {
+                            $('#ModalMessage').modal('hide');
+                            $('#ModalMessage').one('hidden.bs.modal', () => {
+                                $('body').focus();
+                            });
+                        }, 2000);
+                    }
+                }).fail(error => {
+                    alert(error.responseText);
                     $('#ModalMessage').modal('hide');
-                    $('body').focus();
-                }, 2000);
-            });
-        }
+                });
+            }
 
-        function updateButtons() {
-            const isNew = !record.QuestionKey || record.QuestionKey === 'undefined' || record.QuestionKey === '';
-            $('#btnCreate').toggle(roles.create && isNew);
-            $('#btnUpdate').toggle(roles.update && !isNew);
-            $('#btnDel').toggle(roles.delete && !isNew);
-            console.log('Button state updated - isNew:', isNew);
-        }
+            function createRecord() { handleOperation('RecordCreate', 'Question created successfully'); }
+            function updateRecord() { handleOperation('RecordUpdate', 'Question updated successfully'); }
+            function deleteRecord() {
+                $('#ModalMessage_Icon').html('<img src="/images/Waiting.gif" width="80px"/>');
+                $('#ModalMessage_Content').html('Waiting');
+                $('#ModalMessage').modal('show');
 
-        function PreviewImage_Ajax() {
-            const fileInput = document.getElementById('txtUploadImage');
-            if (fileInput && fileInput.files.length > 0) {
-                tempImageFile = fileInput.files[0];
-                console.log('Hình ảnh đã chọn:', tempImageFile.name);
-                const imageElement = document.getElementById('objQuestionImage');
-                if (imageElement) {
-                    imageElement.src = URL.createObjectURL(tempImageFile);
+                const requestData = { questionKey: record.QuestionKey };
+
+                $.ajax({
+                    type: 'POST',
+                    url: '/TOEICPart1/Question?handler=RecordDel',
+                    data: JSON.stringify(requestData),
+                    contentType: 'application/json',
+                    dataType: 'json'
+                }).done(data => {
+                    if (data.Status === 'OK') {
+                        $('#ModalMessage_Icon').html('<img src="/images/icon_success.png"/>');
+                        $('#ModalMessage_Content').html('Question deleted successfully');
+                        setTimeout(() => {
+                            $('#ModalMessage').modal('hide');
+                            $('body').focus();
+                            window.location.href = '/TOEICPart1/QuestionList';
+                        }, 2000);
+                    } else {
+                        $('#ModalMessage_Icon').html('<img src="/images/icon_error.png"/>');
+                        $('#ModalMessage_Content').html(data.Message || 'Failed to delete question');
+                        setTimeout(() => {
+                            $('#ModalMessage').modal('hide');
+                            $('body').focus();
+                        }, 2000);
+                    }
+                }).fail(error => {
+                    $('#ModalMessage_Icon').html('<img src="/images/icon_error.png"/>');
+                    $('#ModalMessage_Content').html('Error: ' + error.responseText);
+                    setTimeout(() => {
+                        $('#ModalMessage').modal('hide');
+                        $('body').focus();
+                    }, 2000);
+                });
+            }
+
+            function updateButtons() {
+                const isNew = !record.QuestionKey || record.QuestionKey === 'undefined' || record.QuestionKey === '';
+                $('#btnCreate').toggle(roles.create && isNew);
+                $('#btnUpdate').toggle(roles.update && !isNew);
+                $('#btnDel').toggle(roles.delete && !isNew);
+                console.log('Button state updated - isNew:', isNew);
+            }
+
+            function PreviewImage_Ajax() {
+                const fileInput = document.getElementById('txtUploadImage');
+                if (fileInput && fileInput.files.length > 0) {
+                    tempImageFile = fileInput.files[0];
+                    console.log('Hình ảnh đã chọn:', tempImageFile.name);
+                    const imageElement = document.getElementById('objQuestionImage');
+                    if (imageElement) {
+                        imageElement.src = URL.createObjectURL(tempImageFile);
+                    }
                 }
             }
-        }
 
-        function PreviewVoice_Ajax() {
-            const fileInput = document.getElementById('txtUploadVoice');
-            if (fileInput && fileInput.files.length > 0) {
-                tempVoiceFile = fileInput.files[0];
-                console.log('Âm thanh đã chọn:', tempVoiceFile.name);
-                const source = document.querySelector('#objQuestionVoice source');
-                if (source) {
-                    source.src = URL.createObjectURL(tempVoiceFile);
-                    const audio = document.getElementById('objQuestionVoice');
-                    audio.load();
+            function PreviewVoice_Ajax() {
+                const fileInput = document.getElementById('txtUploadVoice');
+                if (fileInput && fileInput.files.length > 0) {
+                    tempVoiceFile = fileInput.files[0];
+                    console.log('Âm thanh đã chọn:', tempVoiceFile.name);
+                    const source = document.querySelector('#objQuestionVoice source');
+                    if (source) {
+                        source.src = URL.createObjectURL(tempVoiceFile);
+                        const audio = document.getElementById('objQuestionVoice');
+                        audio.load();
+                    }
                 }
             }
+
+            // Gán sự kiện cho các nút
+            const btnDel_Click = deleteRecord;
+            const btnUpdate_Click = updateRecord;
+            const btnCreate_Click = createRecord;
+            const TaskShareSearch_DisplayForm = () => $('#infoBody').toggle();
+        </script>
+    }
+
+    <style>
+        .card {
+            border-radius: 10px;
+            transition: all 0.3s;
         }
 
-        // Gán sự kiện cho các nút
-        const btnDel_Click = deleteRecord;
-        const btnUpdate_Click = updateRecord;
-        const btnCreate_Click = createRecord;
-        const TaskShareSearch_DisplayForm = () => $('#infoBody').toggle();
-    </script>
-}
+            .card:hover {
+                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            }
 
-<style>
-    .card {
-        border-radius: 10px;
-        transition: all 0.3s;
-    }
-
-        .card:hover {
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        .card-header {
+            font-weight: bold;
+            border-radius: 10px 10px 0 0;
         }
 
-    .card-header {
-        font-weight: bold;
-        border-radius: 10px 10px 0 0;
-    }
-
-    .form-control {
-        border-radius: 5px;
-    }
-
-    .custom-select {
-        border-radius: 5px;
-        padding: 8px;
-        appearance: none;
-        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-chevron-down" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg>') no-repeat right 0.75rem center/12px 12px;
-        background-color: #fff;
-        border: 1px solid #ced4da;
-    }
-
-        .custom-select:focus {
-            border-color: #86b7fe;
-            outline: 0;
-            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        .form-control {
+            border-radius: 5px;
         }
 
-    .btn {
-        border-radius: 5px;
-        padding: 8px 20px;
-    }
-</style>
+        .custom-select {
+            border-radius: 5px;
+            padding: 8px;
+            appearance: none;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-chevron-down" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg>') no-repeat right 0.75rem center/12px 12px;
+            background-color: #fff;
+            border: 1px solid #ced4da;
+        }
+
+            .custom-select:focus {
+                border-color: #86b7fe;
+                outline: 0;
+                box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+            }
+
+        .btn {
+            border-radius: 5px;
+            padding: 8px 20px;
+        }
+
+        .info-card .card-header {
+            transition: background-color 0.3s;
+        }
+
+            .info-card .card-header:hover {
+                background-color: #0056b3;
+            }
+
+        .info-card .card-body {
+            padding: 15px;
+            font-size: 14px;
+        }
+
+        .info-card dt {
+            font-weight: 500;
+        }
+
+        .info-card dd {
+            margin-bottom: 10px;
+        }
+    </style>

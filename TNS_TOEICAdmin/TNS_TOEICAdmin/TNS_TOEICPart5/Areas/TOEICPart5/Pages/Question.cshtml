@@ -75,6 +75,18 @@
                     </div>
                 </div> *@
 
+                <!-- Explanation Section -->
+                <div class="mb-4">
+                    <div class="card border-warning">
+                        <div class="card-header bg-warning text-dark">
+                            <i class="fas fa-book-open me-2"></i> Explanation
+                        </div>
+                        <div class="card-body">
+                            <textarea id="txtExplanation" class="form-control" rows="5"></textarea>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Level Section -->
                 <div class="mb-4">
                     <div class="card border-info">
@@ -82,7 +94,7 @@
                             <i class="fas fa-level-up-alt me-2"></i> Level
                         </div>
                         <div class="card-body">
-                            <input id="txtSkillLevel" type="number" class="form-control" value="0" min="0" max="100" />
+                            <input id="txtSkillLevel" type="number" class="form-control" value="0" min="0" max="5" />
                         </div>
                     </div>
                 </div>
@@ -154,12 +166,21 @@
 
     <!-- Sidebar -->
     <div class="col-md-3">
-        <div class="card shadow-sm border-primary">
-            <div class="card-header bg-primary text-white" onclick="TaskShareSearch_DisplayForm()" style="cursor: pointer;">
+        <div class="card shadow-sm border-primary info-card">
+            <div class="card-header bg-primary text-white" onclick="toggleInfo()" style="cursor: pointer;">
                 <i class="fas fa-info-circle me-2"></i> Information
             </div>
-            <div class="card-body">
-                <!-- Có thể thêm thông tin bổ sung như CreatedOn, CreatedBy, v.v. nếu cần -->
+            <div class="card-body" id="infoBody" style="display: none;">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5 text-muted">Created On</dt>
+                    <dd class="col-sm-7" id="createdOn"></dd>
+                    <dt class="col-sm-5 text-muted">Created By</dt>
+                    <dd class="col-sm-7" id="createdBy"></dd>
+                    <dt class="col-sm-5 text-muted">Modified On</dt>
+                    <dd class="col-sm-7" id="modifiedOn"></dd>
+                    <dt class="col-sm-5 text-muted">Modified By</dt>
+                    <dd class="col-sm-7" id="modifiedBy"></dd>
+                </dl>
             </div>
         </div>
     </div>
@@ -218,6 +239,7 @@
         $(document).ready(() => {
             console.log('DOM đã sẵn sàng');
             InitEditor('txtQuestionText');
+            InitEditor('txtExplanation');
             loadDropdowns();
 
             // Kiểm tra QuestionKey từ Model
@@ -229,9 +251,11 @@
                 console.log('No valid QuestionKey, initializing new record');
                 RecordView();
                 updateButtons();
+                loadInfoData({});
             } else {
                 // Nếu có QuestionKey, gọi API để đọc dữ liệu
                 RecordRead(questionKey);
+                loadInformation(questionKey);
             }
 
             // const txtUploadImage = document.getElementById('txtUploadImage');
@@ -250,6 +274,35 @@
             //     });
             // }
         });
+
+          function loadInfoData(record) {
+            $('#createdOn').text(record.CreatedOn || 'N/A');
+            $('#createdBy').text(record.CreatedBy || 'N/A');
+            $('#modifiedOn').text(record.ModifiedOn || 'N/A');
+            $('#modifiedBy').text(record.ModifiedBy || 'N/A');
+        }
+
+        // Hàm toggle hiển thị/ẩn Information
+        function toggleInfo() {
+            $('#infoBody').slideToggle('fast');
+        }
+
+  function loadInformation(questionKey) {
+            $.ajax({
+                type: 'POST',
+                url: '/TOEICPart5/Question?handler=GetInfo',
+                data: JSON.stringify({ questionKey: questionKey }),
+                contentType: 'application/json',
+                dataType: 'json',
+                headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() }
+            }).done(data => {
+                loadInfoData(data); // Hiển thị dữ liệu vào card-body
+            }).fail(error => {
+                console.error('Error loading info:', error.responseText);
+                loadInfoData({}); // Hiển thị N/A nếu lỗi
+            });
+        }
+
 
         let record = {};
         const roles = { create: true, read: true, update: true, delete: true };
@@ -310,6 +363,7 @@
             tinymce.get('txtQuestionText')?.setContent(record.QuestionText || '');
             // $('#objQuestionImage').attr('src', record.QuestionImage || '/images/icon_Pic.png');
             // $('#objQuestionVoice source').attr('src', record.QuestionVoice || '').parent()[0].load();
+            tinymce.get('txtExplanation')?.setContent(record.Explanation || '');
             $('#txtSkillLevel').val(record.SkillLevel || 0);
             $('#ddlCategory').val(record.Category || '');
             $('#ddlGrammarTopic').val(record.GrammarTopic || '');
@@ -319,6 +373,7 @@
 
         function RecordInput() {
             record.QuestionText = tinymce.get('txtQuestionText')?.getContent() || '';
+            record.Explanation = tinymce.get('txtExplanation')?.getContent() || '';
             record.SkillLevel = parseInt($('#txtSkillLevel').val()) || 0;
             record.Category = $('#ddlCategory').val() || null;
             record.GrammarTopic = $('#ddlGrammarTopic').val() || null;
