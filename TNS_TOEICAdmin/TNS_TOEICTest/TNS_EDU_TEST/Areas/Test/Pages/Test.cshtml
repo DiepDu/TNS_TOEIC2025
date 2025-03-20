@@ -1,4 +1,598 @@
 ﻿@page "/MainTest"
 @model TNS_EDU_TEST.Areas.Test.Pages.TestModel
 @{
+    ViewData["Title"] = "TOEIC Test";
+    Layout = "";
 }
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"]</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #B3E5FC, #FFECB3);
+            display: flex;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('https://www.transparenttextures.com/patterns/stardust.png');
+            opacity: 0.1;
+            z-index: 0;
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: linear-gradient(90deg, #FFECB3, #B3E5FC);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+            animation: slideInDown 1s ease-in-out;
+        }
+
+        .exit-btn, .submit-btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+        }
+
+        .exit-btn {
+            background: #f44336;
+            color: white;
+        }
+
+        .exit-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            background: #d32f2f;
+        }
+
+        .submit-btn {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .submit-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            background: #388E3C;
+        }
+
+        .timer {
+            font-size: 1.5rem;
+            font-weight: 600;
+            background: linear-gradient(90deg, #0288D1, #4FC3F7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: pulse 2s infinite;
+        }
+
+        .sidebar-left {
+            width: 150px;
+            background: #FFECB3;
+            padding: 20px 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: calc(100vh - 60px);
+            position: fixed;
+            left: 0;
+            top: 60px;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 1;
+        }
+
+        .part-btn {
+            background: #B3E5FC;
+            color: #333;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+            animation: fadeInUp 0.5s ease-in-out;
+            flex: 1;
+            margin: 5px 0;
+        }
+
+        .part-btn:hover {
+            background: #81D4FA;
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .part-btn.active {
+            background: #0288D1;
+            color: white;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+            animation: pulse 1s infinite;
+        }
+
+        .sidebar-right {
+            width: 150px;
+            background: #FFECB3;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Căn giữa theo chiều ngang */
+            height: calc(100vh - 60px);
+            position: fixed;
+            right: 0;
+            top: 60px;
+            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+            overflow-y: auto; /* Cho phép cuộn dọc */
+            z-index: 1;
+        }
+
+        .sidebar-right h3 {
+            background: linear-gradient(90deg, #0288D1, #4FC3F7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: slideInDown 1s ease-in-out;
+            margin-bottom: 20px;
+        }
+
+        .part-section {
+            width: 100%;
+            display: flex;
+            flex-wrap: wrap; /* Cho phép xuống hàng */
+            justify-content: center; /* Căn giữa các ô tròn trong hàng */
+            gap: 20px; /* Khoảng cách giữa các ô tròn */
+            margin-bottom: 20px;
+        }
+
+        .part-section h4 {
+            color: #333;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            animation: fadeIn 1s ease-in-out;
+            width: 100%;
+            text-align: center;
+        }
+
+        .question-circle {
+            width: 40px;
+            height: 40px;
+            background: #B3E5FC;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 50%;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+            animation: zoomIn 0.5s ease-in-out;
+        }
+
+        .question-circle:hover {
+            background: #81D4FA;
+            transform: scale(1.2);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .question-circle.active {
+            background: #0288D1;
+            color: white;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+            animation: pulse 1s infinite;
+        }
+
+        .main-content {
+            margin-left: 150px;
+            margin-right: 150px;
+            padding: 80px 20px 20px;
+            flex: 1;
+            overflow-y: auto;
+            min-height: calc(100vh - 60px);
+            -webkit-overflow-scrolling: touch;
+            position: relative;
+        }
+
+        .main-content-wrapper {
+            min-height: 100%;
+            padding-bottom: 20px;
+        }
+
+        .question-container {
+            background: #FFFFFF;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            max-width: 800px;
+            margin: 0 auto 20px;
+            text-align: center;
+            animation: zoomIn 1s ease-in-out;
+        }
+
+        .question-image {
+            width: 300px;
+            height: 300px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin: 0 auto 20px;
+            display: block;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            animation: fadeIn 1.5s ease-in-out;
+            transition: transform 0.3s ease;
+        }
+
+        .question-image:hover {
+            transform: scale(1.05);
+        }
+
+        .question-audio {
+            margin-bottom: 20px;
+            width: 100%;
+            border-radius: 5px;
+            background: #B3E5FC;
+            padding: 5px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .question-audio:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .question-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            background: linear-gradient(90deg, #0288D1, #4FC3F7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: slideInDown 1s ease-in-out;
+        }
+
+        .answer-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .answer-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #B3E5FC;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .answer-option:hover {
+            background: #81D4FA;
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .answer-option input {
+            margin: 0;
+        }
+
+        .answer-option label {
+            flex: 1;
+            font-size: 1rem;
+            color: #333;
+            margin: 0;
+        }
+
+        /* Part 3 Specific Layout */
+        .part3-container {
+            display: flex;
+            gap: 20px;
+            background: #FFFFFF;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            max-width: 1000px;
+            margin: 0 auto 20px;
+            animation: zoomIn 1s ease-in-out;
+        }
+
+        .part3-left, .part3-right {
+            flex: 1;
+        }
+
+        .part3-left {
+            text-align: center;
+        }
+
+        .part3-right {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .sub-question {
+            background: #FFECB3;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            animation: fadeInUp 1s ease-in-out;
+        }
+
+        .sub-question h4 {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .sub-question-image {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin: 0 auto 10px;
+            display: block;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .sub-question-image:hover {
+            transform: scale(1.05);
+        }
+
+        .sub-question-audio {
+            width: 100%;
+            border-radius: 5px;
+            background: #B3E5FC;
+            padding: 5px;
+            margin-bottom: 10px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .sub-question-audio:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Animations */
+        @@keyframes zoomIn {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        @@keyframes slideInDown {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @@keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @@keyframes fadeInUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @@keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* Responsive Design */
+        @@media (max-width: 768px) {
+            .sidebar-left, .sidebar-right {
+                width: 100px;
+            }
+
+            .main-content {
+                margin-left: 100px;
+                margin-right: 100px;
+            }
+
+            .question-circle {
+                width: 30px;
+                height: 30px;
+                font-size: 0.9rem;
+            }
+
+            .part-btn {
+                font-size: 0.9rem;
+                padding: 8px;
+            }
+
+            .question-image, .sub-question-image {
+                width: 200px;
+                height: 200px;
+            }
+
+            .part3-container {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <button class="exit-btn">Exit</button>
+        <div class="timer">Time: 45:00</div>
+        <button class="submit-btn">Submit</button>
+    </div>
+
+    <!-- Sidebar Left (Parts) -->
+    <div class="sidebar-left">
+        <button class="part-btn active" onclick="setActivePart(this)">Part 1</button>
+        <button class="part-btn" onclick="setActivePart(this)">Part 2</button>
+        <button class="part-btn" onclick="setActivePart(this)">Part 3</button>
+        <button class="part-btn" onclick="setActivePart(this)">Part 4</button>
+        <button class="part-btn" onclick="setActivePart(this)">Part 5</button>
+        <button class="part-btn" onclick="setActivePart(this)">Part 6</button>
+        <button class="part-btn" onclick="setActivePart(this)">Part 7</button>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="main-content-wrapper">
+            <!-- Part 1 Question -->
+            <div class="question-container">
+                <h2>Question 1 (Part 1)</h2>
+                <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60" alt="Question Image" class="question-image">
+                <audio controls class="question-audio">
+                    <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+                    Your browser does not support the audio element.
+                </audio>
+                <div class="question-text">
+                    What is the man doing in the image?
+                </div>
+                <div class="answer-options">
+                    <div class="answer-option">
+                        <input type="radio" name="answer_1" id="answer_a" value="A">
+                        <label for="answer_a">A: He is reading a book.</label>
+                    </div>
+                    <div class="answer-option">
+                        <input type="radio" name="answer_1" id="answer_b" value="B">
+                        <label for="answer_b">B: He is writing a letter.</label>
+                    </div>
+                    <div class="answer-option">
+                        <input type="radio" name="answer_1" id="answer_c" value="C">
+                        <label for="answer_c">C: He is talking on the phone.</label>
+                    </div>
+                    <div class="answer-option">
+                        <input type="radio" name="answer_1" id="answer_d" value="D">
+                        <label for="answer_d">D: He is painting a picture.</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Part 3 Question -->
+            <div class="part3-container">
+                <div class="part3-left">
+                    <h2>Part 3: Conversation</h2>
+                    <img src="https://images.unsplash.com/photo-1516321497487-e288fb19713f?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60" alt="Part 3 Image" class="question-image">
+                    <audio controls class="question-audio">
+                        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" type="audio/mpeg">
+                        Your browser does not support the audio element.
+                    </audio>
+                    <div class="question-text">
+                        Listen to the conversation between two colleagues about a project meeting.
+                    </div>
+                </div>
+                <div class="part3-right">
+                    <div class="sub-question">
+                        <h4>Question 2: What is the main topic of the meeting?</h4>
+                        <img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60" alt="Sub Question Image" class="sub-question-image">
+                        <audio controls class="sub-question-audio">
+                            <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" type="audio/mpeg">
+                            Your browser does not support the audio element.
+                        </audio>
+                        <div class="answer-options">
+                            <div class="answer-option">
+                                <input type="radio" name="answer_2" id="answer_2a" value="A">
+                                <label for="answer_2a">A: Project timeline</label>
+                            </div>
+                            <div class="answer-option">
+                                <input type="radio" name="answer_2" id="answer_2b" value="B">
+                                <label for="answer_2b">B: Budget allocation</label>
+                            </div>
+                            <div class="answer-option">
+                                <input type="radio" name="answer_2" id="answer_2c" value="C">
+                                <label for="answer_2c">C: Team roles</label>
+                            </div>
+                            <div class="answer-option">
+                                <input type="radio" name="answer_2" id="answer_2d" value="D">
+                                <label for="answer_2d">D: Client feedback</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="sub-question">
+                        <h4>Question 3: Who is leading the meeting?</h4>
+                        <img src="https://images.unsplash.com/photo-1531482615713-2afd0a738ca4?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60" alt="Sub Question Image" class="sub-question-image">
+                        <audio controls class="sub-question-audio">
+                            <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3" type="audio/mpeg">
+                            Your browser does not support the audio element.
+                        </audio>
+                        <div class="answer-options">
+                            <div class="answer-option">
+                                <input type="radio" name="answer_3" id="answer_3a" value="A">
+                                <label for="answer_3a">A: Sarah</label>
+                            </div>
+                            <div class="answer-option">
+                                <input type="radio" name="answer_3" id="answer_3b" value="B">
+                                <label for="answer_3b">B: John</label>
+                            </div>
+                            <div class="answer-option">
+                                <input type="radio" name="answer_3" id="answer_3c" value="C">
+                                <label for="answer_3c">C: Emily</label>
+                            </div>
+                            <div class="answer-option">
+                                <input type="radio" name="answer_3" id="answer_3d" value="D">
+                                <label for="answer_3d">D: Michael</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar Right (Question List) -->
+    <div class="sidebar-right">
+        <h3>Questions</h3>
+        <div class="part-section">
+            @for (int i = 1; i <= 50; i++)
+            {
+                <a href="#" class="question-circle @(i == 1 ? "active" : "")" onclick="setActiveQuestion(this)">@i</a>
+            }
+        </div>
+    </div>
+</body>
+
+<script>
+    function setActivePart(element) {
+        document.querySelectorAll('.part-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        element.classList.add('active');
+    }
+
+    function setActiveQuestion(element) {
+        document.querySelectorAll('.question-circle').forEach(circle => {
+            circle.classList.remove('active');
+        });
+        element.classList.add('active');
+    }
+</script>
+</html>
