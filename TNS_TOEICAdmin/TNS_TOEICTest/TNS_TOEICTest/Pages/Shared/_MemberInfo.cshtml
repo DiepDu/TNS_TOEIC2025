@@ -1,0 +1,81 @@
+﻿@using TNS_TOEICTest.Models
+@{
+    // Lấy thông tin thành viên từ đối tượng ClaimsPrincipal (Context.User)
+    var memberInfo = new MemberPersonal(Context.User);
+    // Thiết lập ViewData cho các thông tin cần thiết
+    ViewData["IsAuthenticated"] = memberInfo.IsAuthenticated;
+    ViewData["MemberName"] = memberInfo.IsAuthenticated ? memberInfo.MemberName : "User";
+    ViewData["Avatar"] = memberInfo.IsAuthenticated ? memberInfo.Avatar : "/images/avatar/default-avatar.jpg";
+}
+<style>
+    /* Tùy chỉnh user dropdown */
+    .header-profile-user {
+        width: 50px;
+        height: 50px;
+        object-fit: cover;
+    }
+
+    .header-item {
+        display: flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+    }
+
+        .header-item .font-size-15 {
+            color: #333;
+        }
+
+    .dropdown-menu-end {
+        min-width: 200px;
+    }
+
+    .dropdown-item {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
+
+        .dropdown-item i {
+            margin-right: 0.5rem;
+        }
+</style>
+
+<div class="dropdown d-inline-block">
+    <button type="button" class="btn header-item waves-effect"
+            id="page-header-user-dropdown"
+            data-bs-toggle="dropdown"
+            aria-expanded="false">
+        <img id="imgMemberAvatar" class="rounded-circle header-profile-user"
+             src="@ViewData["Avatar"]"
+             alt="User Avatar" />
+        <span id="txtMemberName" class="d-none d-xl-inline-block ms-1 fw-medium font-size-15">
+            @ViewData["MemberName"]
+        </span>
+        <i class="uil-angle-down d-none d-xl-inline-block font-size-15"></i>
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="page-header-user-dropdown">
+        @if ((bool)ViewData["IsAuthenticated"])
+        {
+            <li>
+                <a class="dropdown-item" href="/Member/Profile">
+                    <i class="uil uil-user-circle font-size-18 align-middle text-muted me-1"></i>
+                    View Profile
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item" href="/Account/SignedOut">
+                    <i class="uil uil-sign-out-alt font-size-18 align-middle text-muted me-1"></i>
+                    Sign Out
+                </a>
+            </li>
+        }
+        else
+        {
+            <li>
+                <a class="dropdown-item" href="/Account/Login">
+                    <i class="uil uil-sign-in-alt font-size-18 align-middle text-muted me-1"></i>
+                    Login
+                </a>
+            </li>
+        }
+    </ul>
+</div>

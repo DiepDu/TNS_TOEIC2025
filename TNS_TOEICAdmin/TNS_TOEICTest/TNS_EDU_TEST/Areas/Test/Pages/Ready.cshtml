@@ -1,0 +1,162 @@
+﻿@page
+@model TNS_EDU_TEST.Areas.Test.Pages.ReadyModel
+@{
+    ViewData["Title"] = "Ready for TOEIC Test";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"]</title>
+    <!-- Bootstrap CSS -->
+    <link href="/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Montserrat:wght@700&display=swap" rel="stylesheet">
+    <style>
+        html, body {
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #ff7e5f, #feb47b, #86a8e7, #91eae4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* Hiệu ứng nền động */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('https://www.transparenttextures.com/patterns/cubes.png');
+            opacity: 0.1;
+            z-index: 0;
+        }
+
+        .ready-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 90%; /* Đảm bảo không quá rộng trên màn hình nhỏ */
+            text-align: center;
+            z-index: 1;
+            animation: zoomIn 1s ease-in-out;
+            margin-left: 250px;
+        }
+
+        .title {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 2.8rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #ff6f61, #feb47b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+            animation: slideInDown 1s ease-in-out;
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, #f3e7ff, #e3f2fd);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            border: 2px solid #ff6f61;
+            animation: fadeInUp 1.2s ease-in-out;
+        }
+
+        .info-box p {
+            margin: 5px 0;
+            font-size: 1.1rem;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .info-box p strong {
+            color: #ff6f61;
+        }
+
+        .start-btn {
+            background: linear-gradient(90deg, #ff6f61, #feb47b);
+            color: white;
+            font-size: 1.8rem;
+            font-weight: 700;
+            padding: 15px 60px;
+            border: none;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            animation: pulse 1.5s infinite;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .start-btn:hover {
+            background: linear-gradient(90deg, #e65b50, #e89b6b);
+            transform: scale(1.1);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Animations */
+        @@keyframes zoomIn {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        @@keyframes slideInDown {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @@keyframes fadeInUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @@keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* Responsive Design */
+        @@media (max-width: 576px) {
+            .ready-container {
+                padding: 20px;
+                margin: 10px;
+            }
+
+            .title {
+                font-size: 2rem;
+            }
+
+            .start-btn {
+                font-size: 1.4rem;
+                padding: 12px 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Main Content -->
+    <div class="ready-container">
+        <h1 class="title">Ready for Your TOEIC Test?</h1>
+        <div class="info-box">
+            <p><strong>Test Format:</strong> 200 questions, 7 parts (Listening & Reading)</p>
+            <p><strong>Duration:</strong> Approximately 2 hours</p>
+            <p><strong>Instructions:</strong> Ensure a quiet environment, stable internet connection, and no interruptions.</p>
+            <p><strong>Tip:</strong> Read questions carefully and manage your time effectively!</p>
+        </div>
+        <a href="/Test/Test" class="start-btn">START</a>
+    </div>
+
+    <script src="/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

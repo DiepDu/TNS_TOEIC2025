@@ -1,0 +1,70 @@
+﻿@page
+@model TNS_TOEICTest.Pages.Account.LoginModel
+@{
+    ViewData["Title"] = "Login | TOEIC Test Application";
+    Layout = ""; // Không dùng Layout chung
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>@ViewData["Title"]</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta content="TOEIC Test Application" name="description" />
+    <meta content="TN Solution" name="author" />
+    <link href="~/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="shortcut icon" href="/images/favicon.ico">
+
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+    <div style="height:100vh; margin-top:-8px; overflow:hidden">
+        <div class="row" style="height:100vh; overflow:hidden">
+            <div class="col-6" style="background-color:white">
+                <img src="~/images/BG.jpg" alt="Background" />
+            </div>
+            <div class="col-6 align-middle" style="background-color: #000080;">
+                <div class="row align-items-center justify-content-center" style="padding-top:25vh">
+                    <div style="padding-left:50px; padding-right:50px; width:500px">
+                        <div><img src="~/images/logo-light.png" style="width:400px;" alt="Logo" /></div>
+                        <div class="card">
+                            <div style="padding: 0 25px 20px 25px">
+                                <form method="post">
+                                    <div style="color:red; font-weight:bold;" asp-validation-summary="All"></div>
+                                    <div class="row">
+                                        <div>
+                                            <p class="text-truncate mt-1 mb-0">Member ID</p>
+                                        </div>
+                                        <div>
+                                            <input asp-for="Input.MemberId" class="form-control" style="background-color:#e8f0fe" />
+                                            <span asp-validation-for="Input.MemberId" class="text-danger"></span>
+                                        </div>
+                                        <div style="height:20px"></div>
+                                        <div>
+                                            <p class="text-truncate mt-1 mb-0">Password</p>
+                                        </div>
+                                        <div>
+                                            <input asp-for="Input.Password" class="form-control" type="password" style="background-color:#e8f0fe" />
+                                            <span asp-validation-for="Input.Password" class="text-danger"></span>
+                                        </div>
+                                        <div style="height:20px"></div>
+                                        <div>
+                                            <button type="submit" class="btn btn-primary waves-effect waves-light w-100">Log in</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

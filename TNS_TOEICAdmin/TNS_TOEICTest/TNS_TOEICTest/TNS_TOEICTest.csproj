@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\TNS_Lib\TNS_DBConnection\TNS_DBConnection.csproj" />
+		<ProjectReference Include="..\..\TNS_Lib\TNS_Member\TNS_Member.csproj" />
+		<ProjectReference Include="..\TNS_EDU_TEST\TNS_EDU_TEST.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Folder Include="wwwroot\lib\tinymce\plugins\contextmenu\" />
+		<Folder Include="wwwroot\lib\tinymce\plugins\textcolor\" />
+	</ItemGroup>
+</Project>

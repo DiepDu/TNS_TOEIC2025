@@ -122,9 +122,9 @@ namespace TNS.Member
             {
                 byte[] pwordData = Encoding.UTF8.GetBytes(nPass.Trim());
                 byte[] nHash = mHash.ComputeHash(pwordData);
-
-                // Trả về dạng Hexadecimal
-                return BitConverter.ToString(nHash).Replace("-", "").ToLower();
+                string result = BitConverter.ToString(nHash).Replace("-", "").ToLower();
+                Console.WriteLine($"HashPass input: {nPass}, output: {result}");
+                return result;
             }
         }
 
