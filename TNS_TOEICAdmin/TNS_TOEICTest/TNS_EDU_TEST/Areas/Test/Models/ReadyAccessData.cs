@@ -256,6 +256,7 @@ namespace TNS_EDU_TEST.Areas.Test.Models
             int[] skillLevels = { dist.SkillLevel1 ?? 0, dist.SkillLevel2 ?? 0, dist.SkillLevel3 ?? 0, dist.SkillLevel4 ?? 0, dist.SkillLevel5 ?? 0 };
             int questionsRemaining = totalQuestions;
             int questionsAdded = 0;
+            int questionsPerPassage = part switch { 3 => 3, 4 => 3, 6 => 4, 7 => 4, _ => 3 };
 
             try
             {
@@ -265,10 +266,10 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                     if (questionsForLevel == 0) continue;
 
                     string parentSql = $@"
-                        SELECT QuestionKey
-                        FROM {tableName}
-                        WHERE Publish = 1 AND RecordStatus != 99 AND SkillLevel = @SkillLevel AND Parent IS NULL
-                        ORDER BY NEWID()";
+                SELECT QuestionKey
+                FROM {tableName}
+                WHERE Publish = 1 AND RecordStatus != 99 AND SkillLevel = @SkillLevel AND Parent IS NULL
+                ORDER BY NEWID()";
 
                     var parentKeys = new List<Guid>();
                     using (var cmd = new SqlCommand(parentSql, conn))
@@ -285,12 +286,11 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                     {
                         if (levelQuestionsAdded >= questionsForLevel) break;
 
-                        int maxSubQuestions = Math.Min(questionsForLevel - levelQuestionsAdded, _random.Next(2, 5));
                         string subSql = $@"
-                            SELECT TOP ({maxSubQuestions}) QuestionKey
-                            FROM {tableName}
-                            WHERE Publish = 1 AND RecordStatus != 99 AND Parent = @Parent
-                            ORDER BY NEWID()";
+                    SELECT TOP ({questionsPerPassage}) QuestionKey
+                    FROM {tableName}
+                    WHERE Publish = 1 AND RecordStatus != 99 AND Parent = @Parent
+                    ORDER BY NEWID()";
 
                         var subQuestionKeys = new List<Guid>();
                         using (var cmd = new SqlCommand(subSql, conn))
@@ -304,11 +304,13 @@ namespace TNS_EDU_TEST.Areas.Test.Models
 
                         if (subQuestionKeys.Count > 0)
                         {
-                            await InsertContentOfTest(conn, testKey, resultKey, parentKey, part, currentOrder++);
+                            await InsertContentOfTest(conn, testKey, resultKey, parentKey, part, null);
                             await UpdateAmountAccess(conn, tableName, parentKey);
 
-                            foreach (var subKey in subQuestionKeys)
+                            int subQuestionsToAdd = Math.Min(subQuestionKeys.Count, questionsForLevel - levelQuestionsAdded);
+                            for (int i = 0; i < subQuestionsToAdd; i++)
                             {
+                                var subKey = subQuestionKeys[i];
                                 await InsertContentOfTest(conn, testKey, resultKey, subKey, part, currentOrder++);
                                 await UpdateAmountAccess(conn, tableName, subKey);
                                 levelQuestionsAdded++;
@@ -320,6 +322,48 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                 }
 
                 if (questionsAdded < totalQuestions)
+                {
+                    int additionalQuestionsNeeded = totalQuestions - questionsAdded;
+                    string fallbackSql = $@"
+                SELECT TOP ({additionalQuestionsNeeded}) q.QuestionKey, q.Parent
+                FROM {tableName} q
+                WHERE q.Publish = 1 AND q.RecordStatus != 99 AND q.Parent IS NOT NULL
+                AND q.QuestionKey NOT IN (
+                    SELECT QuestionKey FROM [ContentOfTest] WHERE TestKey = @TestKey
+                )
+                ORDER BY NEWID()";
+
+                    using (var cmd = new SqlCommand(fallbackSql, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@TestKey", testKey);
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync() && questionsRemaining > 0)
+                            {
+                                var subKey = reader.GetGuid(0);
+                                var parentKey = reader.GetGuid(1);
+                                string checkParentSql = $"SELECT COUNT(*) FROM [ContentOfTest] WHERE TestKey = @TestKey AND QuestionKey = @ParentKey";
+                                using (var checkCmd = new SqlCommand(checkParentSql, conn))
+                                {
+                                    checkCmd.Parameters.AddWithValue("@TestKey", testKey);
+                                    checkCmd.Parameters.AddWithValue("@ParentKey", parentKey);
+                                    int parentExists = (int)await checkCmd.ExecuteScalarAsync();
+                                    if (parentExists == 0)
+                                    {
+                                        await InsertContentOfTest(conn, testKey, resultKey, parentKey, part, null);
+                                        await UpdateAmountAccess(conn, tableName, parentKey);
+                                    }
+                                }
+                                await InsertContentOfTest(conn, testKey, resultKey, subKey, part, currentOrder++);
+                                await UpdateAmountAccess(conn, tableName, subKey);
+                                questionsAdded++;
+                                questionsRemaining--;
+                            }
+                        }
+                    }
+                }
+
+                if (questionsAdded != totalQuestions)
                     Console.WriteLine($"Warning: Part {part} only has {questionsAdded} questions, expected {totalQuestions}.");
             }
             catch (Exception ex)
@@ -328,15 +372,14 @@ namespace TNS_EDU_TEST.Areas.Test.Models
             }
 
             return currentOrder;
-        }
-
-        private static async Task InsertContentOfTest(SqlConnection conn, Guid testKey, Guid resultKey, Guid questionKey, int part, int order)
+        } 
+        private static async Task InsertContentOfTest(SqlConnection conn, Guid testKey, Guid resultKey, Guid questionKey, int part, int? order)
         {
             try
             {
                 string sql = @"
-                    INSERT INTO [ContentOfTest] (ContentKey, TestKey, ResultKey, QuestionKey, Part, [Order])
-                    VALUES (@ContentKey, @TestKey, @ResultKey, @QuestionKey, @Part, @Order)";
+            INSERT INTO [ContentOfTest] (ContentKey, TestKey, ResultKey, QuestionKey, Part, [Order])
+            VALUES (@ContentKey, @TestKey, @ResultKey, @QuestionKey, @Part, @Order)";
 
                 using (var cmd = new SqlCommand(sql, conn))
                 {
@@ -345,7 +388,7 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                     cmd.Parameters.AddWithValue("@ResultKey", resultKey);
                     cmd.Parameters.AddWithValue("@QuestionKey", questionKey);
                     cmd.Parameters.AddWithValue("@Part", part);
-                    cmd.Parameters.AddWithValue("@Order", order);
+                    cmd.Parameters.AddWithValue("@Order", (object)order ?? DBNull.Value);
 
                     await cmd.ExecuteNonQueryAsync();
                 }

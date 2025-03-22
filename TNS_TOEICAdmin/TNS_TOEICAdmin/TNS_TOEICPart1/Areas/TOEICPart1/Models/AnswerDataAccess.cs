@@ -12,6 +12,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
             private string _QuestionKey = "";
             private string _AnswerText = "";
             private bool _AnswerCorrect;
+            private int _Ranking = 0;
             private string _Category = "";
             private string _GrammarTopic = "";
             private string _ErrorType = "";
@@ -34,6 +35,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                 _QuestionKey = "";
                 _AnswerText = "";
                 _AnswerCorrect = false;
+                _Ranking = 0;
                 _Category = "";
                 _GrammarTopic = "";
                 _ErrorType = "";
@@ -56,6 +58,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
 
                 _AnswerKey = Guid.NewGuid().ToString();
                 _QuestionKey = questionKey.Trim();
+                _Ranking = 0;
                 _IsNewRecord = true;
                 _Status = "OK";
             }
@@ -68,6 +71,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                     {
                         _AnswerKey = Guid.NewGuid().ToString();
                         _QuestionKey = questionKey.Trim();
+                        _Ranking = 0;
                         _IsNewRecord = true;
                         _Status = "OK";
                     }
@@ -97,8 +101,9 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                                 _QuestionKey = reader["QuestionKey"].ToString();
                                 _AnswerText = reader["AnswerText"]?.ToString() ?? "";
                                 _AnswerCorrect = reader["AnswerCorrect"] != DBNull.Value && (bool)reader["AnswerCorrect"];
+                                _Ranking = reader["Ranking"] != DBNull.Value ? (int)reader["Ranking"] : 0;
                                 _Category = reader["Category"]?.ToString() ?? "";
-                                _GrammarTopic = reader["GrammarTopic"]?.ToString() ?? ""; // Lưu ý: Cột trong DB là GrammarTopic
+                                _GrammarTopic = reader["GrammarTopic"]?.ToString() ?? ""; 
                                 _ErrorType = reader["ErrorType"]?.ToString() ?? "";
                                 _RecordStatus = (int)reader["RecordStatus"];
                                 _CreatedOn = reader["CreatedOn"] != DBNull.Value ? (DateTime?)reader["CreatedOn"] : null;
@@ -127,6 +132,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
             public string QuestionKey { get => _QuestionKey; set => _QuestionKey = value; }
             public string AnswerText { get => _AnswerText; set => _AnswerText = value; }
             public bool AnswerCorrect { get => _AnswerCorrect; set => _AnswerCorrect = value; }
+            public int Ranking { get => _Ranking; set => _Ranking = value; }
             public string Category { get => _Category; set => _Category = value; }
             public string GrammarTopic { get => _GrammarTopic; set => _GrammarTopic = value; }
             public string ErrorType { get => _ErrorType; set => _ErrorType = value; }
@@ -153,9 +159,9 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                 }
 
                 string sql = @"INSERT INTO [dbo].[TEC_Part1_Answer] 
-                    (QuestionKey, AnswerKey, AnswerText, AnswerCorrect, Category, GrammarTopic, ErrorType, RecordStatus, CreatedBy, CreatedName, ModifiedBy, ModifiedName)
+                    (QuestionKey, AnswerKey, AnswerText, AnswerCorrect,Ranking, Category, GrammarTopic, ErrorType, RecordStatus, CreatedBy, CreatedName, ModifiedBy, ModifiedName)
                     VALUES 
-                    (@QuestionKey, @AnswerKey, @AnswerText, @AnswerCorrect, @Category, @GrammarTopic, @ErrorType, @RecordStatus, @CreatedBy, @CreatedName, @ModifiedBy, @ModifiedName)";
+                    (@QuestionKey, @AnswerKey, @AnswerText, @AnswerCorrect,@Ranking, @Category, @GrammarTopic, @ErrorType, @RecordStatus, @CreatedBy, @CreatedName, @ModifiedBy, @ModifiedName)";
 
                 string connectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
                 using (var conn = new SqlConnection(connectionString))
@@ -169,6 +175,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                             cmd.Parameters.AddWithValue("@AnswerKey", Guid.Parse(_AnswerKey));
                             cmd.Parameters.AddWithValue("@AnswerText", (object)_AnswerText ?? DBNull.Value);
                             cmd.Parameters.AddWithValue("@AnswerCorrect", _AnswerCorrect);
+                            cmd.Parameters.AddWithValue("@Ranking", _Ranking);
                             cmd.Parameters.AddWithValue("@Category", string.IsNullOrEmpty(_Category) ? DBNull.Value : Guid.Parse(_Category));
                             cmd.Parameters.AddWithValue("@GrammarTopic", string.IsNullOrEmpty(_GrammarTopic) ? DBNull.Value : Guid.Parse(_GrammarTopic));
                             cmd.Parameters.AddWithValue("@ErrorType", string.IsNullOrEmpty(_ErrorType) ? DBNull.Value : Guid.Parse(_ErrorType));
@@ -210,7 +217,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                 }
 
                 string sql = @"UPDATE [dbo].[TEC_Part1_Answer] 
-                    SET AnswerText = @AnswerText, AnswerCorrect = @AnswerCorrect, Category = @Category, GrammarTopic = @GrammarTopic, ErrorType = @ErrorType, 
+                    SET AnswerText = @AnswerText, AnswerCorrect = @AnswerCorrect,Ranking = @Ranking, Category = @Category, GrammarTopic = @GrammarTopic, ErrorType = @ErrorType, 
                         RecordStatus = @RecordStatus, ModifiedOn = GETDATE(), ModifiedBy = @ModifiedBy, ModifiedName = @ModifiedName
                     WHERE AnswerKey = @AnswerKey AND RecordStatus != 99";
 
@@ -225,6 +232,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                             cmd.Parameters.AddWithValue("@AnswerKey", Guid.Parse(_AnswerKey));
                             cmd.Parameters.AddWithValue("@AnswerText", (object)_AnswerText ?? DBNull.Value);
                             cmd.Parameters.AddWithValue("@AnswerCorrect", _AnswerCorrect);
+                            cmd.Parameters.AddWithValue("@Ranking", _Ranking);
                             cmd.Parameters.AddWithValue("@Category", string.IsNullOrEmpty(_Category) ? DBNull.Value : Guid.Parse(_Category));
                             cmd.Parameters.AddWithValue("@GrammarTopic", string.IsNullOrEmpty(_GrammarTopic) ? DBNull.Value : Guid.Parse(_GrammarTopic));
                             cmd.Parameters.AddWithValue("@ErrorType", string.IsNullOrEmpty(_ErrorType) ? DBNull.Value : Guid.Parse(_ErrorType));
