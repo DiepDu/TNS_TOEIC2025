@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Hosting;
+﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Collections.Generic;
@@ -321,6 +321,41 @@ namespace TNS_TOEICPart2.Areas.TOEICPart2.Pages
             }
         }
 
+        public IActionResult OnPostCheckRanking([FromBody] CheckRankingRequest request)
+        {
+            CheckAuth();
+            if (!UserLogin.Role.IsRead)
+                return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
+
+            string sql = @"
+        SELECT COUNT(*) 
+        FROM [dbo].[TEC_Part2_Answer] 
+        WHERE QuestionKey = @QuestionKey 
+        AND Ranking = @Ranking 
+        AND RecordStatus != 99
+        AND (@AnswerKey IS NULL OR AnswerKey != @AnswerKey)";
+            string connectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
+
+            using (var conn = new SqlConnection(connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@QuestionKey", Guid.Parse(request.QuestionKey));
+                    cmd.Parameters.AddWithValue("@Ranking", request.Ranking);
+                    cmd.Parameters.AddWithValue("@AnswerKey", string.IsNullOrEmpty(request.AnswerKey) ? DBNull.Value : Guid.Parse(request.AnswerKey));
+                    int count = (int)cmd.ExecuteScalar();
+                    return new JsonResult(new { exists = count > 0 });
+                }
+            }
+        }
+
+        public class CheckRankingRequest
+        {
+            public string QuestionKey { get; set; }
+            public int Ranking { get; set; }
+            public string AnswerKey { get; set; } // Để loại trừ chính bản ghi khi update
+        }
         public class ItemRequest
         {
             public string AnswerKey { get; set; }

@@ -207,12 +207,12 @@
     $.ajax({
         type: 'POST',
         url: '/TOEICPart1/Answer?handler=GetInfo',
-        data: JSON.stringify({ answerKey: answerKey, questionKey: questionKey }), // Gửi cả questionKey
+        data: JSON.stringify({ answerKey: answerKey, questionKey: questionKey }),
         contentType: 'application/json',
         dataType: 'json',
         headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() }
     }).done(data => {
-        console.log('loadInformation data:', data); // Debug dữ liệu
+        console.log('loadInformation data:', data); 
         loadInfoData(data);
     }).fail(error => {
         console.error('Error loading info:', error.responseText);
@@ -281,7 +281,7 @@
                 dataType: 'json',
                 headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() }
             }).done(data => {
-                console.log('RecordRead response:', data); // Log dữ liệu trả về
+                console.log('RecordRead response:', data); 
                 if (data.Status === 'OK' && data.Record) {
                     _Record = data.Record;
                     RecordView();
@@ -324,11 +324,10 @@
             if (_Record.IsNewRecord) {
                 _Record.QuestionKey = $('#QuestionKey').text().trim();
             }
-            console.log('RecordInput:', _Record); // Log dữ liệu trước khi gửi
+            console.log('RecordInput:', _Record); 
         }
 
-      function btnCreate_Click() {
-    // Gọi AJAX để đếm số lượng đáp án hiện tại
+    function btnCreate_Click() {
     $.ajax({
         type: 'POST',
         url: '/TOEICPart1/Answer?handler=CountAnswers',
@@ -337,37 +336,87 @@
         dataType: 'json',
         headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() }
     }).done(data => {
-        console.log('CountAnswers response:', data); // Log để debug
-        if (data.count >= 4) { // Giới hạn 4 đáp án
+        if (data.count >= 4) {
             $('#ModalMessage_Icon').html('<img src="/images/icon_error.png"/>');
             $('#ModalMessage_Content').text('Đã đạt giới hạn số lượng đáp án (tối đa 4)');
             $('#ModalMessage').modal('show');
             setTimeout(() => $('#ModalMessage').modal('hide'), 2000);
-            return; // Dừng lại nếu vượt giới hạn
+            return;
         }
 
-        // Nếu chưa vượt giới hạn, tiếp tục tạo mới
-        $('#ModalMessage_Icon').html('<img src="/images/Waiting.gif" width="80px"/>');
-        $('#ModalMessage_Content').text('Waiting');
-        $('#ModalMessage').modal('show');
         RecordInput();
-        RecordCreate();
+        const ranking = _Record.Ranking;
+        if (ranking < 1 || ranking > 4) {
+            $('#ModalMessage_Icon').html('<img src="/images/icon_error.png"/>');
+            $('#ModalMessage_Content').text('Ranking phải từ 1 đến 4');
+            $('#ModalMessage').modal('show');
+            setTimeout(() => $('#ModalMessage').modal('hide'), 2000);
+            return;
+        }
+
+        // Kiểm tra trùng Ranking
+        $.ajax({
+            type: 'POST',
+            url: '/TOEICPart1/Answer?handler=CheckRanking',
+            data: JSON.stringify({ QuestionKey: _Record.QuestionKey, Ranking: ranking }),
+            contentType: 'application/json',
+            dataType: 'json',
+            headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() }
+        }).done(checkData => {
+            if (checkData.exists) {
+                $('#ModalMessage_Icon').html('<img src="/images/icon_error.png"/>');
+                $('#ModalMessage_Content').text('Ranking này đã tồn tại');
+                $('#ModalMessage').modal('show');
+                setTimeout(() => $('#ModalMessage').modal('hide'), 2000);
+            } else {
+                $('#ModalMessage_Icon').html('<img src="/images/Waiting.gif" width="80px"/>');
+                $('#ModalMessage_Content').text('Waiting');
+                $('#ModalMessage').modal('show');
+                RecordCreate();
+            }
+        }).fail(error => {
+            console.error('Error checking ranking:', error.responseText);
+        });
     }).fail(error => {
         console.error('Error counting answers:', error.responseText);
-        $('#ModalMessage_Icon').html('<img src="/images/icon_error.png"/>');
-        $('#ModalMessage_Content').text('Không thể kiểm tra số lượng đáp án');
-        $('#ModalMessage').modal('show');
-        setTimeout(() => $('#ModalMessage').modal('hide'), 2000);
     });
 }
 
-        function btnUpdate_Click() {
+function btnUpdate_Click() {
+    RecordInput();
+    const ranking = _Record.Ranking;
+    if (ranking < 1 || ranking > 4) {
+        $('#ModalMessage_Icon').html('<img src="/images/icon_error.png"/>');
+        $('#ModalMessage_Content').text('Ranking phải từ 1 đến 4');
+        $('#ModalMessage').modal('show');
+        setTimeout(() => $('#ModalMessage').modal('hide'), 2000);
+        return;
+    }
+
+    // Kiểm tra trùng Ranking
+    $.ajax({
+        type: 'POST',
+        url: '/TOEICPart1/Answer?handler=CheckRanking',
+        data: JSON.stringify({ QuestionKey: _Record.QuestionKey, Ranking: ranking, AnswerKey: _Record.AnswerKey }),
+        contentType: 'application/json',
+        dataType: 'json',
+        headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() }
+    }).done(checkData => {
+        if (checkData.exists) {
+            $('#ModalMessage_Icon').html('<img src="/images/icon_error.png"/>');
+            $('#ModalMessage_Content').text('Ranking này đã tồn tại');
+            $('#ModalMessage').modal('show');
+            setTimeout(() => $('#ModalMessage').modal('hide'), 2000);
+        } else {
             $('#ModalMessage_Icon').html('<img src="/images/Waiting.gif" width="80px"/>');
             $('#ModalMessage_Content').text('Waiting');
             $('#ModalMessage').modal('show');
-            RecordInput();
             RecordUpdate();
         }
+    }).fail(error => {
+        console.error('Error checking ranking:', error.responseText);
+    });
+}
 
         function btnDel_Click() {
             $('#ModalMessage_Icon').html('<img src="/images/Waiting.gif" width="80px"/>');
@@ -380,7 +429,7 @@
             $.ajax({
                 type: 'POST',
                 url: '/TOEICPart1/Answer?handler=Create',
-                data: JSON.stringify(_Record), // Sửa từ dataabricks thành data
+                data: JSON.stringify(_Record),
                 contentType: 'application/json',
                 dataType: 'json',
                 headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() }
