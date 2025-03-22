@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Data.SqlClient;
 using System;
 using TNS_TOEICPart3.Areas.TOEICPart3.Models;
 
@@ -80,6 +81,40 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Pages
             zRecord.ModifiedName = UserLogin.Employee.Name;
 
             zRecord.Update();
+            if (zRecord.Status != "OK")
+                return new JsonResult(new { status = zRecord.Status, message = zRecord.Message });
+            try
+            {
+                string connectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
+                using (var conn = new SqlConnection(connectionString))
+                {
+                    conn.Open();
+                    string sql = @"
+                UPDATE [dbo].[TEC_Part3_Question]
+                SET Publish = @Publish, 
+                    RecordStatus = @RecordStatus,
+                    ModifiedBy = @ModifiedBy, 
+                    ModifiedName = @ModifiedName, 
+                    ModifiedOn = GETDATE()
+                WHERE Parent = @QuestionKey";
+
+                    using (var cmd = new SqlCommand(sql, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@QuestionKey", request.QuestionKey);
+                        cmd.Parameters.AddWithValue("@Publish", request.Publish);
+                        cmd.Parameters.AddWithValue("@RecordStatus", request.Publish ? 0 : zRecord.RecordStatus); // Khi bật: 0, khi tắt: giữ nguyên
+                        cmd.Parameters.AddWithValue("@ModifiedBy", UserLogin.Employee.Key);
+                        cmd.Parameters.AddWithValue("@ModifiedName", UserLogin.Employee.Name);
+
+                        int rowsAffected = cmd.ExecuteNonQuery();
+                        // Có thể ghi log số lượng câu hỏi con được cập nhật nếu muốn
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return new JsonResult(new { status = "ERROR", message = $"Failed to update sub-questions: {ex.Message}" });
+            }
             return new JsonResult(new { status = zRecord.Status, message = zRecord.Message });
         }
 
