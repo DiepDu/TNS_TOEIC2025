@@ -52,6 +52,18 @@
     let timeRemaining = @Model.TimeRemaining.TotalSeconds;
     const resourceBaseUrl = 'https://localhost:7078'; // Thay bằng URL thực tế của TOEICAdmin
 
+     let flaggedQuestions = new Set(); // Lưu danh sách questionKey của các câu hỏi được đánh dấu lá cờ
+
+    function toggleFlag(questionKey) {
+        if (flaggedQuestions.has(questionKey)) {
+            flaggedQuestions.delete(questionKey); // Bỏ đánh dấu
+        } else {
+            flaggedQuestions.add(questionKey); // Thêm đánh dấu
+        }
+        updateQuestionList(); // Cập nhật lại danh sách chấm tròn
+    }
+
+
     console.log('Raw JSON:', '@Html.Raw(Model.QuestionsJson)');
     console.log('Questions loaded:', questions);
     console.log('Total questions:', questions.length);
@@ -90,122 +102,149 @@
         }
     }
 
-    function renderSimplePart(container) {
-        const partQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
-        console.log(`Part ${currentPart} questions:`, partQuestions);
-        if (partQuestions.length === 0) {
-            container.innerHTML = `<p>No questions available for Part ${currentPart}. Total questions in part: ${questions.filter(q => Number(q.part) === currentPart).length}</p>`;
-            return;
-        }
-        let html = '';
-        partQuestions.forEach(question => {
+function renderSimplePart(container) {
+    const partQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
+    console.log(`Part ${currentPart} questions:`, partQuestions);
+    if (partQuestions.length === 0) {
+        container.innerHTML = `<p>No questions available for Part ${currentPart}. Total questions in part: ${questions.filter(q => Number(q.part) === currentPart).length}</p>`;
+        return;
+    }
+    let html = '';
+    partQuestions.forEach(question => {
+        html += `
+            <div class="question-container" id="question-${question.questionKey}">
+                <h2>Question ${question.order}</h2>
+                <span class="flag-icon" data-question-key="${question.questionKey}">🏳️</span>
+                ${question.questionImage ? `<img src="${resourceBaseUrl}${question.questionImage}" alt="Question Image" class="question-image">` : ''}
+                ${question.questionVoice ? `
+                    <audio controls class="question-audio">
+                        <source src="${resourceBaseUrl}${question.questionVoice}" type="audio/mpeg">
+                        Your browser does not support the audio element.
+                    </audio>` : ''}
+                ${question.questionText ? `<div class="question-text">${question.questionText}</div>` : ''}
+                <div class="answer-options">
+        `;
+        question.answers.forEach((answer, idx) => {
+            const label = (currentPart === 1 || currentPart === 2) 
+                ? (answer.ranking === 1 ? 'A' : answer.ranking === 2 ? 'B' : answer.ranking === 3 ? 'C' : answer.ranking === 4 ? 'D' : '?')
+                : String.fromCharCode(65 + idx);
+            const isChecked = answer.answerKey === question.userAnswerKey ? 'checked' : '';
+            const isSelected = answer.answerKey === question.userAnswerKey ? 'selected' : '';
             html += `
-                <div class="question-container" id="question-${question.questionKey}">
-                    <h2>Question ${question.order} (Part ${question.part})</h2>
-                    ${question.questionImage ? `<img src="${resourceBaseUrl}${question.questionImage}" alt="Question Image" class="question-image">` : ''}
-                    ${question.questionVoice ? `
+                <div class="answer-option ${isSelected}">
+                    <input type="radio" name="answer_${question.questionKey}" id="answer_${answer.answerKey}" 
+                           value="${answer.answerKey}" ${isChecked}>
+                    <label for="answer_${answer.answerKey}">
+                        <span class="label-text">${label}</span>
+                        ${currentPart === 1 || currentPart === 2 ? '' : `<span class="colon">:</span> <span class="answer-content">${answer.answerText}</span>`}
+                    </label>
+                </div>
+            `;
+        });
+        html += '</div></div>';
+    });
+    container.innerHTML = html;
+
+    // Gắn sự kiện cho các biểu tượng lá cờ
+    document.querySelectorAll('.flag-icon').forEach(flag => {
+        flag.addEventListener('click', () => {
+            const questionKey = flag.getAttribute('data-question-key');
+            toggleFlag(questionKey);
+        });
+    });
+}
+function renderComplexPart(container) {
+    const parentQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
+    console.log(`Part ${currentPart} parent questions:`, parentQuestions);
+
+    if (parentQuestions.length === 0) {
+        container.innerHTML = `<p>No questions available for Part ${currentPart}.</p>`;
+        return;
+    }
+
+    let html = '';
+    parentQuestions.forEach(parent => {
+        html += `
+            <div class="part3-container">
+                <div class="part3-left">
+                    <h2>Part ${currentPart}: Conversation</h2>
+                    ${parent.questionImage ? `<img src="${resourceBaseUrl}${parent.questionImage}" alt="Part ${currentPart} Image" class="question-image">` : ''}
+                    ${parent.questionVoice ? `
                         <audio controls class="question-audio">
-                            <source src="${resourceBaseUrl}${question.questionVoice}" type="audio/mpeg">
+                            <source src="${resourceBaseUrl}${parent.questionVoice}" type="audio/mpeg">
                             Your browser does not support the audio element.
                         </audio>` : ''}
-                    ${question.questionText ? `<div class="question-text">${question.questionText}</div>` : ''}
+                    ${parent.questionText ? `<div class="question-text">${parent.questionText}</div>` : ''}
+                </div>
+                <div class="part3-right">
+        `;
+        const children = parent.children || [];
+        console.log(`Children of QuestionKey=${parent.questionKey}:`, children);
+        children.forEach(child => {
+            html += `
+                <div class="sub-question" id="question-${child.questionKey}">
+                    <h4>Question ${child.order}${child.questionText ? `<span class="question-content">: ${child.questionText}</span>` : ''}</h4>
+                    <span class="flag-icon" data-question-key="${child.questionKey}">🏳️</span>
+                    ${child.questionImage ? `<img src="${resourceBaseUrl}${child.questionImage}" alt="Sub Question Image" class="sub-question-image">` : ''}
+                    ${child.questionVoice ? `
+                        <audio controls class="sub-question-audio">
+                            <source src="${resourceBaseUrl}${child.questionVoice}" type="audio/mpeg">
+                            Your browser does not support the audio element.
+                        </audio>` : ''}
                     <div class="answer-options">
             `;
-            question.answers.forEach(answer => {
-                const label = answer.ranking === 1 ? 'A' : answer.ranking === 2 ? 'B' : answer.ranking === 3 ? 'C' : answer.ranking === 4 ? 'D' : '?';
-                const isChecked = answer.answerKey === question.userAnswerKey ? 'checked' : '';
+            child.answers.forEach((answer, idx) => {
+                const label = String.fromCharCode(65 + idx);
+                const isChecked = answer.answerKey === child.userAnswerKey ? 'checked' : '';
+                const isSelected = answer.answerKey === child.userAnswerKey ? 'selected' : '';
                 html += `
-                    <div class="answer-option">
-                        <input type="radio" name="answer_${question.questionKey}" id="answer_${answer.answerKey}" 
+                    <div class="answer-option ${isSelected}">
+                        <input type="radio" name="answer_${child.questionKey}" id="answer_${answer.answerKey}" 
                                value="${answer.answerKey}" ${isChecked}>
-                        <label for="answer_${answer.answerKey}">${label}${currentPart > 2 ? `: ${answer.answerText}` : ''}</label>
+                        <label for="answer_${answer.answerKey}">
+                            <span class="label-text">${label}</span>
+                            <span class="colon">:</span>
+                            <span class="answer-content">${answer.answerText}</span>
+                        </label>
                     </div>
                 `;
             });
             html += '</div></div>';
         });
-        container.innerHTML = html;
-    }
+        html += '</div></div>';
+    });
+    container.innerHTML = html;
 
-    function renderComplexPart(container) {
+    // Gắn sự kiện cho các biểu tượng lá cờ
+    document.querySelectorAll('.flag-icon').forEach(flag => {
+        flag.addEventListener('click', () => {
+            const questionKey = flag.getAttribute('data-question-key');
+            toggleFlag(questionKey);
+        });
+    });
+}
+function updateQuestionList() {
+    const listContainer = document.getElementById('question-list');
+    let html = '';
+    let displayedQuestions = [];
+
+    if (currentPart <= 2 || currentPart === 5) {
+        displayedQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
+    } else {
         const parentQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
-        console.log(`Part ${currentPart} parent questions:`, parentQuestions);
-
-        if (parentQuestions.length === 0) {
-            container.innerHTML = `<p>No questions available for Part ${currentPart}.</p>`;
-            return;
-        }
-
-        let html = '';
-        parentQuestions.forEach(parent => {
-            html += `
-                <div class="part3-container">
-                    <div class="part3-left">
-                        <h2>Part ${currentPart}: Conversation</h2>
-                        ${parent.questionImage ? `<img src="${resourceBaseUrl}${parent.questionImage}" alt="Part ${currentPart} Image" class="question-image">` : ''}
-                        ${parent.questionVoice ? `
-                            <audio controls class="question-audio">
-                                <source src="${resourceBaseUrl}${parent.questionVoice}" type="audio/mpeg">
-                                Your browser does not support the audio element.
-                            </audio>` : ''}
-                        ${parent.questionText ? `<div class="question-text">${parent.questionText}</div>` : ''}
-                    </div>
-                    <div class="part3-right">
-            `;
-            const children = parent.children || [];
-            console.log(`Children of QuestionKey=${parent.questionKey}:`, children);
-            children.forEach(child => {
-                html += `
-                    <div class="sub-question" id="question-${child.questionKey}">
-                        <h4>Question ${child.order}${child.questionText ? `: ${child.questionText}` : ''}</h4>
-                        ${child.questionImage ? `<img src="${resourceBaseUrl}${child.questionImage}" alt="Sub Question Image" class="sub-question-image">` : ''}
-                        ${child.questionVoice ? `
-                            <audio controls class="sub-question-audio">
-                                <source src="${resourceBaseUrl}${child.questionVoice}" type="audio/mpeg">
-                                Your browser does not support the audio element.
-                            </audio>` : ''}
-                        <div class="answer-options">
-                `;
-                child.answers.forEach((answer, idx) => {
-                    const label = String.fromCharCode(65 + idx);
-                    const isChecked = answer.answerKey === child.userAnswerKey ? 'checked' : '';
-                    html += `
-                        <div class="answer-option">
-                            <input type="radio" name="answer_${child.questionKey}" id="answer_${answer.answerKey}" 
-                                   value="${answer.answerKey}" ${isChecked}>
-                            <label for="answer_${answer.answerKey}">${label}: ${answer.answerText}</label>
-                        </div>
-                    `;
-                });
-                html += '</div></div>';
-            });
-            html += '</div></div>';
-        });
-        container.innerHTML = html;
+        displayedQuestions = parentQuestions.reduce((acc, parent) => {
+            return acc.concat(parent.children || []);
+        }, []);
     }
 
-    function updateQuestionList() {
-        const listContainer = document.getElementById('question-list');
-        let html = '';
-        let displayedQuestions = [];
-
-        if (currentPart <= 2 || currentPart === 5) {
-            // Part 1, 2, 5: Lấy câu hỏi độc lập
-            displayedQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
-        } else {
-            // Part 3, 4, 6, 7: Lấy tất cả câu hỏi con từ các câu cha
-            const parentQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
-            displayedQuestions = parentQuestions.reduce((acc, parent) => {
-                return acc.concat(parent.children || []);
-            }, []);
-        }
-
-        console.log(`Displayed questions for Part ${currentPart}:`, displayedQuestions);
-        displayedQuestions.forEach((q, index) => {
-            html += `<a href="#" class="question-circle" onclick="scrollToQuestion('${q.questionKey}')">${q.order || 'N/A'}</a>`;
-        });
-        listContainer.innerHTML = html;
-    }
+    console.log(`Displayed questions for Part ${currentPart}:`, displayedQuestions);
+    displayedQuestions.forEach((q, index) => {
+        // Kiểm tra nếu câu hỏi đã được chọn đáp án (userAnswerKey tồn tại và không rỗng)
+        const isSelected = q.userAnswerKey && q.userAnswerKey !== '';
+        html += `<a href="#" class="question-circle ${isSelected ? 'selected' : ''}" onclick="scrollToQuestion('${q.questionKey}')">${q.order || 'N/A'}</a>`;
+    });
+    listContainer.innerHTML = html;
+}
 
     function scrollToQuestion(questionKey) {
         const element = document.getElementById(`question-${questionKey}`);
@@ -223,7 +262,8 @@
         renderContent();
         updateQuestionList();
     };
-</script></html>
+</script>
+</html>
 <style>
     * {
         margin: 0;
@@ -255,7 +295,28 @@
             opacity: 0.1;
             z-index: 0;
         }
+.flag-icon {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 1.5rem; /* Tăng kích thước */
+    color: #FF5722; /* Màu cam đậm để nổi bật */
+    background: rgba(255, 255, 255, 0.8); /* Nền trắng mờ để làm nổi bật */
+    border-radius: 50%; /* Bo tròn nền */
+    padding: 5px; /* Khoảng cách giữa biểu tượng và nền */
+    cursor: pointer;
+    transition: transform 0.3s ease, background 0.3s ease;
+}
 
+.flag-icon:hover {
+    transform: scale(1.2);
+    background: rgba(255, 255, 255, 1); /* Nền trắng đậm hơn khi hover */
+}
+
+/* Đảm bảo .question-container và .sub-question có position: relative để .flag-icon định vị đúng */
+.question-container, .sub-question {
+    position: relative;
+}
     .header {
         position: fixed;
         top: 0;
@@ -376,7 +437,9 @@
             animation: slideInDown 1s ease-in-out;
             margin-bottom: 20px;
         }
-
+        .answer-option.selected {
+    background: #4FC3F7; /* Màu đậm hơn so với màu mặc định #B3E5FC */
+}
     .part-section {
         width: 100%;
         display: flex;
@@ -409,7 +472,10 @@
         transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
         animation: zoomIn 0.5s ease-in-out;
     }
-
+    .question-circle.selected {
+    background: #0288D1; /* Màu đậm hơn, giống màu của part-btn active */
+    color: white; /* Đổi màu chữ thành trắng để dễ đọc */
+}
         .question-circle:hover {
             background: #81D4FA;
             transform: scale(1.2);
@@ -449,6 +515,14 @@
         text-align: center;
         animation: zoomIn 1s ease-in-out;
     }
+    .question-container h2 {
+    font-weight: 600; /* In đậm cho Question X ở Part 1, 2, 5 */
+    color: #000;
+}
+.part3-left h2 {
+    font-weight: 600; /* In đậm cho Part X */
+    color: #000;
+}
 
     .question-image {
         width: 300px;
@@ -480,16 +554,17 @@
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
 
-    .question-text {
-        font-size: 1.2rem;
-        font-weight: 600;
-        color: #333;
-        margin-bottom: 20px;
-        background: linear-gradient(90deg, #0288D1, #4FC3F7);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        animation: slideInDown 1s ease-in-out;
-    }
+.question-text {
+    font-size: 1.2rem;
+    font-weight: normal; /* Không in đậm */
+    color: #000; /* Màu đen */
+    margin-bottom: 20px;
+    background: none; /* Bỏ gradient */
+    -webkit-background-clip: initial;
+    -webkit-text-fill-color: initial;
+    animation: slideInDown 1s ease-in-out;
+    /* Bỏ font-style: italic */
+}
 
     .answer-options {
         display: flex;
@@ -518,13 +593,50 @@
             margin: 0;
         }
 
-        .answer-option label {
-            flex: 1;
-            font-size: 1rem;
-            color: #333;
-            margin: 0;
-        }
+.answer-option label {
+    display: flex;
+    align-items: center;
+    font-size: 1rem;
+    color: #333;
+    margin: 0;
+    gap: 2px; /* Đảm bảo khoảng cách đồng đều */
+}
 
+.answer-option .label-text {
+    font-weight: 600; /* In đậm cho A, B, C, D */
+    color: #000;
+    min-width: 15px; /* Đặt chiều rộng tối thiểu để nhãn thẳng hàng */
+    text-align: left; /* Căn trái nhãn */
+     margin-right: -3px;
+}
+.answer-option .answer-content {
+    font-weight: normal; /* Không in đậm cho nội dung đáp án */
+    color: #000;
+    font-size: 0.95rem; /* Tùy biến: chữ nhỏ hơn một chút để nhãn nổi bật */
+    line-height: 1; /* Đảm bảo nội dung đáp án không bị lệch hàng */
+}
+.answer-option .colon {
+    font-weight: normal; /* Không in đậm dấu hai chấm */
+    color: #000;
+    line-height: 1; /* Đảm bảo dấu hai chấm không bị lệch hàng */
+     position: relative; /* Thêm để có thể điều chỉnh vị trí */
+    top: -1.5px;
+}
+.sub-question h4 .question-content {
+    font-weight: normal; /* Không in đậm cho phần nội dung sau Question X */
+    color: #000;
+    /* Bỏ font-style: italic */
+}
+.answer-option {
+    display: flex;
+    align-items: center;
+    gap: 5px; /* Giảm từ 10px xuống 5px để dấu hai chấm gần radio button hơn */
+    background: #B3E5FC;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+}
     .part3-container {
         display: flex;
         gap: 20px;
@@ -560,9 +672,8 @@
     }
 
         .sub-question h4 {
-            font-size: 1.1rem;
-            margin-bottom: 10px;
-            color: #333;
+            font-weight: 600; /* In đậm cho Question X ở Part 3, 4, 6, 7 */
+    color: #000;
         }
 
     .sub-question-image {
