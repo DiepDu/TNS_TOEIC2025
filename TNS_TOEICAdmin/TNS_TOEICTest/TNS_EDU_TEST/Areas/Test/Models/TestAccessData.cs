@@ -31,16 +31,17 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                     }
                     else
                     {
-                        return (null, null); // Không tìm thấy ResultKey
+                        Console.WriteLine($"No EndTime found for ResultKey={resultKey}");
+                        return (null, null);
                     }
                 }
 
-                // Truy vấn chính: Join ContentOfTest, TEC_PartX_Question, TEC_PartX_Answer, UserAnswers
+                // Truy vấn chính
                 string sql = @"
                     SELECT 
                         c.TestKey, c.ResultKey, c.QuestionKey, c.Part, c.[Order],
                         q.QuestionText, q.QuestionImage, q.QuestionVoice, q.Parent,
-                        a.AnswerKey, a.AnswerText, a.AnswerImage, a.AnswerVoice, a.AnswerCorrect,
+                        a.AnswerKey, a.AnswerText, a.AnswerImage, a.AnswerVoice, a.AnswerCorrect, a.Ranking,
                         u.SelectAnswerKey
                     FROM [ContentOfTest] c
                     LEFT JOIN (
@@ -66,25 +67,25 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                         FROM [TEC_Part7_Question] WHERE RecordStatus != 99
                     ) q ON c.QuestionKey = q.QuestionKey
                     LEFT JOIN (
-                        SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect
+                        SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect, Ranking
                         FROM [TEC_Part1_Answer] WHERE RecordStatus != 99
                         UNION
-                        SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect
+                        SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect, Ranking
                         FROM [TEC_Part2_Answer] WHERE RecordStatus != 99
                         UNION
-                        SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect
+                        SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect, NULL AS Ranking
                         FROM [TEC_Part3_Answer] WHERE RecordStatus != 99
                         UNION
-                        SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect
+                        SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect, NULL AS Ranking
                         FROM [TEC_Part4_Answer] WHERE RecordStatus != 99
                         UNION
-                        SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect
+                        SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect, NULL AS Ranking
                         FROM [TEC_Part5_Answer] WHERE RecordStatus != 99
                         UNION
-                        SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect
+                        SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect, NULL AS Ranking
                         FROM [TEC_Part6_Answer] WHERE RecordStatus != 99
                         UNION
-                        SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect
+                        SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect, NULL AS Ranking
                         FROM [TEC_Part7_Answer] WHERE RecordStatus != 99
                     ) a ON c.QuestionKey = a.QuestionKey
                     LEFT JOIN [UserAnswers] u ON c.ResultKey = u.ResultKey AND c.QuestionKey = u.QuestionKey
@@ -103,40 +104,51 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                     {
                         while (await reader.ReadAsync())
                         {
-                            Guid questionKey = reader.GetGuid(2); // c.QuestionKey
+                            Guid questionKey = reader.GetGuid(2);
+                            int part = reader.GetInt32(3);
+
                             if (!questionsDict.ContainsKey(questionKey))
                             {
                                 var question = new TestQuestion
                                 {
                                     QuestionKey = questionKey,
-                                    Part = reader.GetInt32(3), // c.Part
-                                    Order = reader.IsDBNull(4) ? null : reader.GetInt32(4), // c.Order
-                                    QuestionText = reader.IsDBNull(5) ? null : reader.GetString(5), // q.QuestionText
-                                    QuestionImage = reader.IsDBNull(6) ? null : reader.GetString(6), // q.QuestionImage
-                                    QuestionVoice = reader.IsDBNull(7) ? null : reader.GetString(7), // q.QuestionVoice
-                                    Parent = reader.IsDBNull(8) ? null : reader.GetGuid(8), // q.Parent
+                                    Part = part,
+                                    Order = reader.IsDBNull(4) ? null : reader.GetInt32(4),
+                                    QuestionText = reader.IsDBNull(5) ? null : reader.GetString(5),
+                                    QuestionImage = reader.IsDBNull(6) ? null : reader.GetString(6),
+                                    QuestionVoice = reader.IsDBNull(7) ? null : reader.GetString(7),
+                                    Parent = reader.IsDBNull(8) ? null : reader.GetGuid(8),
                                     Answers = new List<TestAnswer>(),
-                                    UserAnswerKey = reader.IsDBNull(14) ? null : reader.GetGuid(14).ToString() // u.SelectAnswerKey
+                                    UserAnswerKey = reader.IsDBNull(15) ? null : reader.GetGuid(15).ToString()
                                 };
                                 questionsDict[questionKey] = question;
                                 allQuestions.Add(question);
                             }
 
-                            // Thêm đáp án nếu có
-                            if (!reader.IsDBNull(9)) // a.AnswerKey
+                            if (!reader.IsDBNull(9))
                             {
                                 var answer = new TestAnswer
                                 {
-                                    AnswerKey = reader.GetGuid(9), // a.AnswerKey
+                                    AnswerKey = reader.GetGuid(9),
                                     QuestionKey = questionKey,
-                                    AnswerText = reader.IsDBNull(10) ? null : reader.GetString(10), // a.AnswerText
-                                    AnswerImage = reader.IsDBNull(11) ? null : reader.GetString(11), // a.AnswerImage
-                                    AnswerVoice = reader.IsDBNull(12) ? null : reader.GetString(12), // a.AnswerVoice
-                                    AnswerCorrect = reader.GetBoolean(13) // a.AnswerCorrect
+                                    AnswerText = (part <= 2 || reader.IsDBNull(10)) ? null : reader.GetString(10),
+                                    AnswerImage = (part <= 2 || reader.IsDBNull(11)) ? null : reader.GetString(11),
+                                    AnswerVoice = (part <= 2 || reader.IsDBNull(12)) ? null : reader.GetString(12),
+                                    AnswerCorrect = reader.GetBoolean(13),
+                                    Ranking = reader.IsDBNull(14) ? 0 : reader.GetInt32(14)
                                 };
                                 questionsDict[questionKey].Answers.Add(answer);
                             }
                         }
+                    }
+                }
+
+                // Sắp xếp đáp án cho Part 1 và 2
+                foreach (var question in allQuestions)
+                {
+                    if (question.Part <= 2)
+                    {
+                        question.Answers.Sort((a, b) => a.Ranking.CompareTo(b.Ranking));
                     }
                 }
 
@@ -150,14 +162,21 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                     }
                     else
                     {
-                        var parentQuestion = questionsDict.ContainsKey(question.Parent.Value)
-                            ? questionsDict[question.Parent.Value]
-                            : null;
-                        if (parentQuestion != null)
-                        {
-                            parentQuestion.Children.Add(question);
-                        }
+                        var parentQuestion = questionsDict[question.Parent.Value];
+                        parentQuestion.Children.Add(question);
                     }
+                }
+
+                // Log chi tiết
+                Console.WriteLine($"Total questions from SQL: {allQuestions.Count}");
+                foreach (var q in allQuestions)
+                {
+                    Console.WriteLine($"QuestionKey={q.QuestionKey}, Part={q.Part}, Parent={q.Parent ?? Guid.Empty}, ChildrenCount={q.Children.Count}");
+                }
+                Console.WriteLine($"Total parent questions returned: {resultQuestions.Count}");
+                foreach (var q in resultQuestions)
+                {
+                    Console.WriteLine($"Parent QuestionKey={q.QuestionKey}, Part={q.Part}, ChildrenCount={q.Children.Count}");
                 }
 
                 return (endTime, resultQuestions);
@@ -175,7 +194,7 @@ namespace TNS_EDU_TEST.Areas.Test.Models
         public string QuestionVoice { get; set; }
         public Guid? Parent { get; set; }
         public List<TestAnswer> Answers { get; set; }
-        public string UserAnswerKey { get; set; } // Lưu AnswerKey từ UserAnswers
+        public string UserAnswerKey { get; set; }
         public List<TestQuestion> Children { get; set; } = new List<TestQuestion>();
     }
 
@@ -187,5 +206,6 @@ namespace TNS_EDU_TEST.Areas.Test.Models
         public string AnswerImage { get; set; }
         public string AnswerVoice { get; set; }
         public bool AnswerCorrect { get; set; }
+        public int Ranking { get; set; }
     }
 }

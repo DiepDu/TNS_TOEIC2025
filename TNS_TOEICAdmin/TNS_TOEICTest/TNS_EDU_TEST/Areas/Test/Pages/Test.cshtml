@@ -11,156 +11,210 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@ViewData["Title"]</title>
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="header">
-        <button class="exit-btn">Exit</button>
-        <div class="timer">Time: 45:00</div>
-        <button class="submit-btn">Submit</button>
+        <button class="exit-btn" onclick="window.location.href='/Ready'">Exit</button>
+        <div class="timer" id="timer">Time: @Model.TimeRemaining.ToString(@"mm\:ss")</div>
+        <button class="submit-btn" onclick="submitTest()">Submit</button>
     </div>
 
     <div class="sidebar-left">
-        <button class="part-btn active" onclick="setActivePart(this)">Part 1</button>
-        <button class="part-btn" onclick="setActivePart(this)">Part 2</button>
-        <button class="part-btn" onclick="setActivePart(this)">Part 3</button>
-        <button class="part-btn" onclick="setActivePart(this)">Part 4</button>
-        <button class="part-btn" onclick="setActivePart(this)">Part 5</button>
-        <button class="part-btn" onclick="setActivePart(this)">Part 6</button>
-        <button class="part-btn" onclick="setActivePart(this)">Part 7</button>
+        <button class="part-btn active" data-part="1" onclick="switchPart(1, this)">Part 1</button>
+        <button class="part-btn" data-part="2" onclick="switchPart(2, this)">Part 2</button>
+        <button class="part-btn" data-part="3" onclick="switchPart(3, this)">Part 3</button>
+        <button class="part-btn" data-part="4" onclick="switchPart(4, this)">Part 4</button>
+        <button class="part-btn" data-part="5" onclick="switchPart(5, this)">Part 5</button>
+        <button class="part-btn" data-part="6" onclick="switchPart(6, this)">Part 6</button>
+        <button class="part-btn" data-part="7" onclick="switchPart(7, this)">Part 7</button>
     </div>
 
     <!-- Main Content -->
     <div class="main-content">
-        <div class="main-content-wrapper">
-            <!-- Part 1 Question -->
-            <div class="question-container">
-                <h2>Question 1 (Part 1)</h2>
-                <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60" alt="Question Image" class="question-image">
-                <audio controls class="question-audio">
-                    <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
-                    Your browser does not support the audio element.
-                </audio>
-                <div class="question-text">
-                    What is the man doing in the image?
-                </div>
-                <div class="answer-options">
-                    <div class="answer-option">
-                        <input type="radio" name="answer_1" id="answer_a" value="A">
-                        <label for="answer_a">A: He is reading a book.</label>
-                    </div>
-                    <div class="answer-option">
-                        <input type="radio" name="answer_1" id="answer_b" value="B">
-                        <label for="answer_b">B: He is writing a letter.</label>
-                    </div>
-                    <div class="answer-option">
-                        <input type="radio" name="answer_1" id="answer_c" value="C">
-                        <label for="answer_c">C: He is talking on the phone.</label>
-                    </div>
-                    <div class="answer-option">
-                        <input type="radio" name="answer_1" id="answer_d" value="D">
-                        <label for="answer_d">D: He is painting a picture.</label>
-                    </div>
-                </div>
-            </div>
-
-            <div class="part3-container">
-                <div class="part3-left">
-                    <h2>Part 3: Conversation</h2>
-                    <img src="https://images.unsplash.com/photo-1516321497487-e288fb19713f?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60" alt="Part 3 Image" class="question-image">
-                    <audio controls class="question-audio">
-                        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" type="audio/mpeg">
-                        Your browser does not support the audio element.
-                    </audio>
-                    <div class="question-text">
-                        Listen to the conversation between two colleagues about a project meeting.
-                    </div>
-                </div>
-                <div class="part3-right">
-                    <div class="sub-question">
-                        <h4>Question 2: What is the main topic of the meeting?</h4>
-                        <img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60" alt="Sub Question Image" class="sub-question-image">
-                        <audio controls class="sub-question-audio">
-                            <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" type="audio/mpeg">
-                            Your browser does not support the audio element.
-                        </audio>
-                        <div class="answer-options">
-                            <div class="answer-option">
-                                <input type="radio" name="answer_2" id="answer_2a" value="A">
-                                <label for="answer_2a">A: Project timeline</label>
-                            </div>
-                            <div class="answer-option">
-                                <input type="radio" name="answer_2" id="answer_2b" value="B">
-                                <label for="answer_2b">B: Budget allocation</label>
-                            </div>
-                            <div class="answer-option">
-                                <input type="radio" name="answer_2" id="answer_2c" value="C">
-                                <label for="answer_2c">C: Team roles</label>
-                            </div>
-                            <div class="answer-option">
-                                <input type="radio" name="answer_2" id="answer_2d" value="D">
-                                <label for="answer_2d">D: Client feedback</label>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="sub-question">
-                        <h4>Question 3: Who is leading the meeting?</h4>
-                        <img src="https://images.unsplash.com/photo-1531482615713-2afd0a738ca4?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60" alt="Sub Question Image" class="sub-question-image">
-                        <audio controls class="sub-question-audio">
-                            <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3" type="audio/mpeg">
-                            Your browser does not support the audio element.
-                        </audio>
-                        <div class="answer-options">
-                            <div class="answer-option">
-                                <input type="radio" name="answer_3" id="answer_3a" value="A">
-                                <label for="answer_3a">A: Sarah</label>
-                            </div>
-                            <div class="answer-option">
-                                <input type="radio" name="answer_3" id="answer_3b" value="B">
-                                <label for="answer_3b">B: John</label>
-                            </div>
-                            <div class="answer-option">
-                                <input type="radio" name="answer_3" id="answer_3c" value="C">
-                                <label for="answer_3c">C: Emily</label>
-                            </div>
-                            <div class="answer-option">
-                                <input type="radio" name="answer_3" id="answer_3d" value="D">
-                                <label for="answer_3d">D: Michael</label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="main-content-wrapper" id="main-content-wrapper">
+            <!-- Ban đầu để trống, sẽ render bằng JS -->
         </div>
     </div>
 
     <!-- Sidebar Right (Question List) -->
     <div class="sidebar-right">
         <h3>Questions</h3>
-        <div class="part-section">
-            @for (int i = 1; i <= 50; i++)
-            {
-                <a href="#" class="question-circle @(i == 1 ? "active" : "")" onclick="setActiveQuestion(this)">@i</a>
-            }
-        </div>
+        <div class="part-section" id="question-list"></div>
     </div>
 </body>
 
 <script>
-    function setActivePart(element) {
-        document.querySelectorAll('.part-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        element.classList.add('active');
+    let currentPart = 1;
+    let currentQuestionIndex = 0;
+    let questions = JSON.parse('@Html.Raw(Model.QuestionsJson)');
+    let testKey = '@Model.TestKey';
+    let resultKey = '@Model.ResultKey';
+    let timeRemaining = @Model.TimeRemaining.TotalSeconds;
+
+    console.log('Raw JSON:', '@Html.Raw(Model.QuestionsJson)');
+    console.log('Questions loaded:', questions);
+    console.log('Total questions:', questions.length);
+    console.log('Parent values:', questions.map(q => ({ part: q.part, parent: q.parent, type: typeof q.parent })));
+    questions.forEach((q, index) => console.log(`Question ${index + 1}: Part=${q.part}, Parent=${q.parent}, Order=${q.order}, Children=${q.children ? q.children.length : 0}`));
+
+    function startTimer() {
+        const timerElement = document.getElementById('timer');
+        setInterval(() => {
+            if (timeRemaining > 0) {
+                timeRemaining--;
+                let minutes = Math.floor(timeRemaining / 60);
+                let seconds = Math.floor(timeRemaining % 60);
+                timerElement.textContent = `Time: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            } else {
+                timerElement.textContent = 'Time: 00:00';
+                submitTest();
+            }
+        }, 1000);
     }
 
-    function setActiveQuestion(element) {
-        document.querySelectorAll('.question-circle').forEach(circle => {
-            circle.classList.remove('active');
-        });
+    function switchPart(part, element) {
+        currentPart = part;
+        currentQuestionIndex = 0;
+        document.querySelectorAll('.part-btn').forEach(btn => btn.classList.remove('active'));
         element.classList.add('active');
+        renderContent();
+        updateQuestionList();
     }
+
+    function renderContent() {
+        const container = document.getElementById('main-content-wrapper');
+        if ([1, 2, 5].includes(currentPart)) {
+            renderSimplePart(container);
+        } else {
+            renderComplexPart(container);
+        }
+    }
+
+    function renderSimplePart(container) {
+        const partQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
+        console.log(`Part ${currentPart} questions:`, partQuestions);
+        if (partQuestions.length === 0) {
+            container.innerHTML = `<p>No questions available for Part ${currentPart}. Total questions in part: ${questions.filter(q => Number(q.part) === currentPart).length}</p>`;
+            return;
+        }
+        const question = partQuestions[currentQuestionIndex];
+        let html = `
+            <div class="question-container">
+                <h2>Question ${question.order} (Part ${question.part})</h2>
+                ${question.questionImage ? `<img src="${question.questionImage}" alt="Question Image" class="question-image">` : ''}
+                ${question.questionVoice ? `
+                    <audio controls class="question-audio">
+                        <source src="${question.questionVoice}" type="audio/mpeg">
+                        Your browser does not support the audio element.
+                    </audio>` : ''}
+                ${question.questionText ? `<div class="question-text">${question.questionText}</div>` : ''}
+                <div class="answer-options">
+        `;
+        question.answers.forEach(answer => {
+            const label = answer.ranking === 1 ? 'A' : answer.ranking === 2 ? 'B' : answer.ranking === 3 ? 'C' : answer.ranking === 4 ? 'D' : '?';
+            const isChecked = answer.answerKey === question.userAnswerKey ? 'checked' : '';
+            html += `
+                <div class="answer-option">
+                    <input type="radio" name="answer_${question.questionKey}" id="answer_${answer.answerKey}" 
+                           value="${answer.answerKey}" ${isChecked}>
+                    <label for="answer_${answer.answerKey}">${label}${currentPart > 2 ? `: ${answer.answerText}` : ''}</label>
+                </div>
+            `;
+        });
+        html += '</div></div>';
+        container.innerHTML = html;
+    }
+
+    function renderComplexPart(container) {
+        const parentQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
+        console.log(`Part ${currentPart} parent questions:`, parentQuestions);
+
+        if (parentQuestions.length === 0) {
+            container.innerHTML = `<p>No questions available for Part ${currentPart}.</p>`;
+            return;
+        }
+
+        let html = '';
+        parentQuestions.forEach(parent => {
+            html += `
+                <div class="part3-container">
+                    <div class="part3-left">
+                        <h2>Part ${currentPart}: Conversation</h2>
+                        ${parent.questionImage ? `<img src="${parent.questionImage}" alt="Part ${currentPart} Image" class="question-image">` : ''}
+                        ${parent.questionVoice ? `
+                            <audio controls class="question-audio">
+                                <source src="${parent.questionVoice}" type="audio/mpeg">
+                                Your browser does not support the audio element.
+                            </audio>` : ''}
+                        ${parent.questionText ? `<div class="question-text">${parent.questionText}</div>` : ''}
+                    </div>
+                    <div class="part3-right">
+            `;
+            const children = parent.children || [];
+            console.log(`Children of QuestionKey=${parent.questionKey}:`, children);
+            children.forEach(child => {
+                html += `
+                    <div class="sub-question">
+                        <h4>Question ${child.order}${child.questionText ? `: ${child.questionText}` : ''}</h4>
+                        ${child.questionImage ? `<img src="${child.questionImage}" alt="Sub Question Image" class="sub-question-image">` : ''}
+                        ${child.questionVoice ? `
+                            <audio controls class="sub-question-audio">
+                                <source src="${child.questionVoice}" type="audio/mpeg">
+                                Your browser does not support the audio element.
+                            </audio>` : ''}
+                        <div class="answer-options">
+                `;
+                child.answers.forEach((answer, idx) => {
+                    const label = String.fromCharCode(65 + idx);
+                    const isChecked = answer.answerKey === child.userAnswerKey ? 'checked' : '';
+                    html += `
+                        <div class="answer-option">
+                            <input type="radio" name="answer_${child.questionKey}" id="answer_${answer.answerKey}" 
+                                   value="${answer.answerKey}" ${isChecked}>
+                            <label for="answer_${answer.answerKey}">${label}: ${answer.answerText}</label>
+                        </div>
+                    `;
+                });
+                html += '</div></div>';
+            });
+            html += '</div></div>';
+        });
+        container.innerHTML = html;
+    }
+
+    function updateQuestionList() {
+        const listContainer = document.getElementById('question-list');
+        let html = '';
+        let displayedQuestions = currentPart <= 2 || currentPart === 5
+            ? questions.filter(q => Number(q.part) === currentPart && q.parent === null)
+            : questions.filter(q => Number(q.part) === currentPart && q.parent !== null);
+        
+        console.log(`Displayed questions for Part ${currentPart}:`, displayedQuestions);
+        displayedQuestions.forEach((q, index) => {
+            const isActive = index === currentQuestionIndex ? 'active' : '';
+            html += `<a href="#" class="question-circle ${isActive}" onclick="setActiveQuestion(${index})">${q.order || 'N/A'}</a>`;
+        });
+        listContainer.innerHTML = html;
+    }
+
+    function setActiveQuestion(index) {
+        currentQuestionIndex = index;
+        renderContent();
+        document.querySelectorAll('.question-circle').forEach((circle, i) => {
+            circle.classList.toggle('active', i === index);
+        });
+    }
+
+    function submitTest() {
+        window.location.href = `/Result?resultKey=${resultKey}`;
+    }
+
+    window.onload = function () {
+        startTimer();
+        renderContent();
+        updateQuestionList();
+    };
 </script>
 </html>
 <style>
