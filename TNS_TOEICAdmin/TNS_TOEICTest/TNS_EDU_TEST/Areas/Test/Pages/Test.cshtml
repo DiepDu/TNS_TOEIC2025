@@ -46,11 +46,11 @@
 
 <script>
     let currentPart = 1;
-    let currentQuestionIndex = 0;
     let questions = JSON.parse('@Html.Raw(Model.QuestionsJson)');
     let testKey = '@Model.TestKey';
     let resultKey = '@Model.ResultKey';
     let timeRemaining = @Model.TimeRemaining.TotalSeconds;
+    const resourceBaseUrl = 'https://localhost:7078'; // Thay bằng URL thực tế của TOEICAdmin
 
     console.log('Raw JSON:', '@Html.Raw(Model.QuestionsJson)');
     console.log('Questions loaded:', questions);
@@ -75,7 +75,6 @@
 
     function switchPart(part, element) {
         currentPart = part;
-        currentQuestionIndex = 0;
         document.querySelectorAll('.part-btn').forEach(btn => btn.classList.remove('active'));
         element.classList.add('active');
         renderContent();
@@ -98,31 +97,33 @@
             container.innerHTML = `<p>No questions available for Part ${currentPart}. Total questions in part: ${questions.filter(q => Number(q.part) === currentPart).length}</p>`;
             return;
         }
-        const question = partQuestions[currentQuestionIndex];
-        let html = `
-            <div class="question-container">
-                <h2>Question ${question.order} (Part ${question.part})</h2>
-                ${question.questionImage ? `<img src="${question.questionImage}" alt="Question Image" class="question-image">` : ''}
-                ${question.questionVoice ? `
-                    <audio controls class="question-audio">
-                        <source src="${question.questionVoice}" type="audio/mpeg">
-                        Your browser does not support the audio element.
-                    </audio>` : ''}
-                ${question.questionText ? `<div class="question-text">${question.questionText}</div>` : ''}
-                <div class="answer-options">
-        `;
-        question.answers.forEach(answer => {
-            const label = answer.ranking === 1 ? 'A' : answer.ranking === 2 ? 'B' : answer.ranking === 3 ? 'C' : answer.ranking === 4 ? 'D' : '?';
-            const isChecked = answer.answerKey === question.userAnswerKey ? 'checked' : '';
+        let html = '';
+        partQuestions.forEach(question => {
             html += `
-                <div class="answer-option">
-                    <input type="radio" name="answer_${question.questionKey}" id="answer_${answer.answerKey}" 
-                           value="${answer.answerKey}" ${isChecked}>
-                    <label for="answer_${answer.answerKey}">${label}${currentPart > 2 ? `: ${answer.answerText}` : ''}</label>
-                </div>
+                <div class="question-container" id="question-${question.questionKey}">
+                    <h2>Question ${question.order} (Part ${question.part})</h2>
+                    ${question.questionImage ? `<img src="${resourceBaseUrl}${question.questionImage}" alt="Question Image" class="question-image">` : ''}
+                    ${question.questionVoice ? `
+                        <audio controls class="question-audio">
+                            <source src="${resourceBaseUrl}${question.questionVoice}" type="audio/mpeg">
+                            Your browser does not support the audio element.
+                        </audio>` : ''}
+                    ${question.questionText ? `<div class="question-text">${question.questionText}</div>` : ''}
+                    <div class="answer-options">
             `;
+            question.answers.forEach(answer => {
+                const label = answer.ranking === 1 ? 'A' : answer.ranking === 2 ? 'B' : answer.ranking === 3 ? 'C' : answer.ranking === 4 ? 'D' : '?';
+                const isChecked = answer.answerKey === question.userAnswerKey ? 'checked' : '';
+                html += `
+                    <div class="answer-option">
+                        <input type="radio" name="answer_${question.questionKey}" id="answer_${answer.answerKey}" 
+                               value="${answer.answerKey}" ${isChecked}>
+                        <label for="answer_${answer.answerKey}">${label}${currentPart > 2 ? `: ${answer.answerText}` : ''}</label>
+                    </div>
+                `;
+            });
+            html += '</div></div>';
         });
-        html += '</div></div>';
         container.innerHTML = html;
     }
 
@@ -141,10 +142,10 @@
                 <div class="part3-container">
                     <div class="part3-left">
                         <h2>Part ${currentPart}: Conversation</h2>
-                        ${parent.questionImage ? `<img src="${parent.questionImage}" alt="Part ${currentPart} Image" class="question-image">` : ''}
+                        ${parent.questionImage ? `<img src="${resourceBaseUrl}${parent.questionImage}" alt="Part ${currentPart} Image" class="question-image">` : ''}
                         ${parent.questionVoice ? `
                             <audio controls class="question-audio">
-                                <source src="${parent.questionVoice}" type="audio/mpeg">
+                                <source src="${resourceBaseUrl}${parent.questionVoice}" type="audio/mpeg">
                                 Your browser does not support the audio element.
                             </audio>` : ''}
                         ${parent.questionText ? `<div class="question-text">${parent.questionText}</div>` : ''}
@@ -155,12 +156,12 @@
             console.log(`Children of QuestionKey=${parent.questionKey}:`, children);
             children.forEach(child => {
                 html += `
-                    <div class="sub-question">
+                    <div class="sub-question" id="question-${child.questionKey}">
                         <h4>Question ${child.order}${child.questionText ? `: ${child.questionText}` : ''}</h4>
-                        ${child.questionImage ? `<img src="${child.questionImage}" alt="Sub Question Image" class="sub-question-image">` : ''}
+                        ${child.questionImage ? `<img src="${resourceBaseUrl}${child.questionImage}" alt="Sub Question Image" class="sub-question-image">` : ''}
                         ${child.questionVoice ? `
                             <audio controls class="sub-question-audio">
-                                <source src="${child.questionVoice}" type="audio/mpeg">
+                                <source src="${resourceBaseUrl}${child.questionVoice}" type="audio/mpeg">
                                 Your browser does not support the audio element.
                             </audio>` : ''}
                         <div class="answer-options">
@@ -186,24 +187,31 @@
     function updateQuestionList() {
         const listContainer = document.getElementById('question-list');
         let html = '';
-        let displayedQuestions = currentPart <= 2 || currentPart === 5
-            ? questions.filter(q => Number(q.part) === currentPart && q.parent === null)
-            : questions.filter(q => Number(q.part) === currentPart && q.parent !== null);
-        
+        let displayedQuestions = [];
+
+        if (currentPart <= 2 || currentPart === 5) {
+            // Part 1, 2, 5: Lấy câu hỏi độc lập
+            displayedQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
+        } else {
+            // Part 3, 4, 6, 7: Lấy tất cả câu hỏi con từ các câu cha
+            const parentQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
+            displayedQuestions = parentQuestions.reduce((acc, parent) => {
+                return acc.concat(parent.children || []);
+            }, []);
+        }
+
         console.log(`Displayed questions for Part ${currentPart}:`, displayedQuestions);
         displayedQuestions.forEach((q, index) => {
-            const isActive = index === currentQuestionIndex ? 'active' : '';
-            html += `<a href="#" class="question-circle ${isActive}" onclick="setActiveQuestion(${index})">${q.order || 'N/A'}</a>`;
+            html += `<a href="#" class="question-circle" onclick="scrollToQuestion('${q.questionKey}')">${q.order || 'N/A'}</a>`;
         });
         listContainer.innerHTML = html;
     }
 
-    function setActiveQuestion(index) {
-        currentQuestionIndex = index;
-        renderContent();
-        document.querySelectorAll('.question-circle').forEach((circle, i) => {
-            circle.classList.toggle('active', i === index);
-        });
+    function scrollToQuestion(questionKey) {
+        const element = document.getElementById(`question-${questionKey}`);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     }
 
     function submitTest() {
@@ -215,8 +223,7 @@
         renderContent();
         updateQuestionList();
     };
-</script>
-</html>
+</script></html>
 <style>
     * {
         margin: 0;
