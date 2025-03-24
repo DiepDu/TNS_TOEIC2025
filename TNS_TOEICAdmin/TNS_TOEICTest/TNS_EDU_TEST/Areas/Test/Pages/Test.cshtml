@@ -17,7 +17,7 @@
 <body>
     <div class="header">
         <button class="hamburger-btn" onclick="toggleSidebar()">☰</button>
-        <button class="exit-btn" onclick="window.location.href='/Ready'">Exit</button>
+        <button class="exit-btn" onclick="exitTest()">Exit</button>
         <div class="timer" id="timer">Time: @Model.TimeRemaining.ToString(@"mm\:ss")</div>
         <button class="submit-btn" onclick="submitTest()">Submit</button>
     </div>
@@ -44,6 +44,9 @@
         <div id="answered-count" class="answered-count"></div>
         <h3>Questions</h3>
         <div class="part-section" id="question-list"></div>
+        <div class="progress-text-container" id="progress-text-container">
+            <div class="progress-text" id="progress-text">0/0</div>
+        </div>
     </div>
 
     <script>
@@ -330,6 +333,7 @@
                 html += `<a href="#" class="question-circle ${isSelected ? 'selected' : ''} ${isFlagged ? 'flagged' : ''}" onclick="scrollToQuestion('${q.questionKey}')">${q.order || 'N/A'}</a>`;
             });
             listContainer.innerHTML = html;
+            updateProgressCircle();
         }
 
         function scrollToQuestion(questionKey) {
@@ -338,11 +342,45 @@
                 element.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         }
+        function showConfirmationModal(title, message, onConfirm) {
+            const modal = document.getElementById('confirmation-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalMessage = document.getElementById('modal-message');
+            const confirmBtn = document.getElementById('modal-confirm');
+            const cancelBtn = document.getElementById('modal-cancel');
 
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            modal.classList.add('active');
+
+            // Xử lý nút Confirm
+            confirmBtn.onclick = () => {
+                modal.classList.remove('active');
+                if (onConfirm) onConfirm();
+            };
+
+            // Xử lý nút Cancel
+            cancelBtn.onclick = () => {
+                modal.classList.remove('active');
+            };
+        }
         function submitTest() {
-            if (confirm('Are you sure you want to submit your test?')) {
-                window.location.href = `/Result?resultKey=${resultKey}`;
-            }
+            showConfirmationModal(
+                'Submit Test',
+                'Are you sure you want to submit your test?',
+                () => {
+                    window.location.href = `/Test/Result?resultKey=${resultKey}`;
+                }
+            );
+        }
+        function exitTest() {
+            showConfirmationModal(
+                'Exit Test',
+                'Are you sure you want to exit the test? Your progress may not be saved.',
+                () => {
+                    window.location.href = '/Test/Ready';
+                }
+            );
         }
 
         function toggleSidebar() {
@@ -355,6 +393,7 @@
             startTimer();
             renderContent();
             updateQuestionList();
+          
         };
 
         document.addEventListener('keydown', (event) => {
@@ -389,10 +428,156 @@
                 }
             }
         });
+        // Tính tổng số câu hỏi trong toàn bộ bài test
+        function getTotalQuestions() {
+            let total = 0;
+            questions.forEach(q => {
+                if (q.parent === null) {
+                    if (q.children && q.children.length > 0) {
+                        total += q.children.length; // Cộng số câu hỏi con
+                    } else {
+                        total += 1; // Cộng 1 cho câu hỏi đơn
+                    }
+                }
+            });
+            return total;
+        }
+
+        // Tính số câu đã trả lời
+        function getAnsweredQuestions() {
+            let answered = 0;
+            questions.forEach(q => {
+                if (q.parent === null && q.children && q.children.length > 0) {
+                    answered += q.children.filter(child => child.userAnswerKey && child.userAnswerKey !== '').length;
+                } else if (q.parent === null && q.userAnswerKey && q.userAnswerKey !== '') {
+                    answered += 1;
+                }
+            });
+            return answered;
+        }
+
+   
+
+        // Cập nhật Progress Bar
+        function updateProgressCircle() {
+            const totalQuestions = getTotalQuestions();
+            const answeredQuestions = getAnsweredQuestions();
+            const text = document.getElementById('progress-text');
+
+            // Cập nhật văn bản
+            text.textContent = `${answeredQuestions}/${totalQuestions}`;
+        }
     </script>
+    <div class="confirmation-modal" id="confirmation-modal">
+        <div class="modal-content">
+            <h3 id="modal-title">Confirm Action</h3>
+            <p id="modal-message">Are you sure you want to submit your test?</p>
+            <div class="modal-buttons">
+                <button class="modal-btn confirm-btn" id="modal-confirm">Confirm</button>
+                <button class="modal-btn cancel-btn" id="modal-cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
 <style>
+    /* Confirmation Modal */
+.confirmation-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5); /* Nền mờ */
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.confirmation-modal.active {
+    display: flex;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.modal-content {
+    background: #FFFFFF;
+    border-radius: 15px;
+    padding: 20px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    animation: zoomIn 0.3s ease-in-out;
+}
+
+.modal-content h3 {
+    font-weight: 600;
+    color: #0288D1;
+    margin-bottom: 10px;
+}
+
+.modal-content p {
+    font-size: 1rem;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.modal-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+}
+
+.confirm-btn {
+    background: #4CAF50;
+    color: white;
+}
+
+.confirm-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    background: #388E3C;
+}
+
+.cancel-btn {
+    background: #F44336;
+    color: white;
+}
+
+.cancel-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    background: #D32F2F;
+}
+
+/* Hiệu ứng cho modal */
+@@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
     * {
         margin: 0;
         padding: 0;
@@ -586,7 +771,7 @@
         }
 
     .sidebar-right {
-        width: 150px;
+        width: 160px;
         background: #FFECB3;
         padding: 20px;
         display: flex;
@@ -620,6 +805,7 @@
         justify-content: center;
         gap: 20px;
         margin-bottom: 20px;
+        overflow-y: auto;
     }
 
         .part-section h4 {
@@ -666,7 +852,7 @@
         }
 
         .question-circle.active {
-            background: #0288D1;
+            background: #FFB300;
             color: white;
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
             animation: pulse 1s infinite;
@@ -1037,5 +1223,25 @@
             max-height: 50vh; /* Giới hạn chiều cao trên mobile */
             -webkit-mask-image: linear-gradient( to bottom, transparent 0%, black 5%, black 95%, transparent 100% );
             mask-image: linear-gradient( to bottom, transparent 0%, black 5%, black 95%, transparent 100% );
+      }
+    }
+
+    .progress-text-container {
+        position: absolute;
+        bottom: 20px;
+        right: 20px; /* Căn chỉnh với sidebar-right */
+        width: 120px; /* Chiều rộng cố định để khớp với sidebar-right (160px - padding 20px) */
+        text-align: center;
+        background: #FFECB3;
+        padding: 10px 0;
+        z-index: 2; /* Đảm bảo nằm trên các phần tử khác */
+    }
+
+    .progress-text {
+        font-size: 1.5rem;
+        font-weight: 800;
+        font-family: 'Poppins', sans-serif;
+        color: #0288D1;
+        text-align: center;
     }
 </style>
