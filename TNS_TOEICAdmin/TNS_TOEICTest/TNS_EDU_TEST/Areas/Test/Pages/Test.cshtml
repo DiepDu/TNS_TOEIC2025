@@ -13,9 +13,604 @@
     <title>@ViewData["Title"]</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #B3E5FC, #FFECB3);
+            display: flex;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('https://www.transparenttextures.com/patterns/stardust.png');
+            opacity: 0.1;
+            z-index: 0;
+        }
+
+        .flag-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 1.5rem;
+            color: #FF9800;
+            cursor: pointer;
+            transition: transform 0.3s ease, color 0.3s ease;
+        }
+
+        .flag-icon.flagged {
+            color: #D32F2F;
+        }
+
+        .flag-icon:hover {
+            transform: scale(1.2);
+            color: #FFB300;
+        }
+
+        .question-circle.flagged {
+            background: #F44336 !important;
+            color: white !important;
+        }
+
+        .question-container, .sub-question {
+            position: relative;
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: linear-gradient(90deg, #FFECB3, #B3E5FC);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+            animation: slideInDown 1s ease-in-out;
+        }
+
+        .hamburger-btn {
+            display: none;
+            font-size: 1.5rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #0288D1;
+        }
+
+        @@media (max-width: 768px) {
+            .hamburger-btn {
+                display: block;
+            }
+        }
+
+        .exit-btn, .submit-btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+        }
+
+        .exit-btn {
+            background: #f44336;
+            color: white;
+        }
+
+        .exit-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            background: #d32f2f;
+        }
+
+        .submit-btn {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .submit-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            background: #388E3C;
+        }
+
+        .timer {
+            font-size: 1.5rem;
+            font-weight: 600;
+            background: linear-gradient(90deg, #0288D1, #4FC3F7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: pulse 2s infinite;
+        }
+
+        .timer.warning {
+            background: linear-gradient(90deg, #F44336, #EF5350);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: blink 1s infinite;
+        }
+
+        @@keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .sidebar-left {
+            width: 150px;
+            background: #FFECB3;
+            padding: 20px 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: calc(100vh - 60px);
+            position: fixed;
+            left: 0;
+            top: 60px;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 1;
+        }
+
+        .part-btn {
+            background: #B3E5FC;
+            color: #333;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+            animation: fadeInUp 0.5s ease-in-out;
+            flex: 1;
+            margin: 5px 0;
+        }
+
+        .part-btn:hover {
+            background: #81D4FA;
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .part-btn.active {
+            background: #0288D1;
+            color: white;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+            animation: pulse 1s infinite;
+        }
+
+        .sidebar-right {
+            width: 150px;
+            background: #FFECB3;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: calc(100vh - 60px);
+            position: fixed;
+            right: 0;
+            top: 60px;
+            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            z-index: 1;
+        }
+
+        .sidebar-right h3 {
+            background: linear-gradient(90deg, #0288D1, #4FC3F7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: slideInDown 1s ease-in-out;
+            margin-bottom: 20px;
+        }
+
+        .answer-option.selected {
+            background: #4FC3F7;
+        }
+
+        .part-section {
+            width: 100%;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .part-section h4 {
+            color: #333;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            animation: fadeIn 1s ease-in-out;
+            width: 100%;
+            text-align: center;
+        }
+
+        .answered-count {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #0288D1;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .question-circle {
+            width: 40px;
+            height: 40px;
+            background: #B3E5FC;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 50%;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+            animation: zoomIn 0.5s ease-in-out;
+        }
+
+        .question-circle.selected {
+            background: #0288D1;
+            color: white;
+        }
+
+        .question-circle:hover {
+            background: #81D4FA;
+            transform: scale(1.2);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .question-circle.active {
+            background: #0288D1;
+            color: white;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+            animation: pulse 1s infinite;
+        }
+
+        .main-content {
+            margin-left: 150px;
+            margin-right: 150px;
+            padding: 80px 20px 20px;
+            flex: 1;
+            overflow-y: auto;
+            min-height: calc(100vh - 60px);
+            -webkit-overflow-scrolling: touch;
+            position: relative;
+        }
+
+        .main-content-wrapper {
+            min-height: 100%;
+            padding-bottom: 20px;
+        }
+
+        .question-container {
+            background: #FFFFFF;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            max-width: 800px;
+            margin: 0 auto 20px;
+            text-align: center;
+            animation: zoomIn 1s ease-in-out;
+        }
+
+        .question-container h2 {
+            font-weight: 600;
+            color: #000;
+        }
+
+        .part3-left h2 {
+            font-weight: 600;
+            color: #000;
+        }
+
+        .question-image {
+            width: 300px;
+            height: 300px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin: 0 auto 20px;
+            display: block;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            animation: fadeIn 1.5s ease-in-out;
+            transition: transform 0.3s ease;
+        }
+
+        .question-image:hover {
+            transform: scale(1.05);
+        }
+
+        .question-audio {
+            margin-bottom: 20px;
+            width: 100%;
+            border-radius: 5px;
+            background: #B3E5FC;
+            padding: 5px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            animation: fadeIn 1.5s ease-in-out;
+        }
+
+        .question-audio:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .question-text {
+            font-size: 1.2rem;
+            font-weight: normal;
+            color: #000;
+            margin-bottom: 20px;
+            background: none;
+            -webkit-background-clip: initial;
+            -webkit-text-fill-color: initial;
+            animation: slideInDown 1s ease-in-out;
+        }
+
+        .answer-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .answer-option {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: #B3E5FC;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .answer-option:hover {
+            background: #81D4FA;
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .answer-option input {
+            margin: 0;
+        }
+
+        .answer-option label {
+            display: flex;
+            align-items: center;
+            font-size: 1rem;
+            color: #333;
+            margin: 0;
+            gap: 2px;
+        }
+
+        .answer-option .label-text {
+            font-weight: 600;
+            color: #000;
+            min-width: 15px;
+            text-align: left;
+            margin-right: -3px;
+        }
+
+        .answer-option .answer-content {
+            font-weight: normal;
+            color: #000;
+            font-size: 0.95rem;
+            line-height: 1;
+        }
+
+        .answer-option .colon {
+            font-weight: normal;
+            color: #000;
+            line-height: 1;
+            position: relative;
+            top: -1.5px;
+        }
+
+        .sub-question h4 .question-content {
+            font-weight: normal;
+            color: #000;
+        }
+
+        .part3-container {
+            display: flex;
+            gap: 20px;
+            background: #FFFFFF;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            max-width: 1000px;
+            margin: 0 auto 20px;
+            animation: zoomIn 1s ease-in-out;
+        }
+
+        .part3-left, .part3-right {
+            flex: 1;
+        }
+
+        .part3-left {
+            text-align: center;
+        }
+
+        .part3-right {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .sub-question {
+            background: #FFECB3;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            animation: fadeInUp 1s ease-in-out;
+        }
+
+        .sub-question h4 {
+            font-weight: 600;
+            color: #000;
+        }
+
+        .sub-question-image {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin: 0 auto 10px;
+            display: block;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+            animation: fadeIn 1.5s ease-in-out;
+        }
+
+        .sub-question-image:hover {
+            transform: scale(1.05);
+        }
+
+        .sub-question-audio {
+            width: 100%;
+            border-radius: 5px;
+            background: #B3E5FC;
+            padding: 5px;
+            margin-bottom: 10px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            animation: fadeIn 1.5s ease-in-out;
+        }
+
+        .sub-question-audio:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        @@keyframes zoomIn {
+            from {
+                transform: scale(0.5);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @@keyframes slideInDown {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @@keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+       @@keyframes fadeInUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @@keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @@media (max-width: 768px) {
+            .sidebar-left, .sidebar-right {
+                width: 100%;
+                height: auto;
+                position: fixed;
+                top: 60px;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                z-index: 100;
+            }
+
+            .sidebar-right {
+                transform: translateX(100%);
+            }
+
+            .sidebar-left.active, .sidebar-right.active {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+                margin-right: 0;
+                padding: 60px 10px 10px;
+            }
+
+            .question-circle {
+                width: 40px;
+                height: 40px;
+                background: #B3E5FC;
+                color: #333;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                border-radius: 50%;
+                font-weight: 600;
+                text-decoration: none;
+                transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+                animation: zoomIn 0.5s ease-in-out;
+            }
+
+            .part-btn {
+                font-size: 0.9rem;
+                padding: 8px;
+            }
+
+            .question-image, .sub-question-image {
+                width: 200px;
+                height: 200px;
+            }
+
+            .part3-container {
+                flex-direction: column;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="header">
+        <button class="hamburger-btn" onclick="toggleSidebar()">☰</button>
         <button class="exit-btn" onclick="window.location.href='/Ready'">Exit</button>
         <div class="timer" id="timer">Time: @Model.TimeRemaining.ToString(@"mm\:ss")</div>
         <button class="submit-btn" onclick="submitTest()">Submit</button>
@@ -40,769 +635,293 @@
 
     <!-- Sidebar Right (Question List) -->
     <div class="sidebar-right">
+        <div id="answered-count" class="answered-count"></div>
         <h3>Questions</h3>
         <div class="part-section" id="question-list"></div>
     </div>
-</body>
 
-<script>
-    let currentPart = 1;
-    let questions = JSON.parse('@Html.Raw(Model.QuestionsJson)');
-    let testKey = '@Model.TestKey';
-    let resultKey = '@Model.ResultKey';
-    let timeRemaining = @Model.TimeRemaining.TotalSeconds;
-    const resourceBaseUrl = 'https://localhost:7078'; // Thay bằng URL thực tế của TOEICAdmin
+    <script>
+        let currentPart = 1;
+        let rawJson = '@Html.Raw(Model.QuestionsJson)';
+        let questions = rawJson ? JSON.parse(rawJson) : [];
+        let testKey = '@Model.TestKey';
+        let resultKey = '@Model.ResultKey';
+        let timeRemaining = @Model.TimeRemaining.TotalSeconds;
+        const resourceBaseUrl = 'https://localhost:7078';
 
-     let flaggedQuestions = new Set(); // Lưu danh sách questionKey của các câu hỏi được đánh dấu lá cờ
+        let flaggedQuestions = new Set();
 
-    function toggleFlag(questionKey) {
-        const flagElement = document.querySelector(`.flag-icon[data-question-key="${questionKey}"]`);
-        if (flaggedQuestions.has(questionKey)) {
-            flaggedQuestions.delete(questionKey);
-            flagElement.classList.remove('flagged');
-        } else {
-            flaggedQuestions.add(questionKey);
-            flagElement.classList.add('flagged');
-        }
-        updateQuestionList();
-    }
-
-
-    console.log('Raw JSON:', '@Html.Raw(Model.QuestionsJson)');
-    console.log('Questions loaded:', questions);
-    console.log('Total questions:', questions.length);
-    console.log('Parent values:', questions.map(q => ({ part: q.part, parent: q.parent, type: typeof q.parent })));
-    questions.forEach((q, index) => console.log(`Question ${index + 1}: Part=${q.part}, Parent=${q.parent}, Order=${q.order}, Children=${q.children ? q.children.length : 0}`));
-
-    function startTimer() {
-        const timerElement = document.getElementById('timer');
-        setInterval(() => {
-            if (timeRemaining > 0) {
-                timeRemaining--;
-                let minutes = Math.floor(timeRemaining / 60);
-                let seconds = Math.floor(timeRemaining % 60);
-                timerElement.textContent = `Time: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        function toggleFlag(questionKey) {
+            const flagElement = document.querySelector(`.flag-icon[data-question-key="${questionKey}"]`);
+            if (flaggedQuestions.has(questionKey)) {
+                flaggedQuestions.delete(questionKey);
+                flagElement.classList.remove('flagged');
             } else {
-                timerElement.textContent = 'Time: 00:00';
-                submitTest();
+                flaggedQuestions.add(questionKey);
+                flagElement.classList.add('flagged');
             }
-        }, 1000);
-    }
-
-    function switchPart(part, element) {
-        currentPart = part;
-        document.querySelectorAll('.part-btn').forEach(btn => btn.classList.remove('active'));
-        element.classList.add('active');
-        renderContent();
-        updateQuestionList();
-    }
-
-    function renderContent() {
-        const container = document.getElementById('main-content-wrapper');
-        if ([1, 2, 5].includes(currentPart)) {
-            renderSimplePart(container);
-        } else {
-            renderComplexPart(container);
+            updateQuestionList();
         }
-    }
 
-    function renderSimplePart(container) {
-        const partQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
-        let html = '';
-        partQuestions.forEach(question => {
-            const isFlagged = flaggedQuestions.has(question.questionKey);
-            html += `
-        <div class="question-container" id="question-${question.questionKey}">
-            <h2>Question ${question.order}</h2>
-            <span class="flag-icon ${isFlagged ? 'flagged' : ''}" data-question-key="${question.questionKey}"><i class="fas fa-flag"></i></span>
-            ${question.questionImage ? `<img src="${resourceBaseUrl}${question.questionImage}" alt="Question Image" class="question-image">` : ''}
-            ${question.questionVoice ? `
-                <audio controls class="question-audio">
-                    <source src="${resourceBaseUrl}${question.questionVoice}" type="audio/mpeg">
-                    Your browser does not support the audio element.
-                </audio>` : ''}
-            ${question.questionText ? `<div class="question-text">${question.questionText}</div>` : ''}
-            <div class="answer-options">
-    `;
-            question.answers.forEach((answer, idx) => {
-                const label = (currentPart === 1 || currentPart === 2)
-                    ? (answer.ranking === 1 ? 'A' : answer.ranking === 2 ? 'B' : answer.ranking === 3 ? 'C' : answer.ranking === 4 ? 'D' : '?')
-                    : String.fromCharCode(65 + idx);
-                const isChecked = answer.answerKey === question.userAnswerKey ? 'checked' : '';
-                const isSelected = answer.answerKey === question.userAnswerKey ? 'selected' : '';
+        console.log('Raw JSON:', '@Html.Raw(Model.QuestionsJson)');
+        console.log('Questions loaded:', questions);
+        console.log('Total questions:', questions.length);
+        console.log('Parent values:', questions.map(q => ({ part: q.part, parent: q.parent, type: typeof q.parent })));
+        questions.forEach((q, index) => console.log(`Question ${index + 1}: Part=${q.part}, Parent=${q.parent}, Order=${q.order}, Children=${q.children ? q.children.length : 0}`));
+
+        function startTimer() {
+            const timerElement = document.getElementById('timer');
+            setInterval(() => {
+                if (timeRemaining > 0) {
+                    timeRemaining--;
+                    let minutes = Math.floor(timeRemaining / 60);
+                    let seconds = Math.floor(timeRemaining % 60);
+                    timerElement.textContent = `Time: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    if (timeRemaining <= 300) {
+                        timerElement.classList.add('warning');
+                    }
+                } else {
+                    timerElement.textContent = 'Time: 00:00';
+                    if (confirm('Time is up! Do you want to submit your test?')) {
+                        submitTest();
+                    }
+                }
+            }, 1000);
+        }
+
+        function switchPart(part, element) {
+            currentPart = part;
+            document.querySelectorAll('.part-btn').forEach(btn => btn.classList.remove('active'));
+            element.classList.add('active');
+            renderContent();
+            updateQuestionList();
+        }
+
+        function renderSimplePart(container) {
+            const partQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
+            let html = '';
+            partQuestions.forEach(question => {
+                const isFlagged = flaggedQuestions.has(question.questionKey);
                 html += `
-                    <div class="answer-option ${isSelected}">
-                        <input type="radio" name="answer_${question.questionKey}" id="answer_${answer.answerKey}"
-                               value="${answer.answerKey}" ${isChecked}>
-                        <label for="answer_${answer.answerKey}">
-                            <span class="label-text">${label}</span>
-                            ${currentPart === 1 || currentPart === 2 ? '' : `<span class="colon">:</span> <span class="answer-content">${answer.answerText}</span>`}
-                        </label>
-                    </div>
-                `;
-            });
-            html += '</div></div>';
-        });
-        container.innerHTML = html;
-
-        document.querySelectorAll('.flag-icon').forEach(flag => {
-            flag.addEventListener('click', () => {
-                const questionKey = flag.getAttribute('data-question-key');
-                toggleFlag(questionKey);
-            });
-        });
-    }
-    function renderComplexPart(container) {
-        const parentQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
-        let html = '';
-
-        if (parentQuestions.length === 0) {
-            container.innerHTML = `<p>No questions available for Part ${currentPart}.</p>`;
-            return;
-        }
-
-        parentQuestions.forEach(parent => {
-            html += `
-                <div class="part3-container">
-                    <div class="part3-left">
-                        <h2>Part ${currentPart}: Conversation</h2>
-                        ${parent.questionImage ? `<img src="${resourceBaseUrl}${parent.questionImage}" alt="Part ${currentPart} Image" class="question-image">` : ''}
-                        ${parent.questionVoice ? `
+                    <div class="question-container" id="question-${question.questionKey}">
+                        <h2>Question ${question.order}</h2>
+                        <span class="flag-icon ${isFlagged ? 'flagged' : ''}" data-question-key="${question.questionKey}"><i class="fas fa-flag"></i></span>
+                        ${question.questionImage ? `<img src="${resourceBaseUrl}${question.questionImage}" alt="Question Image" class="question-image" loading="lazy">` : ''}
+                        ${question.questionVoice ? `
                             <audio controls class="question-audio">
-                                <source src="${resourceBaseUrl}${parent.questionVoice}" type="audio/mpeg">
+                                <source src="${resourceBaseUrl}${question.questionVoice}" type="audio/mpeg">
                                 Your browser does not support the audio element.
                             </audio>` : ''}
-                        ${parent.questionText ? `<div class="question-text">${parent.questionText}</div>` : ''}
-                    </div>
-                    <div class="part3-right">
-            `;
-            const children = parent.children || [];
-            children.forEach(child => {
-                const isFlagged = flaggedQuestions.has(child.questionKey);
-                html += `
-                    <div class="sub-question" id="question-${child.questionKey}">
-                        <h4>Question ${child.order}${child.questionText ? `<span class="question-content">: ${child.questionText}</span>` : ''}</h4>
-                        <span class="flag-icon ${isFlagged ? 'flagged' : ''}" data-question-key="${child.questionKey}"><i class="fas fa-flag"></i></span>
-                        ${child.questionImage ? `<img src="${resourceBaseUrl}${child.questionImage}" alt="Sub Question Image" class="sub-question-image">` : ''}
-                        ${child.questionVoice ? `
-                            <audio controls class="sub-question-audio">
-                                <source src="${resourceBaseUrl}${child.questionVoice}" type="audio/mpeg">
-                                Your browser does not support the audio element.
-                            </audio>` : ''}
+                        ${question.questionText ? `<div class="question-text">${question.questionText}</div>` : ''}
                         <div class="answer-options">
                 `;
-                child.answers.forEach((answer, idx) => {
-                    const label = String.fromCharCode(65 + idx);
-                    const isChecked = answer.answerKey === child.userAnswerKey ? 'checked' : '';
-                    const isSelected = answer.answerKey === child.userAnswerKey ? 'selected' : '';
+                question.answers.forEach((answer, idx) => {
+                    const label = (currentPart === 1 || currentPart === 2)
+                        ? (answer.ranking === 1 ? 'A' : answer.ranking === 2 ? 'B' : answer.ranking === 3 ? 'C' : answer.ranking === 4 ? 'D' : '?')
+                        : String.fromCharCode(65 + idx);
+                    const isChecked = answer.answerKey === question.userAnswerKey ? 'checked' : '';
+                    const isSelected = answer.answerKey === question.userAnswerKey ? 'selected' : '';
                     html += `
                         <div class="answer-option ${isSelected}">
-                            <input type="radio" name="answer_${child.questionKey}" id="answer_${answer.answerKey}"
-                                   value="${answer.answerKey}" ${isChecked}>
+                            <input type="radio" name="answer_${question.questionKey}" id="answer_${answer.answerKey}"
+                                   value="${answer.answerKey}" ${isChecked} onchange="updateAnswer('${question.questionKey}', this.value)">
                             <label for="answer_${answer.answerKey}">
                                 <span class="label-text">${label}</span>
-                                <span class="colon">:</span>
-                                <span class="answer-content">${answer.answerText}</span>
+                                ${currentPart === 1 || currentPart === 2 ? '' : `<span class="colon">:</span> <span class="answer-content">${answer.answerText}</span>`}
                             </label>
                         </div>
                     `;
                 });
                 html += '</div></div>';
             });
-            html += '</div></div>';
-        });
-        container.innerHTML = html;
+            container.innerHTML = html;
 
-        document.querySelectorAll('.flag-icon').forEach(flag => {
-            flag.addEventListener('click', () => {
-                const questionKey = flag.getAttribute('data-question-key');
-                toggleFlag(questionKey);
+            document.querySelectorAll('.flag-icon').forEach(flag => {
+                flag.addEventListener('click', () => {
+                    const questionKey = flag.getAttribute('data-question-key');
+                    toggleFlag(questionKey);
+                });
             });
-        });
-    }
-    function updateQuestionList() {
-        const listContainer = document.getElementById('question-list');
-        let html = '';
-        let displayedQuestions = [];
+        }
 
-        if (currentPart <= 2 || currentPart === 5) {
-            displayedQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
-        } else {
+        function renderComplexPart(container) {
             const parentQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
-            displayedQuestions = parentQuestions.reduce((acc, parent) => {
-                return acc.concat(parent.children || []);
-            }, []);
+            let html = '';
+
+            if (parentQuestions.length === 0) {
+                container.innerHTML = `<p>No questions available for Part ${currentPart}.</p>`;
+                return;
+            }
+
+            parentQuestions.forEach(parent => {
+                html += `
+                    <div class="part3-container">
+                        <div class="part3-left">
+                            <h2>Part ${currentPart}: Conversation</h2>
+                            ${parent.questionImage ? `<img src="${resourceBaseUrl}${parent.questionImage}" alt="Part ${currentPart} Image" class="question-image" loading="lazy">` : ''}
+                            ${parent.questionVoice ? `
+                                <audio controls class="question-audio">
+                                    <source src="${resourceBaseUrl}${parent.questionVoice}" type="audio/mpeg">
+                                    Your browser does not support the audio element.
+                                </audio>` : ''}
+                            ${parent.questionText ? `<div class="question-text">${parent.questionText}</div>` : ''}
+                        </div>
+                        <div class="part3-right">
+                `;
+                const children = parent.children || [];
+                children.forEach(child => {
+                    const isFlagged = flaggedQuestions.has(child.questionKey);
+                    html += `
+                        <div class="sub-question" id="question-${child.questionKey}">
+                            <h4>Question ${child.order}${child.questionText ? `<span class="question-content">: ${child.questionText}</span>` : ''}</h4>
+                            <span class="flag-icon ${isFlagged ? 'flagged' : ''}" data-question-key="${child.questionKey}"><i class="fas fa-flag"></i></span>
+                            ${child.questionImage ? `<img src="${resourceBaseUrl}${child.questionImage}" alt="Sub Question Image" class="sub-question-image" loading="lazy">` : ''}
+                            ${child.questionVoice ? `
+                                <audio controls class="sub-question-audio">
+                                    <source src="${resourceBaseUrl}${child.questionVoice}" type="audio/mpeg">
+                                    Your browser does not support the audio element.
+                                </audio>` : ''}
+                            <div class="answer-options">
+                    `;
+                    child.answers.forEach((answer, idx) => {
+                        const label = String.fromCharCode(65 + idx);
+                        const isChecked = answer.answerKey === child.userAnswerKey ? 'checked' : '';
+                        const isSelected = answer.answerKey === child.userAnswerKey ? 'selected' : '';
+                        html += `
+                            <div class="answer-option ${isSelected}">
+                                <input type="radio" name="answer_${child.questionKey}" id="answer_${answer.answerKey}"
+                                       value="${answer.answerKey}" ${isChecked} onchange="updateAnswer('${child.questionKey}', this.value)">
+                                <label for="answer_${answer.answerKey}">
+                                    <span class="label-text">${label}</span>
+                                    <span class="colon">:</span>
+                                    <span class="answer-content">${answer.answerText}</span>
+                                </label>
+                            </div>
+                        `;
+                    });
+                    html += '</div></div>';
+                });
+                html += '</div></div>';
+            });
+            container.innerHTML = html;
+
+            document.querySelectorAll('.flag-icon').forEach(flag => {
+                flag.addEventListener('click', () => {
+                    const questionKey = flag.getAttribute('data-question-key');
+                    toggleFlag(questionKey);
+                });
+            });
         }
 
-        displayedQuestions.forEach((q, index) => {
-            const isSelected = q.userAnswerKey && q.userAnswerKey !== '';
-            const isFlagged = flaggedQuestions.has(q.questionKey);
-            html += `<a href="#" class="question-circle ${isSelected ? 'selected' : ''} ${isFlagged ? 'flagged' : ''}" onclick="scrollToQuestion('${q.questionKey}')">${q.order || 'N/A'}</a>`;
+        function renderContent() {
+            const container = document.getElementById('main-content-wrapper');
+            if ([1, 2, 5].includes(currentPart)) {
+                renderSimplePart(container);
+            } else {
+                renderComplexPart(container);
+            }
+        }
+
+        function updateAnswer(questionKey, answerKey) {
+            const question = questions.find(q => q.questionKey === questionKey);
+            if (question) {
+                question.userAnswerKey = answerKey;
+                const answerOptions = document.querySelectorAll(`.answer-option input[name="answer_${questionKey}"]`);
+                answerOptions.forEach(option => {
+                    const parent = option.parentElement;
+                    if (option.value === answerKey) {
+                        parent.classList.add('selected');
+                    } else {
+                        parent.classList.remove('selected');
+                    }
+                });
+                updateQuestionList();
+            }
+        }
+
+        function updateQuestionList() {
+            const listContainer = document.getElementById('question-list');
+            const answeredContainer = document.getElementById('answered-count');
+            let html = '';
+            let displayedQuestions = [];
+
+            if (currentPart <= 2 || currentPart === 5) {
+                displayedQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
+            } else {
+                const parentQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
+                displayedQuestions = parentQuestions.reduce((acc, parent) => {
+                    return acc.concat(parent.children || []);
+                }, []);
+            }
+
+            const answeredCount = displayedQuestions.filter(q => q.userAnswerKey && q.userAnswerKey !== '').length;
+            const totalCount = displayedQuestions.length;
+            answeredContainer.innerHTML = `Answered: ${answeredCount}/${totalCount}`;
+
+            displayedQuestions.forEach((q, index) => {
+                const isSelected = q.userAnswerKey && q.userAnswerKey !== '';
+                const isFlagged = flaggedQuestions.has(q.questionKey);
+                html += `<a href="#" class="question-circle ${isSelected ? 'selected' : ''} ${isFlagged ? 'flagged' : ''}" onclick="scrollToQuestion('${q.questionKey}')">${q.order || 'N/A'}</a>`;
+            });
+            listContainer.innerHTML = html;
+        }
+
+        function scrollToQuestion(questionKey) {
+            const element = document.getElementById(`question-${questionKey}`);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        function submitTest() {
+            if (confirm('Are you sure you want to submit your test?')) {
+                window.location.href = `/Result?resultKey=${resultKey}`;
+            }
+        }
+
+        function toggleSidebar() {
+            document.querySelector('.sidebar-left').classList.toggle('active');
+            document.querySelector('.sidebar-right').classList.toggle('active');
+        }
+
+        window.onload = function () {
+            startTimer();
+            renderContent();
+            updateQuestionList();
+        };
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key >= '1' && event.key <= '7') {
+                const part = parseInt(event.key);
+                const partBtn = document.querySelector(`.part-btn[data-part="${part}"]`);
+                if (partBtn) {
+                    switchPart(part, partBtn);
+                }
+            }
+
+            if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+                event.preventDefault();
+                const questionCircles = Array.from(document.querySelectorAll('.question-circle'));
+                if (questionCircles.length === 0) return;
+
+                let currentQuestion = questionCircles.find(circle => circle.classList.contains('active'));
+                let currentIndex = currentQuestion ? questionCircles.indexOf(currentQuestion) : 0;
+
+                if (event.key === 'ArrowUp' && currentIndex > 0) {
+                    currentIndex--;
+                } else if (event.key === 'ArrowDown' && currentIndex < questionCircles.length - 1) {
+                    currentIndex++;
+                }
+
+                const nextQuestion = questionCircles[currentIndex];
+                if (nextQuestion) {
+                    questionCircles.forEach(circle => circle.classList.remove('active'));
+                    nextQuestion.classList.add('active');
+                    const questionKey = nextQuestion.getAttribute('onclick').match(/'([^']+)'/)[1];
+                    scrollToQuestion(questionKey);
+                }
+            }
         });
-        listContainer.innerHTML = html;
-    }
-    function scrollToQuestion(questionKey) {
-        const element = document.getElementById(`question-${questionKey}`);
-        if (element) {
-            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-    }
-
-    function submitTest() {
-        window.location.href = `/Result?resultKey=${resultKey}`;
-    }
-
-    window.onload = function () {
-        startTimer();
-        renderContent();
-        updateQuestionList();
-    };
-</script>
+    </script>
+</body>
 </html>
-<style>
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
-
-    html, body {
-        height: 100vh;
-        margin: 0;
-        overflow: hidden;
-    }
-
-    body {
-        font-family: 'Poppins', sans-serif;
-        background: linear-gradient(135deg, #B3E5FC, #FFECB3);
-        display: flex;
-        position: relative;
-    }
-
-        body::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: url('https://www.transparenttextures.com/patterns/stardust.png');
-            opacity: 0.1;
-            z-index: 0;
-        }
-
-    .flag-icon {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        font-size: 1.5rem;
-        color: #FF9800; /* Màu cam sáng */
-        cursor: pointer;
-        transition: transform 0.3s ease, color 0.3s ease;
-    }
-
-        .flag-icon.flagged {
-            color: #D32F2F; /* Màu đỏ đậm khi được đánh dấu */
-        }
-
-        .flag-icon:hover {
-            transform: scale(1.2);
-            color: #FFB300; /* Màu cam đậm hơn khi hover */
-        }
-
-    .question-circle.flagged {
-        background: #F44336 !important; /* Màu đỏ tươi - đã đánh dấu, ưu tiên cao nhất */
-        color: white !important;
-    }
-
-/* Đảm bảo .question-container và .sub-question có position: relative để .flag-icon định vị đúng */
-.question-container, .sub-question {
-    position: relative;
-}
-    .header {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        background: linear-gradient(90deg, #FFECB3, #B3E5FC);
-        padding: 10px 20px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-        z-index: 10;
-        animation: slideInDown 1s ease-in-out;
-    }
-
-    .exit-btn, .submit-btn {
-        padding: 8px 20px;
-        border: none;
-        border-radius: 5px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
-    }
-
-    .exit-btn {
-        background: #f44336;
-        color: white;
-    }
-
-        .exit-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            background: #d32f2f;
-        }
-
-    .submit-btn {
-        background: #4CAF50;
-        color: white;
-    }
-
-        .submit-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            background: #388E3C;
-        }
-
-    .timer {
-        font-size: 1.5rem;
-        font-weight: 600;
-        background: linear-gradient(90deg, #0288D1, #4FC3F7);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        animation: pulse 2s infinite;
-    }
-
-    .sidebar-left {
-        width: 150px;
-        background: #FFECB3;
-        padding: 20px 10px;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        height: calc(100vh - 60px);
-        position: fixed;
-        left: 0;
-        top: 60px;
-        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
-        z-index: 1;
-    }
-
-    .part-btn {
-        background: #B3E5FC;
-        color: #333;
-        padding: 10px;
-        border: none;
-        border-radius: 5px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
-        animation: fadeInUp 0.5s ease-in-out;
-        flex: 1;
-        margin: 5px 0;
-    }
-
-        .part-btn:hover {
-            background: #81D4FA;
-            transform: scale(1.05);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .part-btn.active {
-            background: #0288D1;
-            color: white;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
-            animation: pulse 1s infinite;
-        }
-
-    .sidebar-right {
-        width: 150px;
-        background: #FFECB3;
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        height: calc(100vh - 60px);
-        position: fixed;
-        right: 0;
-        top: 60px;
-        box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
-        overflow-y: auto; 
-        z-index: 1;
-    }
-
-        .sidebar-right h3 {
-            background: linear-gradient(90deg, #0288D1, #4FC3F7);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: slideInDown 1s ease-in-out;
-            margin-bottom: 20px;
-        }
-        .answer-option.selected {
-    background: #4FC3F7; /* Màu đậm hơn so với màu mặc định #B3E5FC */
-}
-    .part-section {
-        width: 100%;
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 20px;
-        margin-bottom: 20px;
-    }
-
-        .part-section h4 {
-            color: #333;
-            font-size: 1.1rem;
-            margin-bottom: 10px;
-            animation: fadeIn 1s ease-in-out;
-            width: 100%;
-            text-align: center;
-        }
-
-    .question-circle {
-        width: 40px;
-        height: 40px;
-        background: #B3E5FC;
-        color: #333;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        border-radius: 50%;
-        font-weight: 600;
-        text-decoration: none;
-        transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
-        animation: zoomIn 0.5s ease-in-out;
-    }
-    .question-circle.selected {
-    background: #0288D1; /* Màu đậm hơn, giống màu của part-btn active */
-    color: white; /* Đổi màu chữ thành trắng để dễ đọc */
-}
-        .question-circle:hover {
-            background: #81D4FA;
-            transform: scale(1.2);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .question-circle.active {
-            background: #0288D1;
-            color: white;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
-            animation: pulse 1s infinite;
-        }
-
-    .main-content {
-        margin-left: 150px;
-        margin-right: 150px;
-        padding: 80px 20px 20px;
-        flex: 1;
-        overflow-y: auto;
-        min-height: calc(100vh - 60px);
-        -webkit-overflow-scrolling: touch;
-        position: relative;
-    }
-
-    .main-content-wrapper {
-        min-height: 100%;
-        padding-bottom: 20px;
-    }
-
-    .question-container {
-        background: #FFFFFF;
-        border-radius: 15px;
-        padding: 20px;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        max-width: 800px;
-        margin: 0 auto 20px;
-        text-align: center;
-        animation: zoomIn 1s ease-in-out;
-    }
-    .question-container h2 {
-    font-weight: 600; /* In đậm cho Question X ở Part 1, 2, 5 */
-    color: #000;
-}
-.part3-left h2 {
-    font-weight: 600; /* In đậm cho Part X */
-    color: #000;
-}
-
-    .question-image {
-        width: 300px;
-        height: 300px;
-        object-fit: cover;
-        border-radius: 10px;
-        margin: 0 auto 20px;
-        display: block;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        animation: fadeIn 1.5s ease-in-out;
-        transition: transform 0.3s ease;
-    }
-
-        .question-image:hover {
-            transform: scale(1.05);
-        }
-
-    .question-audio {
-        margin-bottom: 20px;
-        width: 100%;
-        border-radius: 5px;
-        background: #B3E5FC;
-        padding: 5px;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-
-        .question-audio:hover {
-            transform: scale(1.02);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-
-.question-text {
-    font-size: 1.2rem;
-    font-weight: normal; /* Không in đậm */
-    color: #000; /* Màu đen */
-    margin-bottom: 20px;
-    background: none; /* Bỏ gradient */
-    -webkit-background-clip: initial;
-    -webkit-text-fill-color: initial;
-    animation: slideInDown 1s ease-in-out;
-    /* Bỏ font-style: italic */
-}
-
-    .answer-options {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .answer-option {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        background: #B3E5FC;
-        padding: 10px;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
-    }
-
-        .answer-option:hover {
-            background: #81D4FA;
-            transform: scale(1.02);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .answer-option input {
-            margin: 0;
-        }
-
-.answer-option label {
-    display: flex;
-    align-items: center;
-    font-size: 1rem;
-    color: #333;
-    margin: 0;
-    gap: 2px; /* Đảm bảo khoảng cách đồng đều */
-}
-
-.answer-option .label-text {
-    font-weight: 600; /* In đậm cho A, B, C, D */
-    color: #000;
-    min-width: 15px; /* Đặt chiều rộng tối thiểu để nhãn thẳng hàng */
-    text-align: left; /* Căn trái nhãn */
-     margin-right: -3px;
-}
-.answer-option .answer-content {
-    font-weight: normal; /* Không in đậm cho nội dung đáp án */
-    color: #000;
-    font-size: 0.95rem; /* Tùy biến: chữ nhỏ hơn một chút để nhãn nổi bật */
-    line-height: 1; /* Đảm bảo nội dung đáp án không bị lệch hàng */
-}
-.answer-option .colon {
-    font-weight: normal; /* Không in đậm dấu hai chấm */
-    color: #000;
-    line-height: 1; /* Đảm bảo dấu hai chấm không bị lệch hàng */
-     position: relative; /* Thêm để có thể điều chỉnh vị trí */
-    top: -1.5px;
-}
-.sub-question h4 .question-content {
-    font-weight: normal; /* Không in đậm cho phần nội dung sau Question X */
-    color: #000;
-    /* Bỏ font-style: italic */
-}
-.answer-option {
-    display: flex;
-    align-items: center;
-    gap: 5px; /* Giảm từ 10px xuống 5px để dấu hai chấm gần radio button hơn */
-    background: #B3E5FC;
-    padding: 10px;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
-}
-    .part3-container {
-        display: flex;
-        gap: 20px;
-        background: #FFFFFF;
-        border-radius: 15px;
-        padding: 20px;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        max-width: 1000px;
-        margin: 0 auto 20px;
-        animation: zoomIn 1s ease-in-out;
-    }
-
-    .part3-left, .part3-right {
-        flex: 1;
-    }
-
-    .part3-left {
-        text-align: center;
-    }
-
-    .part3-right {
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-    }
-
-    .sub-question {
-        background: #FFECB3;
-        padding: 15px;
-        border-radius: 10px;
-        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-        animation: fadeInUp 1s ease-in-out;
-    }
-
-        .sub-question h4 {
-            font-weight: 600; /* In đậm cho Question X ở Part 3, 4, 6, 7 */
-    color: #000;
-        }
-
-    .sub-question-image {
-        width: 150px;
-        height: 150px;
-        object-fit: cover;
-        border-radius: 10px;
-        margin: 0 auto 10px;
-        display: block;
-        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-        transition: transform 0.3s ease;
-    }
-
-        .sub-question-image:hover {
-            transform: scale(1.05);
-        }
-
-    .sub-question-audio {
-        width: 100%;
-        border-radius: 5px;
-        background: #B3E5FC;
-        padding: 5px;
-        margin-bottom: 10px;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-
-        .sub-question-audio:hover {
-            transform: scale(1.02);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-
-    @@keyframes zoomIn {
-        from {
-            transform: scale(0.5);
-            opacity: 0;
-        }
-
-        to {
-            transform: scale(1);
-            opacity: 1;
-        }
-    }
-
-    @@keyframes slideInDown {
-        from {
-            transform: translateY(-50px);
-            opacity: 0;
-        }
-
-        to {
-            transform: translateY(0);
-            opacity: 1;
-        }
-    }
-
-    @@keyframes fadeIn {
-        from {
-            opacity: 0;
-        }
-
-        to {
-            opacity: 1;
-        }
-    }
-
-    @@keyframes fadeInUp {
-        from {
-            transform: translateY(50px);
-            opacity: 0;
-        }
-
-        to {
-            transform: translateY(0);
-            opacity: 1;
-        }
-    }
-
-    @@keyframes pulse {
-        0% {
-            transform: scale(1);
-        }
-
-        50% {
-            transform: scale(1.05);
-        }
-
-        100% {
-            transform: scale(1);
-        }
-    }
-
-    @@media (max-width: 768px) {
-        .sidebar-left, .sidebar-right {
-            width: 100px;
-        }
-
-        .main-content {
-            margin-left: 100px;
-            margin-right: 100px;
-        }
-
-        .question-circle {
-            width: 40px;
-            height: 40px;
-            background: #B3E5FC; /* Màu xanh nhạt - chưa chọn */
-            color: #333;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            border-radius: 50%;
-            font-weight: 600;
-            text-decoration: none;
-            transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
-            animation: zoomIn 0.5s ease-in-out;
-        }
-        .part-btn {
-            font-size: 0.9rem;
-            padding: 8px;
-        }
-
-        .question-image, .sub-question-image {
-            width: 200px;
-            height: 200px;
-        }
-
-        .part3-container {
-            flex-direction: column;
-        }
-    }
-</style>
