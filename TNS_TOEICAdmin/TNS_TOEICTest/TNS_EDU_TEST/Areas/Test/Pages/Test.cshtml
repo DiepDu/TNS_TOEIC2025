@@ -159,18 +159,18 @@
             partQuestions.forEach(question => {
                 const isFlagged = flaggedQuestions.has(question.questionKey);
                 html += `
-                        <div class="question-container" id="question-${question.questionKey}">
-                            <h2>Question ${question.order}</h2>
-                            <span class="flag-icon ${isFlagged ? 'flagged' : ''}" data-question-key="${question.questionKey}"><i class="fas fa-flag"></i></span>
-                            ${question.questionImage ? `<img src="${resourceBaseUrl}${question.questionImage}" alt="Question Image" class="question-image" loading="lazy">` : ''}
-                            ${question.questionVoice ? `
-                                <audio controls class="question-audio">
-                                    <source src="${resourceBaseUrl}${question.questionVoice}" type="audio/mpeg">
-                                    Your browser does not support the audio element.
-                                </audio>` : ''}
-                            ${question.questionText ? `<div class="question-text">${question.questionText}</div>` : ''}
-                            <div class="answer-options">
-                    `;
+                                <div class="question-container" id="question-${question.questionKey}">
+                                    <h2>Question ${question.order}</h2>
+                                    <span class="flag-icon ${isFlagged ? 'flagged' : ''}" data-question-key="${question.questionKey}"><i class="fas fa-flag"></i></span>
+                                    ${question.questionImage ? `<img src="${resourceBaseUrl}${question.questionImage}" alt="Question Image" class="question-image" loading="lazy">` : ''}
+                                    ${question.questionVoice ? `
+                                        <audio controls class="question-audio">
+                                            <source src="${resourceBaseUrl}${question.questionVoice}" type="audio/mpeg">
+                                            Your browser does not support the audio element.
+                                        </audio>` : ''}
+                                    ${question.questionText ? `<div class="question-text">${question.questionText}</div>` : ''}
+                                    <div class="answer-options">
+                            `;
                 question.answers.forEach((answer, idx) => {
                     const label = (currentPart === 1 || currentPart === 2)
                         ? (answer.ranking === 1 ? 'A' : answer.ranking === 2 ? 'B' : answer.ranking === 3 ? 'C' : answer.ranking === 4 ? 'D' : '?')
@@ -178,15 +178,15 @@
                     const isChecked = answer.answerKey === question.userAnswerKey ? 'checked' : '';
                     const isSelected = answer.answerKey === question.userAnswerKey ? 'selected' : '';
                     html += `
-                            <div class="answer-option ${isSelected}" onclick="selectAnswer('${question.questionKey}', '${answer.answerKey}')">
-                                <input type="radio" name="answer_${question.questionKey}" id="answer_${answer.answerKey}"
-                                       value="${answer.answerKey}" ${isChecked}>
-                                <label for="answer_${answer.answerKey}">
-                                    <span class="label-text">${label}</span>
-                                    ${currentPart === 1 || currentPart === 2 ? '' : `<span class="colon">:</span> <span class="answer-content">${answer.answerText}</span>`}
-                                </label>
-                            </div>
-                        `;
+                                    <div class="answer-option ${isSelected}" onclick="selectAnswer('${question.questionKey}', '${answer.answerKey}')">
+                                        <input type="radio" name="answer_${question.questionKey}" id="answer_${answer.answerKey}"
+                                               value="${answer.answerKey}" ${isChecked}>
+                                        <label for="answer_${answer.answerKey}">
+                                            <span class="label-text">${label}</span>
+                                            ${currentPart === 1 || currentPart === 2 ? '' : `<span class="colon">:</span> <span class="answer-content">${answer.answerText}</span>`}
+                                        </label>
+                                    </div>
+                                `;
                 });
                 html += '</div></div>';
             });
@@ -211,49 +211,49 @@
 
             parentQuestions.forEach(parent => {
                 html += `
-                        <div class="part3-container">
-                            <div class="part3-left">
-                                <h2>Part ${currentPart}: Conversation</h2>
-                                ${parent.questionImage ? `<img src="${resourceBaseUrl}${parent.questionImage}" alt="Part ${currentPart} Image" class="question-image" loading="lazy">` : ''}
-                                ${parent.questionVoice ? `
-                                    <audio controls class="question-audio">
-                                        <source src="${resourceBaseUrl}${parent.questionVoice}" type="audio/mpeg">
-                                        Your browser does not support the audio element.
-                                    </audio>` : ''}
-                                ${parent.questionText ? `<div class="question-text">${parent.questionText}</div>` : ''}
-                            </div>
-                            <div class="part3-right">
-                    `;
+                                <div class="part3-container">
+                                    <div class="part3-left">
+                                        <h2>Part ${currentPart}: Conversation</h2>
+                                        ${parent.questionImage ? `<img src="${resourceBaseUrl}${parent.questionImage}" alt="Part ${currentPart} Image" class="question-image" loading="lazy">` : ''}
+                                        ${parent.questionVoice ? `
+                                            <audio controls class="question-audio">
+                                                <source src="${resourceBaseUrl}${parent.questionVoice}" type="audio/mpeg">
+                                                Your browser does not support the audio element.
+                                            </audio>` : ''}
+                                        ${parent.questionText ? `<div class="question-text">${parent.questionText}</div>` : ''}
+                                    </div>
+                                    <div class="part3-right">
+                            `;
                 const children = parent.children || [];
                 children.forEach(child => {
                     const isFlagged = flaggedQuestions.has(child.questionKey);
                     html += `
-                            <div class="sub-question" id="question-${child.questionKey}">
-                                <h4>Question ${child.order}${child.questionText ? `<span class="question-content">: ${child.questionText}</span>` : ''}</h4>
-                                <span class="flag-icon ${isFlagged ? 'flagged' : ''}" data-question-key="${child.questionKey}"><i class="fas fa-flag"></i></span>
-                                ${child.questionImage ? `<img src="${resourceBaseUrl}${child.questionImage}" alt="Sub Question Image" class="sub-question-image" loading="lazy">` : ''}
-                                ${child.questionVoice ? `
-                                    <audio controls class="sub-question-audio">
-                                        <source src="${resourceBaseUrl}${child.questionVoice}" type="audio/mpeg">
-                                        Your browser does not support the audio element.
-                                    </audio>` : ''}
-                                <div class="answer-options">
-                        `;
+                                    <div class="sub-question" id="question-${child.questionKey}">
+                                        <h4>Question ${child.order}${child.questionText ? `<span class="question-content">: ${child.questionText}</span>` : ''}</h4>
+                                        <span class="flag-icon ${isFlagged ? 'flagged' : ''}" data-question-key="${child.questionKey}"><i class="fas fa-flag"></i></span>
+                                        ${child.questionImage ? `<img src="${resourceBaseUrl}${child.questionImage}" alt="Sub Question Image" class="sub-question-image" loading="lazy">` : ''}
+                                        ${child.questionVoice ? `
+                                            <audio controls class="sub-question-audio">
+                                                <source src="${resourceBaseUrl}${child.questionVoice}" type="audio/mpeg">
+                                                Your browser does not support the audio element.
+                                            </audio>` : ''}
+                                        <div class="answer-options">
+                                `;
                     child.answers.forEach((answer, idx) => {
                         const label = String.fromCharCode(65 + idx);
                         const isChecked = answer.answerKey === child.userAnswerKey ? 'checked' : '';
                         const isSelected = answer.answerKey === child.userAnswerKey ? 'selected' : '';
                         html += `
-                                <div class="answer-option ${isSelected}" onclick="selectAnswer('${child.questionKey}', '${answer.answerKey}')">
-                                    <input type="radio" name="answer_${child.questionKey}" id="answer_${answer.answerKey}"
-                                           value="${answer.answerKey}" ${isChecked}>
-                                    <label for="answer_${answer.answerKey}">
-                                        <span class="label-text">${label}</span>
-                                        <span class="colon">:</span>
-                                        <span class="answer-content">${answer.answerText}</span>
-                                    </label>
-                                </div>
-                            `;
+                                        <div class="answer-option ${isSelected}" onclick="selectAnswer('${child.questionKey}', '${answer.answerKey}')">
+                                            <input type="radio" name="answer_${child.questionKey}" id="answer_${answer.answerKey}"
+                                                   value="${answer.answerKey}" ${isChecked}>
+                                            <label for="answer_${answer.answerKey}">
+                                                <span class="label-text">${label}</span>
+                                                <span class="colon">:</span>
+                                                <span class="answer-content">${answer.answerText}</span>
+                                            </label>
+                                        </div>
+                                    `;
                     });
                     html += '</div></div>';
                 });
@@ -393,7 +393,7 @@
             startTimer();
             renderContent();
             updateQuestionList();
-          
+
         };
 
         document.addEventListener('keydown', (event) => {
@@ -456,7 +456,7 @@
             return answered;
         }
 
-   
+
 
         // Cập nhật Progress Bar
         function updateProgressCircle() {
@@ -482,102 +482,105 @@
 </html>
 <style>
     /* Confirmation Modal */
-.confirmation-modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5); /* Nền mờ */
-    z-index: 1000;
-    justify-content: center;
-    align-items: center;
-}
-
-.confirmation-modal.active {
-    display: flex;
-    animation: fadeIn 0.3s ease-in-out;
-}
-
-.modal-content {
-    background: #FFFFFF;
-    border-radius: 15px;
-    padding: 20px;
-    max-width: 400px;
-    width: 90%;
-    text-align: center;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-    animation: zoomIn 0.3s ease-in-out;
-}
-
-.modal-content h3 {
-    font-weight: 600;
-    color: #0288D1;
-    margin-bottom: 10px;
-}
-
-.modal-content p {
-    font-size: 1rem;
-    color: #333;
-    margin-bottom: 20px;
-}
-
-.modal-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-}
-
-.modal-btn {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
-}
-
-.confirm-btn {
-    background: #4CAF50;
-    color: white;
-}
-
-.confirm-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-    background: #388E3C;
-}
-
-.cancel-btn {
-    background: #F44336;
-    color: white;
-}
-
-.cancel-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-    background: #D32F2F;
-}
-
-/* Hiệu ứng cho modal */
-@@keyframes fadeIn {
-    from {
-        opacity: 0;
+    .confirmation-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5); /* Nền mờ */
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
     }
-    to {
-        opacity: 1;
-    }
-}
 
-@@keyframes fadeOut {
-    from {
-        opacity: 1;
+        .confirmation-modal.active {
+            display: flex;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+    .modal-content {
+        background: #FFFFFF;
+        border-radius: 15px;
+        padding: 20px;
+        max-width: 400px;
+        width: 90%;
+        text-align: center;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        animation: zoomIn 0.3s ease-in-out;
     }
-    to {
-        opacity: 0;
+
+        .modal-content h3 {
+            font-weight: 600;
+            color: #0288D1;
+            margin-bottom: 10px;
+        }
+
+        .modal-content p {
+            font-size: 1rem;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+    .modal-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
     }
-}
+
+    .modal-btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+    }
+
+    .confirm-btn {
+        background: #4CAF50;
+        color: white;
+    }
+
+        .confirm-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            background: #388E3C;
+        }
+
+    .cancel-btn {
+        background: #F44336;
+        color: white;
+    }
+
+        .cancel-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            background: #D32F2F;
+        }
+
+    /* Hiệu ứng cho modal */
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    @@keyframes fadeOut {
+        from {
+            opacity: 1;
+        }
+
+        to {
+            opacity: 0;
+        }
+    }
+
     * {
         margin: 0;
         padding: 0;
@@ -804,6 +807,7 @@
         flex-wrap: wrap;
         justify-content: center;
         gap: 20px;
+        max-height: 500px;
         margin-bottom: 20px;
         overflow-y: auto;
     }
@@ -1013,6 +1017,7 @@
         animation: zoomIn 1s ease-in-out;
         position: relative; /* Để hỗ trợ đường kẻ chia */
     }
+
     .part3-left, .part3-right {
         flex: 1;
     }
@@ -1223,7 +1228,7 @@
             max-height: 50vh; /* Giới hạn chiều cao trên mobile */
             -webkit-mask-image: linear-gradient( to bottom, transparent 0%, black 5%, black 95%, transparent 100% );
             mask-image: linear-gradient( to bottom, transparent 0%, black 5%, black 95%, transparent 100% );
-      }
+        }
     }
 
     .progress-text-container {
