@@ -12,6 +12,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@ViewData["Title"]</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body>
     <div class="header">
@@ -55,12 +56,15 @@
      let flaggedQuestions = new Set(); // Lưu danh sách questionKey của các câu hỏi được đánh dấu lá cờ
 
     function toggleFlag(questionKey) {
+        const flagElement = document.querySelector(`.flag-icon[data-question-key="${questionKey}"]`);
         if (flaggedQuestions.has(questionKey)) {
-            flaggedQuestions.delete(questionKey); // Bỏ đánh dấu
+            flaggedQuestions.delete(questionKey);
+            flagElement.classList.remove('flagged');
         } else {
-            flaggedQuestions.add(questionKey); // Thêm đánh dấu
+            flaggedQuestions.add(questionKey);
+            flagElement.classList.add('flagged');
         }
-        updateQuestionList(); // Cập nhật lại danh sách chấm tròn
+        updateQuestionList();
     }
 
 
@@ -102,150 +106,141 @@
         }
     }
 
-function renderSimplePart(container) {
-    const partQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
-    console.log(`Part ${currentPart} questions:`, partQuestions);
-    if (partQuestions.length === 0) {
-        container.innerHTML = `<p>No questions available for Part ${currentPart}. Total questions in part: ${questions.filter(q => Number(q.part) === currentPart).length}</p>`;
-        return;
-    }
-    let html = '';
-    partQuestions.forEach(question => {
-        html += `
-            <div class="question-container" id="question-${question.questionKey}">
-                <h2>Question ${question.order}</h2>
-                <span class="flag-icon" data-question-key="${question.questionKey}">🏳️</span>
-                ${question.questionImage ? `<img src="${resourceBaseUrl}${question.questionImage}" alt="Question Image" class="question-image">` : ''}
-                ${question.questionVoice ? `
-                    <audio controls class="question-audio">
-                        <source src="${resourceBaseUrl}${question.questionVoice}" type="audio/mpeg">
-                        Your browser does not support the audio element.
-                    </audio>` : ''}
-                ${question.questionText ? `<div class="question-text">${question.questionText}</div>` : ''}
-                <div class="answer-options">
-        `;
-        question.answers.forEach((answer, idx) => {
-            const label = (currentPart === 1 || currentPart === 2) 
-                ? (answer.ranking === 1 ? 'A' : answer.ranking === 2 ? 'B' : answer.ranking === 3 ? 'C' : answer.ranking === 4 ? 'D' : '?')
-                : String.fromCharCode(65 + idx);
-            const isChecked = answer.answerKey === question.userAnswerKey ? 'checked' : '';
-            const isSelected = answer.answerKey === question.userAnswerKey ? 'selected' : '';
+    function renderSimplePart(container) {
+        const partQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
+        let html = '';
+        partQuestions.forEach(question => {
+            const isFlagged = flaggedQuestions.has(question.questionKey);
             html += `
-                <div class="answer-option ${isSelected}">
-                    <input type="radio" name="answer_${question.questionKey}" id="answer_${answer.answerKey}" 
-                           value="${answer.answerKey}" ${isChecked}>
-                    <label for="answer_${answer.answerKey}">
-                        <span class="label-text">${label}</span>
-                        ${currentPart === 1 || currentPart === 2 ? '' : `<span class="colon">:</span> <span class="answer-content">${answer.answerText}</span>`}
-                    </label>
-                </div>
-            `;
-        });
-        html += '</div></div>';
-    });
-    container.innerHTML = html;
-
-    // Gắn sự kiện cho các biểu tượng lá cờ
-    document.querySelectorAll('.flag-icon').forEach(flag => {
-        flag.addEventListener('click', () => {
-            const questionKey = flag.getAttribute('data-question-key');
-            toggleFlag(questionKey);
-        });
-    });
-}
-function renderComplexPart(container) {
-    const parentQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
-    console.log(`Part ${currentPart} parent questions:`, parentQuestions);
-
-    if (parentQuestions.length === 0) {
-        container.innerHTML = `<p>No questions available for Part ${currentPart}.</p>`;
-        return;
-    }
-
-    let html = '';
-    parentQuestions.forEach(parent => {
-        html += `
-            <div class="part3-container">
-                <div class="part3-left">
-                    <h2>Part ${currentPart}: Conversation</h2>
-                    ${parent.questionImage ? `<img src="${resourceBaseUrl}${parent.questionImage}" alt="Part ${currentPart} Image" class="question-image">` : ''}
-                    ${parent.questionVoice ? `
-                        <audio controls class="question-audio">
-                            <source src="${resourceBaseUrl}${parent.questionVoice}" type="audio/mpeg">
-                            Your browser does not support the audio element.
-                        </audio>` : ''}
-                    ${parent.questionText ? `<div class="question-text">${parent.questionText}</div>` : ''}
-                </div>
-                <div class="part3-right">
-        `;
-        const children = parent.children || [];
-        console.log(`Children of QuestionKey=${parent.questionKey}:`, children);
-        children.forEach(child => {
-            html += `
-                <div class="sub-question" id="question-${child.questionKey}">
-                    <h4>Question ${child.order}${child.questionText ? `<span class="question-content">: ${child.questionText}</span>` : ''}</h4>
-                    <span class="flag-icon" data-question-key="${child.questionKey}">🏳️</span>
-                    ${child.questionImage ? `<img src="${resourceBaseUrl}${child.questionImage}" alt="Sub Question Image" class="sub-question-image">` : ''}
-                    ${child.questionVoice ? `
-                        <audio controls class="sub-question-audio">
-                            <source src="${resourceBaseUrl}${child.questionVoice}" type="audio/mpeg">
-                            Your browser does not support the audio element.
-                        </audio>` : ''}
-                    <div class="answer-options">
-            `;
-            child.answers.forEach((answer, idx) => {
-                const label = String.fromCharCode(65 + idx);
-                const isChecked = answer.answerKey === child.userAnswerKey ? 'checked' : '';
-                const isSelected = answer.answerKey === child.userAnswerKey ? 'selected' : '';
+        <div class="question-container" id="question-${question.questionKey}">
+            <h2>Question ${question.order}</h2>
+            <span class="flag-icon ${isFlagged ? 'flagged' : ''}" data-question-key="${question.questionKey}"><i class="fas fa-flag"></i></span>
+            ${question.questionImage ? `<img src="${resourceBaseUrl}${question.questionImage}" alt="Question Image" class="question-image">` : ''}
+            ${question.questionVoice ? `
+                <audio controls class="question-audio">
+                    <source src="${resourceBaseUrl}${question.questionVoice}" type="audio/mpeg">
+                    Your browser does not support the audio element.
+                </audio>` : ''}
+            ${question.questionText ? `<div class="question-text">${question.questionText}</div>` : ''}
+            <div class="answer-options">
+    `;
+            question.answers.forEach((answer, idx) => {
+                const label = (currentPart === 1 || currentPart === 2)
+                    ? (answer.ranking === 1 ? 'A' : answer.ranking === 2 ? 'B' : answer.ranking === 3 ? 'C' : answer.ranking === 4 ? 'D' : '?')
+                    : String.fromCharCode(65 + idx);
+                const isChecked = answer.answerKey === question.userAnswerKey ? 'checked' : '';
+                const isSelected = answer.answerKey === question.userAnswerKey ? 'selected' : '';
                 html += `
                     <div class="answer-option ${isSelected}">
-                        <input type="radio" name="answer_${child.questionKey}" id="answer_${answer.answerKey}" 
+                        <input type="radio" name="answer_${question.questionKey}" id="answer_${answer.answerKey}"
                                value="${answer.answerKey}" ${isChecked}>
                         <label for="answer_${answer.answerKey}">
                             <span class="label-text">${label}</span>
-                            <span class="colon">:</span>
-                            <span class="answer-content">${answer.answerText}</span>
+                            ${currentPart === 1 || currentPart === 2 ? '' : `<span class="colon">:</span> <span class="answer-content">${answer.answerText}</span>`}
                         </label>
                     </div>
                 `;
             });
             html += '</div></div>';
         });
-        html += '</div></div>';
-    });
-    container.innerHTML = html;
+        container.innerHTML = html;
 
-    // Gắn sự kiện cho các biểu tượng lá cờ
-    document.querySelectorAll('.flag-icon').forEach(flag => {
-        flag.addEventListener('click', () => {
-            const questionKey = flag.getAttribute('data-question-key');
-            toggleFlag(questionKey);
+        document.querySelectorAll('.flag-icon').forEach(flag => {
+            flag.addEventListener('click', () => {
+                const questionKey = flag.getAttribute('data-question-key');
+                toggleFlag(questionKey);
+            });
         });
-    });
-}
-function updateQuestionList() {
-    const listContainer = document.getElementById('question-list');
-    let html = '';
-    let displayedQuestions = [];
-
-    if (currentPart <= 2 || currentPart === 5) {
-        displayedQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
-    } else {
-        const parentQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
-        displayedQuestions = parentQuestions.reduce((acc, parent) => {
-            return acc.concat(parent.children || []);
-        }, []);
     }
+    function renderComplexPart(container) {
+        const parentQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
+        let html = '';
 
-    console.log(`Displayed questions for Part ${currentPart}:`, displayedQuestions);
-    displayedQuestions.forEach((q, index) => {
-        // Kiểm tra nếu câu hỏi đã được chọn đáp án (userAnswerKey tồn tại và không rỗng)
-        const isSelected = q.userAnswerKey && q.userAnswerKey !== '';
-        html += `<a href="#" class="question-circle ${isSelected ? 'selected' : ''}" onclick="scrollToQuestion('${q.questionKey}')">${q.order || 'N/A'}</a>`;
-    });
-    listContainer.innerHTML = html;
-}
+        if (parentQuestions.length === 0) {
+            container.innerHTML = `<p>No questions available for Part ${currentPart}.</p>`;
+            return;
+        }
 
+        parentQuestions.forEach(parent => {
+            html += `
+                <div class="part3-container">
+                    <div class="part3-left">
+                        <h2>Part ${currentPart}: Conversation</h2>
+                        ${parent.questionImage ? `<img src="${resourceBaseUrl}${parent.questionImage}" alt="Part ${currentPart} Image" class="question-image">` : ''}
+                        ${parent.questionVoice ? `
+                            <audio controls class="question-audio">
+                                <source src="${resourceBaseUrl}${parent.questionVoice}" type="audio/mpeg">
+                                Your browser does not support the audio element.
+                            </audio>` : ''}
+                        ${parent.questionText ? `<div class="question-text">${parent.questionText}</div>` : ''}
+                    </div>
+                    <div class="part3-right">
+            `;
+            const children = parent.children || [];
+            children.forEach(child => {
+                const isFlagged = flaggedQuestions.has(child.questionKey);
+                html += `
+                    <div class="sub-question" id="question-${child.questionKey}">
+                        <h4>Question ${child.order}${child.questionText ? `<span class="question-content">: ${child.questionText}</span>` : ''}</h4>
+                        <span class="flag-icon ${isFlagged ? 'flagged' : ''}" data-question-key="${child.questionKey}"><i class="fas fa-flag"></i></span>
+                        ${child.questionImage ? `<img src="${resourceBaseUrl}${child.questionImage}" alt="Sub Question Image" class="sub-question-image">` : ''}
+                        ${child.questionVoice ? `
+                            <audio controls class="sub-question-audio">
+                                <source src="${resourceBaseUrl}${child.questionVoice}" type="audio/mpeg">
+                                Your browser does not support the audio element.
+                            </audio>` : ''}
+                        <div class="answer-options">
+                `;
+                child.answers.forEach((answer, idx) => {
+                    const label = String.fromCharCode(65 + idx);
+                    const isChecked = answer.answerKey === child.userAnswerKey ? 'checked' : '';
+                    const isSelected = answer.answerKey === child.userAnswerKey ? 'selected' : '';
+                    html += `
+                        <div class="answer-option ${isSelected}">
+                            <input type="radio" name="answer_${child.questionKey}" id="answer_${answer.answerKey}"
+                                   value="${answer.answerKey}" ${isChecked}>
+                            <label for="answer_${answer.answerKey}">
+                                <span class="label-text">${label}</span>
+                                <span class="colon">:</span>
+                                <span class="answer-content">${answer.answerText}</span>
+                            </label>
+                        </div>
+                    `;
+                });
+                html += '</div></div>';
+            });
+            html += '</div></div>';
+        });
+        container.innerHTML = html;
+
+        document.querySelectorAll('.flag-icon').forEach(flag => {
+            flag.addEventListener('click', () => {
+                const questionKey = flag.getAttribute('data-question-key');
+                toggleFlag(questionKey);
+            });
+        });
+    }
+    function updateQuestionList() {
+        const listContainer = document.getElementById('question-list');
+        let html = '';
+        let displayedQuestions = [];
+
+        if (currentPart <= 2 || currentPart === 5) {
+            displayedQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
+        } else {
+            const parentQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
+            displayedQuestions = parentQuestions.reduce((acc, parent) => {
+                return acc.concat(parent.children || []);
+            }, []);
+        }
+
+        displayedQuestions.forEach((q, index) => {
+            const isSelected = q.userAnswerKey && q.userAnswerKey !== '';
+            const isFlagged = flaggedQuestions.has(q.questionKey);
+            html += `<a href="#" class="question-circle ${isSelected ? 'selected' : ''} ${isFlagged ? 'flagged' : ''}" onclick="scrollToQuestion('${q.questionKey}')">${q.order || 'N/A'}</a>`;
+        });
+        listContainer.innerHTML = html;
+    }
     function scrollToQuestion(questionKey) {
         const element = document.getElementById(`question-${questionKey}`);
         if (element) {
@@ -295,23 +290,30 @@ function updateQuestionList() {
             opacity: 0.1;
             z-index: 0;
         }
-.flag-icon {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    font-size: 1.5rem; /* Tăng kích thước */
-    color: #FF5722; /* Màu cam đậm để nổi bật */
-    background: rgba(255, 255, 255, 0.8); /* Nền trắng mờ để làm nổi bật */
-    border-radius: 50%; /* Bo tròn nền */
-    padding: 5px; /* Khoảng cách giữa biểu tượng và nền */
-    cursor: pointer;
-    transition: transform 0.3s ease, background 0.3s ease;
-}
 
-.flag-icon:hover {
-    transform: scale(1.2);
-    background: rgba(255, 255, 255, 1); /* Nền trắng đậm hơn khi hover */
-}
+    .flag-icon {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        font-size: 1.5rem;
+        color: #FF9800; /* Màu cam sáng */
+        cursor: pointer;
+        transition: transform 0.3s ease, color 0.3s ease;
+    }
+
+        .flag-icon.flagged {
+            color: #D32F2F; /* Màu đỏ đậm khi được đánh dấu */
+        }
+
+        .flag-icon:hover {
+            transform: scale(1.2);
+            color: #FFB300; /* Màu cam đậm hơn khi hover */
+        }
+
+    .question-circle.flagged {
+        background: #F44336 !important; /* Màu đỏ tươi - đã đánh dấu, ưu tiên cao nhất */
+        color: white !important;
+    }
 
 /* Đảm bảo .question-container và .sub-question có position: relative để .flag-icon định vị đúng */
 .question-container, .sub-question {
@@ -776,11 +778,19 @@ function updateQuestionList() {
         }
 
         .question-circle {
-            width: 30px;
-            height: 30px;
-            font-size: 0.9rem;
+            width: 40px;
+            height: 40px;
+            background: #B3E5FC; /* Màu xanh nhạt - chưa chọn */
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 50%;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+            animation: zoomIn 0.5s ease-in-out;
         }
-
         .part-btn {
             font-size: 0.9rem;
             padding: 8px;
