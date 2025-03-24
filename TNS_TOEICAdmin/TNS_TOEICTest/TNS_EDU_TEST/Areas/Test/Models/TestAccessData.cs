@@ -182,6 +182,82 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                 return (endTime, resultQuestions);
             }
         }
+        public static async Task SaveFlaggedQuestion(Guid resultKey, Guid questionKey, bool isFlagged)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                await conn.OpenAsync();
+
+                // Kiểm tra xem bản ghi đã tồn tại chưa
+                string checkSql = @"
+            SELECT COUNT(*) 
+            FROM [FlaggedQuestions] 
+            WHERE ResultKey = @ResultKey AND QuestionKey = @QuestionKey";
+                using (var checkCmd = new SqlCommand(checkSql, conn))
+                {
+                    checkCmd.Parameters.AddWithValue("@ResultKey", resultKey);
+                    checkCmd.Parameters.AddWithValue("@QuestionKey", questionKey);
+                    int count = (int)await checkCmd.ExecuteScalarAsync();
+
+                    if (count == 0 && isFlagged) // Nếu chưa tồn tại và đang gắn cờ, thì insert
+                    {
+                        string insertSql = @"
+                    INSERT INTO [FlaggedQuestions] (FlagKey, ResultKey, QuestionKey, IsFlagged, CreateOn)
+                    VALUES (NEWID(), @ResultKey, @QuestionKey, @IsFlagged, @CreateOn)";
+                        using (var insertCmd = new SqlCommand(insertSql, conn))
+                        {
+                            insertCmd.Parameters.AddWithValue("@ResultKey", resultKey);
+                            insertCmd.Parameters.AddWithValue("@QuestionKey", questionKey);
+                            insertCmd.Parameters.AddWithValue("@IsFlagged", isFlagged);
+                            insertCmd.Parameters.AddWithValue("@CreateOn", DateTime.Now);
+                  
+                            await insertCmd.ExecuteNonQueryAsync();
+                        }
+                    }
+                    else if (count > 0) // Nếu đã tồn tại, thì update
+                    {
+                        string updateSql = @"
+                    UPDATE [FlaggedQuestions]
+                    SET IsFlagged = @IsFlagged, UpdateOn = @UpdateOn
+                    WHERE ResultKey = @ResultKey AND QuestionKey = @QuestionKey";
+                        using (var updateCmd = new SqlCommand(updateSql, conn))
+                        {
+                            updateCmd.Parameters.AddWithValue("@ResultKey", resultKey);
+                            updateCmd.Parameters.AddWithValue("@QuestionKey", questionKey);
+                            updateCmd.Parameters.AddWithValue("@IsFlagged", isFlagged);
+                            updateCmd.Parameters.AddWithValue("@UpdateOn", DateTime.Now);
+                            await updateCmd.ExecuteNonQueryAsync();
+                        }
+                    }
+                }
+            }
+        }
+
+        public static async Task<List<Guid>> GetFlaggedQuestions(Guid resultKey)
+        {
+            var flaggedQuestions = new List<Guid>();
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                await conn.OpenAsync();
+
+                string sql = @"
+            SELECT QuestionKey 
+            FROM [FlaggedQuestions] 
+            WHERE ResultKey = @ResultKey AND IsFlagged = 1";
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@ResultKey", resultKey);
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            flaggedQuestions.Add(reader.GetGuid(0));
+                        }
+                    }
+                }
+            }
+            return flaggedQuestions;
+        }
     }
 
     public class TestQuestion

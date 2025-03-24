@@ -13,600 +13,6 @@
     <title>@ViewData["Title"]</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html, body {
-            height: 100vh;
-            margin: 0;
-            overflow: hidden;
-        }
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #B3E5FC, #FFECB3);
-            display: flex;
-            position: relative;
-        }
-
-        body::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: url('https://www.transparenttextures.com/patterns/stardust.png');
-            opacity: 0.1;
-            z-index: 0;
-        }
-
-        .flag-icon {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            font-size: 1.5rem;
-            color: #FF9800;
-            cursor: pointer;
-            transition: transform 0.3s ease, color 0.3s ease;
-        }
-
-        .flag-icon.flagged {
-            color: #D32F2F;
-        }
-
-        .flag-icon:hover {
-            transform: scale(1.2);
-            color: #FFB300;
-        }
-
-        .question-circle.flagged {
-            background: #F44336 !important;
-            color: white !important;
-        }
-
-        .question-container, .sub-question {
-            position: relative;
-        }
-
-        .header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            background: linear-gradient(90deg, #FFECB3, #B3E5FC);
-            padding: 10px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-            z-index: 10;
-            animation: slideInDown 1s ease-in-out;
-        }
-
-        .hamburger-btn {
-            display: none;
-            font-size: 1.5rem;
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: #0288D1;
-        }
-
-        @@media (max-width: 768px) {
-            .hamburger-btn {
-                display: block;
-            }
-        }
-
-        .exit-btn, .submit-btn {
-            padding: 8px 20px;
-            border: none;
-            border-radius: 5px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
-        }
-
-        .exit-btn {
-            background: #f44336;
-            color: white;
-        }
-
-        .exit-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            background: #d32f2f;
-        }
-
-        .submit-btn {
-            background: #4CAF50;
-            color: white;
-        }
-
-        .submit-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            background: #388E3C;
-        }
-
-        .timer {
-            font-size: 1.5rem;
-            font-weight: 600;
-            background: linear-gradient(90deg, #0288D1, #4FC3F7);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: pulse 2s infinite;
-        }
-
-        .timer.warning {
-            background: linear-gradient(90deg, #F44336, #EF5350);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: blink 1s infinite;
-        }
-
-        @@keyframes blink {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-
-        .sidebar-left {
-            width: 150px;
-            background: #FFECB3;
-            padding: 20px 10px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            height: calc(100vh - 60px);
-            position: fixed;
-            left: 0;
-            top: 60px;
-            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
-            z-index: 1;
-        }
-
-        .part-btn {
-            background: #B3E5FC;
-            color: #333;
-            padding: 10px;
-            border: none;
-            border-radius: 5px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
-            animation: fadeInUp 0.5s ease-in-out;
-            flex: 1;
-            margin: 5px 0;
-        }
-
-        .part-btn:hover {
-            background: #81D4FA;
-            transform: scale(1.05);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .part-btn.active {
-            background: #0288D1;
-            color: white;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
-            animation: pulse 1s infinite;
-        }
-
-        .sidebar-right {
-            width: 150px;
-            background: #FFECB3;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: calc(100vh - 60px);
-            position: fixed;
-            right: 0;
-            top: 60px;
-            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
-            overflow-y: auto;
-            z-index: 1;
-        }
-
-        .sidebar-right h3 {
-            background: linear-gradient(90deg, #0288D1, #4FC3F7);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: slideInDown 1s ease-in-out;
-            margin-bottom: 20px;
-        }
-
-        .answer-option.selected {
-            background: #4FC3F7;
-        }
-
-        .part-section {
-            width: 100%;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .part-section h4 {
-            color: #333;
-            font-size: 1.1rem;
-            margin-bottom: 10px;
-            animation: fadeIn 1s ease-in-out;
-            width: 100%;
-            text-align: center;
-        }
-
-        .answered-count {
-            font-size: 1rem;
-            font-weight: 600;
-            color: #0288D1;
-            margin-bottom: 10px;
-            text-align: center;
-        }
-
-        .question-circle {
-            width: 40px;
-            height: 40px;
-            background: #B3E5FC;
-            color: #333;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            border-radius: 50%;
-            font-weight: 600;
-            text-decoration: none;
-            transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
-            animation: zoomIn 0.5s ease-in-out;
-        }
-
-        .question-circle.selected {
-            background: #0288D1;
-            color: white;
-        }
-
-        .question-circle:hover {
-            background: #81D4FA;
-            transform: scale(1.2);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .question-circle.active {
-            background: #0288D1;
-            color: white;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
-            animation: pulse 1s infinite;
-        }
-
-        .main-content {
-            margin-left: 150px;
-            margin-right: 150px;
-            padding: 80px 20px 20px;
-            flex: 1;
-            overflow-y: auto;
-            min-height: calc(100vh - 60px);
-            -webkit-overflow-scrolling: touch;
-            position: relative;
-        }
-
-        .main-content-wrapper {
-            min-height: 100%;
-            padding-bottom: 20px;
-        }
-
-        .question-container {
-            background: #FFFFFF;
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            max-width: 800px;
-            margin: 0 auto 20px;
-            text-align: center;
-            animation: zoomIn 1s ease-in-out;
-        }
-
-        .question-container h2 {
-            font-weight: 600;
-            color: #000;
-        }
-
-        .part3-left h2 {
-            font-weight: 600;
-            color: #000;
-        }
-
-        .question-image {
-            width: 300px;
-            height: 300px;
-            object-fit: cover;
-            border-radius: 10px;
-            margin: 0 auto 20px;
-            display: block;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            animation: fadeIn 1.5s ease-in-out;
-            transition: transform 0.3s ease;
-        }
-
-        .question-image:hover {
-            transform: scale(1.05);
-        }
-
-        .question-audio {
-            margin-bottom: 20px;
-            width: 100%;
-            border-radius: 5px;
-            background: #B3E5FC;
-            padding: 5px;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            animation: fadeIn 1.5s ease-in-out;
-        }
-
-        .question-audio:hover {
-            transform: scale(1.02);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .question-text {
-            font-size: 1.2rem;
-            font-weight: normal;
-            color: #000;
-            margin-bottom: 20px;
-            background: none;
-            -webkit-background-clip: initial;
-            -webkit-text-fill-color: initial;
-            animation: slideInDown 1s ease-in-out;
-        }
-
-        .answer-options {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .answer-option {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            background: #B3E5FC;
-            padding: 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .answer-option:hover {
-            background: #81D4FA;
-            transform: scale(1.02);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .answer-option input {
-            margin: 0;
-        }
-
-        .answer-option label {
-            display: flex;
-            align-items: center;
-            font-size: 1rem;
-            color: #333;
-            margin: 0;
-            gap: 2px;
-        }
-
-        .answer-option .label-text {
-            font-weight: 600;
-            color: #000;
-            min-width: 15px;
-            text-align: left;
-            margin-right: -3px;
-        }
-
-        .answer-option .answer-content {
-            font-weight: normal;
-            color: #000;
-            font-size: 0.95rem;
-            line-height: 1;
-        }
-
-        .answer-option .colon {
-            font-weight: normal;
-            color: #000;
-            line-height: 1;
-            position: relative;
-            top: -1.5px;
-        }
-
-        .sub-question h4 .question-content {
-            font-weight: normal;
-            color: #000;
-        }
-
-        .part3-container {
-            display: flex;
-            gap: 20px;
-            background: #FFFFFF;
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            max-width: 1000px;
-            margin: 0 auto 20px;
-            animation: zoomIn 1s ease-in-out;
-        }
-
-        .part3-left, .part3-right {
-            flex: 1;
-        }
-
-        .part3-left {
-            text-align: center;
-        }
-
-        .part3-right {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .sub-question {
-            background: #FFECB3;
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-            animation: fadeInUp 1s ease-in-out;
-        }
-
-        .sub-question h4 {
-            font-weight: 600;
-            color: #000;
-        }
-
-        .sub-question-image {
-            width: 150px;
-            height: 150px;
-            object-fit: cover;
-            border-radius: 10px;
-            margin: 0 auto 10px;
-            display: block;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
-            animation: fadeIn 1.5s ease-in-out;
-        }
-
-        .sub-question-image:hover {
-            transform: scale(1.05);
-        }
-
-        .sub-question-audio {
-            width: 100%;
-            border-radius: 5px;
-            background: #B3E5FC;
-            padding: 5px;
-            margin-bottom: 10px;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            animation: fadeIn 1.5s ease-in-out;
-        }
-
-        .sub-question-audio:hover {
-            transform: scale(1.02);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        @@keyframes zoomIn {
-            from {
-                transform: scale(0.5);
-                opacity: 0;
-            }
-            to {
-                transform: scale(1);
-                opacity: 1;
-            }
-        }
-
-        @@keyframes slideInDown {
-            from {
-                transform: translateY(-50px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-
-        @@keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
-        }
-
-       @@keyframes fadeInUp {
-            from {
-                transform: translateY(50px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-
-        @@keyframes pulse {
-            0% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(1.05);
-            }
-            100% {
-                transform: scale(1);
-            }
-        }
-
-        @@media (max-width: 768px) {
-            .sidebar-left, .sidebar-right {
-                width: 100%;
-                height: auto;
-                position: fixed;
-                top: 60px;
-                transform: translateX(-100%);
-                transition: transform 0.3s ease;
-                z-index: 100;
-            }
-
-            .sidebar-right {
-                transform: translateX(100%);
-            }
-
-            .sidebar-left.active, .sidebar-right.active {
-                transform: translateX(0);
-            }
-
-            .main-content {
-                margin-left: 0;
-                margin-right: 0;
-                padding: 60px 10px 10px;
-            }
-
-            .question-circle {
-                width: 40px;
-                height: 40px;
-                background: #B3E5FC;
-                color: #333;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                border-radius: 50%;
-                font-weight: 600;
-                text-decoration: none;
-                transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
-                animation: zoomIn 0.5s ease-in-out;
-            }
-
-            .part-btn {
-                font-size: 0.9rem;
-                padding: 8px;
-            }
-
-            .question-image, .sub-question-image {
-                width: 200px;
-                height: 200px;
-            }
-
-            .part3-container {
-                flex-direction: column;
-            }
-        }
-    </style>
 </head>
 <body>
     <div class="header">
@@ -651,23 +57,70 @@
 
         let flaggedQuestions = new Set();
 
-        function toggleFlag(questionKey) {
+        // Tải danh sách câu hỏi được đánh dấu từ server
+        async function loadFlaggedQuestions() {
+            try {
+                const response = await fetch(`/MainTest?handler=FlaggedQuestions&resultKey=${resultKey}`);
+                const data = await response.json();
+                if (response.ok && Array.isArray(data)) {
+                    flaggedQuestions = new Set(data);
+                    updateQuestionList();
+                } else {
+                    console.error('Error loading flagged questions:', data.message || 'Unknown error');
+                }
+            } catch (error) {
+                console.error('Error loading flagged questions:', error);
+            }
+        }
+
+        // Lưu trạng thái gắn cờ vào server
+        async function saveFlaggedQuestion(questionKey, isFlagged) {
+            try {
+                const response = await fetch('/MainTest?handler=SaveFlaggedQuestion', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        resultKey: resultKey,
+                        questionKey: questionKey,
+                        isFlagged: isFlagged
+                    })
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    console.error('Error saving flagged question:', data.message || 'Unknown error');
+                }
+            } catch (error) {
+                console.error('Error saving flagged question:', error);
+            }
+        }
+
+        // Sửa hàm toggleFlag để lưu vào server
+        async function toggleFlag(questionKey) {
             const flagElement = document.querySelector(`.flag-icon[data-question-key="${questionKey}"]`);
-            if (flaggedQuestions.has(questionKey)) {
+            const isFlagged = flaggedQuestions.has(questionKey);
+
+            if (isFlagged) {
                 flaggedQuestions.delete(questionKey);
                 flagElement.classList.remove('flagged');
+                await saveFlaggedQuestion(questionKey, false); // Cập nhật IsFlagged = 0
             } else {
                 flaggedQuestions.add(questionKey);
                 flagElement.classList.add('flagged');
+                await saveFlaggedQuestion(questionKey, true); // Insert hoặc cập nhật IsFlagged = 1
             }
             updateQuestionList();
         }
 
-        console.log('Raw JSON:', '@Html.Raw(Model.QuestionsJson)');
-        console.log('Questions loaded:', questions);
-        console.log('Total questions:', questions.length);
-        console.log('Parent values:', questions.map(q => ({ part: q.part, parent: q.parent, type: typeof q.parent })));
-        questions.forEach((q, index) => console.log(`Question ${index + 1}: Part=${q.part}, Parent=${q.parent}, Order=${q.order}, Children=${q.children ? q.children.length : 0}`));
+        // Hàm selectAnswer (đặt ở đây để đảm bảo được định nghĩa trước khi sử dụng)
+        function selectAnswer(questionKey, answerKey) {
+            const radioButton = document.querySelector(`input[name="answer_${questionKey}"][value="${answerKey}"]`);
+            if (radioButton) {
+                radioButton.checked = true;
+                updateAnswer(questionKey, answerKey);
+            }
+        }
 
         function startTimer() {
             const timerElement = document.getElementById('timer');
@@ -703,18 +156,18 @@
             partQuestions.forEach(question => {
                 const isFlagged = flaggedQuestions.has(question.questionKey);
                 html += `
-                    <div class="question-container" id="question-${question.questionKey}">
-                        <h2>Question ${question.order}</h2>
-                        <span class="flag-icon ${isFlagged ? 'flagged' : ''}" data-question-key="${question.questionKey}"><i class="fas fa-flag"></i></span>
-                        ${question.questionImage ? `<img src="${resourceBaseUrl}${question.questionImage}" alt="Question Image" class="question-image" loading="lazy">` : ''}
-                        ${question.questionVoice ? `
-                            <audio controls class="question-audio">
-                                <source src="${resourceBaseUrl}${question.questionVoice}" type="audio/mpeg">
-                                Your browser does not support the audio element.
-                            </audio>` : ''}
-                        ${question.questionText ? `<div class="question-text">${question.questionText}</div>` : ''}
-                        <div class="answer-options">
-                `;
+                        <div class="question-container" id="question-${question.questionKey}">
+                            <h2>Question ${question.order}</h2>
+                            <span class="flag-icon ${isFlagged ? 'flagged' : ''}" data-question-key="${question.questionKey}"><i class="fas fa-flag"></i></span>
+                            ${question.questionImage ? `<img src="${resourceBaseUrl}${question.questionImage}" alt="Question Image" class="question-image" loading="lazy">` : ''}
+                            ${question.questionVoice ? `
+                                <audio controls class="question-audio">
+                                    <source src="${resourceBaseUrl}${question.questionVoice}" type="audio/mpeg">
+                                    Your browser does not support the audio element.
+                                </audio>` : ''}
+                            ${question.questionText ? `<div class="question-text">${question.questionText}</div>` : ''}
+                            <div class="answer-options">
+                    `;
                 question.answers.forEach((answer, idx) => {
                     const label = (currentPart === 1 || currentPart === 2)
                         ? (answer.ranking === 1 ? 'A' : answer.ranking === 2 ? 'B' : answer.ranking === 3 ? 'C' : answer.ranking === 4 ? 'D' : '?')
@@ -722,15 +175,15 @@
                     const isChecked = answer.answerKey === question.userAnswerKey ? 'checked' : '';
                     const isSelected = answer.answerKey === question.userAnswerKey ? 'selected' : '';
                     html += `
-                        <div class="answer-option ${isSelected}">
-                            <input type="radio" name="answer_${question.questionKey}" id="answer_${answer.answerKey}"
-                                   value="${answer.answerKey}" ${isChecked} onchange="updateAnswer('${question.questionKey}', this.value)">
-                            <label for="answer_${answer.answerKey}">
-                                <span class="label-text">${label}</span>
-                                ${currentPart === 1 || currentPart === 2 ? '' : `<span class="colon">:</span> <span class="answer-content">${answer.answerText}</span>`}
-                            </label>
-                        </div>
-                    `;
+                            <div class="answer-option ${isSelected}" onclick="selectAnswer('${question.questionKey}', '${answer.answerKey}')">
+                                <input type="radio" name="answer_${question.questionKey}" id="answer_${answer.answerKey}"
+                                       value="${answer.answerKey}" ${isChecked}>
+                                <label for="answer_${answer.answerKey}">
+                                    <span class="label-text">${label}</span>
+                                    ${currentPart === 1 || currentPart === 2 ? '' : `<span class="colon">:</span> <span class="answer-content">${answer.answerText}</span>`}
+                                </label>
+                            </div>
+                        `;
                 });
                 html += '</div></div>';
             });
@@ -755,49 +208,49 @@
 
             parentQuestions.forEach(parent => {
                 html += `
-                    <div class="part3-container">
-                        <div class="part3-left">
-                            <h2>Part ${currentPart}: Conversation</h2>
-                            ${parent.questionImage ? `<img src="${resourceBaseUrl}${parent.questionImage}" alt="Part ${currentPart} Image" class="question-image" loading="lazy">` : ''}
-                            ${parent.questionVoice ? `
-                                <audio controls class="question-audio">
-                                    <source src="${resourceBaseUrl}${parent.questionVoice}" type="audio/mpeg">
-                                    Your browser does not support the audio element.
-                                </audio>` : ''}
-                            ${parent.questionText ? `<div class="question-text">${parent.questionText}</div>` : ''}
-                        </div>
-                        <div class="part3-right">
-                `;
+                        <div class="part3-container">
+                            <div class="part3-left">
+                                <h2>Part ${currentPart}: Conversation</h2>
+                                ${parent.questionImage ? `<img src="${resourceBaseUrl}${parent.questionImage}" alt="Part ${currentPart} Image" class="question-image" loading="lazy">` : ''}
+                                ${parent.questionVoice ? `
+                                    <audio controls class="question-audio">
+                                        <source src="${resourceBaseUrl}${parent.questionVoice}" type="audio/mpeg">
+                                        Your browser does not support the audio element.
+                                    </audio>` : ''}
+                                ${parent.questionText ? `<div class="question-text">${parent.questionText}</div>` : ''}
+                            </div>
+                            <div class="part3-right">
+                    `;
                 const children = parent.children || [];
                 children.forEach(child => {
                     const isFlagged = flaggedQuestions.has(child.questionKey);
                     html += `
-                        <div class="sub-question" id="question-${child.questionKey}">
-                            <h4>Question ${child.order}${child.questionText ? `<span class="question-content">: ${child.questionText}</span>` : ''}</h4>
-                            <span class="flag-icon ${isFlagged ? 'flagged' : ''}" data-question-key="${child.questionKey}"><i class="fas fa-flag"></i></span>
-                            ${child.questionImage ? `<img src="${resourceBaseUrl}${child.questionImage}" alt="Sub Question Image" class="sub-question-image" loading="lazy">` : ''}
-                            ${child.questionVoice ? `
-                                <audio controls class="sub-question-audio">
-                                    <source src="${resourceBaseUrl}${child.questionVoice}" type="audio/mpeg">
-                                    Your browser does not support the audio element.
-                                </audio>` : ''}
-                            <div class="answer-options">
-                    `;
+                            <div class="sub-question" id="question-${child.questionKey}">
+                                <h4>Question ${child.order}${child.questionText ? `<span class="question-content">: ${child.questionText}</span>` : ''}</h4>
+                                <span class="flag-icon ${isFlagged ? 'flagged' : ''}" data-question-key="${child.questionKey}"><i class="fas fa-flag"></i></span>
+                                ${child.questionImage ? `<img src="${resourceBaseUrl}${child.questionImage}" alt="Sub Question Image" class="sub-question-image" loading="lazy">` : ''}
+                                ${child.questionVoice ? `
+                                    <audio controls class="sub-question-audio">
+                                        <source src="${resourceBaseUrl}${child.questionVoice}" type="audio/mpeg">
+                                        Your browser does not support the audio element.
+                                    </audio>` : ''}
+                                <div class="answer-options">
+                        `;
                     child.answers.forEach((answer, idx) => {
                         const label = String.fromCharCode(65 + idx);
                         const isChecked = answer.answerKey === child.userAnswerKey ? 'checked' : '';
                         const isSelected = answer.answerKey === child.userAnswerKey ? 'selected' : '';
                         html += `
-                            <div class="answer-option ${isSelected}">
-                                <input type="radio" name="answer_${child.questionKey}" id="answer_${answer.answerKey}"
-                                       value="${answer.answerKey}" ${isChecked} onchange="updateAnswer('${child.questionKey}', this.value)">
-                                <label for="answer_${answer.answerKey}">
-                                    <span class="label-text">${label}</span>
-                                    <span class="colon">:</span>
-                                    <span class="answer-content">${answer.answerText}</span>
-                                </label>
-                            </div>
-                        `;
+                                <div class="answer-option ${isSelected}" onclick="selectAnswer('${child.questionKey}', '${answer.answerKey}')">
+                                    <input type="radio" name="answer_${child.questionKey}" id="answer_${answer.answerKey}"
+                                           value="${answer.answerKey}" ${isChecked}>
+                                    <label for="answer_${answer.answerKey}">
+                                        <span class="label-text">${label}</span>
+                                        <span class="colon">:</span>
+                                        <span class="answer-content">${answer.answerText}</span>
+                                    </label>
+                                </div>
+                            `;
                     });
                     html += '</div></div>';
                 });
@@ -823,7 +276,18 @@
         }
 
         function updateAnswer(questionKey, answerKey) {
-            const question = questions.find(q => q.questionKey === questionKey);
+            // Tìm câu hỏi trong toàn bộ cấu trúc (câu hỏi cha và con)
+            let question = questions.find(q => q.questionKey === questionKey);
+            if (!question) {
+                // Nếu không tìm thấy trong câu hỏi cha, tìm trong câu hỏi con
+                for (const parent of questions) {
+                    if (parent.children) {
+                        question = parent.children.find(child => child.questionKey === questionKey);
+                        if (question) break;
+                    }
+                }
+            }
+
             if (question) {
                 question.userAnswerKey = answerKey;
                 const answerOptions = document.querySelectorAll(`.answer-option input[name="answer_${questionKey}"]`);
@@ -836,6 +300,8 @@
                     }
                 });
                 updateQuestionList();
+            } else {
+                console.error(`Question with key ${questionKey} not found.`);
             }
         }
 
@@ -884,7 +350,8 @@
             document.querySelector('.sidebar-right').classList.toggle('active');
         }
 
-        window.onload = function () {
+        window.onload = async function () {
+            await loadFlaggedQuestions(); // Tải trạng thái gắn cờ khi load trang
             startTimer();
             renderContent();
             updateQuestionList();
@@ -925,3 +392,650 @@
     </script>
 </body>
 </html>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    html, body {
+        height: 100vh;
+        margin: 0;
+        overflow: hidden;
+    }
+
+    body {
+        font-family: 'Poppins', sans-serif;
+        background: linear-gradient(135deg, #B3E5FC, #FFECB3);
+        display: flex;
+        position: relative;
+    }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('https://www.transparenttextures.com/patterns/stardust.png');
+            opacity: 0.1;
+            z-index: 0;
+        }
+
+    .flag-icon {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        font-size: 1.5rem;
+        color: #FF9800;
+        cursor: pointer;
+        transition: transform 0.3s ease, color 0.3s ease;
+    }
+
+        .flag-icon.flagged {
+            color: #D32F2F;
+        }
+
+        .flag-icon:hover {
+            transform: scale(1.2);
+            color: #FFB300;
+        }
+
+    .question-circle.flagged {
+        background: #F44336 !important;
+        color: white !important;
+    }
+
+    .question-container, .sub-question {
+        position: relative;
+    }
+
+    .header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        background: linear-gradient(90deg, #FFECB3, #B3E5FC);
+        padding: 10px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        z-index: 10;
+        animation: slideInDown 1s ease-in-out;
+    }
+
+    .hamburger-btn {
+        display: none;
+        font-size: 1.5rem;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #0288D1;
+    }
+
+    @@media (max-width: 768px) {
+        .hamburger-btn {
+            display: block;
+        }
+    }
+
+    .exit-btn, .submit-btn {
+        padding: 8px 20px;
+        border: none;
+        border-radius: 5px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+    }
+
+    .exit-btn {
+        background: #f44336;
+        color: white;
+    }
+
+        .exit-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            background: #d32f2f;
+        }
+
+    .submit-btn {
+        background: #4CAF50;
+        color: white;
+    }
+
+        .submit-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            background: #388E3C;
+        }
+
+    .timer {
+        font-size: 1.5rem;
+        font-weight: 600;
+        background: linear-gradient(90deg, #0288D1, #4FC3F7);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: pulse 2s infinite;
+    }
+
+        .timer.warning {
+            background: linear-gradient(90deg, #F44336, #EF5350);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: blink 1s infinite;
+        }
+
+    @@keyframes blink {
+        0% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.5;
+        }
+
+        100% {
+            opacity: 1;
+        }
+    }
+
+    .sidebar-left {
+        width: 150px;
+        background: #FFECB3;
+        padding: 20px 10px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        height: calc(100vh - 60px);
+        position: fixed;
+        left: 0;
+        top: 60px;
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+        z-index: 1;
+    }
+
+    .part-btn {
+        background: #B3E5FC;
+        color: #333;
+        padding: 10px;
+        border: none;
+        border-radius: 5px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+        animation: fadeInUp 0.5s ease-in-out;
+        flex: 1;
+        margin: 5px 0;
+    }
+
+        .part-btn:hover {
+            background: #81D4FA;
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .part-btn.active {
+            background: #0288D1;
+            color: white;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+            animation: pulse 1s infinite;
+        }
+
+    .sidebar-right {
+        width: 150px;
+        background: #FFECB3;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        height: calc(100vh - 60px);
+        position: fixed;
+        right: 0;
+        top: 60px;
+        box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+        overflow-y: auto;
+        z-index: 1;
+    }
+
+        .sidebar-right h3 {
+            background: linear-gradient(90deg, #0288D1, #4FC3F7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: slideInDown 1s ease-in-out;
+            margin-bottom: 20px;
+        }
+
+    .answer-option.selected {
+        background: #4FC3F7;
+    }
+
+    .part-section {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+        .part-section h4 {
+            color: #333;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            animation: fadeIn 1s ease-in-out;
+            width: 100%;
+            text-align: center;
+        }
+
+    .answered-count {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #0288D1;
+        margin-bottom: 10px;
+        text-align: center;
+    }
+
+    .question-circle {
+        width: 40px;
+        height: 40px;
+        background: #B3E5FC;
+        color: #333;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 50%;
+        font-weight: 600;
+        text-decoration: none;
+        transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+        animation: zoomIn 0.5s ease-in-out;
+    }
+
+        .question-circle.selected {
+            background: #0288D1;
+            color: white;
+        }
+
+        .question-circle:hover {
+            background: #81D4FA;
+            transform: scale(1.2);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .question-circle.active {
+            background: #0288D1;
+            color: white;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+            animation: pulse 1s infinite;
+        }
+
+    .main-content {
+        margin-left: 150px;
+        margin-right: 150px;
+        padding: 80px 20px 20px;
+        flex: 1;
+        overflow-y: auto;
+        min-height: calc(100vh - 60px);
+        -webkit-overflow-scrolling: touch;
+        position: relative;
+    }
+
+    .main-content-wrapper {
+        min-height: 100%;
+        padding-bottom: 20px;
+    }
+
+    .question-container {
+        background: #FFFFFF;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        max-width: 800px;
+        margin: 0 auto 20px;
+        text-align: center;
+        animation: zoomIn 1s ease-in-out;
+    }
+
+        .question-container h2 {
+            font-weight: 600;
+            color: #000;
+        }
+
+    .part3-left h2 {
+        font-weight: 600;
+        color: #000;
+    }
+
+    .question-image {
+        width: 300px;
+        height: 300px;
+        object-fit: cover;
+        border-radius: 10px;
+        margin: 0 auto 20px;
+        display: block;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        animation: fadeIn 1.5s ease-in-out;
+        transition: transform 0.3s ease;
+    }
+
+        .question-image:hover {
+            transform: scale(1.05);
+        }
+
+    .question-audio {
+        margin-bottom: 20px;
+        width: 100%;
+        border-radius: 5px;
+        background: #B3E5FC;
+        padding: 5px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        animation: fadeIn 1.5s ease-in-out;
+    }
+
+        .question-audio:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+    .question-text {
+        font-size: 1.2rem;
+        font-weight: normal;
+        color: #000;
+        margin-bottom: 20px;
+        background: none;
+        -webkit-background-clip: initial;
+        -webkit-text-fill-color: initial;
+        animation: slideInDown 1s ease-in-out;
+    }
+
+    .answer-options {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .answer-option {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        background: #B3E5FC;
+        padding: 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+        .answer-option:hover {
+            background: #81D4FA;
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .answer-option input {
+            margin: 0;
+        }
+
+        .answer-option label {
+            display: flex;
+            align-items: center;
+            font-size: 1rem;
+            color: #333;
+            margin: 0;
+            gap: 2px;
+        }
+
+        .answer-option .label-text {
+            font-weight: 600;
+            color: #000;
+            min-width: 15px;
+            text-align: left;
+            margin-right: -3px;
+        }
+
+        .answer-option .answer-content {
+            font-weight: normal;
+            color: #000;
+            font-size: 0.95rem;
+            line-height: 1;
+        }
+
+        .answer-option .colon {
+            font-weight: normal;
+            color: #000;
+            line-height: 1;
+            position: relative;
+            top: -1.5px;
+        }
+
+    .sub-question h4 .question-content {
+        font-weight: normal;
+        color: #000;
+    }
+
+    .part3-container {
+        display: flex;
+        gap: 20px;
+        background: #FFFFFF;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        max-width: 1000px;
+        margin: 0 auto 20px;
+        animation: zoomIn 1s ease-in-out;
+        position: relative; /* Để hỗ trợ đường kẻ chia */
+    }
+    .part3-left, .part3-right {
+        flex: 1;
+    }
+
+    .part3-left {
+        text-align: center;
+        border-right: 2px solid #B3E5FC; /* Đường kẻ chia dọc */
+        padding-right: 20px; /* Khoảng cách giữa đường kẻ và nội dung */
+    }
+
+    .part3-right {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        max-height: calc(100vh - 120px); /* Giới hạn chiều cao, trừ header và padding */
+        overflow-y: auto; /* Thêm thanh cuộn dọc */
+        padding: 10px;
+        /* Hiệu ứng fade-out ở đầu và cuối */
+        -webkit-mask-image: linear-gradient( to bottom, transparent 0%, black 5%, black 95%, transparent 100% );
+        mask-image: linear-gradient( to bottom, transparent 0%, black 5%, black 95%, transparent 100% );
+    }
+
+        .part3-right::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .part3-right::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .part3-right::-webkit-scrollbar-thumb {
+            background: #B3E5FC;
+            border-radius: 10px;
+        }
+
+            .part3-right::-webkit-scrollbar-thumb:hover {
+                background: #81D4FA;
+            }
+
+
+    .sub-question {
+        background: #FFECB3;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        animation: fadeInUp 1s ease-in-out;
+    }
+
+        .sub-question h4 {
+            font-weight: 600;
+            color: #000;
+        }
+
+    .sub-question-image {
+        width: 150px;
+        height: 150px;
+        object-fit: cover;
+        border-radius: 10px;
+        margin: 0 auto 10px;
+        display: block;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+        animation: fadeIn 1.5s ease-in-out;
+    }
+
+        .sub-question-image:hover {
+            transform: scale(1.05);
+        }
+
+    .sub-question-audio {
+        width: 100%;
+        border-radius: 5px;
+        background: #B3E5FC;
+        padding: 5px;
+        margin-bottom: 10px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        animation: fadeIn 1.5s ease-in-out;
+    }
+
+        .sub-question-audio:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+    @@keyframes zoomIn {
+        from {
+            transform: scale(0.5);
+            opacity: 0;
+        }
+
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    @@keyframes slideInDown {
+        from {
+            transform: translateY(-50px);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    @@keyframes fadeInUp {
+        from {
+            transform: translateY(50px);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    @@keyframes pulse {
+        0% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.05);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .sidebar-left, .sidebar-right {
+            width: 100%;
+            height: auto;
+            position: fixed;
+            top: 60px;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            z-index: 100;
+        }
+
+        .sidebar-right {
+            transform: translateX(100%);
+        }
+
+            .sidebar-left.active, .sidebar-right.active {
+                transform: translateX(0);
+            }
+
+        .main-content {
+            margin-left: 0;
+            margin-right: 0;
+            padding: 60px 10px 10px;
+        }
+
+        .question-circle {
+            width: 40px;
+            height: 40px;
+            background: #B3E5FC;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 50%;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+            animation: zoomIn 0.5s ease-in-out;
+        }
+
+        .part-btn {
+            font-size: 0.9rem;
+            padding: 8px;
+        }
+
+        .question-image, .sub-question-image {
+            width: 200px;
+            height: 200px;
+        }
+
+        .part3-container {
+            flex-direction: column;
+        }
+
+        .part3-left {
+            border-right: none; /* Xóa đường kẻ dọc trên mobile */
+            border-bottom: 2px solid #B3E5FC; /* Thêm đường kẻ ngang */
+            padding-right: 0;
+            padding-bottom: 20px;
+        }
+
+        .part3-right {
+            max-height: 50vh; /* Giới hạn chiều cao trên mobile */
+            -webkit-mask-image: linear-gradient( to bottom, transparent 0%, black 5%, black 95%, transparent 100% );
+            mask-image: linear-gradient( to bottom, transparent 0%, black 5%, black 95%, transparent 100% );
+    }
+</style>

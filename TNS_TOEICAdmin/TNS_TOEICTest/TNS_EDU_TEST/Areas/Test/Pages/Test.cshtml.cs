@@ -10,6 +10,7 @@ using TNS_EDU_TEST.Areas.Test.Models;
 
 namespace TNS_EDU_TEST.Areas.Test.Pages
 {
+    [IgnoreAntiforgeryToken]
     [Authorize]
     public class TestModel : PageModel
     {
@@ -64,6 +65,37 @@ namespace TNS_EDU_TEST.Areas.Test.Pages
             }
 
             return Page();
+        }
+        [HttpPost("SaveFlaggedQuestion")]
+        public async Task<IActionResult> OnPostSaveFlaggedQuestion([FromBody] FlaggedQuestionDto dto)
+        {
+            if (string.IsNullOrEmpty(dto.ResultKey) || string.IsNullOrEmpty(dto.QuestionKey) ||
+                !Guid.TryParse(dto.ResultKey, out Guid resultKey) || !Guid.TryParse(dto.QuestionKey, out Guid questionKey))
+            {
+                return new JsonResult(new { success = false, message = "Invalid ResultKey or QuestionKey" }) { StatusCode = 400 };
+            }
+
+            await TestAccessData.SaveFlaggedQuestion(resultKey, questionKey, dto.IsFlagged);
+            return new JsonResult(new { success = true }) { StatusCode = 200 };
+        }
+
+        [HttpGet("GetFlaggedQuestions")]
+        public async Task<IActionResult> OnGetFlaggedQuestions(string resultKey)
+        {
+            if (string.IsNullOrEmpty(resultKey) || !Guid.TryParse(resultKey, out Guid resultKeyGuid))
+            {
+                return new JsonResult(new { success = false, message = "Invalid ResultKey" }) { StatusCode = 400 };
+            }
+
+            var flaggedQuestions = await TestAccessData.GetFlaggedQuestions(resultKeyGuid);
+            return new JsonResult(flaggedQuestions) { StatusCode = 200 };
+        }
+
+        public class FlaggedQuestionDto
+        {
+            public string ResultKey { get; set; }
+            public string QuestionKey { get; set; }
+            public bool IsFlagged { get; set; }
         }
     }
 }
