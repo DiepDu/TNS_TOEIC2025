@@ -20,4 +20,11 @@
 		<Folder Include="wwwroot\lib\tinymce\plugins\contextmenu\" />
 		<Folder Include="wwwroot\lib\tinymce\plugins\textcolor\" />
 	</ItemGroup>
+
+	<ItemGroup>
+	  <Content Update="wwwroot\css\Test.css">
+	    <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+	    <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+	  </Content>
+	</ItemGroup>
 </Project>
