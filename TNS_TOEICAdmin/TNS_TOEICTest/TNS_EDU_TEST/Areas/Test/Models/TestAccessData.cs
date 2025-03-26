@@ -434,10 +434,11 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                 }
 
                 // 4. Xử lý câu trả lời sai và lưu vào UsersError
+                // 4. Xử lý câu trả lời sai và lưu vào UsersError
                 string wrongAnswersSql = @"
-            SELECT ResultKey, QuestionKey, SelectAnswerKey, Part
-            FROM [UserAnswers]
-            WHERE ResultKey = @ResultKey AND IsCorrect = 0 AND RecordStatus != 99";
+    SELECT ResultKey, QuestionKey, SelectAnswerKey, Part
+    FROM [UserAnswers]
+    WHERE ResultKey = @ResultKey AND IsCorrect = 0 AND RecordStatus != 99";
                 using (var cmd = new SqlCommand(wrongAnswersSql, conn))
                 {
                     cmd.Parameters.AddWithValue("@ResultKey", resultKey);
@@ -462,11 +463,12 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                             string answerTable = $"TEC_Part{part}_Answer";
                             string questionTable = $"TEC_Part{part}_Question";
                             string answerSql = $@"
-                        SELECT a.ErrorType, a.GrammarTopic, a.VocabularyTopic, a.Category, a.QuestionKey
-                        FROM [{answerTable}] a
-                        WHERE a.AnswerKey = @AnswerKey";
+                SELECT a.ErrorType, a.GrammarTopic, a.VocabularyTopic, a.Category, a.QuestionKey
+                FROM [{answerTable}] a
+                WHERE a.AnswerKey = @AnswerKey";
                             Guid? errorType = null, grammarTopic = null, vocabularyTopic = null, categoryTopic = null;
                             Guid answerQuestionKey;
+                            int? skillLevel = null; // Biến để lưu SkillLevel
 
                             using (var answerCmd = new SqlCommand(answerSql, conn))
                             {
@@ -488,13 +490,30 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                                 }
                             }
 
+                            // Lấy SkillLevel từ TEC_PartX_Question
+                            string skillLevelSql = $@"
+                SELECT SkillLevel
+                FROM [{questionTable}]
+                WHERE QuestionKey = @QuestionKey";
+                            using (var skillLevelCmd = new SqlCommand(skillLevelSql, conn))
+                            {
+                                skillLevelCmd.Parameters.AddWithValue("@QuestionKey", answerQuestionKey);
+                                using (var skillLevelReader = await skillLevelCmd.ExecuteReaderAsync())
+                                {
+                                    if (await skillLevelReader.ReadAsync())
+                                    {
+                                        skillLevel = skillLevelReader.IsDBNull(0) ? (int?)null : skillLevelReader.GetInt32(0);
+                                    }
+                                }
+                            }
+
                             // Nếu có cột NULL, lấy từ TEC_PartX_Question
                             if (errorType == null || grammarTopic == null || vocabularyTopic == null || categoryTopic == null)
                             {
                                 string questionSql = $@"
-                            SELECT ErrorType, GrammarTopic, VocabularyTopic, Category
-                            FROM [{questionTable}]
-                            WHERE QuestionKey = @QuestionKey";
+                    SELECT ErrorType, GrammarTopic, VocabularyTopic, Category
+                    FROM [{questionTable}]
+                    WHERE QuestionKey = @QuestionKey";
                                 using (var questionCmd = new SqlCommand(questionSql, conn))
                                 {
                                     questionCmd.Parameters.AddWithValue("@QuestionKey", answerQuestionKey);
@@ -511,10 +530,10 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                                 }
                             }
 
-                            // Lưu vào UsersError
+                            // Lưu vào UsersError, bao gồm SkillLevel
                             string insertErrorSql = @"
-                        INSERT INTO [UsersError] (ErrorKey, AnswerKey, UserKey, ResultKey, ErrorType, GrammarTopic, VocabularyTopic, CategoryTopic, ErrorDate, Part)
-                        VALUES (@ErrorKey, @AnswerKey, @UserKey, @ResultKey, @ErrorType, @GrammarTopic, @VocabularyTopic, @CategoryTopic, @ErrorDate, @Part)";
+                INSERT INTO [UsersError] (ErrorKey, AnswerKey, UserKey, ResultKey, ErrorType, GrammarTopic, VocabularyTopic, CategoryTopic, ErrorDate, Part, SkillLevel)
+                VALUES (@ErrorKey, @AnswerKey, @UserKey, @ResultKey, @ErrorType, @GrammarTopic, @VocabularyTopic, @CategoryTopic, @ErrorDate, @Part, @SkillLevel)";
                             using (var insertCmd = new SqlCommand(insertErrorSql, conn))
                             {
                                 insertCmd.Parameters.AddWithValue("@ErrorKey", Guid.NewGuid());
@@ -527,6 +546,7 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                                 insertCmd.Parameters.AddWithValue("@CategoryTopic", (object)categoryTopic ?? DBNull.Value);
                                 insertCmd.Parameters.AddWithValue("@ErrorDate", DateTime.Now);
                                 insertCmd.Parameters.AddWithValue("@Part", part);
+                                insertCmd.Parameters.AddWithValue("@SkillLevel", (object)skillLevel ?? DBNull.Value); // Thêm SkillLevel
                                 await insertCmd.ExecuteNonQueryAsync();
                             }
                         }
