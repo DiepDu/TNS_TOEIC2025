@@ -546,8 +546,10 @@ namespace TNS_EDU_TEST.Areas.Test.Models
         public string QuestionVoice { get; set; }
         public Guid? Parent { get; set; }
         public int Ranking { get; set; }
+        public string Explanation { get; set; }
         public List<TestAnswer> Answers { get; set; }
         public string UserAnswerKey { get; set; }
+        public bool? IsCorrect { get; set; }
         public List<TestQuestion> Children { get; set; } = new List<TestQuestion>();
     }
 

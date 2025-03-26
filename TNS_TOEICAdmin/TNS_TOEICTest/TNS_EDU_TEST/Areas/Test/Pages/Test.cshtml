@@ -577,7 +577,8 @@ function submitTest() {
 
                 const data = await response.json();
                 if (response.ok && data.success) {
-                    window.location.href = `/Test/Result?resultKey=${resultKey}`;
+                    // Cập nhật URL để truyền cả testKey và resultKey
+                    window.location.href = `/Test/ResultTest?testKey=${testKey}&resultKey=${resultKey}`;
                 } else {
                     alert('Error submitting test: ' + (data.message || 'Unknown error'));
                 }

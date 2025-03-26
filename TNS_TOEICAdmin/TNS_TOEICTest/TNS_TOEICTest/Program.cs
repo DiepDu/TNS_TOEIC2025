@@ -6,9 +6,12 @@ builder.Services.AddRazorPages();  // Đăng ký dịch vụ cho Razor Pages
 
 builder.Services.AddRazorPages(options =>
 {
-    // Yêu cầu đăng nhập cho trang Test trong Area Test
+    // Yêu cầu đăng nhập cho trang Test
     options.Conventions.AuthorizeAreaPage("Test", "/Test");
+    // Route cho trang Test
     options.Conventions.AddAreaPageRoute("Test", "/Test", "Test/Test");
+    // Route cho trang ResultTest
+    options.Conventions.AddAreaPageRoute("Test", "/ResultTest", "Test/ResultTest");
 });
 
 builder.Services.AddControllers()
