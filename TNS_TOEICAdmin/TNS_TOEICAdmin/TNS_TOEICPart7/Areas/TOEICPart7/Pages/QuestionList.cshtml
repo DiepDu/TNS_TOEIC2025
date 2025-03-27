@@ -60,6 +60,8 @@
          @*        <th class="text-center align-middle text-light bg-primary" style="width:120px">Audio</th> *@
                 <th class="text-center align-middle text-light bg-primary" style="width:90px">Level</th>
                 <th class="text-center align-middle text-light bg-primary" style="width:120px">Access</th>
+                <th class="text-center align-middle text-light bg-primary" style="width:100px">Correct Rate</th>
+                <th class="text-center align-middle text-light bg-primary" style="width:100px">Anomaly</th>
                 <th class="text-center align-middle text-light bg-primary" style="width:100px">QuestionSubList</th>
                 <th class="text-center align-middle text-light bg-primary" style="width:100px">Status</th>
             </tr>
@@ -149,6 +151,8 @@
             var zNo = 1 + (_PageNumber - 1) * _PageSize;
             for (i = 0; i < n; i++) {
                 var isPublished = _DataView[i].Publish && _DataView[i].RecordStatus !== 99;
+                var correctRate = _DataView[i].CorrectRate !== null ? _DataView[i].CorrectRate + "%" : "N/A";
+                var anomaly = _DataView[i].Anomaly !== null ? _DataView[i].Anomaly : "N/A";
                 zContent += "       <tr>";
                 zContent += "           <td class='centered-cell'>";
                 zContent += "               <div> " + zNo + " </div>";
@@ -157,6 +161,8 @@
                 // zContent += "           <td class='centered-cell'><audio controls class='audio-player'><source src='" + _DataView[i].QuestionVoice + "' type='audio/mp3'></audio></td>";
                 zContent += "           <td class='centered-cell'>" + _DataView[i].SkillLevel + "</td>";
                 zContent += "           <td class='centered-cell'>" + _DataView[i].AmountAccess + "</td>";
+                zContent += "           <td class='centered-cell'>" + correctRate + "</td>";
+                zContent += "           <td class='centered-cell'>" + anomaly + "</td>";
                 zContent += "           <td class='centered-cell'> <button type='button' class='btn btn-warning' onclick='btnQuestionSubList_Click(\"" + _DataView[i].QuestionKey + "\")'>QuestionSubList</button></td>";
                 zContent += "           <td class='centered-cell'><button class='btn-toggle-publish " + (isPublished ? "btn-on" : "btn-off") + "' data-question-key='" + _DataView[i].QuestionKey + "' onclick='togglePublish(this, \"" + _DataView[i].QuestionKey + "\")'>" + (isPublished ? "ON" : "OFF") + "</button></td>";
                 zContent += "       </tr>";

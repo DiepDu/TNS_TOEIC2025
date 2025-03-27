@@ -15,7 +15,7 @@ namespace TNS_TOEICPart6.Areas.TOEICPart6.Models
         public static JsonResult GetList(string Search, int Level, int PageSize, int PageNumber, string StatusFilter)
         {
             string zMessage = "";
-            string zSQL = @"SELECT QuestionKey, QuestionText, SkillLevel, AmountAccess, Publish, RecordStatus 
+            string zSQL = @"SELECT QuestionKey, QuestionText, SkillLevel, AmountAccess, Publish, CorrectRate, Anomaly, RecordStatus 
                        FROM [dbo].[TEC_Part6_Question] 
                        WHERE QuestionText LIKE @Search AND Parent IS NULL
                        AND (QuestionKey IS NOT NULL) ";
@@ -75,7 +75,9 @@ namespace TNS_TOEICPart6.Areas.TOEICPart6.Models
                 SkillLevel = row["SkillLevel"] != DBNull.Value ? Convert.ToInt32(row["SkillLevel"]) : 0,
                 AmountAccess = row["AmountAccess"] != DBNull.Value ? Convert.ToInt32(row["AmountAccess"]) : 0,
                 Publish = row["Publish"] != DBNull.Value ? Convert.ToBoolean(row["Publish"]) : false,
-                RecordStatus = row["RecordStatus"] != DBNull.Value ? Convert.ToInt32(row["RecordStatus"]) : 0
+                RecordStatus = row["RecordStatus"] != DBNull.Value ? Convert.ToInt32(row["RecordStatus"]) : 0,
+                CorrectRate = row["CorrectRate"] != DBNull.Value ? Convert.ToDouble(row["CorrectRate"]) : (double?)null,
+                Anomaly = row["Anomaly"] != DBNull.Value ? Convert.ToInt32(row["Anomaly"]) : (int?)null
             }).ToList();
 
             return new JsonResult(zDataList);
@@ -85,7 +87,7 @@ namespace TNS_TOEICPart6.Areas.TOEICPart6.Models
         public static JsonResult GetList(string Search, int Level, DateTime FromDate, DateTime ToDate, int PageSize, int PageNumber, string StatusFilter)
         {
             string zMessage = "";
-            string zSQL = @"SELECT QuestionKey, QuestionText, SkillLevel, AmountAccess, Publish, RecordStatus 
+            string zSQL = @"SELECT QuestionKey, QuestionText, SkillLevel, AmountAccess, Publish,CorrectRate, Anomaly, RecordStatus 
                        FROM [dbo].[TEC_Part6_Question] 
                        WHERE (CreatedOn >= @FromDate AND CreatedOn <= @ToDate) 
                        AND QuestionText LIKE @Search AND Parent IS NULL
@@ -148,7 +150,9 @@ namespace TNS_TOEICPart6.Areas.TOEICPart6.Models
                 SkillLevel = row["SkillLevel"] != DBNull.Value ? Convert.ToInt32(row["SkillLevel"]) : 0,
                 AmountAccess = row["AmountAccess"] != DBNull.Value ? Convert.ToInt32(row["AmountAccess"]) : 0,
                 Publish = row["Publish"] != DBNull.Value ? Convert.ToBoolean(row["Publish"]) : false,
-                RecordStatus = row["RecordStatus"] != DBNull.Value ? Convert.ToInt32(row["RecordStatus"]) : 0
+                RecordStatus = row["RecordStatus"] != DBNull.Value ? Convert.ToInt32(row["RecordStatus"]) : 0,
+                    CorrectRate = row["CorrectRate"] != DBNull.Value ? Convert.ToDouble(row["CorrectRate"]) : (double?)null,
+                Anomaly = row["Anomaly"] != DBNull.Value ? Convert.ToInt32(row["Anomaly"]) : (int?)null
             }).ToList();
 
             return new JsonResult(zDataList);

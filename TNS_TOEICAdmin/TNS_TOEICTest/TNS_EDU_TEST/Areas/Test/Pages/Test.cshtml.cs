@@ -40,10 +40,10 @@ namespace TNS_EDU_TEST.Areas.Test.Pages
             }
 
             TimeRemaining = endTime.Value - DateTime.Now;
-            if (TimeRemaining <= TimeSpan.Zero)
-            {
-                return RedirectToPage("/Result", new { resultKey = ResultKey.ToString() });
-            }
+            //if (TimeRemaining <= TimeSpan.Zero)
+            //{
+            //    return RedirectToPage("/Result", new { resultKey = ResultKey.ToString() });
+            //}
 
             Questions = questions;
             var jsonOptions = new JsonSerializerOptions
@@ -137,7 +137,7 @@ namespace TNS_EDU_TEST.Areas.Test.Pages
 
             if (dto.RemainingMinutes < 0)
             {
-                return new JsonResult(new { success = false, message = "Invalid remaining minutes" }) { StatusCode = 400 };
+                dto.RemainingMinutes = 0;
             }
 
             // Lấy userKey từ Claims

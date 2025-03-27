@@ -241,6 +241,7 @@
                 setup: function (editor) {
                     editor.on('init', function () {
                         console.log('TinyMCE initialized for ' + elementId);
+                     
                     });
                 }
             });
@@ -251,6 +252,23 @@
             InitEditor('txtQuestionText');
             InitEditor('txtExplanation');
             loadDropdowns();
+            let editorsInitialized = 0;
+            const checkEditorsReady = () => {
+                editorsInitialized++;
+                if (editorsInitialized === 2) { // Cả txtQuestionText và txtExplanation đều sẵn sàng
+                    loadDropdowns();
+                    if (!questionKey || questionKey === 'undefined' || questionKey === '') {
+                        record = { QuestionKey: null, Parent: parentKey || null };
+                        console.log('No valid QuestionKey, initializing new record with Parent:', parentKey);
+                        RecordView();
+                        updateButtons();
+                        loadInfoData({});
+                    } else {
+                        RecordRead(questionKey);
+                        loadInformation(questionKey);
+                    }
+                }
+            };
 
              const source = $('#Source').text().trim();
             console.log('Source:', source);
