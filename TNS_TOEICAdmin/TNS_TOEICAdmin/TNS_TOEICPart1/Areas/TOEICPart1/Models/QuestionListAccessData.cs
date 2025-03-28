@@ -17,7 +17,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
         public int PageNumber { get; set; }
         public string? StatusFilter { get; set; }
     }
-
+   
     public static class QuestionListDataAccess
     {
         // Phương thức không có ngày
@@ -167,6 +167,121 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
             }).ToList();
 
             return new JsonResult(zDataList);
+        }
+        public static void UpdateStatistics()
+        {
+            const int MIN_ATTEMPTS = 30;
+            const int SCORE_THRESHOLD = 500;
+            const double DIFFICULTY_THRESHOLD = 20;
+            const double EASY_THRESHOLD = 70;
+            const double HARD_THRESHOLD = 30;
+
+            string zConnectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
+            try
+            {
+                using (SqlConnection zConnect = new SqlConnection(zConnectionString))
+                {
+                    zConnect.Open();
+
+                    // Truy vấn dữ liệu cho tất cả 7 Part
+                    string zSQL = @"
+                        SELECT 
+                            ua.QuestionKey,
+                            ua.Part,
+                            COUNT(ua.UAnswerKey) AS TotalAttempts,
+                            SUM(CASE WHEN ua.IsCorrect = 1 THEN 1 ELSE 0 END) AS CorrectAttempts,
+                            SUM(CASE WHEN ua.IsCorrect = 1 AND m.ToeicScoreExam >= @ScoreThreshold THEN 1 ELSE 0 END) AS CorrectHighScore,
+                            SUM(CASE WHEN ua.IsCorrect = 0 AND m.ToeicScoreExam >= @ScoreThreshold THEN 1 ELSE 0 END) AS IncorrectHighScore,
+                            SUM(CASE WHEN ua.IsCorrect = 1 AND m.ToeicScoreExam < @ScoreThreshold THEN 1 ELSE 0 END) AS CorrectLowScore,
+                            SUM(CASE WHEN ua.IsCorrect = 0 AND m.ToeicScoreExam < @ScoreThreshold THEN 1 ELSE 0 END) AS IncorrectLowScore
+                        FROM [dbo].[UserAnswers] ua
+                        LEFT JOIN [dbo].[ResultOfUserForTest] r ON ua.ResultKey = r.ResultKey
+                        LEFT JOIN [dbo].[EDU_Member] m ON r.MemberKey = m.MemberKey
+                        WHERE ua.Part BETWEEN 1 AND 7 -- Lấy tất cả 7 Part
+                        AND m.ToeicScoreExam IS NOT NULL
+                        GROUP BY ua.QuestionKey, ua.Part";
+
+                    DataTable zTable = new DataTable();
+                    using (SqlCommand zCommand = new SqlCommand(zSQL, zConnect))
+                    {
+                        zCommand.Parameters.AddWithValue("@ScoreThreshold", SCORE_THRESHOLD);
+                        using (SqlDataAdapter zAdapter = new SqlDataAdapter(zCommand))
+                        {
+                            zAdapter.Fill(zTable);
+                        }
+                    }
+
+                    var questionStats = zTable.AsEnumerable().Select(row =>
+                    {
+                        int totalAttempts = row["TotalAttempts"] != DBNull.Value ? Convert.ToInt32(row["TotalAttempts"]) : 0;
+                        int correctAttempts = row["CorrectAttempts"] != DBNull.Value ? Convert.ToInt32(row["CorrectAttempts"]) : 0;
+                        int correctHighScore = row["CorrectHighScore"] != DBNull.Value ? Convert.ToInt32(row["CorrectHighScore"]) : 0;
+                        int incorrectHighScore = row["IncorrectHighScore"] != DBNull.Value ? Convert.ToInt32(row["IncorrectHighScore"]) : 0;
+                        int correctLowScore = row["CorrectLowScore"] != DBNull.Value ? Convert.ToInt32(row["CorrectLowScore"]) : 0;
+                        int incorrectLowScore = row["IncorrectLowScore"] != DBNull.Value ? Convert.ToInt32(row["IncorrectLowScore"]) : 0;
+                        int part = Convert.ToInt32(row["Part"]);
+
+                        double? correctRate = null;
+                        int? anomaly = null;
+
+                        if (totalAttempts >= MIN_ATTEMPTS)
+                        {
+                            // Tính CorrectRate
+                            correctRate = totalAttempts > 0 ? Math.Round((double)correctAttempts / totalAttempts * 100, 2) : 0;
+
+                            // Tính tỷ lệ làm đúng theo nhóm
+                            double highScoreCorrectRate = correctHighScore + incorrectHighScore > 0
+                                ? (double)correctHighScore / (correctHighScore + incorrectHighScore) * 100 : 0;
+                            double lowScoreCorrectRate = correctLowScore + incorrectLowScore > 0
+                                ? (double)correctLowScore / (correctLowScore + incorrectLowScore) * 100 : 0;
+
+                            // Xác định bất thường
+                            if (correctRate < HARD_THRESHOLD) // Câu khó
+                            {
+                                anomaly = (lowScoreCorrectRate - highScoreCorrectRate > DIFFICULTY_THRESHOLD) ? 1 : 0;
+                            }
+                            else if (correctRate > EASY_THRESHOLD) // Câu dễ
+                            {
+                                anomaly = ((100 - lowScoreCorrectRate) - (100 - highScoreCorrectRate) > DIFFICULTY_THRESHOLD) ? 1 : 0;
+                            }
+                            else
+                            {
+                                anomaly = 0; // Câu trung bình
+                            }
+                        }
+
+                        return new
+                        {
+                            QuestionKey = row["QuestionKey"].ToString(),
+                            Part = part,
+                            CorrectRate = correctRate,
+                            Anomaly = anomaly
+                        };
+                    }).ToList();
+
+                    // Cập nhật dữ liệu cho từng Part
+                    foreach (var stat in questionStats)
+                    {
+                        string tableName = $"[dbo].[TEC_Part{stat.Part}_Question]";
+                        string updateSQL = $@"
+                            UPDATE {tableName}
+                            SET CorrectRate = @CorrectRate, 
+                                Anomaly = @Anomaly
+                            WHERE QuestionKey = @QuestionKey";
+                        using (SqlCommand updateCommand = new SqlCommand(updateSQL, zConnect))
+                        {
+                            updateCommand.Parameters.AddWithValue("@QuestionKey", stat.QuestionKey);
+                            updateCommand.Parameters.AddWithValue("@CorrectRate", (object)stat.CorrectRate ?? DBNull.Value);
+                            updateCommand.Parameters.AddWithValue("@Anomaly", (object)stat.Anomaly ?? DBNull.Value);
+                            updateCommand.ExecuteNonQuery();
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error updating statistics: " + ex.Message);
+            }
         }
     }
 }

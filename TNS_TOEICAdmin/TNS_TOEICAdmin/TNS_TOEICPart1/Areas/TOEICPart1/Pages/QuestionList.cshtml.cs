@@ -60,7 +60,22 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
             }
             return zResult;
         }
+        public IActionResult OnPostUpdateStatistics()
+        {
+            CheckAuth();
+            if (!UserLogin.Role.IsUpdate)
+                return new JsonResult(new { status = "ERROR", message = "ACCESS DENIED" });
 
+            try
+            {
+                QuestionListDataAccess.UpdateStatistics();
+                return new JsonResult(new { status = "OK", message = "Statistics updated successfully" });
+            }
+            catch (Exception ex)
+            {
+                return new JsonResult(new { status = "ERROR", message = ex.Message });
+            }
+        }
         public IActionResult OnPostTogglePublish([FromBody] ToggleRequest request)
         {
             CheckAuth();

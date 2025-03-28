@@ -52,7 +52,29 @@
     .btn-off {
         background-color: #6c757d; /* Màu xám khi tắt */
         color: white;
+
     }
+.btn-info {
+    font-size: 20px;
+    background-color: #17a2b8;
+    color: white;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.3s ease-in-out, transform 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-info:hover {
+    background-color: #138496;
+    transform: scale(1.1);
+}
+
+.btn-info.loading {
+    animation: spin 1s linear infinite;
+}
+
 </style>
 <link href="~/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
 <link href="~/lib/datatables/css/dataTables.min.css" rel="stylesheet" type="text/css" />
@@ -97,6 +119,7 @@
         </div>
     </div>
     <div class="col-md-2 text-end">
+        <button class="btn btn-info" onclick="UpdateStatistics()">↻</button>
         <a href="/TOEICPart1/Question" class="btn btn-success" role="button" aria-pressed="true"> <i class="uil-file-blank"></i>Add New</a>
     </div>
 </div>
@@ -142,6 +165,34 @@
 
 @section Scripts {
     <script>
+        function UpdateStatistics() {
+            let btn = document.querySelector(".btn-info");
+
+            if (confirm("Bạn có chắc chắn muốn cập nhật thống kê cho tất cả câu hỏi không?")) {
+                btn.classList.add("loading");
+                btn.disabled = true;
+
+                $.ajax({
+                    type: 'POST',
+                    url: "/TOEICPart1/QuestionList?handler=UpdateStatistics",
+                    contentType: "application/json",
+                    dataType: "json"
+                })
+                    .done(function (data) {
+                        alert(data.status === "OK" ? "Cập nhật thành công!" : "Lỗi: " + data.message);
+                        LV_LoadData_Ajax();
+                    })
+                    .fail(function (error) {
+                        alert("Lỗi: " + error.responseText);
+                    })
+                    .always(function () {
+                        btn.classList.remove("loading");
+                        btn.disabled = false;
+                    });
+            }
+        }
+
+
         $(document).ready(function () {
             LV_LoadData_Ajax();
         });
