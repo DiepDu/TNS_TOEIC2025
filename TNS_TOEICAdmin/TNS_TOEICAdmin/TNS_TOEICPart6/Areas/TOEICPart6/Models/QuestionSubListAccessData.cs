@@ -14,7 +14,7 @@ namespace TNS_TOEICPart6.Areas.TOEICPart6.Models
         public static JsonResult GetList(string QuestionKey)
         {
             string zMessage = "";
-            string zSQL = @"SELECT QuestionKey, QuestionText, Ranking";
+            string zSQL = @"SELECT QuestionKey, QuestionText,QuestionImage, SkillLevel, AmountAccess, CorrectRate, Anomaly, Ranking";
             zSQL += " FROM [dbo].[TEC_Part6_Question] ";
             zSQL += " WHERE RecordStatus != 99 AND Parent = @QuestionKey";
             zSQL += " ORDER BY Ranking ";
@@ -36,8 +36,17 @@ namespace TNS_TOEICPart6.Areas.TOEICPart6.Models
             {
                 zMessage = ex.ToString();
             }
-            var zDataList = zTable.AsEnumerable().Select(row => zTable.Columns.Cast<DataColumn>()
-             .ToDictionary(col => col.ColumnName, col => row[col])).ToList();
+            var zDataList = zTable.AsEnumerable().Select(row => new Dictionary<string, object>
+    {
+        { "QuestionKey", row["QuestionKey"] },
+        { "QuestionText", row["QuestionText"] },
+        { "QuestionImage", row["QuestionImage"] },
+        { "SkillLevel", row["SkillLevel"] },
+        { "AmountAccess", row["AmountAccess"] },
+        { "CorrectRate", row["CorrectRate"] == DBNull.Value ? null : Convert.ToDouble(row["CorrectRate"]) },
+        { "Anomaly", row["Anomaly"] == DBNull.Value ? null : Convert.ToInt32(row["Anomaly"]) },
+        { "Ranking", row["Ranking"] }
+    }).ToList();
 
             return new JsonResult(zDataList);
 

@@ -36,6 +36,11 @@
             <tr>
                 <th class="text-center align-middle text-light bg-primary" style="width:80px">No</th>
                 <th class="text-center align-middle text-light bg-primary">Question</th>
+                <th class="text-center align-middle text-light bg-primary" style="width:120px">Image</th>
+                <th class="text-center align-middle text-light bg-primary" style="width:90px">Level</th>
+                <th class="text-center align-middle text-light bg-primary" style="width:120px">Access</th>
+                <th class="text-center align-middle text-light bg-primary" style="width:100px">Correct Rate</th>
+                <th class="text-center align-middle text-light bg-primary" style="width:100px">Anomaly</th>
                 <th class="text-center align-middle text-light bg-primary" style="width:90px">Ranking</th>
                 <th class="text-center align-middle text-light bg-primary" style="width:100px">Answer</th>
             </tr>
@@ -105,9 +110,16 @@
                         zContent = "<tr><td colspan='4' class='text-center'>No data available</td></tr>";
                     } else {
                         for (var i = 0; i < n; i++) {
+                    var correctRate = _DataView[i].CorrectRate !== null ? _DataView[i].CorrectRate + "%" : "N/A";
+                    var anomaly = _DataView[i].Anomaly !== null ? _DataView[i].Anomaly : "N/A";
                             zContent += "<tr>";
                             zContent += "<td class='text-center'>" + zNo + "</td>";
                             zContent += "<td onclick='EditRecord(\"" + _DataView[i].QuestionKey + "\")' style='cursor:pointer'>" + (_DataView[i].QuestionText || "") + "</td>";
+                    zContent += "           <td class='centered-cell'><img src='" + _DataView[i].QuestionImage + "' class='centered-image' width='100' height='100' /></td>";
+                    zContent += "           <td class='centered-cell'>" + _DataView[i].SkillLevel + "</td>";
+                    zContent += "           <td class='centered-cell'>" + _DataView[i].AmountAccess + "</td>";
+                    zContent += "           <td class='centered-cell'>" + correctRate + "</td>";
+                    zContent += "           <td class='centered-cell'>" + anomaly + "</td>";
                             zContent += "<td class='text-center'>" + (_DataView[i].Ranking || 0) + "</td>";
                             zContent += "<td class='text-center'><button type='button' class='btn btn-warning' onclick='btnAnswer_Click(\"" + _DataView[i].QuestionKey + "\")'>Answer</button></td>";
                             zContent += "</tr>";

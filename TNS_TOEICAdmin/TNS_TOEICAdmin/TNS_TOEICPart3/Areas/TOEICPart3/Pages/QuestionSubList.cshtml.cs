@@ -49,12 +49,12 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Pages
             }
             return zResult;
         }
-
+      
         public class ItemRequest
         {
             public string QuestionKey { get; set; }
         }
-
+      
     }
    
 }

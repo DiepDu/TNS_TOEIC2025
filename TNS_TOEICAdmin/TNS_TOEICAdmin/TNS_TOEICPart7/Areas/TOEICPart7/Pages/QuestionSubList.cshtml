@@ -36,6 +36,11 @@
             <tr>
                 <th class="text-center align-middle text-light bg-primary" style="width:80px">No</th>
                 <th class="text-center align-middle text-light bg-primary">Question</th>
+                <th class="text-center align-middle text-light bg-primary" style="width:120px">Image</th>
+                <th class="text-center align-middle text-light bg-primary" style="width:90px">Level</th>
+                <th class="text-center align-middle text-light bg-primary" style="width:120px">Access</th>
+                <th class="text-center align-middle text-light bg-primary" style="width:100px">Correct Rate</th>
+                <th class="text-center align-middle text-light bg-primary" style="width:100px">Anomaly</th>
                 <th class="text-center align-middle text-light bg-primary" style="width:90px">Ranking</th>
                 <th class="text-center align-middle text-light bg-primary" style="width:100px">Answer</th>
             </tr>
@@ -65,78 +70,86 @@
 
 @section Scripts {
     <script>
-                $(document).ready(function () {
-                    LV_LoadData_Ajax();
+        $(document).ready(function () {
+            LV_LoadData_Ajax();
+        });
+
+        function Log_Show() {
+            $("#Log_ViewData").css("display", "");
+        }
+
+        var _DataView;
+        function LV_LoadData_Ajax() {
+            $("#LV_Waiting").css("display", "");
+            var zQuestionKey = $("#QuestionKey").text();
+            var zDataRequest = { "QuestionKey": zQuestionKey };
+            $.ajax({
+                type: 'POST',
+                url: "/ToeicPart7/QuestionSubList?handler=LoadData",
+                data: JSON.stringify(zDataRequest),
+                contentType: "application/json",
+                dataType: "json",
+                headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() }
+            })
+                .done(function (dataResponse) {
+                    $("#Log_ViewData").html(JSON.stringify(dataResponse));
+                    _DataView = dataResponse;
+                    LV_DisplayData();
+                    $("#LV_Waiting").css("display", "none");
+                })
+                .fail(function (error) {
+                    alert('Error: ' + error.responseText);
                 });
+        }
 
-                function Log_Show() {
-                    $("#Log_ViewData").css("display", "");
+        function LV_DisplayData() {
+            var zContent = "";
+            var n = _DataView ? _DataView.length : 0;
+            var zNo = 1;
+            if (n === 0) {
+                zContent = "<tr><td colspan='4' class='text-center'>No data available</td></tr>";
+            } else {
+                for (var i = 0; i < n; i++) {
+                    var correctRate = _DataView[i].CorrectRate !== null ? _DataView[i].CorrectRate + "%" : "N/A";
+                    var anomaly = _DataView[i].Anomaly !== null ? _DataView[i].Anomaly : "N/A";
+                    zContent += "<tr>";
+                    zContent += "<td class='text-center'>" + zNo + "</td>";
+                    zContent += "<td onclick='EditRecord(\"" + _DataView[i].QuestionKey + "\")' style='cursor:pointer'>" + (_DataView[i].QuestionText || "") + "</td>";
+                    zContent += "           <td class='centered-cell'><img src='" + _DataView[i].QuestionImage + "' class='centered-image' width='100' height='100' /></td>";
+                    zContent += "           <td class='centered-cell'>" + _DataView[i].SkillLevel + "</td>";
+                    zContent += "           <td class='centered-cell'>" + _DataView[i].AmountAccess + "</td>";
+                    zContent += "           <td class='centered-cell'>" + correctRate + "</td>";
+                    zContent += "           <td class='centered-cell'>" + anomaly + "</td>";
+
+                    zContent += "<td class='text-center'>" + (_DataView[i].Ranking || 0) + "</td>";
+                    zContent += "<td class='text-center'><button type='button' class='btn btn-warning' onclick='btnAnswer_Click(\"" + _DataView[i].QuestionKey + "\")'>Answer</button></td>";
+                    zContent += "</tr>";
+                    zNo++;
                 }
+            }
+            $("#LV_DataBody").html(zContent);
+        }
 
-                var _DataView;
-                function LV_LoadData_Ajax() {
-                    $("#LV_Waiting").css("display", "");
-                    var zQuestionKey = $("#QuestionKey").text();
-                    var zDataRequest = { "QuestionKey": zQuestionKey };
-                    $.ajax({
-                        type: 'POST',
-                        url: "/ToeicPart7/QuestionSubList?handler=LoadData",
-                        data: JSON.stringify(zDataRequest),
-                        contentType: "application/json",
-                        dataType: "json",
-                        headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() }
-                    })
-                        .done(function (dataResponse) {
-                            $("#Log_ViewData").html(JSON.stringify(dataResponse));
-                            _DataView = dataResponse;
-                            LV_DisplayData();
-                            $("#LV_Waiting").css("display", "none");
-                        })
-                        .fail(function (error) {
-                            alert('Error: ' + error.responseText);
-                        });
-                }
-
-                function LV_DisplayData() {
-                    var zContent = "";
-                    var n = _DataView ? _DataView.length : 0;
-                    var zNo = 1;
-                    if (n === 0) {
-                        zContent = "<tr><td colspan='4' class='text-center'>No data available</td></tr>";
-                    } else {
-                        for (var i = 0; i < n; i++) {
-                            zContent += "<tr>";
-                            zContent += "<td class='text-center'>" + zNo + "</td>";
-                            zContent += "<td onclick='EditRecord(\"" + _DataView[i].QuestionKey + "\")' style='cursor:pointer'>" + (_DataView[i].QuestionText || "") + "</td>";
-                            zContent += "<td class='text-center'>" + (_DataView[i].Ranking || 0) + "</td>";
-                            zContent += "<td class='text-center'><button type='button' class='btn btn-warning' onclick='btnAnswer_Click(\"" + _DataView[i].QuestionKey + "\")'>Answer</button></td>";
-                            zContent += "</tr>";
-                            zNo++;
-                        }
-                    }
-                    $("#LV_DataBody").html(zContent);
-                }
-
-             function EditRecord(QuestionKey) {
+        function EditRecord(QuestionKey) {
             var zUrl = "/ToeicPart7/Question?Key=" + QuestionKey + "&source=QuestionSubList"; // Hoặc QuestionSubList tùy ngữ cảnh
             window.location = zUrl;
         }
 
-                function btnAnswer_Click(QuestionKey) {
-                    var zUrl = "/ToeicPart7/AnswerList?Key=" + QuestionKey;
-                    window.location = zUrl;
-                }
+        function btnAnswer_Click(QuestionKey) {
+            var zUrl = "/ToeicPart7/AnswerList?Key=" + QuestionKey;
+            window.location = zUrl;
+        }
 
-                function AddRecord_Click() {
-                    var zQuestionKey = $("#QuestionKey").text();
-                    var zUrl = "/ToeicPart7/Question?ParentKey=" + zQuestionKey + "&source=QuestionSubList";
-                    window.location = zUrl;
-                }
+        function AddRecord_Click() {
+            var zQuestionKey = $("#QuestionKey").text();
+            var zUrl = "/ToeicPart7/Question?ParentKey=" + zQuestionKey + "&source=QuestionSubList";
+            window.location = zUrl;
+        }
 
-                function LV_LoadData_More() {
-                    _PageNumber++;
-                    LV_LoadData_Ajax();
-                }
+        function LV_LoadData_More() {
+            _PageNumber++;
+            LV_LoadData_Ajax();
+        }
     </script>
 }
 <style>
