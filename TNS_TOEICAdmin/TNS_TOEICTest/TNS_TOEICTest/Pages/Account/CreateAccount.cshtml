@@ -1,0 +1,240 @@
+﻿@page
+@model TNS_TOEICTest.Pages.Account.CreateAccountModel
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account - TOEIC</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #E6F0FA 0%, #FFF9E6 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: #FFFFFF;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 550px;
+            text-align: center;
+        }
+
+        .header {
+            margin-bottom: 30px;
+        }
+
+            .header h1 {
+                font-size: 32px;
+                font-weight: 600;
+                color: #1E90FF;
+                margin: 0;
+            }
+
+            .header p {
+                font-size: 16px;
+                color: #666;
+                margin-top: 5px;
+            }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+            .form-group label {
+                font-size: 14px;
+                font-weight: 400;
+                color: #4682B4;
+                display: block;
+                margin-bottom: 5px;
+            }
+
+            .form-group input,
+            .form-group select {
+                width: 100%;
+                padding: 12px 15px;
+                border: 2px solid #B3D4FF;
+                border-radius: 10px;
+                font-size: 14px;
+                color: #333;
+                background: #F9FCFF;
+                transition: border-color 0.3s ease;
+            }
+
+                .form-group input:focus,
+                .form-group select:focus {
+                    border-color: #1E90FF;
+                    outline: none;
+                    box-shadow: 0 0 5px rgba(30, 144, 255, 0.3);
+                }
+
+                .form-group input.error,
+                .form-group select.error {
+                    border-color: #FF6347;
+                    background: #FFF1F0;
+                }
+
+        .error-message {
+            color: #FF6347;
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .form-error {
+            color: #FF6347;
+            font-size: 14px;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background: #FFD700;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #1E90FF;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.2s ease;
+        }
+
+            .submit-btn:hover {
+                background: #FFEC8B;
+                transform: translateY(-2px);
+            }
+
+        .footer {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+
+            .footer a {
+                color: #1E90FF;
+                text-decoration: none;
+                font-weight: 600;
+            }
+
+                .footer a:hover {
+                    text-decoration: underline;
+                }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Create Your Account</h1>
+            <p>Join us to start your TOEIC journey!</p>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="form-error">@Model.ErrorMessage</div>
+        }
+
+        <form id="createAccountForm" method="post" asp-page-handler="CreateAccount">
+            <div class="form-group">
+                <label asp-for="FullName">Full Name</label>
+                <input asp-for="FullName" id="fullName" placeholder="Enter your full name" required />
+                <span id="fullNameError" class="error-message"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Gender">Gender</label>
+                <select asp-for="Gender" id="gender" required>
+                    <option value="" disabled selected>Select your gender</option>
+                    <option value="Male">Nam</option>
+                    <option value="Female">Nữ</option>
+                </select>
+                <span id="genderError" class="error-message"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="BirthYear">Birth Year</label>
+                <select asp-for="BirthYear" id="birthYear" required>
+                    <option value="" disabled selected>Select your birth year</option>
+                    @for (int year = 2025; year >= 1900; year--)
+                    {
+                        <option value="@year">@year</option>
+                    }
+                </select>
+                <span id="birthYearError" class="error-message"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Email">Email</label>
+                <input asp-for="Email" id="email" type="email" placeholder="Enter your email" required />
+                <span id="emailError" class="error-message"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Password">Password</label>
+                <input asp-for="Password" id="password" type="password" placeholder="Enter your password" required />
+                <span asp-validation-for="Password" class="error-message"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="ConfirmPassword">Confirm Password</label>
+                <input asp-for="ConfirmPassword" id="confirmPassword" type="password" placeholder="Confirm your password" required />
+                <span id="passwordError" class="error-message">Passwords do not match.</span>
+            </div>
+
+            <button type="submit" class="submit-btn">Create Account</button>
+        </form>
+
+        <div class="footer">
+            Already have an account? <a href="/Account/Login">Sign in here</a>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('createAccountForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const passwordInput = document.getElementById('password');
+            const confirmPasswordInput = document.getElementById('confirmPassword');
+            const passwordError = document.getElementById('passwordError');
+            const passwordValue = passwordInput.value;
+            const confirmPasswordValue = confirmPasswordInput.value;
+
+            let isValid = true;
+
+            if (passwordValue !== confirmPasswordValue) {
+                confirmPasswordInput.classList.add('error');
+                passwordError.style.display = 'block';
+                isValid = false;
+            } else {
+                confirmPasswordInput.classList.remove('error');
+                passwordError.style.display = 'none';
+            }
+
+            if (isValid) {
+                this.submit();
+            }
+        });
+
+        document.getElementById('confirmPassword').addEventListener('input', function () {
+            this.classList.remove('error');
+            document.getElementById('passwordError').style.display = 'none';
+        });
+    </script>
+</body>
+</html>

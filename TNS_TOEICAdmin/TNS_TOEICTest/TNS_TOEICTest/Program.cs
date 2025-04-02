@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authentication.Cookies;
+using TNS_TOEICTest.DataAccess;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers(); // Đăng ký dịch vụ cho API Controller
@@ -13,7 +14,9 @@ builder.Services.AddRazorPages(options =>
     // Route cho trang ResultTest
     options.Conventions.AddAreaPageRoute("Test", "/ResultTest", "Test/ResultTest");
 });
-
+builder.Services.AddSingleton<CreateAccountAccessData>();
+builder.Services.AddSingleton<CreateAccountAccessData>();
+builder.Services.AddSingleton<ProfileAccessData>();
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
