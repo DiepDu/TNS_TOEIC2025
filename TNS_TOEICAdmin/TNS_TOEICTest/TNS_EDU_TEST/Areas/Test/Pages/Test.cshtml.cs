@@ -24,6 +24,9 @@ namespace TNS_EDU_TEST.Areas.Test.Pages
 
         public async Task<IActionResult> OnGetAsync(string testKey, string resultKey)
         {
+            Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+            Response.Headers["Pragma"] = "no-cache";
+            Response.Headers["Expires"] = "0";
             if (string.IsNullOrEmpty(testKey) || string.IsNullOrEmpty(resultKey) ||
                 !Guid.TryParse(testKey, out Guid testKeyGuid) || !Guid.TryParse(resultKey, out Guid resultKeyGuid))
             {
@@ -36,6 +39,12 @@ namespace TNS_EDU_TEST.Areas.Test.Pages
             var (endTime, questions) = await TestAccessData.GetTestData(TestKey, ResultKey);
             if (endTime == null || questions == null)
             {
+                return RedirectToPage("/Ready");
+            }
+            bool isTestCompleted = await TestAccessData.CheckTest(TestKey, ResultKey);
+            if (isTestCompleted)
+            {
+                // TestScore khác NULL, bài thi đã hoàn thành, chuyển hướng về /Test/Ready
                 return RedirectToPage("/Ready");
             }
 

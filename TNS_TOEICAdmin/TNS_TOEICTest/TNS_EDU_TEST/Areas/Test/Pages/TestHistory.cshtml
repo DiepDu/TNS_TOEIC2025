@@ -1,0 +1,355 @@
+﻿@page
+@model TNS_EDU_TEST.Areas.Test.Pages.TestHistoryModel
+@{
+    Layout = "_Layout";
+}
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<h1 class="test-history-title">TOEIC Test History</h1>
+
+<div class="charts-row">
+    <div class="chart-container">
+        <canvas id="listeningScoreChart"></canvas>
+    </div>
+    <div class="chart-container">
+        <canvas id="readingScoreChart"></canvas>
+    </div>
+    <div class="chart-container">
+        <canvas id="testScoreChart"></canvas>
+    </div>
+</div>
+
+<div class="table-header-bar">
+    <table class="styled-table">
+        <thead>
+            <tr>
+                <th>Test Name</th>
+                <th>Created On</th>
+                <th>Member Name</th>
+                <th>Start Time</th>
+                <th>End Time</th>
+                <th>Time</th>
+                <th>Listening Score</th>
+                <th>Reading Score</th>
+                <th>Test Score</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.TestHistoryItems)
+            {
+                <tr>
+                    <td>@item.TestName</td>
+                    <td>@item.CreatedOn.ToString("dd/MM/yyyy")</td>
+                    <td>@item.MemberName</td>
+                    <td>@item.StartTime.ToString("HH:mm")</td>
+                    <td>@item.EndTime.ToString("HH:mm")</td>
+                    <td>@item.Time phút</td>
+                    <td>@item.ListeningScore</td>
+                    <td>@item.ReadingScore</td>
+                    <td>@item.TestScore</td>
+                    <td>
+                        <a class="review-button" href="/Test/ResultTest?TestKey=@item.TestKey&ResultKey=@item.ResultKey">Review</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Poppins', sans-serif;
+        background: linear-gradient(135deg, #B3E5FC 0%, #FFECB3 100%);
+        color: #333;
+        padding: 40px;
+        min-height: 100vh;
+        position: relative;
+        overflow-x: hidden;
+    }
+
+    body::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: url('https://www.transparenttextures.com/patterns/stardust.png');
+        opacity: 0.05;
+        z-index: -1;
+    }
+
+    .test-history-title {
+        text-align: center;
+        font-size: 3.5em;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        margin-bottom: 40px;
+        background: linear-gradient(90deg, #0288D1, #FFD54F);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: 2px 2px 10px rgba(2, 136, 209, 0.3);
+        animation: fadeInDown 1s ease-in-out;
+    }
+
+    .charts-row {
+        display: flex;
+        gap: 30px;
+        margin: 40px auto;
+        max-width: 2400px;
+        overflow-x: auto;
+        padding-bottom: 10px;
+        scrollbar-width: thin;
+        scrollbar-color: #0288D1 #e0e0e0;
+      
+    }
+
+    .charts-row::-webkit-scrollbar {
+        height: 8px;
+    }
+
+    .charts-row::-webkit-scrollbar-track {
+        background: #e0e0e0;
+        border-radius: 4px;
+    }
+
+    .charts-row::-webkit-scrollbar-thumb {
+        background: #0288D1;
+        border-radius: 4px;
+    }
+
+    .charts-row::-webkit-scrollbar-thumb:hover {
+        background: #4FC3F7;
+    }
+
+    .chart-container {
+        width: 800px;
+        height: 400px;
+        background: #fff;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        padding: 20px;
+        animation: zoomIn 0.8s ease-in-out;
+        flex-shrink: 0;
+    }
+
+    .styled-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin: 0 auto;
+        font-size: 1.1em;
+        background: #fff;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        animation: zoomIn 0.8s ease-in-out;
+    }
+
+    .styled-table thead tr {
+        background: linear-gradient(90deg, #0288D1, #4FC3F7);
+        color: #fff;
+        text-transform: uppercase;
+        font-weight: 600;
+        letter-spacing: 1px;
+    }
+
+    .styled-table th {
+        padding: 15px 20px;
+        text-align: center;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .styled-table tbody tr {
+        background: #fff;
+        transition: all 0.3s ease;
+    }
+
+    .styled-table td {
+        padding: 15px 20px;
+        text-align: center;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .styled-table tbody tr:nth-of-type(even) {
+        background: #F9FBE7;
+    }
+
+    .styled-table tbody tr:hover {
+        background: #B3E5FC;
+        transform: scale(1.02);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .styled-table tbody tr:last-of-type {
+        border-bottom: none;
+    }
+
+    .review-button {
+        display: inline-block;
+        background: linear-gradient(90deg, #0288D1, #4FC3F7);
+        color: #fff;
+        border: none;
+        border-radius: 25px;
+        padding: 10px 20px;
+        font-size: 1em;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 10px rgba(2, 136, 209, 0.3);
+    }
+
+    .review-button:hover {
+        background: linear-gradient(90deg, #4FC3F7, #0288D1);
+        transform: translateY(-3px) scale(1.05);
+        box-shadow: 0 6px 20px rgba(2, 136, 209, 0.5);
+    }
+
+    @@keyframes fadeInDown {
+        from { opacity: 0; transform: translateY(-30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @@keyframes zoomIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+
+    @@media (max-width: 768px) {
+        body { padding: 20px; }
+        .test-history-title { font-size: 2.5em; margin-bottom: 30px; }
+        .styled-table { font-size: 0.9em; }
+        .styled-table th, .styled-table td { padding: 10px; }
+        .review-button { padding: 8px 15px; font-size: 0.9em; }
+        .chart-container { width: 400px; height: 300px; }
+    }
+
+    @@media (max-width: 480px) {
+        .styled-table { display: block; overflow-x: auto; white-space: nowrap; }
+        .test-history-title { font-size: 2em; }
+        .charts-row { gap: 10px; }
+        .chart-container { width: 300px; height: 250px; }
+    }
+</style>
+
+<script>
+    // Lấy dữ liệu từ Model
+    const testHistoryData = @Html.Raw(Json.Serialize(Model.TestHistoryItems.OrderBy(t => t.CreatedOn)));
+
+    // Debug dữ liệu
+    console.log('Test History Data:', testHistoryData);
+
+    function createChart(canvasId, label, dataKey, color) {
+        if (!testHistoryData || testHistoryData.length === 0) {
+            const canvasEl = document.getElementById(canvasId);
+            if (canvasEl && canvasEl.parentElement) {
+                canvasEl.parentElement.style.display = 'none';
+            }
+            console.warn(`No data available for ${label} chart.`);
+            return;
+        }
+
+        // Chuẩn bị nhãn (ngày thi)
+        const labels = testHistoryData.map(item => {
+            const dateStr = item.createdOn || item.CreatedOn || ''; // Thử cả createdOn và CreatedOn
+            if (dateStr.includes('T')) {
+                const date = new Date(dateStr);
+                return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            } else if (dateStr) {
+                const date = new Date(dateStr);
+                return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            }
+            return 'Unknown Date';
+        });
+
+        // Chuẩn bị dữ liệu điểm số
+        const scores = testHistoryData.map(item => {
+            // Thử cả camelCase và PascalCase
+            const score = item[dataKey] || item[dataKey.charAt(0).toUpperCase() + dataKey.slice(1)] || 0;
+            const numericScore = (score !== undefined && score !== null) ? Number(score) : 0;
+            console.log(`Score for ${dataKey}:`, numericScore); // Debug điểm số
+            return numericScore;
+        });
+
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        type: 'bar',
+                        label: label,
+                        data: scores,
+                        backgroundColor: color + "80",
+                        borderColor: color,
+                        borderWidth: 2,
+                        barThickness: 30,
+                    },
+                    {
+                        type: 'line',
+                        label: label + " Trend",
+                        data: scores,
+                        fill: false,
+                        borderColor: color,
+                        borderWidth: 2,
+                        tension: 0.3,
+                        pointRadius: 4,
+                        pointBackgroundColor: color,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: { font: { family: 'Poppins', size: 14, weight: '600' }, color: '#333' }
+                    },
+                    tooltip: {
+                        backgroundColor: '#0288D1',
+                        titleFont: { family: 'Poppins', size: 14 },
+                        bodyFont: { family: 'Poppins', size: 12 },
+                        callbacks: { label: context => `${context.dataset.label}: ${context.raw}` }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Test Date', font: { family: 'Poppins', size: 16, weight: '600' }, color: '#0288D1' },
+                        ticks: { font: { family: 'Poppins', size: 12 }, color: '#333', maxRotation: 45, minRotation: 45 },
+                        grid: { display: false }
+                    },
+                    y: {
+                        title: { display: true, text: 'Score', font: { family: 'Poppins', size: 16, weight: '600' }, color: '#0288D1' },
+                        min: 0,
+                        max: 1000,
+                        ticks: {
+                            stepSize: 100, // 10 bậc: 0, 100, 200, ..., 1000
+                            font: { family: 'Poppins', size: 12 },
+                            color: '#333',
+                            callback: function(value) { return value; }
+                        },
+                        grid: { color: '#e0e0e0' }
+                    }
+                },
+                animation: { duration: 1500, easing: 'easeOutBounce' }
+            }
+        });
+    }
+
+    // Tạo 3 biểu đồ
+    createChart('listeningScoreChart', 'Listening Score', 'listeningScore', '#0288D1');
+    createChart('readingScoreChart', 'Reading Score', 'readingScore', '#FFD54F');
+    createChart('testScoreChart', 'Test Score', 'testScore', '#4FC3F7');
+</script>

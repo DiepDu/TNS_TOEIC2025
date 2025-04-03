@@ -10,6 +10,26 @@ namespace TNS_EDU_TEST.Areas.Test.Models
     {
         private static readonly string _connectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
 
+        public static async Task<bool> CheckTest(Guid testKey, Guid resultKey)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                await conn.OpenAsync();
+
+                string checkScoreSql = @"
+            SELECT TestScore 
+            FROM [ResultOfUserForTest] 
+            WHERE ResultKey = @ResultKey AND TestKey = @TestKey";
+                using (var cmd = new SqlCommand(checkScoreSql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@ResultKey", resultKey);
+                    cmd.Parameters.AddWithValue("@TestKey", testKey);
+
+                    var testScore = await cmd.ExecuteScalarAsync();
+                    return testScore != null && testScore != DBNull.Value;
+                }
+            }
+        }
         public static async Task<(DateTime?, List<TestQuestion>)> GetTestData(Guid testKey, Guid resultKey)
         {
             using (var conn = new SqlConnection(_connectionString))
@@ -40,58 +60,56 @@ namespace TNS_EDU_TEST.Areas.Test.Models
             SELECT 
                 c.TestKey, c.ResultKey, c.QuestionKey, c.Part, c.[Order],
                 q.QuestionText, q.QuestionImage, q.QuestionVoice, q.Parent,
-                q.Ranking,
                 a.AnswerKey, a.AnswerText, a.AnswerImage, a.AnswerVoice, a.AnswerCorrect,
-                a.Ranking AS AnswerRanking,
                 u.SelectAnswerKey
             FROM [ContentOfTest] c
             LEFT JOIN (
-                SELECT QuestionKey, QuestionText, QuestionImage, QuestionVoice, Parent, Ranking
+                SELECT QuestionKey, QuestionText, QuestionImage, QuestionVoice, Parent
                 FROM [TEC_Part1_Question] WHERE RecordStatus != 99
                 UNION
-                SELECT QuestionKey, QuestionText, QuestionImage, QuestionVoice, Parent, Ranking
+                SELECT QuestionKey, QuestionText, QuestionImage, QuestionVoice, Parent
                 FROM [TEC_Part2_Question] WHERE RecordStatus != 99
                 UNION
-                SELECT QuestionKey, QuestionText, QuestionImage, QuestionVoice, Parent, NULL AS Ranking
+                SELECT QuestionKey, QuestionText, QuestionImage, QuestionVoice, Parent
                 FROM [TEC_Part3_Question] WHERE RecordStatus != 99
                 UNION
-                SELECT QuestionKey, QuestionText, QuestionImage, QuestionVoice, Parent, NULL AS Ranking
+                SELECT QuestionKey, QuestionText, QuestionImage, QuestionVoice, Parent
                 FROM [TEC_Part4_Question] WHERE RecordStatus != 99
                 UNION
-                SELECT QuestionKey, QuestionText, QuestionImage, QuestionVoice, Parent, NULL AS Ranking
+                SELECT QuestionKey, QuestionText, QuestionImage, QuestionVoice, Parent
                 FROM [TEC_Part5_Question] WHERE RecordStatus != 99
                 UNION
-                SELECT QuestionKey, QuestionText, QuestionImage, QuestionVoice, Parent, Ranking
+                SELECT QuestionKey, QuestionText, QuestionImage, QuestionVoice, Parent
                 FROM [TEC_Part6_Question] WHERE RecordStatus != 99
                 UNION
-                SELECT QuestionKey, QuestionText, QuestionImage, QuestionVoice, Parent, Ranking
+                SELECT QuestionKey, QuestionText, QuestionImage, QuestionVoice, Parent
                 FROM [TEC_Part7_Question] WHERE RecordStatus != 99
             ) q ON c.QuestionKey = q.QuestionKey
             LEFT JOIN (
-                SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect, Ranking
+                SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect
                 FROM [TEC_Part1_Answer] WHERE RecordStatus != 99
                 UNION
-                SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect, Ranking
+                SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect
                 FROM [TEC_Part2_Answer] WHERE RecordStatus != 99
                 UNION
-                SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect, NULL AS Ranking
+                SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect
                 FROM [TEC_Part3_Answer] WHERE RecordStatus != 99
                 UNION
-                SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect, NULL AS Ranking
+                SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect
                 FROM [TEC_Part4_Answer] WHERE RecordStatus != 99
                 UNION
-                SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect, NULL AS Ranking
+                SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect
                 FROM [TEC_Part5_Answer] WHERE RecordStatus != 99
                 UNION
-                SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect, NULL AS Ranking
+                SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect
                 FROM [TEC_Part6_Answer] WHERE RecordStatus != 99
                 UNION
-                SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect, NULL AS Ranking
+                SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect
                 FROM [TEC_Part7_Answer] WHERE RecordStatus != 99
             ) a ON c.QuestionKey = a.QuestionKey
             LEFT JOIN [UserAnswers] u ON c.ResultKey = u.ResultKey AND c.QuestionKey = u.QuestionKey
             WHERE c.ResultKey = @ResultKey AND c.TestKey = @TestKey
-            ORDER BY c.Part, c.[Order]";
+            ORDER BY c.[Order], CASE WHEN q.Parent IS NULL THEN 0 ELSE 1 END"; // Sắp xếp theo Order, ưu tiên câu hỏi cha
 
                 var questionsDict = new Dictionary<Guid, TestQuestion>();
                 var allQuestions = new List<TestQuestion>();
@@ -114,42 +132,32 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                                 {
                                     QuestionKey = questionKey,
                                     Part = part,
-                                    Order = reader.IsDBNull(4) ? null : (float?)reader.GetDouble(4), // Đọc Order dạng float
+                                    Order = reader.IsDBNull(4) ? null : (float?)reader.GetDouble(4), // Đổi thành int? nếu cột Order là int
                                     QuestionText = reader.IsDBNull(5) ? null : reader.GetString(5),
                                     QuestionImage = reader.IsDBNull(6) ? null : reader.GetString(6),
                                     QuestionVoice = reader.IsDBNull(7) ? null : reader.GetString(7),
                                     Parent = reader.IsDBNull(8) ? null : reader.GetGuid(8),
-                                    Ranking = reader.IsDBNull(9) ? 0 : reader.GetInt32(9),
                                     Answers = new List<TestAnswer>(),
-                                    UserAnswerKey = reader.IsDBNull(16) ? null : reader.GetGuid(16).ToString()
+                                    UserAnswerKey = reader.IsDBNull(14) ? null : reader.GetGuid(14).ToString()
                                 };
                                 questionsDict[questionKey] = question;
                                 allQuestions.Add(question);
                             }
 
-                            if (!reader.IsDBNull(10))
+                            if (!reader.IsDBNull(9))
                             {
                                 var answer = new TestAnswer
                                 {
-                                    AnswerKey = reader.GetGuid(10),
+                                    AnswerKey = reader.GetGuid(9),
                                     QuestionKey = questionKey,
-                                    AnswerText = (part <= 2 || reader.IsDBNull(11)) ? null : reader.GetString(11),
-                                    AnswerImage = (part <= 2 || reader.IsDBNull(12)) ? null : reader.GetString(12),
-                                    AnswerVoice = (part <= 2 || reader.IsDBNull(13)) ? null : reader.GetString(13),
-                                    AnswerCorrect = reader.GetBoolean(14),
-                                    Ranking = reader.IsDBNull(15) ? 0 : reader.GetInt32(15)
+                                    AnswerText = (part <= 2 || reader.IsDBNull(10)) ? null : reader.GetString(10),
+                                    AnswerImage = (part <= 2 || reader.IsDBNull(11)) ? null : reader.GetString(11),
+                                    AnswerVoice = (part <= 2 || reader.IsDBNull(12)) ? null : reader.GetString(12),
+                                    AnswerCorrect = reader.GetBoolean(13)
                                 };
                                 questionsDict[questionKey].Answers.Add(answer);
                             }
                         }
-                    }
-                }
-
-                foreach (var question in allQuestions)
-                {
-                    if (question.Part <= 2)
-                    {
-                        question.Answers.Sort((a, b) => a.Ranking.CompareTo(b.Ranking));
                     }
                 }
 
@@ -159,40 +167,30 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                     if (question.Parent == null)
                     {
                         resultQuestions.Add(question);
-                        if (question.Part == 6 || question.Part == 7)
-                        {
-                            question.Children = allQuestions
-                                .Where(q => q.Parent == question.QuestionKey)
-                                .OrderBy(q => q.Order) // Sắp xếp theo Order
-                                .ToList();
-                        }
-                        else
-                        {
-                            question.Children = allQuestions
-                                .Where(q => q.Parent == question.QuestionKey)
-                                .OrderBy(q => q.Order) // Sắp xếp theo Order
-                                .ToList();
-                        }
+                        question.Children = allQuestions
+                            .Where(q => q.Parent == question.QuestionKey)
+                            .OrderBy(q => q.Order)
+                            .ToList();
                     }
                 }
 
-                // Sắp xếp resultQuestions theo Part và Order
-                resultQuestions.Sort((a, b) =>
-                {
-                    int partCompare = a.Part.CompareTo(b.Part);
-                    if (partCompare != 0) return partCompare;
-                    return a.Order.Value.CompareTo(b.Order.Value);
-                });
+                // Sắp xếp resultQuestions theo Order
+                resultQuestions.Sort((a, b) => a.Order.Value.CompareTo(b.Order.Value));
 
+                // Debug chi tiết
                 Console.WriteLine($"Total questions from SQL: {allQuestions.Count}");
                 foreach (var q in allQuestions)
                 {
-                    Console.WriteLine($"QuestionKey={q.QuestionKey}, Part={q.Part}, Parent={q.Parent ?? Guid.Empty}, ChildrenCount={q.Children.Count}, Order={q.Order}");
+                    Console.WriteLine($"QuestionKey={q.QuestionKey}, Part={q.Part}, Parent={q.Parent ?? Guid.Empty}, Order={q.Order}");
                 }
                 Console.WriteLine($"Total parent questions returned: {resultQuestions.Count}");
                 foreach (var q in resultQuestions)
                 {
-                    Console.WriteLine($"Parent QuestionKey={q.QuestionKey}, Part={q.Part}, ChildrenCount={q.Children.Count}, Order={q.Order}");
+                    Console.WriteLine($"Parent QuestionKey={q.QuestionKey}, Part={q.Part}, Order={q.Order}, ChildrenCount={q.Children.Count}");
+                    foreach (var child in q.Children)
+                    {
+                        Console.WriteLine($"  Child QuestionKey={child.QuestionKey}, Part={child.Part}, Order={child.Order}");
+                    }
                 }
 
                 return (endTime, resultQuestions);

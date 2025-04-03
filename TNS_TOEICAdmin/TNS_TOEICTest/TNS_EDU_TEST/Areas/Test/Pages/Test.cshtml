@@ -684,7 +684,12 @@ function submitTest() {
             const text = document.getElementById('progress-text');
             text.textContent = `${answeredQuestions}/${totalQuestions}`;
         }
-        // Hàm mô phỏng click thật vào đáp án ngẫu nhiên cho các câu hỏi trong Part hiện tại
+      window.onpageshow = function (event) {
+            if (event.persisted) {
+                // Trang được tải từ cache, buộc làm mới để gọi OnGetAsync
+                window.location.reload();
+            }
+        };
      
       
     </script>

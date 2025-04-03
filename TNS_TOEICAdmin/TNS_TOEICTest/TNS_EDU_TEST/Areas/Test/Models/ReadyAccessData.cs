@@ -210,29 +210,19 @@ namespace TNS_EDU_TEST.Areas.Test.Models
             int[] skillLevels = { dist.SkillLevel1 ?? 0, dist.SkillLevel2 ?? 0, dist.SkillLevel3 ?? 0, dist.SkillLevel4 ?? 0, dist.SkillLevel5 ?? 0 };
             int questionsRemaining = totalQuestions;
             int questionsAdded = 0;
-            int questionsPerPassage = part switch { 3 => 3, 4 => 3, 6 => 4, 7 => 4, _ => 3 }; // Tối thiểu cần thiết
+            int questionsPerPassage = part switch { 3 => 3, 4 => 3, 6 => 4, 7 => 4, _ => 3 };
 
-            var passageGroups = new List<(Guid ParentKey, List<(Guid SubQuestionKey, Guid ParentKey)> SubQuestionKeys)>();
-
-            for (int level = 1; level <= 5 && questionsRemaining > 0; level++)
+            // Bước 1: Lấy tất cả các câu hỏi con từ tất cả các SkillLevel
+            var allSubQuestions = new List<(Guid SubQuestionKey, Guid ParentKey, int SkillLevel)>();
+            for (int level = 1; level <= 5; level++)
             {
-                int questionsForLevel = Math.Min(skillLevels[level - 1], questionsRemaining);
-                if (questionsForLevel == 0) continue;
+                if (skillLevels[level - 1] == 0) continue;
 
-                // Lấy tất cả các câu hỏi con trong Part, bao gồm ParentKey
-                string subSql = part == 6 || part == 7
-                    ? $@"
-                SELECT QuestionKey, Parent
-                FROM {tableName}
-                WHERE Publish = 1 AND RecordStatus != 99 AND SkillLevel = @SkillLevel AND Parent IS NOT NULL
-                ORDER BY Ranking ASC, QuestionKey ASC"
-                    : $@"
-                SELECT QuestionKey, Parent
-                FROM {tableName}
-                WHERE Publish = 1 AND RecordStatus != 99 AND SkillLevel = @SkillLevel AND Parent IS NOT NULL
-                ORDER BY QuestionKey ASC";
+                string subSql = $@"
+            SELECT QuestionKey, Parent
+            FROM {tableName}
+            WHERE Publish = 1 AND RecordStatus != 99 AND SkillLevel = @SkillLevel AND Parent IS NOT NULL";
 
-                var allSubQuestions = new List<(Guid SubQuestionKey, Guid ParentKey)>();
                 using (var cmd = new SqlCommand(subSql, conn))
                 {
                     cmd.Parameters.AddWithValue("@SkillLevel", level);
@@ -240,94 +230,110 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                     {
                         while (await reader.ReadAsync())
                         {
-                            allSubQuestions.Add((reader.GetGuid(0), reader.GetGuid(1)));
+                            allSubQuestions.Add((reader.GetGuid(0), reader.GetGuid(1), level));
                         }
                     }
                 }
-
-                // Nhóm các câu hỏi con theo ParentKey
-                var groupedSubQuestions = allSubQuestions
-                    .GroupBy(q => q.ParentKey)
-                    .Select(g => (ParentKey: g.Key, SubQuestionKeys: g.ToList()))
-                    .Where(g => g.SubQuestionKeys.Count >= questionsPerPassage) // Chỉ lấy các nhóm có đủ câu hỏi con
-                    .ToList();
-
-                // Bỏ phần sắp xếp dựa trên QuestionKey của câu hỏi con đầu tiên
-                // Thứ tự đã được đảm bảo bởi truy vấn SQL (Ranking ASC, QuestionKey ASC)
-
-                // Thêm các nhóm vào passageGroups
-                foreach (var group in groupedSubQuestions)
-                {
-                    int subQuestionsToAdd = part == 3 || part == 4 ? questionsPerPassage : group.SubQuestionKeys.Count;
-                    if (questionsForLevel <= 0) break;
-
-                    passageGroups.Add((group.ParentKey, group.SubQuestionKeys.Take(subQuestionsToAdd).ToList()));
-                    questionsAdded += subQuestionsToAdd;
-                    questionsRemaining -= subQuestionsToAdd;
-                    questionsForLevel -= subQuestionsToAdd;
-                }
             }
 
-            // Gán Order liên tiếp cho tất cả các câu hỏi con trước
-            var allSubQuestionsWithOrder = new List<(Guid ParentKey, Guid SubQuestionKey, int Order)>();
+            // Bước 2: Nhóm các câu hỏi con theo ParentKey (không sắp xếp theo Key hay Ranking)
+            var groupedSubQuestions = allSubQuestions
+                .GroupBy(q => q.ParentKey)
+                .Select(g => (ParentKey: g.Key, SubQuestionKeys: g.ToList()))
+                .Where(g => g.SubQuestionKeys.Count >= questionsPerPassage)
+                .ToList();
+
+            // Bước 3: Phân bổ câu hỏi theo SkillLevel
+            var passageGroups = new List<(Guid ParentKey, List<(Guid SubQuestionKey, Guid ParentKey)> SubQuestionKeys)>();
+            int[] remainingQuestionsPerLevel = new int[5];
+            for (int level = 0; level < 5; level++)
+            {
+                remainingQuestionsPerLevel[level] = skillLevels[level];
+            }
+
+            foreach (var group in groupedSubQuestions)
+            {
+                if (questionsRemaining <= 0) break;
+
+                // Tìm SkillLevel phù hợp cho đoạn văn này
+                int selectedLevel = -1;
+                for (int level = 1; level <= 5; level++)
+                {
+                    if (remainingQuestionsPerLevel[level - 1] > 0 && group.SubQuestionKeys.Any(q => q.SkillLevel == level))
+                    {
+                        selectedLevel = level;
+                        break;
+                    }
+                }
+
+                if (selectedLevel == -1) continue; // Không tìm thấy SkillLevel phù hợp
+
+                int subQuestionsToAdd = part == 3 || part == 4 ? questionsPerPassage : group.SubQuestionKeys.Count;
+                if (subQuestionsToAdd > questionsRemaining) subQuestionsToAdd = questionsRemaining;
+                if (subQuestionsToAdd > remainingQuestionsPerLevel[selectedLevel - 1]) subQuestionsToAdd = remainingQuestionsPerLevel[selectedLevel - 1];
+
+                passageGroups.Add((group.ParentKey, group.SubQuestionKeys.Take(subQuestionsToAdd).Select(q => (q.SubQuestionKey, q.ParentKey)).ToList()));
+                questionsAdded += subQuestionsToAdd;
+                questionsRemaining -= subQuestionsToAdd;
+                remainingQuestionsPerLevel[selectedLevel - 1] -= subQuestionsToAdd;
+            }
+
+            // Bước 4: Gán Order liên tiếp cho các câu hỏi
+            var allQuestionsWithOrder = new List<(Guid QuestionKey, bool IsParent, int Order)>();
             int tempOrder = currentOrder;
-            foreach (var (parentKey, subQuestionKeys) in passageGroups)
-            {
-                foreach (var (subKey, _) in subQuestionKeys)
-                {
-                    allSubQuestionsWithOrder.Add((parentKey, subKey, tempOrder++));
-                }
-            }
 
-            // Gán Order cho các câu hỏi cha và câu hỏi con
-            int passageIndex = 1;
-            foreach (var (parentKey, subQuestionKeys) in passageGroups)
+            foreach (var group in passageGroups)
             {
-                // Gán Order cho câu hỏi cha (dạng part.passageIndex, ví dụ: 3.1, 3.2, 3.3)
-                float parentOrder = float.Parse($"{part}.{passageIndex}");
-                await InsertContentOfTest(conn, testKey, resultKey, parentKey, part, parentOrder);
-                await UpdateAmountAccess(conn, tableName, parentKey);
+                Guid parentKey = group.ParentKey;
+                List<(Guid SubQuestionKey, Guid ParentKey)> subQuestionKeys = group.SubQuestionKeys;
 
                 // Gán Order cho các câu hỏi con
-                foreach (var (subKey, _) in subQuestionKeys)
+                var subQuestionOrders = new List<(Guid SubQuestionKey, int Order)>();
+                foreach (var subQuestion in subQuestionKeys)
                 {
-                    var subQuestionOrder = allSubQuestionsWithOrder
-                        .First(x => x.SubQuestionKey == subKey)
-                        .Order;
-                    await InsertContentOfTest(conn, testKey, resultKey, subKey, part, subQuestionOrder);
-                    await UpdateAmountAccess(conn, tableName, subKey);
+                    Guid subKey = subQuestion.SubQuestionKey;
+                    subQuestionOrders.Add((subKey, tempOrder++));
                 }
 
-                passageIndex++;
+                // Đặt Order của câu hỏi cha trùng với Order của câu hỏi con đầu tiên
+                if (subQuestionOrders.Any())
+                {
+                    int parentOrder = subQuestionOrders.First().Order;
+                    allQuestionsWithOrder.Add((parentKey, true, parentOrder));
+                }
+
+                // Thêm các câu hỏi con vào danh sách
+                foreach (var subQuestion in subQuestionOrders)
+                {
+                    allQuestionsWithOrder.Add((subQuestion.SubQuestionKey, false, subQuestion.Order));
+                }
             }
 
-            // Cập nhật currentOrder dựa trên Order lớn nhất đã gán
-            if (allSubQuestionsWithOrder.Any())
+            // Bước 5: Insert tất cả các câu hỏi theo thứ tự Order
+            foreach (var question in allQuestionsWithOrder)
             {
-                currentOrder = allSubQuestionsWithOrder.Max(x => x.Order) + 1;
+                Guid questionKey = question.QuestionKey;
+                int order = question.Order;
+                await InsertContentOfTest(conn, testKey, resultKey, questionKey, part, order);
+                await UpdateAmountAccess(conn, tableName, questionKey);
+            }
+
+            if (allQuestionsWithOrder.Any())
+            {
+                currentOrder = allQuestionsWithOrder.Max(x => x.Order) + 1;
             }
 
             // Logic fallback
             if (questionsAdded < totalQuestions)
             {
                 int additionalQuestionsNeeded = totalQuestions - questionsAdded;
-                string fallbackSql = part == 6 || part == 7
-                    ? $@"
-                SELECT q.QuestionKey, q.Parent
-                FROM {tableName} q
-                WHERE q.Publish = 1 AND q.RecordStatus != 99 AND q.Parent IS NOT NULL
-                AND q.QuestionKey NOT IN (
-                    SELECT QuestionKey FROM [ContentOfTest] WHERE TestKey = @TestKey
-                )
-                ORDER BY q.Ranking ASC, q.QuestionKey ASC"
-                    : $@"
-                SELECT q.QuestionKey, q.Parent
-                FROM {tableName} q
-                WHERE q.Publish = 1 AND q.RecordStatus != 99 AND q.Parent IS NOT NULL
-                AND q.QuestionKey NOT IN (
-                    SELECT QuestionKey FROM [ContentOfTest] WHERE TestKey = @TestKey
-                )
-                ORDER BY q.QuestionKey ASC";
+                string fallbackSql = $@"
+            SELECT q.QuestionKey, q.Parent
+            FROM {tableName} q
+            WHERE q.Publish = 1 AND q.RecordStatus != 99 AND q.Parent IS NOT NULL
+            AND q.QuestionKey NOT IN (
+                SELECT QuestionKey FROM [ContentOfTest] WHERE TestKey = @TestKey
+            )";
 
                 var fallbackGroups = new Dictionary<Guid, List<(Guid SubQuestionKey, Guid ParentKey)>>();
                 using (var cmd = new SqlCommand(fallbackSql, conn))
@@ -351,44 +357,48 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                     .Select(g => (ParentKey: g.Key, SubQuestionKeys: g.Value))
                     .ToList();
 
-                foreach (var (parentKey, subQuestionKeys) in sortedFallbackGroups)
+                foreach (var group in sortedFallbackGroups)
                 {
-                    var subQuestionsToAdd = part == 3 || part == 4 ? subQuestionKeys.Take(questionsPerPassage).ToList() : subQuestionKeys;
+                    Guid parentKey = group.ParentKey;
+                    List<(Guid SubQuestionKey, Guid ParentKey)> subQuestionsToAdd = part == 3 || part == 4
+                        ? group.SubQuestionKeys.Take(questionsPerPassage).ToList()
+                        : group.SubQuestionKeys;
                     if (questionsRemaining <= 0) break;
 
-                    // Gán Order liên tiếp cho các câu hỏi con trong fallback
-                    var fallbackSubQuestionsWithOrder = new List<(Guid SubQuestionKey, int Order)>();
-                    foreach (var (subKey, _) in subQuestionsToAdd)
+                    // Gán Order cho các câu hỏi con
+                    var fallbackSubQuestionOrders = new List<(Guid SubQuestionKey, int Order)>();
+                    foreach (var subQuestion in subQuestionsToAdd)
                     {
-                        fallbackSubQuestionsWithOrder.Add((subKey, currentOrder++));
+                        Guid subKey = subQuestion.SubQuestionKey;
+                        if (questionsRemaining <= 0) break;
+                        fallbackSubQuestionOrders.Add((subKey, currentOrder++));
+                        questionsAdded++;
+                        questionsRemaining--;
                     }
 
-                    // Gán Order cho câu hỏi cha
-                    float parentOrder = float.Parse($"{part}.{passageIndex}");
+                    // Đặt Order của câu hỏi cha trùng với Order của câu hỏi con đầu tiên
                     string checkParentSql = $"SELECT COUNT(*) FROM [ContentOfTest] WHERE TestKey = @TestKey AND QuestionKey = @ParentKey";
                     using (var checkCmd = new SqlCommand(checkParentSql, conn))
                     {
                         checkCmd.Parameters.AddWithValue("@TestKey", testKey);
                         checkCmd.Parameters.AddWithValue("@ParentKey", parentKey);
                         int parentExists = (int)await checkCmd.ExecuteScalarAsync();
-                        if (parentExists == 0)
+                        if (parentExists == 0 && fallbackSubQuestionOrders.Any())
                         {
+                            int parentOrder = fallbackSubQuestionOrders.First().Order;
                             await InsertContentOfTest(conn, testKey, resultKey, parentKey, part, parentOrder);
                             await UpdateAmountAccess(conn, tableName, parentKey);
                         }
                     }
 
-                    // Gán Order cho các câu hỏi con
-                    foreach (var (subKey, order) in fallbackSubQuestionsWithOrder)
+                    // Insert các câu hỏi con
+                    foreach (var subQuestion in fallbackSubQuestionOrders)
                     {
-                        if (questionsRemaining <= 0) break;
+                        Guid subKey = subQuestion.SubQuestionKey;
+                        int order = subQuestion.Order;
                         await InsertContentOfTest(conn, testKey, resultKey, subKey, part, order);
                         await UpdateAmountAccess(conn, tableName, subKey);
-                        questionsAdded++;
-                        questionsRemaining--;
                     }
-
-                    passageIndex++;
                 }
             }
 
@@ -444,7 +454,7 @@ namespace TNS_EDU_TEST.Areas.Test.Models
             return currentOrder;
         }
 
-        private static async Task InsertContentOfTest(SqlConnection conn, Guid testKey, Guid resultKey, Guid questionKey, int part, float? order)
+        private static async Task InsertContentOfTest(SqlConnection conn, Guid testKey, Guid resultKey, Guid questionKey, int part, int order)
         {
             try
             {
@@ -459,7 +469,7 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                     cmd.Parameters.AddWithValue("@ResultKey", resultKey);
                     cmd.Parameters.AddWithValue("@QuestionKey", questionKey);
                     cmd.Parameters.AddWithValue("@Part", part);
-                    cmd.Parameters.AddWithValue("@Order", (object)order ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Order", order);
 
                     await cmd.ExecuteNonQueryAsync();
                 }
