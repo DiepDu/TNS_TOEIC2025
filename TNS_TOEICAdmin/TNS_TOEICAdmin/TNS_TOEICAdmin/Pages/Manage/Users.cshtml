@@ -1,0 +1,657 @@
+﻿@page
+@model TNS_TOEICAdmin.Pages.Manage.UsersModel
+
+@{
+    ViewData["Title"] = "Quản lý người dùng";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <style>
+        body {
+            background-color: #E5F9FF;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #2C3E50;
+        }
+
+        .container {
+            background-color: #FFF9E5;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 30px auto;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            max-width: 1400px;
+        }
+
+        h2 {
+            color: #2C3E50;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .search-input, .form-control {
+            border-radius: 10px;
+            border: 1px solid #3498DB;
+            background-color: #FFFFFF;
+            transition: all 0.3s ease;
+        }
+
+            .search-input:focus, .form-control:focus {
+                border-color: #2980B9;
+                box-shadow: 0 0 8px rgba(52, 152, 219, 0.3);
+                background-color: #F9F9F9;
+            }
+
+        .btn-add, .btn-search, .btn-save, .btn-cancel, .btn-action {
+            border-radius: 25px;
+            padding: 8px 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-add {
+            background-color: #3498DB;
+            border-color: #3498DB;
+        }
+
+            .btn-add:hover {
+                background-color: #2980B9;
+                border-color: #2980B9;
+                transform: translateY(-2px);
+            }
+
+        .btn-search {
+            background-color: #F1C40F;
+            border-color: #F1C40F;
+        }
+
+            .btn-search:hover {
+                background-color: #D4AC0D;
+                border-color: #D4AC0D;
+            }
+
+        .btn-save {
+            background-color: #27AE60;
+            border-color: #27AE60;
+        }
+
+            .btn-save:hover {
+                background-color: #219653;
+                border-color: #219653;
+            }
+
+        .btn-cancel {
+            background-color: #95A5A6;
+            border-color: #95A5A6;
+        }
+
+            .btn-cancel:hover {
+                background-color: #7F8C8D;
+                border-color: #7F8C8D;
+            }
+
+        .btn-edit {
+            background-color: #F1C40F;
+            border-color: #F1C40F;
+        }
+
+            .btn-edit:hover {
+                background-color: #D4AC0D;
+                border-color: #D4AC0D;
+            }
+
+        .btn-delete {
+            background-color: #E74C3C;
+            border-color: #E74C3C;
+        }
+
+            .btn-delete:hover {
+                background-color: #C0392B;
+                border-color: #C0392B;
+            }
+
+        .btn-roles {
+            background-color: #8E44AD;
+            border-color: #8E44AD;
+        }
+
+            .btn-roles:hover {
+                background-color: #732D91;
+                border-color: #732D91;
+            }
+
+        .table {
+            background-color: #FFFFFF;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+        }
+
+            .table th {
+                background-color: #3498DB;
+                color: #FFFFFF;
+                text-align: center;
+                padding: 15px;
+                font-weight: 600;
+            }
+
+            .table td {
+                vertical-align: middle;
+                padding: 12px;
+            }
+
+            .table tr:hover {
+                background-color: #F9F9F9;
+            }
+
+        .pagination .page-link {
+            border-radius: 50%;
+            margin: 0 5px;
+            color: #3498DB;
+            border: 1px solid #3498DB;
+        }
+
+        .pagination .page-item.active .page-link {
+            background-color: #3498DB;
+            color: #FFFFFF;
+        }
+
+        .modal-content {
+            background-color: #FFF9E5;
+            border-radius: 15px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header {
+            background-color: #3498DB;
+            color: #FFFFFF;
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+        }
+
+        .alert {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+            min-width: 300px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .alert-success {
+            background-color: #27AE60;
+            color: #FFFFFF;
+        }
+
+        .alert-danger {
+            background-color: #E74C3C;
+            color: #FFFFFF;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2><i class="fas fa-users me-2"></i>Quản lý người dùng</h2>
+
+        <div class="search-container">
+            <button class="btn btn-add"><i class="fas fa-plus me-2"></i>Thêm người dùng</button>
+            <input type="text" class="form-control search-input" id="searchInput" placeholder="Tìm kiếm theo UserName" />
+            <select class="form-control" id="activateFilter">
+                <option value="">Tất cả trạng thái</option>
+                <option value="1">Kích hoạt</option>
+                <option value="0">Khóa</option>
+            </select>
+            <button class="btn btn-search" onclick="searchUsers()"><i class="fas fa-search me-2"></i>Tìm kiếm</button>
+        </div>
+
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <th>UserName</th>
+                    <th>Mô tả</th>
+                    <th>Trạng thái</th>
+                    <th>Lần đăng nhập cuối</th>
+                    <th>Số lần đăng nhập sai</th>
+                    <th>Tên nhân viên</th>
+                    <th>Vai trò</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody id="userTableBody"></tbody>
+        </table>
+
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center" id="pagination"></ul>
+        </nav>
+    </div>
+
+    <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="userModalLabel">Thêm người dùng</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="userForm">
+                        <input type="hidden" id="userKey" name="userKey" />
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="userName" class="form-label">UserName</label>
+                                <input type="text" class="form-control" id="userName" name="userName" required />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="password" name="password" placeholder="Chỉ nhập khi tạo mới hoặc cấp lại" />
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <label for="description" class="form-label">Mô tả</label>
+                                <textarea class="form-control" id="description" name="description"></textarea>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="employeeKey" class="form-label">Nhân viên</label>
+                                <select class="form-control" id="employeeKey" name="employeeKey">
+                                    <option value="">Không liên kết</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="activate" class="form-label">Trạng thái</label>
+                                <select class="form-control" id="activate" name="activate">
+                                    <option value="1">Kích hoạt</option>
+                                    <option value="0">Khóa</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="expireDate" class="form-label">Ngày hết hạn</label>
+                                <input type="date" class="form-control" id="expireDate" name="expireDate" />
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-save"><i class="fas fa-save me-2"></i>Lưu</button>
+                            <button type="button" class="btn btn-cancel" data-bs-dismiss="modal"><i class="fas fa-times me-2"></i>Hủy</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal phân quyền -->
+    <div class="modal fade" id="rolesModal" tabindex="-1" aria-labelledby="rolesModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="rolesModalLabel">Phân quyền người dùng</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="roleSelect" class="form-label">Thêm vai trò</label>
+                        <select class="form-control" id="roleSelect">
+                            <option value="">Chọn vai trò</option>
+                            <!-- Điền bằng JS -->
+                        </select>
+                        <button class="btn btn-add mt-2" onclick="addRole()">Thêm</button>
+                    </div>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Vai trò</th>
+                                <th>Đọc</th>
+                                <th>Sửa</th>
+                                <th>Thêm</th>
+                                <th>Xóa</th>
+                                <th>Phê duyệt</th>
+                                <th>Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rolesTableBody"></tbody>
+                    </table>
+                    <div class="text-end">
+                        <button class="btn btn-save" onclick="saveRoles()">Lưu</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        let users = [];
+        let roles = [];
+        let currentUserKey = null;
+        let currentPage = 1;
+        const pageSize = 10;
+        let searchTerm = '';
+        let activateFilter = '';
+        let isEditMode = false;
+
+        $(document).ready(function () {
+            loadUsers();
+            loadRoles();
+            $('.btn-add').on('click', showAddModal);
+        });
+
+        function loadUsers(page = 1, search = '', activate = '') {
+            currentPage = page;
+            searchTerm = search;
+            activateFilter = activate;
+
+            $.ajax({
+                url: '/Manage/Users?handler=GetUsers',
+                method: 'GET',
+                success: function (data) {
+                    users = Array.isArray(data) ? data : [];
+                    renderUsers();
+                    renderPagination();
+                },
+                error: function () {
+                    showAlert('danger', 'Không thể tải danh sách người dùng.');
+                }
+            });
+        }
+
+        function loadRoles() {
+            $.ajax({
+                url: '/Manage/Users?handler=GetAllRoles',
+                method: 'GET',
+                success: function (data) {
+                    roles = Array.isArray(data) ? data : [];
+                    populateRoleSelect();
+                },
+                error: function () {
+                    showAlert('danger', 'Không thể tải danh sách vai trò.');
+                }
+            });
+        }
+
+        function renderUsers() {
+            const tbody = $('#userTableBody');
+            tbody.empty();
+            let filteredUsers = users.filter(u => {
+                const searchLower = searchTerm.toLowerCase();
+                return (u.UserName?.toLowerCase().includes(searchLower) &&
+                    (activateFilter === '' || u.Activate.toString() === activateFilter));
+            });
+
+            const startIndex = (currentPage - 1) * pageSize;
+            const endIndex = Math.min(startIndex + pageSize, filteredUsers.length);
+            const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
+            paginatedUsers.forEach(u => {
+                const roleNames = u.Roles ? u.Roles.map(r => r.RoleName).join(', ') : 'Chưa có';
+                tbody.append(`
+                            <tr>
+                                <td>${u.UserName || 'N/A'}</td>
+                                <td>${u.Description || ''}</td>
+                                <td>${u.Activate ? 'Kích hoạt' : 'Khóa'}</td>
+                                <td>${u.LastLoginDate || 'Chưa đăng nhập'}</td>
+                                <td>${u.FailedPasswordAttemptCount || 0}</td>
+                                <td>${u.EmployeeName || 'Không liên kết'}</td>
+                                <td>${roleNames}</td>
+                                <td>
+                                    <button class="btn btn-action btn-edit" onclick="showEditModal('${u.UserKey}')"><i class="fas fa-edit"></i> Sửa</button>
+                                    <button class="btn btn-action btn-roles" onclick="showRolesModal('${u.UserKey}')"><i class="fas fa-user-shield"></i> Vai trò</button>
+                                    <button class="btn btn-action btn-delete" onclick="showDeleteModal('${u.UserKey}')"><i class="fas fa-trash"></i> Xóa</button>
+                                </td>
+                            </tr>
+                        `);
+            });
+        }
+
+        function renderPagination() {
+            const totalItems = users.filter(u => {
+                const searchLower = searchTerm.toLowerCase();
+                return (u.UserName?.toLowerCase().includes(searchLower) &&
+                    (activateFilter === '' || u.Activate.toString() === activateFilter));
+            }).length;
+            const totalPages = Math.ceil(totalItems / pageSize);
+            const pagination = $('#pagination');
+            pagination.empty();
+
+            pagination.append(`<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                        <a class="page-link" href="#" onclick="loadUsers(${currentPage - 1}, '${searchTerm}', '${activateFilter}')"><i class="fas fa-chevron-left"></i></a>
+                    </li>`);
+
+            for (let i = 1; i <= totalPages; i++) {
+                pagination.append(`<li class="page-item ${i === currentPage ? 'active' : ''}">
+                            <a class="page-link" href="#" onclick="loadUsers(${i}, '${searchTerm}', '${activateFilter}')">${i}</a>
+                        </li>`);
+            }
+
+            pagination.append(`<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                        <a class="page-link" href="#" onclick="loadUsers(${currentPage + 1}, '${searchTerm}', '${activateFilter}')"><i class="fas fa-chevron-right"></i></a>
+                    </li>`);
+        }
+
+        function showAddModal() {
+            isEditMode = false;
+            $('#userModalLabel').text('Thêm người dùng');
+            $('#userForm')[0].reset();
+            $('#userKey').val('');
+            $('#password').prop('required', true);
+            populateEmployeeDropdown();
+            $('#userModal').modal('show');
+        }
+
+        function showEditModal(userKey) {
+            const user = users.find(u => u.UserKey === userKey);
+            if (user) {
+                isEditMode = true;
+                $('#userModalLabel').text('Sửa người dùng');
+                $('#userKey').val(user.UserKey);
+                $('#userName').val(user.UserName);
+                $('#password').val('').prop('required', false);
+                $('#description').val(user.Description || '');
+                $('#activate').val(user.Activate ? '1' : '0');
+                // Sửa để dùng ExpireDate thay vì LastLoginDate
+                $('#expireDate').val(user.ExpireDate ? user.ExpireDate.split(' ')[0] : ''); // Chỉ lấy phần ngày (yyyy-MM-dd)
+                // Đảm bảo EmployeeKey được truyền dưới dạng chuỗi
+                populateEmployeeDropdown(user.EmployeeKey ? user.EmployeeKey.toString() : '');
+                $('#userModal').modal('show');
+            }
+        }
+
+        function showDeleteModal(userKey) {
+            currentUserKey = userKey;
+            // Tạo modal xóa nếu cần (tương tự Department)
+            if (confirm('Bạn có chắc chắn muốn xóa người dùng này?')) {
+                deleteUser(userKey);
+            }
+        }
+
+        function showRolesModal(userKey) {
+            currentUserKey = userKey;
+            const user = users.find(u => u.UserKey === userKey);
+            if (user) {
+                $('#rolesModalLabel').text(`Phân quyền cho ${user.UserName}`);
+                renderRoles(user.Roles || []);
+                $('#rolesModal').modal('show');
+            }
+        }
+
+        function populateEmployeeDropdown(selectedKey = '') {
+            $.ajax({
+                url: '/Manage/Users?handler=GetEmployees',
+                method: 'GET',
+                success: function (data) {
+                    const employeeSelect = $('#employeeKey');
+                    employeeSelect.empty();
+                    employeeSelect.append('<option value="">Không liên kết</option>');
+                    data.forEach(emp => {
+                        // Chuyển EmployeeKey thành chuỗi để so sánh
+                        const isSelected = emp.EmployeeKey.toString() === selectedKey ? 'selected' : '';
+                        employeeSelect.append(`<option value="${emp.EmployeeKey}" ${isSelected}>${emp.FirstName} ${emp.LastName}</option>`);
+                    });
+                },
+                error: function () {
+                    showAlert('danger', 'Không thể tải danh sách nhân viên.');
+                }
+            });
+        }
+
+        function populateRoleSelect() {
+            const roleSelect = $('#roleSelect');
+            roleSelect.empty();
+            roleSelect.append('<option value="">Chọn vai trò</option>');
+            roles.forEach(role => {
+                roleSelect.append(`<option value="${role.RoleKey}">${role.RoleName}</option>`);
+            });
+        }
+
+        function renderRoles(userRoles) {
+            const tbody = $('#rolesTableBody');
+            tbody.empty();
+            userRoles.forEach(role => {
+                tbody.append(`
+                            <tr data-role-key="${role.RoleKey}">
+                                <td>${role.RoleName}</td>
+                                <td><input type="checkbox" ${role.RoleRead ? 'checked' : ''} data-field="RoleRead"></td>
+                                <td><input type="checkbox" ${role.RoleEdit ? 'checked' : ''} data-field="RoleEdit"></td>
+                                <td><input type="checkbox" ${role.RoleAdd ? 'checked' : ''} data-field="RoleAdd"></td>
+                                <td><input type="checkbox" ${role.RoleDel ? 'checked' : ''} data-field="RoleDel"></td>
+                                <td><input type="checkbox" ${role.RoleApproval ? 'checked' : ''} data-field="RoleApproval"></td>
+                                <td><button class="btn btn-action btn-delete" onclick="removeRole('${role.RoleKey}')"><i class="fas fa-trash"></i></button></td>
+                            </tr>
+                        `);
+            });
+        }
+
+        function addRole() {
+            const roleKey = $('#roleSelect').val();
+            if (!roleKey) return;
+            const role = roles.find(r => r.RoleKey === roleKey);
+            const user = users.find(u => u.UserKey === currentUserKey);
+            if (user && role && !user.Roles.some(r => r.RoleKey === roleKey)) {
+                user.Roles.push({ RoleKey: role.RoleKey, RoleName: role.RoleName, RoleRead: false, RoleEdit: false, RoleAdd: false, RoleDel: false, RoleApproval: false });
+                renderRoles(user.Roles);
+            }
+        }
+
+        function removeRole(roleKey) {
+            const user = users.find(u => u.UserKey === currentUserKey);
+            if (user) {
+                user.Roles = user.Roles.filter(r => r.RoleKey !== roleKey);
+                renderRoles(user.Roles);
+            }
+        }
+
+        function saveRoles() {
+            const user = users.find(u => u.UserKey === currentUserKey);
+            if (user) {
+                const updatedRoles = [];
+                $('#rolesTableBody tr').each(function () {
+                    const roleKey = $(this).data('role-key');
+                    const role = {
+                        RoleKey: roleKey,
+                        RoleName: $(this).find('td:first').text(),
+                        RoleRead: $(this).find('[data-field="RoleRead"]').is(':checked'),
+                        RoleEdit: $(this).find('[data-field="RoleEdit"]').is(':checked'),
+                        RoleAdd: $(this).find('[data-field="RoleAdd"]').is(':checked'),
+                        RoleDel: $(this).find('[data-field="RoleDel"]').is(':checked'),
+                        RoleApproval: $(this).find('[data-field="RoleApproval"]').is(':checked')
+                    };
+                    updatedRoles.push(role);
+                });
+
+                $.ajax({
+                    url: '/Manage/Users?handler=UpdateRoles',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ UserKey: currentUserKey, Roles: updatedRoles }),
+                    headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
+                    success: function () {
+                        user.Roles = updatedRoles;
+                        $('#rolesModal').modal('hide');
+                        showAlert('success', 'Cập nhật vai trò thành công!');
+                        renderUsers();
+                    },
+                    error: function () {
+                        showAlert('danger', 'Cập nhật vai trò thất bại.');
+                    }
+                });
+            }
+        }
+
+        $('#userForm').on('submit', function (e) {
+            e.preventDefault();
+            const formData = {
+                UserKey: $('#userKey').val() || '00000000-0000-0000-0000-000000000000',
+                UserName: $('#userName').val(),
+                Password: $('#password').val() || null,
+                Description: $('#description').val() || null,
+                EmployeeKey: $('#employeeKey').val() || null,
+                Activate: $('#activate').val() === '1',
+                ExpireDate: $('#expireDate').val() || null
+            };
+
+            const url = isEditMode ? '/Manage/Users?handler=Update' : '/Manage/Users?handler=Create';
+            $.ajax({
+                url: url,
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
+                success: function (data) {
+                    $('#userModal').modal('hide');
+                    showAlert('success', data.message || (isEditMode ? 'Cập nhật người dùng thành công!' : 'Thêm người dùng thành công!'));
+                    loadUsers(currentPage, searchTerm, activateFilter);
+                },
+                error: function () {
+                    showAlert('danger', isEditMode ? 'Cập nhật thất bại.' : 'Thêm thất bại.');
+                }
+            });
+        });
+
+        function deleteUser(userKey) {
+            $.ajax({
+                url: '/Manage/Users?handler=Delete',
+                method: 'GET',
+                data: { userKey: userKey },
+                success: function () {
+                    showAlert('success', 'Xóa người dùng thành công!');
+                    loadUsers(currentPage, searchTerm, activateFilter);
+                },
+                error: function () {
+                    showAlert('danger', 'Xóa người dùng thất bại.');
+                }
+            });
+        }
+
+        function searchUsers() {
+            const searchValue = $('#searchInput').val().trim();
+            const activateValue = $('#activateFilter').val();
+            loadUsers(1, searchValue, activateValue);
+        }
+
+        function showAlert(type, message) {
+            const alertDiv = $(`
+                        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                            ${message}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    `);
+            $('body').append(alertDiv);
+            setTimeout(() => alertDiv.alert('close'), 3000);
+        }
+    </script>
+</body>
+</html>
