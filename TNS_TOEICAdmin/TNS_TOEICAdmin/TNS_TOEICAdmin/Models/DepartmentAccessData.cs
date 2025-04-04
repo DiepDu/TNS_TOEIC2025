@@ -6,21 +6,26 @@ namespace TNS_TOEICAdmin.Models
     {
         private static readonly string _connectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
 
-        public static async Task<List<Department>> GetDepartmentsAsync()
+        public static async Task<List<Department>> GetDepartmentsAsync(int page, int pageSize, string search)
         {
             var departments = new List<Department>();
             using (var conn = new SqlConnection(_connectionString))
             {
                 await conn.OpenAsync();
-
                 string sql = @"
             SELECT d1.DepartmentKey, d1.DepartmentID, d1.DepartmentName, d1.ShortName, d1.Address, 
                    d1.TRCD, d1.ParentKey, d2.ShortName AS ParentShortName, 
                    d1.OriganizationID, d1.OriganizationPath, d1.Rank, d1.Class, d1.ForReport
             FROM [HRM_Department] d1
-            LEFT JOIN [HRM_Department] d2 ON d1.ParentKey = d2.DepartmentKey";
+            LEFT JOIN [HRM_Department] d2 ON d1.ParentKey = d2.DepartmentKey
+            WHERE (@Search IS NULL OR d1.DepartmentID LIKE @Search OR d1.DepartmentName LIKE @Search)
+            ORDER BY d1.DepartmentID
+            OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
                 using (var cmd = new SqlCommand(sql, conn))
                 {
+                    cmd.Parameters.AddWithValue("@Search", string.IsNullOrEmpty(search) ? DBNull.Value : $"%{search}%");
+                    cmd.Parameters.AddWithValue("@Offset", (page - 1) * pageSize);
+                    cmd.Parameters.AddWithValue("@PageSize", pageSize);
                     using (var reader = await cmd.ExecuteReaderAsync())
                     {
                         while (await reader.ReadAsync())
@@ -46,6 +51,23 @@ namespace TNS_TOEICAdmin.Models
                 }
             }
             return departments;
+        }
+
+        public static async Task<int> GetDepartmentCountAsync(string search)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                await conn.OpenAsync();
+                string sql = @"
+            SELECT COUNT(*) 
+            FROM [HRM_Department] 
+            WHERE (@Search IS NULL OR DepartmentID LIKE @Search OR DepartmentName LIKE @Search)";
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@Search", string.IsNullOrEmpty(search) ? DBNull.Value : $"%{search}%");
+                    return (int)await cmd.ExecuteScalarAsync();
+                }
+            }
         }
 
         public static async Task AddDepartmentAsync(Department department)

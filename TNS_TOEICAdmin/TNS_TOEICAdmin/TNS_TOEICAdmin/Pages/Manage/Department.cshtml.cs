@@ -13,16 +13,16 @@ namespace TNS_TOEICAdmin.Pages.Manage
             return Page();
         }
 
-        public async Task<IActionResult> OnGetGetDepartments()
+        public async Task<IActionResult> OnGetGetDepartments(int page = 1, int pageSize = 10, string search = "")
         {
             try
             {
-                var departments = await DepartmentAccessData.GetDepartmentsAsync();
-                return new JsonResult(departments);
+                var departments = await DepartmentAccessData.GetDepartmentsAsync(page, pageSize, search);
+                var totalItems = await DepartmentAccessData.GetDepartmentCountAsync(search);
+                return new JsonResult(new { data = departments, totalItems });
             }
             catch (Exception ex)
             {
-                // Log lỗi nếu cần
                 Console.WriteLine(ex.Message);
                 return new JsonResult(new { success = false, message = "Không thể tải danh sách phòng ban." }) { StatusCode = 500 };
             }

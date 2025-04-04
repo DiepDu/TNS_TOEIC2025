@@ -19,91 +19,246 @@
         body {
             background-color: #E5F9FF; /* Xanh nhạt */
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #2C3E50;
         }
 
         .container {
             background-color: #FFF9E5; /* Vàng nhạt */
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 30px auto;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            max-width: 1200px;
         }
 
         h2 {
             color: #2C3E50;
-            font-weight: bold;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        .btn-primary {
+        /* Nút thêm */
+        .btn-add {
             background-color: #3498DB;
             border-color: #3498DB;
-            transition: background-color 0.3s;
+            border-radius: 25px;
+            padding: 10px 20px;
+            font-weight: 600;
+            transition: all 0.3s ease;
         }
 
-            .btn-primary:hover {
+            .btn-add:hover {
                 background-color: #2980B9;
                 border-color: #2980B9;
+                transform: translateY(-2px);
             }
 
-        .btn-warning {
+        /* Ô tìm kiếm */
+        .search-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            border-radius: 25px;
+            border: 1px solid #3498DB;
+            padding: 10px 15px;
+            background-color: #FFFFFF;
+            transition: all 0.3s ease;
+        }
+
+            .search-input:focus {
+                border-color: #2980B9;
+                box-shadow: 0 0 8px rgba(52, 152, 219, 0.3);
+                background-color: #F9F9F9;
+            }
+
+        .btn-search {
             background-color: #F1C40F;
             border-color: #F1C40F;
+            border-radius: 25px;
+            padding: 10px 20px;
+            font-weight: 600;
+            transition: all 0.3s ease;
         }
 
-            .btn-warning:hover {
+            .btn-search:hover {
                 background-color: #D4AC0D;
                 border-color: #D4AC0D;
+                transform: translateY(-2px);
             }
 
-        .btn-danger {
-            background-color: #E74C3C;
-            border-color: #E74C3C;
-        }
-
-            .btn-danger:hover {
-                background-color: #C0392B;
-                border-color: #C0392B;
-            }
-
+        /* Bảng */
         .table {
             background-color: #FFFFFF;
-            border-radius: 8px;
+            border-radius: 10px;
             overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
         }
 
             .table th {
                 background-color: #3498DB;
                 color: #FFFFFF;
                 text-align: center;
+                padding: 15px;
+                font-weight: 600;
+                text-transform: uppercase;
             }
 
             .table td {
                 vertical-align: middle;
+                padding: 12px;
+                border-bottom: 1px solid #E5F9FF;
             }
 
+            .table tr:hover {
+                background-color: #F9F9F9;
+                transition: background-color 0.2s ease;
+            }
+
+        /* Nút hành động */
+        .btn-action {
+            border-radius: 20px;
+            padding: 6px 12px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-edit {
+            background-color: #F1C40F;
+            border-color: #F1C40F;
+        }
+
+            .btn-edit:hover {
+                background-color: #D4AC0D;
+                border-color: #D4AC0D;
+                transform: translateY(-2px);
+            }
+
+        .btn-delete {
+            background-color: #E74C3C;
+            border-color: #E74C3C;
+        }
+
+            .btn-delete:hover {
+                background-color: #C0392B;
+                border-color: #C0392B;
+                transform: translateY(-2px);
+            }
+
+        /* Phân trang */
+        .pagination .page-link {
+            border-radius: 50%;
+            margin: 0 5px;
+            color: #3498DB;
+            border: 1px solid #3498DB;
+            transition: all 0.3s ease;
+        }
+
+        .pagination .page-item.active .page-link {
+            background-color: #3498DB;
+            color: #FFFFFF;
+            border-color: #3498DB;
+        }
+
+        .pagination .page-link:hover {
+            background-color: #2980B9;
+            color: #FFFFFF;
+            border-color: #2980B9;
+        }
+
+        /* Modal */
         .modal-content {
             background-color: #FFF9E5;
-            border-radius: 10px;
+            border-radius: 15px;
+            border: none;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
         }
 
         .modal-header {
             background-color: #3498DB;
             color: #FFFFFF;
-            border-top-left-radius: 10px;
-            border-top-right-radius: 10px;
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+            padding: 15px 20px;
         }
 
-        .form-control:focus {
-            border-color: #3498DB;
-            box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+        .modal-title {
+            font-weight: 600;
         }
 
+        .modal-body {
+            padding: 20px;
+        }
+
+        .form-control {
+            border-radius: 10px;
+            border: 1px solid #3498DB;
+            background-color: #FFFFFF;
+            transition: all 0.3s ease;
+        }
+
+            .form-control:focus {
+                border-color: #2980B9;
+                box-shadow: 0 0 8px rgba(52, 152, 219, 0.3);
+                background-color: #F9F9F9;
+            }
+
+        .btn-save {
+            background-color: #27AE60;
+            border-color: #27AE60;
+            border-radius: 25px;
+            padding: 10px 20px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+            .btn-save:hover {
+                background-color: #219653;
+                border-color: #219653;
+                transform: translateY(-2px);
+            }
+
+        .btn-cancel {
+            background-color: #95A5A6;
+            border-color: #95A5A6;
+            border-radius: 25px;
+            padding: 10px 20px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+            .btn-cancel:hover {
+                background-color: #7F8C8D;
+                border-color: #7F8C8D;
+                transform: translateY(-2px);
+            }
+
+        /* Alert */
         .alert {
             position: fixed;
             top: 20px;
             right: 20px;
             z-index: 1050;
             min-width: 300px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+        }
+
+        .alert-success {
+            background-color: #27AE60;
+            color: #FFFFFF;
+        }
+
+        .alert-danger {
+            background-color: #E74C3C;
+            color: #FFFFFF;
         }
     </style>
 </head>
@@ -111,8 +266,12 @@
     <div class="container">
         <h2><i class="fas fa-building me-2"></i>Quản lý phòng ban</h2>
 
-        <!-- Nút thêm phòng ban -->
-        <button class="btn btn-primary mb-3" onclick="showAddModal()"><i class="fas fa-plus me-2"></i>Thêm phòng ban</button>
+        <!-- Nút thêm và tìm kiếm -->
+        <div class="search-container">
+            <button class="btn btn-add"><i class="fas fa-plus me-2"></i>Thêm phòng ban</button>
+            <input type="text" class="form-control search-input" id="searchInput" placeholder="Tìm kiếm theo DepartmentID hoặc Tên phòng ban" />
+            <button class="btn btn-search" onclick="searchDepartments()"><i class="fas fa-search me-2"></i>Tìm kiếm</button>
+        </div>
 
         <!-- Danh sách phòng ban -->
         <table class="table table-bordered table-hover">
@@ -130,11 +289,18 @@
                 <!-- Dữ liệu sẽ được render bằng JavaScript -->
             </tbody>
         </table>
+
+        <!-- Phân trang -->
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center" id="pagination">
+                <!-- Các nút phân trang sẽ được render bằng JavaScript -->
+            </ul>
+        </nav>
     </div>
 
     <!-- Modal thêm/sửa phòng ban -->
     <div class="modal fade" id="departmentModal" tabindex="-1" aria-labelledby="departmentModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="departmentModalLabel">Thêm phòng ban</h5>
@@ -143,51 +309,55 @@
                 <div class="modal-body">
                     <form id="departmentForm">
                         <input type="hidden" id="departmentKey" name="departmentKey" />
-                        <div class="form-group mb-3">
-                            <label for="departmentID">DepartmentID</label>
-                            <input type="text" class="form-control" id="departmentID" name="departmentID" required />
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="departmentID" class="form-label">DepartmentID</label>
+                                <input type="text" class="form-control" id="departmentID" name="departmentID" required />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="departmentName" class="form-label">Tên phòng ban</label>
+                                <input type="text" class="form-control" id="departmentName" name="departmentName" required />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="shortName" class="form-label">Tên viết tắt</label>
+                                <input type="text" class="form-control" id="shortName" name="shortName" required />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="address" class="form-label">Địa chỉ</label>
+                                <input type="text" class="form-control" id="address" name="address" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="trcd" class="form-label">TRCD</label>
+                                <input type="text" class="form-control" id="trcd" name="trcd" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="parentKey" class="form-label">Phòng ban cha</label>
+                                <select class="form-control" id="parentKey" name="parentKey">
+                                    <option value="">Không có</option>
+                                    <!-- Options sẽ được render bằng JavaScript -->
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="origanizationID" class="form-label">OriganizationID</label>
+                                <input type="text" class="form-control" id="origanizationID" name="origanizationID" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="rank" class="form-label">Rank</label>
+                                <input type="number" class="form-control" id="rank" name="rank" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="class" class="form-label">Class</label>
+                                <input type="text" class="form-control" id="class" name="class" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="forReport" class="form-label">Dùng cho báo cáo</label>
+                                <input type="text" class="form-control" id="forReport" name="forReport" placeholder="Nhập true hoặc false" />
+                            </div>
                         </div>
-                        <div class="form-group mb-3">
-                            <label for="departmentName">Tên phòng ban</label>
-                            <input type="text" class="form-control" id="departmentName" name="departmentName" required />
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-save"><i class="fas fa-save me-2"></i>Lưu</button>
+                            <button type="button" class="btn btn-cancel" data-bs-dismiss="modal"><i class="fas fa-times me-2"></i>Hủy</button>
                         </div>
-                        <div class="form-group mb-3">
-                            <label for="shortName">Tên viết tắt</label>
-                            <input type="text" class="form-control" id="shortName" name="shortName" required />
-                        </div>
-                        <div class="form-group mb-3">
-                            <label for="address">Địa chỉ</label>
-                            <input type="text" class="form-control" id="address" name="address" />
-                        </div>
-                        <div class="form-group mb-3">
-                            <label for="trcd">TRCD</label>
-                            <input type="text" class="form-control" id="trcd" name="trcd" />
-                        </div>
-                        <div class="form-group mb-3">
-                            <label for="parentKey">Phòng ban cha</label>
-                            <select class="form-control" id="parentKey" name="parentKey">
-                                <option value="">Không có</option>
-                                <!-- Options sẽ được render bằng JavaScript -->
-                            </select>
-                        </div>
-                        <div class="form-group mb-3">
-                            <label for="origanizationID">OriganizationID</label>
-                            <input type="text" class="form-control" id="origanizationID" name="origanizationID" />
-                        </div>
-                        <div class="form-group mb-3">
-                            <label for="rank">Rank</label>
-                            <input type="number" class="form-control" id="rank" name="rank" />
-                        </div>
-                        <div class="form-group mb-3">
-                            <label for="class">Class</label>
-                            <input type="text" class="form-control" id="class" name="class" />
-                        </div>
-                        <div class="form-group mb-3">
-                            <label for="forReport">Dùng cho báo cáo</label>
-                            <input type="text" class="form-control" id="forReport" name="forReport" placeholder="Nhập true hoặc false" />
-                        </div>
-                        <button type="submit" class="btn btn-success"><i class="fas fa-save me-2"></i>Lưu</button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times me-2"></i>Hủy</button>
                     </form>
                 </div>
             </div>
@@ -206,8 +376,8 @@
                     Bạn có chắc chắn muốn xóa phòng ban này?
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn"><i class="fas fa-trash me-2"></i>Xóa</button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times me-2"></i>Hủy</button>
+                    <button type="button" class="btn btn-delete" id="confirmDeleteBtn"><i class="fas fa-trash me-2"></i>Xóa</button>
+                    <button type="button" class="btn btn-cancel" data-bs-dismiss="modal"><i class="fas fa-times me-2"></i>Hủy</button>
                 </div>
             </div>
         </div>
@@ -221,13 +391,20 @@
         let departments = [];
         let currentDepartmentKey = null;
         let isEditMode = false;
+        let currentPage = 1;
+        const pageSize = 10; // Số lượng phòng ban mỗi trang
+        let searchTerm = '';
 
-        // Load departments on page load
         $(document).ready(function () {
             loadDepartments();
+            $('.btn-add').on('click', showAddModal); // Gán sự kiện cho nút thêm
         });
 
-        function loadDepartments() {
+        // Load departments với phân trang và tìm kiếm
+        function loadDepartments(page = 1, search = '') {
+            currentPage = page;
+            searchTerm = search;
+
             return $.ajax({
                 url: '/Manage/Department?handler=GetDepartments',
                 method: 'GET',
@@ -240,6 +417,7 @@
                         return;
                     }
                     renderDepartments();
+                    renderPagination();
                     populateParentKeyDropdown();
                 },
                 error: function (xhr, status, error) {
@@ -249,15 +427,32 @@
             });
         }
 
+        // Render danh sách phòng ban với phân trang
         function renderDepartments() {
             const tbody = $('#departmentTableBody');
             tbody.empty();
+
             if (!Array.isArray(departments)) {
                 console.error('departments is not an array:', departments);
                 showAlert('danger', 'Dữ liệu phòng ban không hợp lệ.');
                 return;
             }
-            departments.forEach(dept => {
+
+            // Lọc dữ liệu theo từ khóa tìm kiếm
+            let filteredDepartments = departments.filter(dept => {
+                const searchLower = searchTerm.toLowerCase();
+                return (dept.DepartmentID?.toLowerCase().includes(searchLower) ||
+                    dept.DepartmentName?.toLowerCase().includes(searchLower));
+            });
+
+            // Tính toán dữ liệu cho trang hiện tại
+            const totalItems = filteredDepartments.length;
+            const totalPages = Math.ceil(totalItems / pageSize);
+            const startIndex = (currentPage - 1) * pageSize;
+            const endIndex = Math.min(startIndex + pageSize, totalItems);
+            const paginatedDepartments = filteredDepartments.slice(startIndex, endIndex);
+
+            paginatedDepartments.forEach(dept => {
                 const departmentID = dept.DepartmentID || 'N/A';
                 const departmentName = dept.DepartmentName || 'N/A';
                 const shortName = dept.ShortName || 'N/A';
@@ -265,26 +460,59 @@
                 const parentShortName = dept.ParentShortName || 'Không có';
                 const departmentKey = dept.DepartmentKey || '';
 
-                console.log('Rendering department:', dept);
-
                 tbody.append(`
-                    <tr>
-                        <td>${departmentID}</td>
-                        <td>${departmentName}</td>
-                        <td>${shortName}</td>
-                        <td>${address}</td>
-                        <td>${parentShortName}</td>
-                        <td>
-                            <button class="btn btn-sm btn-warning" onclick="showEditModal('${departmentKey}')">
-                                <i class="fas fa-edit"></i> Sửa
-                            </button>
-                            <button class="btn btn-sm btn-danger" onclick="showDeleteModal('${departmentKey}')">
-                                <i class="fas fa-trash"></i> Xóa
-                            </button>
-                        </td>
-                    </tr>
-                `);
+                            <tr>
+                                <td>${departmentID}</td>
+                                <td>${departmentName}</td>
+                                <td>${shortName}</td>
+                                <td>${address}</td>
+                                <td>${parentShortName}</td>
+                                <td>
+                                    <button class="btn btn-action btn-edit" onclick="showEditModal('${departmentKey}')">
+                                        <i class="fas fa-edit"></i> Sửa
+                                    </button>
+                                    <button class="btn btn-action btn-delete" onclick="showDeleteModal('${departmentKey}')">
+                                        <i class="fas fa-trash"></i> Xóa
+                                    </button>
+                                </td>
+                            </tr>
+                        `);
             });
+        }
+
+        // Render nút phân trang
+        function renderPagination() {
+            const totalItems = departments.filter(dept => {
+                const searchLower = searchTerm.toLowerCase();
+                return (dept.DepartmentID?.toLowerCase().includes(searchLower) ||
+                    dept.DepartmentName?.toLowerCase().includes(searchLower));
+            }).length;
+            const totalPages = Math.ceil(totalItems / pageSize);
+            const pagination = $('#pagination');
+            pagination.empty();
+
+            // Nút Previous
+            pagination.append(`
+                        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                            <a class="page-link" href="#" onclick="loadDepartments(${currentPage - 1}, '${searchTerm}')"><i class="fas fa-chevron-left"></i></a>
+                        </li>
+                    `);
+
+            // Các số trang
+            for (let i = 1; i <= totalPages; i++) {
+                pagination.append(`
+                            <li class="page-item ${i === currentPage ? 'active' : ''}">
+                                <a class="page-link" href="#" onclick="loadDepartments(${i}, '${searchTerm}')">${i}</a>
+                            </li>
+                        `);
+            }
+
+            // Nút Next
+            pagination.append(`
+                        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                            <a class="page-link" href="#" onclick="loadDepartments(${currentPage + 1}, '${searchTerm}')"><i class="fas fa-chevron-right"></i></a>
+                        </li>
+                    `);
         }
 
         // Populate ParentKey dropdown
@@ -292,33 +520,29 @@
             const parentKeySelect = $('#parentKey');
             parentKeySelect.empty();
             parentKeySelect.append('<option value="">Không có</option>');
-            if (!Array.isArray(departments)) {
-                console.error('departments is not an array:', departments);
-                return;
-            }
+            if (!Array.isArray(departments)) return;
             departments.forEach(dept => {
-                console.log('Department in dropdown:', dept);
                 if (dept.DepartmentKey !== $('#departmentKey').val()) {
                     parentKeySelect.append(`<option value="${dept.DepartmentKey}">${dept.ShortName || 'N/A'}</option>`);
                 }
             });
         }
 
+        // Show add modal
         function showAddModal() {
             isEditMode = false;
             $('#departmentModalLabel').text('Thêm phòng ban');
             $('#departmentForm')[0].reset();
             $('#departmentKey').val('');
-            $('#forReport').val(''); // Reset giá trị ForReport
+            $('#forReport').val('');
             populateParentKeyDropdown();
             $('#departmentModal').modal('show');
         }
 
+        // Show edit modal
         function showEditModal(departmentKey) {
-            console.log('DepartmentKey passed:', departmentKey);
             const dept = departments.find(d => d.DepartmentKey === departmentKey);
             if (dept) {
-                console.log('Editing department:', dept);
                 isEditMode = true;
                 $('#departmentModalLabel').text('Sửa phòng ban');
                 $('#departmentKey').val(dept.DepartmentKey || '');
@@ -331,11 +555,8 @@
                 $('#rank').val(dept.Rank || '');
                 $('#class').val(dept.Class || '');
                 $('#forReport').val(dept.ForReport || '');
-
-                // Điền danh sách dropdown trước, rồi gán giá trị ParentKey
                 populateParentKeyDropdown();
-                $('#parentKey').val(dept.ParentKey || ''); // Gán sau khi danh sách đã được điền
-
+                $('#parentKey').val(dept.ParentKey || '');
                 $('#departmentModal').modal('show');
             } else {
                 showAlert('danger', 'Không tìm thấy phòng ban để chỉnh sửa.');
@@ -348,6 +569,7 @@
             $('#deleteModal').modal('show');
         }
 
+        // Submit form
         $('#departmentForm').on('submit', function (e) {
             e.preventDefault();
             const formData = {
@@ -361,7 +583,7 @@
                 OriganizationID: $('#origanizationID').val() || null,
                 Rank: $('#rank').val() ? parseInt($('#rank').val()) : null,
                 Class: $('#class').val() || null,
-                ForReport: $('#forReport').val() || null // Lấy giá trị văn bản trực tiếp
+                ForReport: $('#forReport').val() || null
             };
 
             const url = isEditMode ? '/Manage/Department?handler=Update' : '/Manage/Department?handler=Create';
@@ -374,10 +596,7 @@
                 success: function (data) {
                     $('#departmentModal').modal('hide');
                     showAlert('success', data.message || (isEditMode ? 'Cập nhật phòng ban thành công!' : 'Thêm phòng ban thành công!'));
-                    loadDepartments().then(() => {
-                        console.log('Departments reloaded:', departments);
-                        populateParentKeyDropdown();
-                    });
+                    loadDepartments(currentPage, searchTerm);
                 },
                 error: function (xhr, status, error) {
                     console.error('Lỗi khi gửi dữ liệu:', xhr.responseText);
@@ -396,7 +615,7 @@
                     $('#deleteModal').modal('hide');
                     if (data.success) {
                         showAlert('success', data.message || 'Xóa phòng ban thành công!');
-                        loadDepartments();
+                        loadDepartments(currentPage, searchTerm);
                     } else {
                         showAlert('danger', data.message || 'Không thể xóa phòng ban.');
                     }
@@ -407,6 +626,12 @@
                 }
             });
         });
+
+        // Search departments
+        function searchDepartments() {
+            const searchValue = $('#searchInput').val().trim();
+            loadDepartments(1, searchValue); // Reset về trang 1 khi tìm kiếm
+        }
 
         // Show alert
         function showAlert(type, message) {
