@@ -9,6 +9,7 @@ using TNS_TOEICAdmin.Extensions;
 
 namespace TNS_TOEICAdmin.Pages.Account
 {
+    [IgnoreAntiforgeryToken]
     public class LoginModel : PageModel
     {
         [BindProperty]
