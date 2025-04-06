@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Security.Claims;
-using TNS.Auth;
+using TNS_Auth;
 using TNS_TOEICAdmin.Models;
 
 namespace TNS_TOEICAdmin.Pages.Manage
@@ -39,7 +39,11 @@ namespace TNS_TOEICAdmin.Pages.Manage
 
             if (user.UserKey == Guid.Empty) user.UserKey = Guid.NewGuid();
             user.CreatedBy = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value);
-            if (!string.IsNullOrEmpty(user.Password)) user.Password = MyCryptography.HashPass(user.Password);
+
+            //// Mã hóa mật khẩu chỉ khi người dùng nhập mật khẩu mới
+            //if (!string.IsNullOrEmpty(user.Password))
+            //    user.Password = MyCryptography.HashPass(user.Password);  // Hash mật khẩu
+
             await UserAccessData.AddUserAsync(user);
             return new JsonResult(new { success = true, message = "Thêm người dùng thành công!" });
         }
@@ -50,10 +54,15 @@ namespace TNS_TOEICAdmin.Pages.Manage
                 return new JsonResult(new { success = false, message = "Dữ liệu không hợp lệ." }) { StatusCode = 400 };
 
             user.ModifiedBy = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value);
-            if (!string.IsNullOrEmpty(user.Password)) user.Password = MyCryptography.HashPass(user.Password);
+
+            //// Mã hóa mật khẩu chỉ khi người dùng nhập mật khẩu mới
+            //if (!string.IsNullOrEmpty(user.Password))
+            //    user.Password = MyCryptography.HashPass(user.Password);  // Hash mật khẩu
+
             await UserAccessData.UpdateUserAsync(user);
             return new JsonResult(new { success = true, message = "Cập nhật người dùng thành công!" });
         }
+
 
         public async Task<IActionResult> OnGetDelete(Guid userKey)
         {

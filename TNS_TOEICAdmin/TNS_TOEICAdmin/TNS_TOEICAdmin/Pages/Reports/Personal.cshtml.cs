@@ -5,7 +5,7 @@ namespace TNS_TOEICAdmin.Pages.Reports
 {
     public class PersonalModel : PageModel
     {
-        private TNS.Auth.UserLogin_Info _UserLogin;
+        private TNS_Auth.UserLogin_Info _UserLogin;
         public IActionResult OnGet()
         {
             CheckAuth();
@@ -16,7 +16,7 @@ namespace TNS_TOEICAdmin.Pages.Reports
         private void CheckAuth()
         {
 
-            _UserLogin = new TNS.Auth.UserLogin_Info(User);
+            _UserLogin = new TNS_Auth.UserLogin_Info(User);
         }
     }
 }

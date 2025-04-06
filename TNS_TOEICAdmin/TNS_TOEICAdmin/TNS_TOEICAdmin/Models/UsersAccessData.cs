@@ -1,5 +1,5 @@
 ﻿using Microsoft.Data.SqlClient;
-using TNS.Auth;
+using TNS_Auth;
 
 namespace TNS_TOEICAdmin.Models
 {

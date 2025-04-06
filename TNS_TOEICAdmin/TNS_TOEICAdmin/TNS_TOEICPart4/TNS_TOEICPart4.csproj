@@ -17,13 +17,10 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\TNS_Lib\TNS_DBConnection\TNS_DBConnection.csproj" />
+		<ProjectReference Include="..\TNS_Auth\TNS_Auth.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<Reference Include="TNS_Auth">
-			<HintPath>..\..\TNS_Lib\TNS_DLL\TNS_Auth.dll</HintPath>
-		</Reference>
-	</ItemGroup>
+
 
 	<ItemGroup>
 		<None Update="Areas\TOEICPart4\**\*.cshtml">

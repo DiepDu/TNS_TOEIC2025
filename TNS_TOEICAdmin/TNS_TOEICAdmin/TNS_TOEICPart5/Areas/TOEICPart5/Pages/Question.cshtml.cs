@@ -14,11 +14,11 @@ namespace TNS_TOEICPart5.Areas.TOEICPart5.Pages
     public class QuestionModel : PageModel
     {
         #region [ Security ]
-        public TNS.Auth.UserLogin_Info UserLogin;
+        public TNS_Auth.UserLogin_Info UserLogin;
         public string QuestionKey;
         private void CheckAuth()
         {
-            UserLogin = new TNS.Auth.UserLogin_Info(User);
+            UserLogin = new TNS_Auth.UserLogin_Info(User);
             UserLogin.GetRole("TOEIC_Part5");
             UserLogin.Role.IsRead = true;
             UserLogin.Role.IsCreate = true;

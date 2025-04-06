@@ -8,10 +8,10 @@ namespace TNS_TOEICPart7.Areas.TOEICPart7.Pages
     public class QuestionSubListModel : PageModel
     {
         #region [ Security ]
-        public TNS.Auth.UserLogin_Info UserLogin;
+        public TNS_Auth.UserLogin_Info UserLogin;
         private void CheckAuth()
         {
-            UserLogin = new TNS.Auth.UserLogin_Info(User);
+            UserLogin = new TNS_Auth.UserLogin_Info(User);
             UserLogin.GetRole("TOEIC_Part7");
             //For Testing
             UserLogin.Role.IsRead = true;

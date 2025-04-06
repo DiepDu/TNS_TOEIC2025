@@ -74,11 +74,11 @@ namespace TNS_TOEICAdmin.Pages.Account
             return LocalRedirect(Url.GetLocalUrl(ReturnUrl));
         }
 
-        private async Task<TNS.Auth.CheckUserLogin> AuthenticateUser(string userName, string password)
+        private async Task<TNS_Auth.CheckUserLogin> AuthenticateUser(string userName, string password)
         {
             
             await Task.Delay(500);
-            return new TNS.Auth.CheckUserLogin(userName, password);
+            return new TNS_Auth.CheckUserLogin(userName, password);
         }
     }
 }

@@ -17,12 +17,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\TNS_Lib\TNS_DBConnection\TNS_DBConnection.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<Reference Include="TNS_Auth">
-			<HintPath>..\..\TNS_Lib\TNS_DLL\TNS_Auth.dll</HintPath>
-		</Reference>
+		<ProjectReference Include="..\TNS_Auth\TNS_Auth.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

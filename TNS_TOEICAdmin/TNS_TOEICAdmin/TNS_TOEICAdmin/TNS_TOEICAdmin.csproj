@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\TNS_Lib\TNS_DBConnection\TNS_DBConnection.csproj" />
+    <ProjectReference Include="..\TNS_Auth\TNS_Auth.csproj" />
     <ProjectReference Include="..\TNS_TOEICPart1\TNS_TOEICPart1.csproj" />
     <ProjectReference Include="..\TNS_TOEICPart2\TNS_TOEICPart2.csproj" />
     <ProjectReference Include="..\TNS_TOEICPart3\TNS_TOEICPart3.csproj" />
@@ -19,12 +20,6 @@
     <ProjectReference Include="..\TNS_TOEICPart5\TNS_TOEICPart5.csproj" />
     <ProjectReference Include="..\TNS_TOEICPart6\TNS_TOEICPart6.csproj" />
     <ProjectReference Include="..\TNS_TOEICPart7\TNS_TOEICPart7.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="TNS_Auth">
-      <HintPath>..\..\TNS_Lib\TNS_DLL\TNS_Auth.dll</HintPath>
-    </Reference>
   </ItemGroup>
 
   <ItemGroup>
