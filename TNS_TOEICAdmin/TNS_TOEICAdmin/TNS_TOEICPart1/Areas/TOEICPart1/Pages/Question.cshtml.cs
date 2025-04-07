@@ -52,7 +52,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
         public IActionResult OnGet(string key = null)
         {
             CheckAuth();
-            if (UserLogin.Role.IsRead)
+            if (UserLogin.Role.IsRead || IsFullAdmin)
             {
                 QuestionKey = key;
                 return Page();
@@ -88,7 +88,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
         public IActionResult OnPostGetInfo([FromBody] ItemRequest request)
         {
             CheckAuth();
-            if (IsFullAdmin || UserLogin.Role.IsRead)
+            if (!(IsFullAdmin || UserLogin.Role.IsRead))
                 return new JsonResult(new { status = "ERROR", message = "ACCESS DENIED" });
 
             var record = new QuestionAccessData.Part1_Question_Info(request.QuestionKey);
@@ -102,9 +102,9 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
         }
         public IActionResult OnPostLoadDropdowns()
         {
-            CheckAuth();
-            if (IsFullAdmin || UserLogin.Role.IsRead)
-                return new JsonResult(new { status = "ERROR", message = "ACCESS DENIED" });
+            //CheckAuth();
+            //if (!IsFullAdmin || !UserLogin.Role.IsRead)
+            //    return new JsonResult(new { status = "ERROR", message = "ACCESS DENIED" });
 
             string connectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
             using (SqlConnection conn = new SqlConnection(connectionString))
@@ -177,7 +177,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
         public IActionResult OnPostRecordCreate()
         {
             CheckAuth();
-            if (IsFullAdmin || UserLogin.Role.IsCreate)
+            if (!(IsFullAdmin || UserLogin.Role.IsCreate))
                 return new JsonResult(new { status = "ERROR", message = "ACCESS DENIED" });
 
             string recordJson = HttpContext.Request.Form["record"];
@@ -229,7 +229,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
         public IActionResult OnPostRecordUpdate()
         {
             CheckAuth();
-            if (IsFullAdmin || UserLogin.Role.IsUpdate)
+            if (!(IsFullAdmin || UserLogin.Role.IsUpdate))
                 return new JsonResult(new { status = "ERROR", message = "ACCESS DENIED" });
 
             string recordJson = HttpContext.Request.Form["record"];

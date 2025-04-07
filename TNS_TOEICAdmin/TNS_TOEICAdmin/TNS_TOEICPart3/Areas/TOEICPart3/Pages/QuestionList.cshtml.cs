@@ -40,7 +40,7 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Pages
         public IActionResult OnGet()
         {
             CheckAuth();
-            if (UserLogin.Role.IsRead)
+            if (UserLogin.Role.IsRead || IsFullAdmin)
             {
                 return Page();
             }
@@ -79,7 +79,7 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Pages
         public IActionResult OnPostTogglePublish([FromBody] ToggleRequest request)
         {
             CheckAuth();
-            if (!UserLogin.Role.IsUpdate || !IsFullAdmin)
+            if (!(UserLogin.Role.IsUpdate || IsFullAdmin))
                 return new JsonResult(new { status = "ERROR", message = "ACCESS DENIED" });
 
             var zRecord = new QuestionAccessData.Part3_Question_Info(request.QuestionKey);

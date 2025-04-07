@@ -79,7 +79,7 @@ namespace TNS_TOEICPart4.Areas.TOEICPart4.Pages
         public IActionResult OnPostTogglePublish([FromBody] ToggleRequest request)
         {
             CheckAuth();
-            if (!UserLogin.Role.IsUpdate || !IsFullAdmin)
+            if (!(UserLogin.Role.IsUpdate || IsFullAdmin))
                 return new JsonResult(new { status = "ERROR", message = "ACCESS DENIED" });
 
             var zRecord = new QuestionAccessData.Part4_Question_Info(request.QuestionKey);

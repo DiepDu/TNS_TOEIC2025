@@ -52,7 +52,7 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Pages
         public IActionResult OnGet(string key = null, string questionKey = null)
         {
             CheckAuth();
-            if (!UserLogin.Role.IsRead || !IsFullAdmin)
+            if (!(UserLogin.Role.IsRead || IsFullAdmin))
             {
                 TempData["Error"] = "ACCESS DENIED!!!";
                 return Page();
@@ -72,7 +72,7 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Pages
         public IActionResult OnPostRead([FromBody] ItemRequest request)
         {
             CheckAuth();
-            if (!UserLogin.Role.IsRead || !IsFullAdmin)
+            if (!(UserLogin.Role.IsRead || IsFullAdmin))
                 return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
 
             if (string.IsNullOrEmpty(request.QuestionKey) || request.QuestionKey.Length != 36)
@@ -107,7 +107,7 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Pages
         public IActionResult OnPostGetInfo([FromBody] ItemRequest request)
         {
             CheckAuth();
-            if (!UserLogin.Role.IsRead || !IsFullAdmin)
+            if (!(UserLogin.Role.IsRead || IsFullAdmin))
                 return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
 
             if (string.IsNullOrEmpty(request.AnswerKey) || request.AnswerKey.Length != 36 ||
@@ -146,7 +146,7 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Pages
         public IActionResult OnPostCreate([FromBody] AnswerAccessData.Part3_Answer_Info request)
         {
             CheckAuth();
-            if (!UserLogin.Role.IsCreate || !IsFullAdmin)
+            if (!(UserLogin.Role.IsCreate || IsFullAdmin))
                 return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
 
             if (request == null)
@@ -181,7 +181,7 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Pages
         public IActionResult OnPostUpdate([FromBody] AnswerAccessData.Part3_Answer_Info request)
         {
             CheckAuth();
-            if (!UserLogin.Role.IsUpdate || !IsFullAdmin)
+            if (!(UserLogin.Role.IsUpdate || IsFullAdmin))
                 return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
 
             if (request == null)
@@ -216,7 +216,7 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Pages
         public IActionResult OnPostDelete([FromBody] ItemRequest request)
         {
             CheckAuth();
-            if (!UserLogin.Role.IsDelete || !IsFullAdmin)
+            if (!(UserLogin.Role.IsDelete || IsFullAdmin))
                 return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
 
             if (string.IsNullOrEmpty(request.AnswerKey) || request.AnswerKey.Length != 36)
@@ -242,7 +242,7 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Pages
         public IActionResult OnPostUpdateOtherAnswers([FromBody] UpdateOtherAnswersRequest request)
         {
             CheckAuth();
-            if (!UserLogin.Role.IsUpdate || !IsFullAdmin)
+            if (!(UserLogin.Role.IsUpdate || IsFullAdmin))
                 return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
 
             if (string.IsNullOrEmpty(request.QuestionKey) || request.QuestionKey.Length != 36)
@@ -262,9 +262,9 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Pages
         [HttpPost]
         public IActionResult OnPostLoadDropdowns()
         {
-            CheckAuth();
-            if (!UserLogin.Role.IsRead || !IsFullAdmin)
-                return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
+            //CheckAuth();
+            //if (!(UserLogin.Role.IsRead || IsFullAdmin))
+            //    return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
 
             try
             {
@@ -320,7 +320,7 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Pages
         public IActionResult OnPostCountAnswers([FromBody] ItemRequest request)
         {
             CheckAuth();
-            if (!UserLogin.Role.IsRead || !IsFullAdmin)
+            if (!(UserLogin.Role.IsRead || IsFullAdmin))
                 return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
 
             string sql = "SELECT COUNT(*) FROM [dbo].[TEC_Part3_Answer] WHERE QuestionKey = @QuestionKey AND RecordStatus != 99";

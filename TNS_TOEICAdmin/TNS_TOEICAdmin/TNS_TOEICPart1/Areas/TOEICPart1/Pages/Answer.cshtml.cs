@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Data.SqlClient;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Eventing.Reader;
 using TNS_TOEICPart1.Areas.TOEICPart1.Models;
 
 namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
@@ -52,8 +53,11 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
         public IActionResult OnGet(string key = null, string questionKey = null)
         {
             CheckAuth();
-            if (!UserLogin.Role.IsRead || !IsFullAdmin)
+            if (!(UserLogin.Role.IsRead || IsFullAdmin))
+            {
                 return LocalRedirect("~/Warning?id=403");
+            }
+                
 
             AnswerKey = key?.Trim();
             QuestionKey = questionKey?.Trim();
@@ -69,77 +73,88 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
         public IActionResult OnPostRead([FromBody] ItemRequest request)
         {
             CheckAuth();
-            if (!UserLogin.Role.IsRead || !IsFullAdmin)
-                return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
-
-            if (string.IsNullOrEmpty(request.QuestionKey) || request.QuestionKey.Length != 36)
-                return new JsonResult(new { Status = "ERROR", Message = "Invalid QuestionKey" });
-
-            AnswerDataAccess.Part1_Answer_Info record;
-            try
+            if (UserLogin.Role.IsRead || IsFullAdmin)
             {
-                if (string.IsNullOrEmpty(request.AnswerKey) || request.AnswerKey.Length != 36)
+              
+                if (string.IsNullOrEmpty(request.QuestionKey) || request.QuestionKey.Length != 36)
+                    return new JsonResult(new { Status = "ERROR", Message = "Invalid QuestionKey" });
+
+                AnswerDataAccess.Part1_Answer_Info record;
+                try
                 {
-                    record = new AnswerDataAccess.Part1_Answer_Info(request.QuestionKey);
-                    record.Message = "No existing record, initialized as new.";
-                }
-                else
-                {
-                    record = new AnswerDataAccess.Part1_Answer_Info(request.AnswerKey, request.QuestionKey);
-                    if (record.Status == "ERROR" && record.Message == "No record found")
+                    if (string.IsNullOrEmpty(request.AnswerKey) || request.AnswerKey.Length != 36)
                     {
                         record = new AnswerDataAccess.Part1_Answer_Info(request.QuestionKey);
-                        record.AnswerKey = Guid.NewGuid().ToString();
-                        record.IsNewRecord = true;
-                        record.Message = "No record found, initialized as new.";
+                        record.Message = "No existing record, initialized as new.";
                     }
+                    else
+                    {
+                        record = new AnswerDataAccess.Part1_Answer_Info(request.AnswerKey, request.QuestionKey);
+                        if (record.Status == "ERROR" && record.Message == "No record found")
+                        {
+                            record = new AnswerDataAccess.Part1_Answer_Info(request.QuestionKey);
+                            record.AnswerKey = Guid.NewGuid().ToString();
+                            record.IsNewRecord = true;
+                            record.Message = "No record found, initialized as new.";
+                        }
+                    }
+                    return new JsonResult(new { Status = "OK", Record = record, Message = record.Message });
                 }
-                return new JsonResult(new { Status = "OK", Record = record, Message = record.Message });
+                catch (Exception ex)
+                {
+                    return new JsonResult(new { Status = "ERROR", Message = $"Error loading record: {ex.Message}" });
+                }
             }
-            catch (Exception ex)
+            else
             {
-                return new JsonResult(new { Status = "ERROR", Message = $"Error loading record: {ex.Message}" });
+                return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
             }
         }
 
         public IActionResult OnPostCreate([FromBody] AnswerDataAccess.Part1_Answer_Info request)
         {
             CheckAuth();
-            if (!UserLogin.Role.IsCreate || !IsFullAdmin)
-                return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
-
-            if (request == null)
-                return new JsonResult(new { Status = "ERROR", Message = "Request body is null" });
-
-            if (string.IsNullOrEmpty(request.QuestionKey) || request.QuestionKey.Length != 36)
-                return new JsonResult(new { Status = "ERROR", Message = "Invalid QuestionKey" });
-
-            try
+            if (UserLogin.Role.IsCreate || IsFullAdmin)
             {
-                var record = request;
-                record.CreatedBy = UserLogin.Employee.Key;
-                record.CreatedName = UserLogin.Employee.Name;
-                record.Create();
+                if (request == null)
+                    return new JsonResult(new { Status = "ERROR", Message = "Request body is null" });
 
-                if (record.Status == "ERROR")
-                    return new JsonResult(new { Status = "ERROR", Message = record.Message });
+                if (string.IsNullOrEmpty(request.QuestionKey) || request.QuestionKey.Length != 36)
+                    return new JsonResult(new { Status = "ERROR", Message = "Invalid QuestionKey" });
 
-                if (record.AnswerCorrect)
+                try
                 {
-                    UpdateOtherAnswersToFalse(record.QuestionKey, record.AnswerKey);
-                }
+                    var record = request;
+                    record.CreatedBy = UserLogin.Employee.Key;
+                    record.CreatedName = UserLogin.Employee.Name;
+                    record.Create();
 
-                return new JsonResult(new { Status = "OK", Message = "Answer created", Record = record });
+                    if (record.Status == "ERROR")
+                        return new JsonResult(new { Status = "ERROR", Message = record.Message });
+
+                    if (record.AnswerCorrect)
+                    {
+                        UpdateOtherAnswersToFalse(record.QuestionKey, record.AnswerKey);
+                    }
+
+                    return new JsonResult(new { Status = "OK", Message = "Answer created", Record = record });
+                }
+                catch (Exception ex)
+                {
+                    return new JsonResult(new { Status = "ERROR", Message = $"Error creating record: {ex.Message}" });
+                }
             }
-            catch (Exception ex)
+
+            else
             {
-                return new JsonResult(new { Status = "ERROR", Message = $"Error creating record: {ex.Message}" });
+                return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
             }
+          
         }
         public IActionResult OnPostGetInfo([FromBody] ItemRequest request)
         {
             CheckAuth();
-            if (!UserLogin.Role.IsRead || !IsFullAdmin)
+            if (!(UserLogin.Role.IsRead || IsFullAdmin))
                 return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
 
             if (string.IsNullOrEmpty(request.AnswerKey) || request.AnswerKey.Length != 36 ||
@@ -179,42 +194,45 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
         public IActionResult OnPostUpdate([FromBody] AnswerDataAccess.Part1_Answer_Info request)
         {
             CheckAuth();
-            if (!UserLogin.Role.IsUpdate || !IsFullAdmin)
-                return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
-
-            if (request == null)
-                return new JsonResult(new { Status = "ERROR", Message = "Request body is null" });
-
-            if (string.IsNullOrEmpty(request.AnswerKey) || request.AnswerKey.Length != 36)
-                return new JsonResult(new { Status = "ERROR", Message = "Invalid AnswerKey" });
-
-            try
+            if (UserLogin.Role.IsUpdate || IsFullAdmin)
             {
-                var record = request;
-                record.ModifiedBy = UserLogin.Employee.Key;
-                record.ModifiedName = UserLogin.Employee.Name;
-                record.Update();
+                if (request == null)
+                    return new JsonResult(new { Status = "ERROR", Message = "Request body is null" });
 
-                if (record.Status == "ERROR")
-                    return new JsonResult(new { Status = "ERROR", Message = record.Message });
+                if (string.IsNullOrEmpty(request.AnswerKey) || request.AnswerKey.Length != 36)
+                    return new JsonResult(new { Status = "ERROR", Message = "Invalid AnswerKey" });
 
-                if (record.AnswerCorrect)
+                try
                 {
-                    UpdateOtherAnswersToFalse(record.QuestionKey, record.AnswerKey);
-                }
+                    var record = request;
+                    record.ModifiedBy = UserLogin.Employee.Key;
+                    record.ModifiedName = UserLogin.Employee.Name;
+                    record.Update();
 
-                return new JsonResult(new { Status = "OK", Message = "Answer updated", Record = record });
+                    if (record.Status == "ERROR")
+                        return new JsonResult(new { Status = "ERROR", Message = record.Message });
+
+                    if (record.AnswerCorrect)
+                    {
+                        UpdateOtherAnswersToFalse(record.QuestionKey, record.AnswerKey);
+                    }
+
+                    return new JsonResult(new { Status = "OK", Message = "Answer updated", Record = record });
+                }
+                catch (Exception ex)
+                {
+                    return new JsonResult(new { Status = "ERROR", Message = $"Error updating record: {ex.Message}" });
+                }
             }
-            catch (Exception ex)
-            {
-                return new JsonResult(new { Status = "ERROR", Message = $"Error updating record: {ex.Message}" });
-            }
+
+          
+            else { return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" }); }
         }
 
         public IActionResult OnPostDelete([FromBody] ItemRequest request)
         {
             CheckAuth();
-            if (!UserLogin.Role.IsDelete || !IsFullAdmin)
+            if (!(UserLogin.Role.IsDelete || IsFullAdmin))
                 return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
 
             if (string.IsNullOrEmpty(request.AnswerKey) || request.AnswerKey.Length != 36)
@@ -240,7 +258,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
         public IActionResult OnPostUpdateOtherAnswers([FromBody] UpdateOtherAnswersRequest request)
         {
             CheckAuth();
-            if (!UserLogin.Role.IsUpdate || !IsFullAdmin)
+            if (!(UserLogin.Role.IsUpdate || IsFullAdmin))
                 return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
 
             if (string.IsNullOrEmpty(request.QuestionKey) || request.QuestionKey.Length != 36)
@@ -261,7 +279,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
         public IActionResult OnPostLoadDropdowns()
         {
             CheckAuth();
-            if (!UserLogin.Role.IsRead || !IsFullAdmin)
+            if (!(UserLogin.Role.IsRead || IsFullAdmin))
                 return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
 
             try
@@ -318,7 +336,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
         public IActionResult OnPostCountAnswers([FromBody] ItemRequest request)
         {
             CheckAuth();
-            if (!UserLogin.Role.IsRead || !IsFullAdmin)
+            if (!(UserLogin.Role.IsRead || IsFullAdmin))
                 return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
 
             string sql = "SELECT COUNT(*) FROM [dbo].[TEC_Part1_Answer] WHERE QuestionKey = @QuestionKey AND RecordStatus != 99";
@@ -337,7 +355,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
         public IActionResult OnPostCheckRanking([FromBody] CheckRankingRequest request)
         {
             CheckAuth();
-            if (!UserLogin.Role.IsRead)
+            if (!(UserLogin.Role.IsRead || IsFullAdmin))
                 return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
 
             string sql = @"

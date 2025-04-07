@@ -94,7 +94,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
         public IActionResult OnPostTogglePublish([FromBody] ToggleRequest request)
         {
             CheckAuth();
-            if (!IsFullAdmin && !UserLogin.Role.IsApproval)
+            if (!(IsFullAdmin && UserLogin.Role.IsApproval))
                 return new JsonResult(new { status = "ERROR", message = "Bạn không có quyền phê duyệt câu hỏi!" });
 
             var zRecord = new QuestionAccessData.Part1_Question_Info(request.QuestionKey);
