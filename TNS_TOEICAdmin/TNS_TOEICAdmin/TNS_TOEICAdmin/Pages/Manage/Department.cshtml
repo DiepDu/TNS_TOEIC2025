@@ -17,13 +17,13 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
     <style>
         body {
-            background-color: #E5F9FF; /* Xanh nhạt */
+            background-color: #E5F9FF;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             color: #2C3E50;
         }
 
         .container {
-            background-color: #FFF9E5; /* Vàng nhạt */
+            background-color: #FFF9E5;
             border-radius: 15px;
             padding: 25px;
             margin: 30px auto;
@@ -40,7 +40,6 @@
             letter-spacing: 1px;
         }
 
-        /* Nút thêm */
         .btn-add {
             background-color: #3498DB;
             border-color: #3498DB;
@@ -56,7 +55,6 @@
                 transform: translateY(-2px);
             }
 
-        /* Ô tìm kiếm */
         .search-container {
             display: flex;
             gap: 10px;
@@ -93,7 +91,6 @@
                 transform: translateY(-2px);
             }
 
-        /* Bảng */
         .table {
             background-color: #FFFFFF;
             border-radius: 10px;
@@ -121,7 +118,6 @@
                 transition: background-color 0.2s ease;
             }
 
-        /* Nút hành động */
         .btn-action {
             border-radius: 20px;
             padding: 6px 12px;
@@ -151,7 +147,6 @@
                 transform: translateY(-2px);
             }
 
-        /* Phân trang */
         .pagination .page-link {
             border-radius: 50%;
             margin: 0 5px;
@@ -172,7 +167,6 @@
             border-color: #2980B9;
         }
 
-        /* Modal */
         .modal-content {
             background-color: #FFF9E5;
             border-radius: 15px;
@@ -239,7 +233,6 @@
                 transform: translateY(-2px);
             }
 
-        /* Alert */
         .alert {
             position: fixed;
             top: 20px;
@@ -334,7 +327,6 @@
                                 <label for="parentKey" class="form-label">Phòng ban cha</label>
                                 <select class="form-control" id="parentKey" name="parentKey">
                                     <option value="">Không có</option>
-                                    <!-- Options sẽ được render bằng JavaScript -->
                                 </select>
                             </div>
                             <div class="col-md-6 mb-3">
@@ -392,42 +384,45 @@
         let currentDepartmentKey = null;
         let isEditMode = false;
         let currentPage = 1;
-        const pageSize = 10; // Số lượng phòng ban mỗi trang
+        const pageSize = 10;
         let searchTerm = '';
 
         $(document).ready(function () {
-            loadDepartments();
-            $('.btn-add').on('click', showAddModal); // Gán sự kiện cho nút thêm
+            loadDepartments(1);
+            $('.btn-add').on('click', showAddModal);
         });
 
-        // Load departments với phân trang và tìm kiếm
-        function loadDepartments(page = 1, search = '') {
-            currentPage = page;
+        function loadDepartments(page, search = '') {
+            currentPage = page || 1;
             searchTerm = search;
 
-            return $.ajax({
+            console.log('Loading page:', currentPage);
+            $.ajax({
                 url: '/Manage/Department?handler=GetDepartments',
                 method: 'GET',
+                data: { page: currentPage, pageSize: pageSize, search: searchTerm },
+                cache: false,
+                beforeSend: function () {
+                    console.log('Sending request with data:', { page: currentPage, pageSize: pageSize, search: searchTerm });
+                },
                 success: function (data) {
-                    console.log('Dữ liệu từ server:', data);
-                    departments = Array.isArray(data) ? data : data.data || [];
-                    if (!Array.isArray(departments)) {
-                        console.error('Dữ liệu không phải là mảng:', departments);
-                        showAlert('danger', 'Dữ liệu phòng ban không hợp lệ.');
+                    console.log('Received data:', data);
+                    if (data.status !== "OK") {
+                        showAlert('danger', data.message || 'Không thể tải danh sách phòng ban.');
                         return;
                     }
+                    departments = data.data || [];
                     renderDepartments();
-                    renderPagination();
+                    renderPagination(data.totalItems);
                     populateParentKeyDropdown();
                 },
                 error: function (xhr, status, error) {
-                    console.error('Lỗi khi tải dữ liệu:', error);
-                    showAlert('danger', 'Không thể tải danh sách phòng ban.');
+                    console.error('Error:', error);
+                    showAlert('danger', xhr.responseJSON?.message || 'Không thể tải danh sách phòng ban.');
                 }
             });
         }
 
-        // Render danh sách phòng ban với phân trang
         function renderDepartments() {
             const tbody = $('#departmentTableBody');
             tbody.empty();
@@ -438,27 +433,13 @@
                 return;
             }
 
-            // Lọc dữ liệu theo từ khóa tìm kiếm
-            let filteredDepartments = departments.filter(dept => {
-                const searchLower = searchTerm.toLowerCase();
-                return (dept.DepartmentID?.toLowerCase().includes(searchLower) ||
-                    dept.DepartmentName?.toLowerCase().includes(searchLower));
-            });
-
-            // Tính toán dữ liệu cho trang hiện tại
-            const totalItems = filteredDepartments.length;
-            const totalPages = Math.ceil(totalItems / pageSize);
-            const startIndex = (currentPage - 1) * pageSize;
-            const endIndex = Math.min(startIndex + pageSize, totalItems);
-            const paginatedDepartments = filteredDepartments.slice(startIndex, endIndex);
-
-            paginatedDepartments.forEach(dept => {
-                const departmentID = dept.DepartmentID || 'N/A';
-                const departmentName = dept.DepartmentName || 'N/A';
-                const shortName = dept.ShortName || 'N/A';
-                const address = dept.Address || '';
-                const parentShortName = dept.ParentShortName || 'Không có';
-                const departmentKey = dept.DepartmentKey || '';
+            departments.forEach(dept => {
+                const departmentID = dept.DepartmentID || 'N/A'; // Giữ nguyên PascalCase
+                const departmentName = dept.DepartmentName || 'N/A'; // Giữ nguyên PascalCase
+                const shortName = dept.ShortName || 'N/A'; // Giữ nguyên PascalCase
+                const address = dept.Address || ''; // Giữ nguyên PascalCase
+                const parentShortName = dept.ParentShortName || 'Không có'; // Giữ nguyên PascalCase
+                const departmentKey = dept.DepartmentKey || ''; // Giữ nguyên PascalCase
 
                 tbody.append(`
                             <tr>
@@ -480,55 +461,53 @@
             });
         }
 
-        // Render nút phân trang
-        function renderPagination() {
-            const totalItems = departments.filter(dept => {
-                const searchLower = searchTerm.toLowerCase();
-                return (dept.DepartmentID?.toLowerCase().includes(searchLower) ||
-                    dept.DepartmentName?.toLowerCase().includes(searchLower));
-            }).length;
+        function renderPagination(totalItems) {
             const totalPages = Math.ceil(totalItems / pageSize);
             const pagination = $('#pagination');
             pagination.empty();
 
-            // Nút Previous
             pagination.append(`
                         <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-                            <a class="page-link" href="#" onclick="loadDepartments(${currentPage - 1}, '${searchTerm}')"><i class="fas fa-chevron-left"></i></a>
+                            <a class="page-link" href="#" data-page="${currentPage - 1}"><i class="fas fa-chevron-left"></i></a>
                         </li>
                     `);
 
-            // Các số trang
             for (let i = 1; i <= totalPages; i++) {
                 pagination.append(`
                             <li class="page-item ${i === currentPage ? 'active' : ''}">
-                                <a class="page-link" href="#" onclick="loadDepartments(${i}, '${searchTerm}')">${i}</a>
+                                <a class="page-link" href="#" data-page="${i}">${i}</a>
                             </li>
                         `);
             }
 
-            // Nút Next
             pagination.append(`
                         <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
-                            <a class="page-link" href="#" onclick="loadDepartments(${currentPage + 1}, '${searchTerm}')"><i class="fas fa-chevron-right"></i></a>
+                            <a class="page-link" href="#" data-page="${currentPage + 1}"><i class="fas fa-chevron-right"></i></a>
                         </li>
                     `);
+
+            $('#pagination .page-link').off('click').on('click', function (e) {
+                e.preventDefault();
+                const page = parseInt($(this).data('page'));
+                console.log('Clicked page:', page);
+                if (page >= 1 && page <= totalPages) {
+                    loadDepartments(page, searchTerm);
+                }
+            });
         }
 
-        // Populate ParentKey dropdown
         function populateParentKeyDropdown() {
             const parentKeySelect = $('#parentKey');
             parentKeySelect.empty();
             parentKeySelect.append('<option value="">Không có</option>');
             if (!Array.isArray(departments)) return;
             departments.forEach(dept => {
-                if (dept.DepartmentKey !== $('#departmentKey').val()) {
-                    parentKeySelect.append(`<option value="${dept.DepartmentKey}">${dept.ShortName || 'N/A'}</option>`);
+                if (dept.DepartmentKey !== $('#departmentKey').val()) { // Giữ nguyên PascalCase
+                    parentKeySelect.append(`<option value="${dept.DepartmentKey}">${dept.ShortName || 'N/A'}</option>`); // Giữ nguyên PascalCase
                 }
             });
         }
 
-        // Show add modal
         function showAddModal() {
             isEditMode = false;
             $('#departmentModalLabel').text('Thêm phòng ban');
@@ -539,37 +518,34 @@
             $('#departmentModal').modal('show');
         }
 
-        // Show edit modal
         function showEditModal(departmentKey) {
-            const dept = departments.find(d => d.DepartmentKey === departmentKey);
+            const dept = departments.find(d => d.DepartmentKey === departmentKey); // Giữ nguyên PascalCase
             if (dept) {
                 isEditMode = true;
                 $('#departmentModalLabel').text('Sửa phòng ban');
-                $('#departmentKey').val(dept.DepartmentKey || '');
-                $('#departmentID').val(dept.DepartmentID || '');
-                $('#departmentName').val(dept.DepartmentName || '');
-                $('#shortName').val(dept.ShortName || '');
-                $('#address').val(dept.Address || '');
-                $('#trcd').val(dept.TRCD || '');
-                $('#origanizationID').val(dept.OriganizationID || '');
-                $('#rank').val(dept.Rank || '');
-                $('#class').val(dept.Class || '');
-                $('#forReport').val(dept.ForReport || '');
+                $('#departmentKey').val(dept.DepartmentKey || ''); // Giữ nguyên PascalCase
+                $('#departmentID').val(dept.DepartmentID || ''); // Giữ nguyên PascalCase
+                $('#departmentName').val(dept.DepartmentName || ''); // Giữ nguyên PascalCase
+                $('#shortName').val(dept.ShortName || ''); // Giữ nguyên PascalCase
+                $('#address').val(dept.Address || ''); // Giữ nguyên PascalCase
+                $('#trcd').val(dept.TRCD || ''); // Giữ nguyên PascalCase
+                $('#origanizationID').val(dept.OriganizationID || ''); // Giữ nguyên PascalCase
+                $('#rank').val(dept.Rank || ''); // Giữ nguyên PascalCase
+                $('#class').val(dept.Class || ''); // Giữ nguyên PascalCase
+                $('#forReport').val(dept.ForReport || ''); // Giữ nguyên PascalCase
                 populateParentKeyDropdown();
-                $('#parentKey').val(dept.ParentKey || '');
+                $('#parentKey').val(dept.ParentKey || ''); // Giữ nguyên PascalCase
                 $('#departmentModal').modal('show');
             } else {
                 showAlert('danger', 'Không tìm thấy phòng ban để chỉnh sửa.');
             }
         }
 
-        // Show delete modal
         function showDeleteModal(departmentKey) {
             currentDepartmentKey = departmentKey;
             $('#deleteModal').modal('show');
         }
 
-        // Submit form
         $('#departmentForm').on('submit', function (e) {
             e.preventDefault();
             const formData = {
@@ -579,7 +555,7 @@
                 ShortName: $('#shortName').val() || null,
                 Address: $('#address').val() || null,
                 TRCD: $('#trcd').val() || null,
-                ParentKey: $('#parentKey').val() ? $('#parentKey').val() : null,
+                ParentKey: $('#parentKey').val() || null,
                 OriganizationID: $('#origanizationID').val() || null,
                 Rank: $('#rank').val() ? parseInt($('#rank').val()) : null,
                 Class: $('#class').val() || null,
@@ -595,17 +571,15 @@
                 headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
                 success: function (data) {
                     $('#departmentModal').modal('hide');
-                    showAlert('success', data.message || (isEditMode ? 'Cập nhật phòng ban thành công!' : 'Thêm phòng ban thành công!'));
+                    showAlert('success', data.message || (isEditMode ? 'Cập nhật thành công!' : 'Thêm thành công!'));
                     loadDepartments(currentPage, searchTerm);
                 },
-                error: function (xhr, status, error) {
-                    console.error('Lỗi khi gửi dữ liệu:', xhr.responseText);
-                    showAlert('danger', isEditMode ? 'Cập nhật phòng ban thất bại.' : 'Thêm phòng ban thất bại.');
+                error: function (xhr) {
+                    showAlert('danger', xhr.responseJSON?.message || (isEditMode ? 'Cập nhật thất bại.' : 'Thêm thất bại.'));
                 }
             });
         });
 
-        // Handle delete confirmation
         $('#confirmDeleteBtn').on('click', function () {
             $.ajax({
                 url: '/Manage/Department?handler=Delete',
@@ -613,27 +587,25 @@
                 data: { departmentKey: currentDepartmentKey },
                 success: function (data) {
                     $('#deleteModal').modal('hide');
-                    if (data.success) {
-                        showAlert('success', data.message || 'Xóa phòng ban thành công!');
+                    if (data.status === "OK") {
+                        showAlert('success', data.message || 'Xóa thành công!');
                         loadDepartments(currentPage, searchTerm);
                     } else {
-                        showAlert('danger', data.message || 'Không thể xóa phòng ban.');
+                        showAlert('danger', data.message || 'Xóa thất bại.');
                     }
                 },
                 error: function () {
                     $('#deleteModal').modal('hide');
-                    showAlert('danger', 'Xóa phòng ban thất bại.');
+                    showAlert('danger', 'Xóa thất bại.');
                 }
             });
         });
 
-        // Search departments
         function searchDepartments() {
             const searchValue = $('#searchInput').val().trim();
-            loadDepartments(1, searchValue); // Reset về trang 1 khi tìm kiếm
+            loadDepartments(1, searchValue);
         }
 
-        // Show alert
         function showAlert(type, message) {
             const alertDiv = $(`
                         <div class="alert alert-${type} alert-dismissible fade show" role="alert">

@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Hosting;
+﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Collections.Generic;
@@ -12,16 +12,30 @@ namespace TNS_TOEICPart6.Areas.TOEICPart6.Pages
     public class AnswerModel : PageModel
     {
         #region [Security]
-        public TNS_Auth.UserLogin_Info UserLogin;
-
+        public TNS_Auth.UserLogin_Info UserLogin; 
+        public bool IsFullAdmin { get; private set; }
         private void CheckAuth()
         {
             UserLogin = new TNS_Auth.UserLogin_Info(User);
-            UserLogin.GetRole("TOEIC_Part6");
-            UserLogin.Role.IsRead = true;
-            UserLogin.Role.IsCreate = true;
-            UserLogin.Role.IsUpdate = true;
-            UserLogin.Role.IsDelete = true;
+
+            // Kiểm tra quyền Full trước
+            var fullRole = new TNS_Auth.Role_Info(UserLogin.UserKey, "Full");
+            if (fullRole.GetCode() == "200") // Có quyền Full trong DB
+            {
+                IsFullAdmin = true;
+                UserLogin.GetRole("Questions"); // Vẫn lấy nhưng không ảnh hưởng
+            }
+            else
+            {
+                IsFullAdmin = false;
+                UserLogin.GetRole("Questions"); // Lấy quyền Questions
+            }
+
+            // Đảm bảo Role được khởi tạo
+            if (UserLogin.Role == null)
+            {
+                UserLogin.GetRole("Questions");
+            }
         }
         #endregion
 
@@ -38,8 +52,11 @@ namespace TNS_TOEICPart6.Areas.TOEICPart6.Pages
         public IActionResult OnGet(string key = null, string questionKey = null)
         {
             CheckAuth();
-            if (!UserLogin.Role.IsRead)
-                return LocalRedirect("~/Warning?id=403");
+            if (!UserLogin.Role.IsRead || !IsFullAdmin)
+            {
+                TempData["Error"] = "ACCESS DENIED!!!";
+                return Page();
+            }
 
             AnswerKey = key?.Trim();
             QuestionKey = questionKey?.Trim();
@@ -55,7 +72,7 @@ namespace TNS_TOEICPart6.Areas.TOEICPart6.Pages
         public IActionResult OnPostGetInfo([FromBody] ItemRequest request)
         {
             CheckAuth();
-            if (!UserLogin.Role.IsRead)
+            if (!UserLogin.Role.IsRead || !IsFullAdmin)
                 return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
 
             if (string.IsNullOrEmpty(request.AnswerKey) || request.AnswerKey.Length != 36 ||
@@ -94,7 +111,7 @@ namespace TNS_TOEICPart6.Areas.TOEICPart6.Pages
         public IActionResult OnPostRead([FromBody] ItemRequest request)
         {
             CheckAuth();
-            if (!UserLogin.Role.IsRead)
+            if (!UserLogin.Role.IsRead || !IsFullAdmin)
                 return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
 
             if (string.IsNullOrEmpty(request.QuestionKey) || request.QuestionKey.Length != 36)
@@ -130,7 +147,7 @@ namespace TNS_TOEICPart6.Areas.TOEICPart6.Pages
         public IActionResult OnPostCreate([FromBody] AnswerAccessData.Part6_Answer_Info request)
         {
             CheckAuth();
-            if (!UserLogin.Role.IsCreate)
+            if (!UserLogin.Role.IsCreate || !IsFullAdmin)
                 return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
 
             if (request == null)
@@ -165,7 +182,7 @@ namespace TNS_TOEICPart6.Areas.TOEICPart6.Pages
         public IActionResult OnPostUpdate([FromBody] AnswerAccessData.Part6_Answer_Info request)
         {
             CheckAuth();
-            if (!UserLogin.Role.IsUpdate)
+            if (!UserLogin.Role.IsUpdate || !IsFullAdmin)
                 return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
 
             if (request == null)
@@ -200,7 +217,7 @@ namespace TNS_TOEICPart6.Areas.TOEICPart6.Pages
         public IActionResult OnPostDelete([FromBody] ItemRequest request)
         {
             CheckAuth();
-            if (!UserLogin.Role.IsDelete)
+            if (!UserLogin.Role.IsDelete || !IsFullAdmin)
                 return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
 
             if (string.IsNullOrEmpty(request.AnswerKey) || request.AnswerKey.Length != 36)
@@ -226,7 +243,7 @@ namespace TNS_TOEICPart6.Areas.TOEICPart6.Pages
         public IActionResult OnPostUpdateOtherAnswers([FromBody] UpdateOtherAnswersRequest request)
         {
             CheckAuth();
-            if (!UserLogin.Role.IsUpdate)
+            if (!UserLogin.Role.IsUpdate || !IsFullAdmin)
                 return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
 
             if (string.IsNullOrEmpty(request.QuestionKey) || request.QuestionKey.Length != 36)
@@ -247,7 +264,7 @@ namespace TNS_TOEICPart6.Areas.TOEICPart6.Pages
         public IActionResult OnPostLoadDropdowns()
         {
             CheckAuth();
-            if (!UserLogin.Role.IsRead)
+            if (!UserLogin.Role.IsRead || !IsFullAdmin)
                 return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
 
             try
@@ -304,7 +321,7 @@ namespace TNS_TOEICPart6.Areas.TOEICPart6.Pages
         public IActionResult OnPostCountAnswers([FromBody] ItemRequest request)
         {
             CheckAuth();
-            if (!UserLogin.Role.IsRead)
+            if (!UserLogin.Role.IsRead || !IsFullAdmin)
                 return new JsonResult(new { Status = "ERROR", Message = "ACCESS DENIED" });
 
             string sql = "SELECT COUNT(*) FROM [dbo].[TEC_Part6_Answer] WHERE QuestionKey = @QuestionKey AND RecordStatus != 99";

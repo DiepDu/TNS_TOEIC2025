@@ -10,29 +10,44 @@ namespace TNS_TOEICPart2.Areas.TOEICPart2.Pages
     {
         #region [ Security ]
         public TNS_Auth.UserLogin_Info UserLogin;
+        public bool IsFullAdmin { get; private set; }
 
         private void CheckAuth()
         {
             UserLogin = new TNS_Auth.UserLogin_Info(User);
-            UserLogin.GetRole("TOEIC_Part2");
-            // For Testing
-            UserLogin.Role.IsRead = true;
-            UserLogin.Role.IsCreate = true;
-            UserLogin.Role.IsUpdate = true;
-            UserLogin.Role.IsDelete = true;
+
+            // Kiểm tra quyền Full trước
+            var fullRole = new TNS_Auth.Role_Info(UserLogin.UserKey, "Full");
+            if (fullRole.GetCode() == "200") // Có quyền Full trong DB
+            {
+                IsFullAdmin = true;
+                UserLogin.GetRole("Questions"); // Vẫn lấy nhưng không ảnh hưởng
+            }
+            else
+            {
+                IsFullAdmin = false;
+                UserLogin.GetRole("Questions"); // Lấy quyền Questions
+            }
+
+            // Đảm bảo Role được khởi tạo
+            if (UserLogin.Role == null)
+            {
+                UserLogin.GetRole("Questions");
+            }
         }
         #endregion
 
         public IActionResult OnGet()
         {
             CheckAuth();
-            if (UserLogin.Role.IsRead)
+            if (UserLogin.Role.IsRead || IsFullAdmin)
             {
                 return Page();
             }
             else
             {
-                return LocalRedirect("~/Warning?id=403");
+                TempData["Error"] = "ACCESS DENIED!!!";
+                return Page();
             }
         }
 
@@ -40,7 +55,7 @@ namespace TNS_TOEICPart2.Areas.TOEICPart2.Pages
         {
             CheckAuth();
             JsonResult zResult = new JsonResult("");
-            if (UserLogin.Role.IsRead)
+            if (UserLogin.Role.IsRead || IsFullAdmin)
             {
                 DateTime zFromDate, zToDate;
                 if (request.FromDate.Trim().Length > 0 && request.ToDate.Trim().Length > 0)
@@ -64,7 +79,7 @@ namespace TNS_TOEICPart2.Areas.TOEICPart2.Pages
         public IActionResult OnPostTogglePublish([FromBody] ToggleRequest request)
         {
             CheckAuth();
-            if (!UserLogin.Role.IsUpdate)
+            if (!UserLogin.Role.IsUpdate || !IsFullAdmin)
                 return new JsonResult(new { status = "ERROR", message = "ACCESS DENIED" });
 
             var zRecord = new QuestionAccessData.Part2_Question_Info(request.QuestionKey);

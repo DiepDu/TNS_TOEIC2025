@@ -21,26 +21,29 @@ namespace TNS_Auth
             if (zRow != null)
             {
                 _UserName = userName;
+                if (!(bool)zRow["Activate"])
+                {
+                    _Message = "Tài khoản đã bị khóa!";
+                    return;
+                }
                 TNS_Auth.Securiry.UpdateLastLogin(userName);
                 if (TNS_Auth.MyCryptography.VerifyHash(password, zRow["Password"].ToString()))
                 {
                     _UserKey = zRow["UserKey"].ToString();
                     _EmployeeKey = zRow["EmployeeKey"].ToString();
                     _Successed = true;
-
                 }
                 else
                 {
-                    _Message = "Nhập sai mật khẩu ! ";
+                    _Message = "Nhập sai mật khẩu!";
                     TNS_Auth.Securiry.UpdateFailedPass(_UserName);
                 }
             }
             else
             {
                 if (_Message == "")
-                    _Message = "Không có tài khoản này !";
+                    _Message = "Không có tài khoản này!";
             }
-
         }
 
 

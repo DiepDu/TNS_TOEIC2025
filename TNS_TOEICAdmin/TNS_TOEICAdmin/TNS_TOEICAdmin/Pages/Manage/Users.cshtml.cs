@@ -14,9 +14,9 @@ namespace TNS_TOEICAdmin.Pages.Manage
             return Page();
         }
 
-        public async Task<IActionResult> OnGetGetUsers()
+        public async Task<IActionResult> OnGetGetUsers([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string search = null, [FromQuery] string activate = null)
         {
-            var users = await UserAccessData.GetUsersAsync();
+            var users = await UserAccessData.GetUsersAsync(page, pageSize, search, activate);
             return new JsonResult(users);
         }
 

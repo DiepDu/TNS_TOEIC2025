@@ -9,16 +9,29 @@ namespace TNS_TOEICPart2.Areas.TOEICPart2.Pages
     {
         #region [Security]
         public TNS_Auth.UserLogin_Info UserLogin;
-
+        public bool IsFullAdmin { get; private set; }
         private void CheckAuth()
         {
             UserLogin = new TNS_Auth.UserLogin_Info(User);
-            UserLogin.GetRole("TOEIC_Part2");
-            // For Testing
-            UserLogin.Role.IsRead = true;
-            UserLogin.Role.IsCreate = true;
-            UserLogin.Role.IsUpdate = true;
-            UserLogin.Role.IsDelete = true;
+
+            // Kiểm tra quyền Full trước
+            var fullRole = new TNS_Auth.Role_Info(UserLogin.UserKey, "Full");
+            if (fullRole.GetCode() == "200") // Có quyền Full trong DB
+            {
+                IsFullAdmin = true;
+                UserLogin.GetRole("Questions"); // Vẫn lấy nhưng không ảnh hưởng
+            }
+            else
+            {
+                IsFullAdmin = false;
+                UserLogin.GetRole("Questions"); // Lấy quyền Questions
+            }
+
+            // Đảm bảo Role được khởi tạo
+            if (UserLogin.Role == null)
+            {
+                UserLogin.GetRole("Questions");
+            }
         }
         #endregion
 
@@ -27,7 +40,7 @@ namespace TNS_TOEICPart2.Areas.TOEICPart2.Pages
         public IActionResult OnGet(string key)
         {
             CheckAuth();
-            if (UserLogin.Role.IsRead)
+            if (UserLogin.Role.IsRead || IsFullAdmin)
             {
                 QuestionKey = key;
                 if (string.IsNullOrEmpty(QuestionKey))
@@ -36,7 +49,8 @@ namespace TNS_TOEICPart2.Areas.TOEICPart2.Pages
             }
             else
             {
-                return LocalRedirect("~/Warning?id=403");
+                TempData["Error"] = "ACCESS DENIED!!!";
+                return Page();
             }
         }
 
@@ -44,7 +58,7 @@ namespace TNS_TOEICPart2.Areas.TOEICPart2.Pages
         {
             CheckAuth();
             JsonResult zResult = new JsonResult("");
-            if (UserLogin.Role.IsRead)
+            if (UserLogin.Role.IsRead || IsFullAdmin)
             {
                 zResult = AnswerListDataAccess.GetList(request.QuestionKey);
             }

@@ -10,86 +10,100 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
     {
         #region [ Security ]
         public TNS_Auth.UserLogin_Info UserLogin;
+        public bool IsFullAdmin { get; private set; }
 
         private void CheckAuth()
         {
             UserLogin = new TNS_Auth.UserLogin_Info(User);
-            UserLogin.GetRole("TOEIC_Part1");
-            // For Testing
-            UserLogin.Role.IsRead = true;
-            UserLogin.Role.IsCreate = true;
-            UserLogin.Role.IsUpdate = true;
-            UserLogin.Role.IsDelete = true;
+
+            // Kiểm tra quyền Full trước
+            var fullRole = new TNS_Auth.Role_Info(UserLogin.UserKey, "Full");
+            if (fullRole.GetCode() == "200") // Có quyền Full trong DB
+            {
+                IsFullAdmin = true;
+                UserLogin.GetRole("Questions"); // Vẫn lấy nhưng không ảnh hưởng
+            }
+            else
+            {
+                IsFullAdmin = false;
+                UserLogin.GetRole("Questions"); // Lấy quyền Questions
+            }
+
+            // Đảm bảo Role được khởi tạo
+            if (UserLogin.Role == null)
+            {
+                UserLogin.GetRole("Questions");
+            }
         }
         #endregion
 
         public IActionResult OnGet()
         {
             CheckAuth();
-            if (UserLogin.Role.IsRead)
+            if (IsFullAdmin || UserLogin.Role.IsRead)
             {
                 return Page();
             }
             else
             {
-                return LocalRedirect("~/Warning?id=403");
+                TempData["Error"] = "ACCESS DENIED!!!";
+                return Page();
             }
         }
 
         public IActionResult OnPostLoadData([FromBody] ItemRequest request)
         {
             CheckAuth();
-            JsonResult zResult = new JsonResult("");
-            if (UserLogin.Role.IsRead)
+            if (IsFullAdmin || UserLogin.Role.IsRead)
             {
                 DateTime zFromDate, zToDate;
                 if (request.FromDate.Trim().Length > 0 && request.ToDate.Trim().Length > 0)
                 {
                     zFromDate = DateTime.Parse(request.FromDate);
                     zToDate = DateTime.Parse(request.ToDate);
-                    zResult = QuestionListDataAccess.GetList(request.Search, request.Level, zFromDate, zToDate, request.PageSize, request.PageNumber, request.StatusFilter);
+                    return QuestionListDataAccess.GetList(request.Search, request.Level, zFromDate, zToDate, request.PageSize, request.PageNumber, request.StatusFilter);
                 }
                 else
                 {
-                    zResult = QuestionListDataAccess.GetList(request.Search, request.Level, request.PageSize, request.PageNumber, request.StatusFilter);
+                    return QuestionListDataAccess.GetList(request.Search, request.Level, request.PageSize, request.PageNumber, request.StatusFilter);
                 }
             }
             else
             {
-                zResult = new JsonResult(new { Status = "ERROR", Result = "ACCESS DENIED" });
+                return new JsonResult(new { Status = "ERROR", Result = "Bạn không có quyền xem danh sách!" });
             }
-            return zResult;
         }
+
         public IActionResult OnPostUpdateStatistics()
         {
             CheckAuth();
-            if (!UserLogin.Role.IsUpdate)
-                return new JsonResult(new { status = "ERROR", message = "ACCESS DENIED" });
+            if (!IsFullAdmin && !UserLogin.Role.IsUpdate)
+                return new JsonResult(new { status = "ERROR", message = "Bạn không có quyền cập nhật thống kê!" });
 
             try
             {
                 QuestionListDataAccess.UpdateStatistics();
-                return new JsonResult(new { status = "OK", message = "Statistics updated successfully" });
+                return new JsonResult(new { status = "OK", message = "Cập nhật thống kê thành công!" });
             }
             catch (Exception ex)
             {
                 return new JsonResult(new { status = "ERROR", message = ex.Message });
             }
         }
+
         public IActionResult OnPostTogglePublish([FromBody] ToggleRequest request)
         {
             CheckAuth();
-            if (!UserLogin.Role.IsUpdate)
-                return new JsonResult(new { status = "ERROR", message = "ACCESS DENIED" });
+            if (!IsFullAdmin && !UserLogin.Role.IsApproval)
+                return new JsonResult(new { status = "ERROR", message = "Bạn không có quyền phê duyệt câu hỏi!" });
 
             var zRecord = new QuestionAccessData.Part1_Question_Info(request.QuestionKey);
             if (zRecord.Status != "OK")
-                return new JsonResult(new { status = "ERROR", message = "Question not found" });
+                return new JsonResult(new { status = "ERROR", message = "Không tìm thấy câu hỏi!" });
 
             zRecord.Publish = request.Publish;
-            if (request.Publish) // Khi bật
-                zRecord.RecordStatus = 0; // Đặt RecordStatus = 0
-            // Khi tắt, giữ nguyên RecordStatus (không thay đổi trừ khi bạn muốn RecordStatus = 99)
+            if (request.Publish)
+                zRecord.RecordStatus = 0;
 
             zRecord.ModifiedBy = UserLogin.Employee.Key;
             zRecord.ModifiedName = UserLogin.Employee.Name;

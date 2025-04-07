@@ -7,23 +7,49 @@ namespace TNS_TOEICAdmin.Models
     {
         private static readonly string _connectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
 
-        public static async Task<List<User>> GetUsersAsync()
+        public static async Task<List<User>> GetUsersAsync(int page = 1, int pageSize = 10, string search = null, string activate = null)
         {
             var users = new List<User>();
             using (var conn = new SqlConnection(_connectionString))
             {
                 await conn.OpenAsync();
                 string sql = @"
-    SELECT u.UserKey, u.UserName, u.Description, u.Activate, u.LastLoginDate, 
-           u.FailedPasswordAttemptCount, e.FirstName + ' ' + e.LastName AS EmployeeName,
-           u.EmployeeKey, u.ExpireDate, -- Thêm EmployeeKey và ExpireDate
-           r.RoleKey, r.RoleID, r.RoleName, ur.RoleRead, ur.RoleEdit, ur.RoleAdd, ur.RoleDel, ur.RoleApproval
-    FROM [SYS_Users] u
-    LEFT JOIN [HRM_Employee] e ON u.EmployeeKey = e.EmployeeKey
-    LEFT JOIN [SYS_Users_Roles] ur ON u.UserKey = ur.UserKey
-    LEFT JOIN [SYS_Roles] r ON ur.RoleKey = r.RoleKey";
+            SELECT u.UserKey, u.UserName, u.Description, u.Activate, u.LastLoginDate, 
+                   u.FailedPasswordAttemptCount, e.FirstName + ' ' + e.LastName AS EmployeeName,
+                   u.EmployeeKey, u.ExpireDate,
+                   r.RoleKey, r.RoleID, r.RoleName, ur.RoleRead, ur.RoleEdit, ur.RoleAdd, ur.RoleDel, ur.RoleApproval
+            FROM [SYS_Users] u
+            LEFT JOIN [HRM_Employee] e ON u.EmployeeKey = e.EmployeeKey
+            LEFT JOIN [SYS_Users_Roles] ur ON u.UserKey = ur.UserKey
+            LEFT JOIN [SYS_Roles] r ON ur.RoleKey = r.RoleKey
+            WHERE 1=1";
+
+                // Thêm điều kiện tìm kiếm nếu có
+                if (!string.IsNullOrEmpty(search))
+                {
+                    sql += " AND u.UserName LIKE @Search";
+                }
+                if (!string.IsNullOrEmpty(activate))
+                {
+                    sql += " AND u.Activate = @Activate";
+                }
+
+                // Thêm phân trang
+                sql += " ORDER BY u.UserName OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+
                 using (var cmd = new SqlCommand(sql, conn))
                 {
+                    if (!string.IsNullOrEmpty(search))
+                    {
+                        cmd.Parameters.AddWithValue("@Search", "%" + search + "%");
+                    }
+                    if (!string.IsNullOrEmpty(activate))
+                    {
+                        cmd.Parameters.AddWithValue("@Activate", activate == "1");
+                    }
+                    cmd.Parameters.AddWithValue("@Offset", (page - 1) * pageSize);
+                    cmd.Parameters.AddWithValue("@PageSize", pageSize);
+
                     using (var reader = await cmd.ExecuteReaderAsync())
                     {
                         var userDict = new Dictionary<Guid, User>();
@@ -41,8 +67,8 @@ namespace TNS_TOEICAdmin.Models
                                     LastLoginDate = reader.IsDBNull(4) ? null : reader.GetDateTime(4).ToString("yyyy-MM-dd HH:mm:ss"),
                                     FailedPasswordAttemptCount = reader.GetInt32(5),
                                     EmployeeName = reader.IsDBNull(6) ? null : reader.GetString(6),
-                                    EmployeeKey = reader.IsDBNull(7) ? null : reader.GetGuid(7), // Thêm EmployeeKey
-                                    ExpireDate = reader.IsDBNull(8) ? null : reader.GetDateTime(8).ToString("yyyy-MM-dd HH:mm:ss"), // Thêm ExpireDate
+                                    EmployeeKey = reader.IsDBNull(7) ? null : reader.GetGuid(7),
+                                    ExpireDate = reader.IsDBNull(8) ? null : reader.GetDateTime(8).ToString("yyyy-MM-dd HH:mm:ss"),
                                     Roles = new List<UserRole>()
                                 };
                             }

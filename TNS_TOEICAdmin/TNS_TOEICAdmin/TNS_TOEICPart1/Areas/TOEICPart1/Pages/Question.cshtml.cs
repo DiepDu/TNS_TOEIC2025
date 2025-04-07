@@ -17,15 +17,30 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
     {
         #region [ Security ]
         public TNS_Auth.UserLogin_Info UserLogin;
+        public bool IsFullAdmin { get; private set; }
         public string QuestionKey;
         private void CheckAuth()
         {
             UserLogin = new TNS_Auth.UserLogin_Info(User);
-            UserLogin.GetRole("TOEIC_Part1");
-            UserLogin.Role.IsRead = true;
-            UserLogin.Role.IsCreate = true;
-            UserLogin.Role.IsUpdate = true;
-            UserLogin.Role.IsDelete = true;
+
+            // Kiểm tra quyền Full trước
+            var fullRole = new TNS_Auth.Role_Info(UserLogin.UserKey, "Full");
+            if (fullRole.GetCode() == "200") // Có quyền Full trong DB
+            {
+                IsFullAdmin = true;
+                UserLogin.GetRole("Questions"); // Vẫn lấy nhưng không ảnh hưởng
+            }
+            else
+            {
+                IsFullAdmin = false;
+                UserLogin.GetRole("Questions"); // Lấy quyền Questions
+            }
+
+            // Đảm bảo Role được khởi tạo
+            if (UserLogin.Role == null)
+            {
+                UserLogin.GetRole("Questions");
+            }
         }
         #endregion
         private readonly IWebHostEnvironment _env;
@@ -43,7 +58,10 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
                 return Page();
             }
             else
-                return LocalRedirect("~/Warning?id=403");
+            {
+                TempData["Error"] = "ACCESS DENIED!!!";
+                return Page();
+            }
         }
 
         #region [ Record CRUD]
@@ -51,7 +69,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
         {
             CheckAuth();
             JsonResult zResult = new JsonResult("");
-            if (UserLogin.Role.IsRead)
+            if (IsFullAdmin || UserLogin.Role.IsRead)
             {
                 QuestionAccessData.Part1_Question_Info zRecord;
                 if (string.IsNullOrEmpty(request.QuestionKey) || request.QuestionKey.Length != 36)
@@ -70,7 +88,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
         public IActionResult OnPostGetInfo([FromBody] ItemRequest request)
         {
             CheckAuth();
-            if (!UserLogin.Role.IsRead)
+            if (IsFullAdmin || UserLogin.Role.IsRead)
                 return new JsonResult(new { status = "ERROR", message = "ACCESS DENIED" });
 
             var record = new QuestionAccessData.Part1_Question_Info(request.QuestionKey);
@@ -85,7 +103,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
         public IActionResult OnPostLoadDropdowns()
         {
             CheckAuth();
-            if (!UserLogin.Role.IsRead)
+            if (IsFullAdmin || UserLogin.Role.IsRead)
                 return new JsonResult(new { status = "ERROR", message = "ACCESS DENIED" });
 
             string connectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
@@ -159,7 +177,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
         public IActionResult OnPostRecordCreate()
         {
             CheckAuth();
-            if (!UserLogin.Role.IsCreate)
+            if (IsFullAdmin || UserLogin.Role.IsCreate)
                 return new JsonResult(new { status = "ERROR", message = "ACCESS DENIED" });
 
             string recordJson = HttpContext.Request.Form["record"];
@@ -211,7 +229,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
         public IActionResult OnPostRecordUpdate()
         {
             CheckAuth();
-            if (!UserLogin.Role.IsUpdate)
+            if (IsFullAdmin || UserLogin.Role.IsUpdate)
                 return new JsonResult(new { status = "ERROR", message = "ACCESS DENIED" });
 
             string recordJson = HttpContext.Request.Form["record"];
@@ -272,7 +290,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
         {
             CheckAuth();
             JsonResult zResult = new JsonResult("");
-            if (UserLogin.Role.IsDelete)
+            if (IsFullAdmin || UserLogin.Role.IsDelete)
             {
                 if (request == null || string.IsNullOrEmpty(request.QuestionKey))
                 {
@@ -300,7 +318,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
         {
             CheckAuth();
             JsonResult zResult = new JsonResult("");
-            if (UserLogin.Role.IsDelete)
+            if (IsFullAdmin || UserLogin.Role.IsDelete)
             {
                 if (request == null || string.IsNullOrEmpty(request.QuestionKey))
                 {

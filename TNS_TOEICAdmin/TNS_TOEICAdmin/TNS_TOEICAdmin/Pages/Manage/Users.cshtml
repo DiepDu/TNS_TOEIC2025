@@ -355,9 +355,19 @@
             searchTerm = search;
             activateFilter = activate;
 
+            // Tạo object data chỉ chứa các tham số có giá trị
+            let data = { page: currentPage, pageSize: pageSize };
+            if (search.trim() !== '') {
+                data.search = search;
+            }
+            if (activate !== '') {
+                data.activate = activate;
+            }
+
             $.ajax({
                 url: '/Manage/Users?handler=GetUsers',
                 method: 'GET',
+                data: data,
                 success: function (data) {
                     users = Array.isArray(data) ? data : [];
                     renderUsers();
@@ -386,11 +396,7 @@
         function renderUsers() {
             const tbody = $('#userTableBody');
             tbody.empty();
-            let filteredUsers = users.filter(u => {
-                const searchLower = searchTerm.toLowerCase();
-                return (u.UserName?.toLowerCase().includes(searchLower) &&
-                    (activateFilter === '' || u.Activate.toString() === activateFilter));
-            });
+            let filteredUsers = users; // Không lọc ở client-side nữa, để server xử lý
 
             const startIndex = (currentPage - 1) * pageSize;
             const endIndex = Math.min(startIndex + pageSize, filteredUsers.length);
@@ -399,48 +405,44 @@
             paginatedUsers.forEach(u => {
                 const roleNames = u.Roles ? u.Roles.map(r => r.RoleName).join(', ') : 'Chưa có';
                 tbody.append(`
-                            <tr>
-                                <td>${u.UserName || 'N/A'}</td>
-                                <td>${u.Description || ''}</td>
-                                <td>${u.Activate ? 'Kích hoạt' : 'Khóa'}</td>
-                                <td>${u.LastLoginDate || 'Chưa đăng nhập'}</td>
-                                <td>${u.FailedPasswordAttemptCount || 0}</td>
-                                <td>${u.EmployeeName || 'Không liên kết'}</td>
-                                <td>${roleNames}</td>
-                                <td>
-                                    <button class="btn btn-action btn-edit" onclick="showEditModal('${u.UserKey}')"><i class="fas fa-edit"></i> Sửa</button>
-                                    <button class="btn btn-action btn-roles" onclick="showRolesModal('${u.UserKey}')"><i class="fas fa-user-shield"></i> Vai trò</button>
-                                    <button class="btn btn-action btn-delete" onclick="showDeleteModal('${u.UserKey}')"><i class="fas fa-trash"></i> Xóa</button>
-                                </td>
-                            </tr>
-                        `);
+                    <tr>
+                        <td>${u.UserName || 'N/A'}</td>
+                        <td>${u.Description || ''}</td>
+                        <td>${u.Activate ? 'Kích hoạt' : 'Khóa'}</td>
+                        <td>${u.LastLoginDate || 'Chưa đăng nhập'}</td>
+                        <td>${u.FailedPasswordAttemptCount || 0}</td>
+                        <td>${u.EmployeeName || 'Không liên kết'}</td>
+                        <td>${roleNames}</td>
+                        <td>
+                            <button class="btn btn-action btn-edit" onclick="showEditModal('${u.UserKey}')"><i class="fas fa-edit"></i> Sửa</button>
+                            <button class="btn btn-action btn-roles" onclick="showRolesModal('${u.UserKey}')"><i class="fas fa-user-shield"></i> Vai trò</button>
+                            <button class="btn btn-action btn-delete" onclick="showDeleteModal('${u.UserKey}')"><i class="fas fa-trash"></i> Xóa</button>
+                        </td>
+                    </tr>
+                `);
             });
         }
 
-        function renderPagination() {
-            const totalItems = users.filter(u => {
-                const searchLower = searchTerm.toLowerCase();
-                return (u.UserName?.toLowerCase().includes(searchLower) &&
-                    (activateFilter === '' || u.Activate.toString() === activateFilter));
-            }).length;
-            const totalPages = Math.ceil(totalItems / pageSize);
-            const pagination = $('#pagination');
-            pagination.empty();
+function renderPagination() {
+    const totalItems = users.length; // Dùng tổng số từ server trả về
+    const totalPages = Math.ceil(totalItems / pageSize);
+    const pagination = $('#pagination');
+    pagination.empty();
 
-            pagination.append(`<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-                        <a class="page-link" href="#" onclick="loadUsers(${currentPage - 1}, '${searchTerm}', '${activateFilter}')"><i class="fas fa-chevron-left"></i></a>
-                    </li>`);
+    pagination.append(`<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+        <a class="page-link" href="#" onclick="loadUsers(${currentPage - 1}, '${searchTerm}', '${activateFilter}')"><i class="fas fa-chevron-left"></i></a>
+    </li>`);
 
-            for (let i = 1; i <= totalPages; i++) {
-                pagination.append(`<li class="page-item ${i === currentPage ? 'active' : ''}">
-                            <a class="page-link" href="#" onclick="loadUsers(${i}, '${searchTerm}', '${activateFilter}')">${i}</a>
-                        </li>`);
-            }
+    for (let i = 1; i <= totalPages; i++) {
+        pagination.append(`<li class="page-item ${i === currentPage ? 'active' : ''}">
+            <a class="page-link" href="#" onclick="loadUsers(${i}, '${searchTerm}', '${activateFilter}')">${i}</a>
+        </li>`);
+    }
 
-            pagination.append(`<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
-                        <a class="page-link" href="#" onclick="loadUsers(${currentPage + 1}, '${searchTerm}', '${activateFilter}')"><i class="fas fa-chevron-right"></i></a>
-                    </li>`);
-        }
+    pagination.append(`<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+        <a class="page-link" href="#" onclick="loadUsers(${currentPage + 1}, '${searchTerm}', '${activateFilter}')"><i class="fas fa-chevron-right"></i></a>
+    </li>`);
+}
 
         function showAddModal() {
             isEditMode = false;
@@ -641,7 +643,6 @@
             const activateValue = $('#activateFilter').val();
             loadUsers(1, searchValue, activateValue);
         }
-
         function showAlert(type, message) {
             const alertDiv = $(`
                         <div class="alert alert-${type} alert-dismissible fade show" role="alert">
