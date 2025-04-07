@@ -1,4 +1,5 @@
 ﻿using Microsoft.Data.SqlClient;
+using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -272,8 +273,46 @@ namespace TNS_EDU_TEST.Areas.Test.Models
             }
             return flaggedQuestions;
         }
+        public static async Task<int?> GetTestScore(Guid resultKey)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                await conn.OpenAsync();
 
+                string sql = @"
+            SELECT TestScore
+            FROM [ResultOfUserForTest]
+            WHERE ResultKey = @ResultKey";
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@ResultKey", resultKey);
+                    var result = await cmd.ExecuteScalarAsync();
+                    return result != null && result != DBNull.Value ? (int?)result : null;
+                }
+            }
+        }
+        public static async Task UpdateToeicScoreExam(string userKey, int totalScore)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                await conn.OpenAsync();
+
+                string updateMemberSql = @"
+            UPDATE [EDU_Member]
+            SET ToeicScoreExam = @ToeicScoreExam,
+                LastLoginDate = @LastLoginDate
+            WHERE MemberKey = @UserKey";
+                using (var cmd = new SqlCommand(updateMemberSql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@ToeicScoreExam", totalScore);
+                    cmd.Parameters.AddWithValue("@LastLoginDate", DateTime.Now);
+                    cmd.Parameters.AddWithValue("@UserKey", Guid.Parse(userKey)); // Chuyển userKey từ string sang Guid
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+        }
         // Cập nhật: Hỗ trợ bỏ chọn đáp án
+      
         public static async Task SaveAnswer(Guid resultKey, Guid questionKey, Guid? selectAnswerKey, int timeSpent, DateTime answerTime, int part)
         {
             using (var conn = new SqlConnection(_connectionString))
@@ -552,7 +591,7 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                 }
             }
         }
-    }
+        }
 
         public class TestQuestion
     {

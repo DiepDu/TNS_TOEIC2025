@@ -158,7 +158,22 @@ namespace TNS_EDU_TEST.Areas.Test.Pages
 
             try
             {
+                // Gọi SubmitTest (giữ nguyên, không cần trả về totalScore)
                 await TestAccessData.SubmitTest(testKey, resultKey, dto.RemainingMinutes, userKey);
+
+                // Lấy TestScore từ ResultOfUserForTest
+                int? totalScore = await TestAccessData.GetTestScore(resultKey);
+                if (totalScore.HasValue)
+                {
+                    // Cập nhật ToeicScoreExam trong EDU_Member
+                    await TestAccessData.UpdateToeicScoreExam(userKey, totalScore.Value);
+                }
+                else
+                {
+                    // Nếu không lấy được TestScore, có thể ghi log hoặc trả về cảnh báo
+                    return new JsonResult(new { success = false, message = "Could not retrieve test score" }) { StatusCode = 500 };
+                }
+
                 return new JsonResult(new { success = true }) { StatusCode = 200 };
             }
             catch (Exception ex)
@@ -166,6 +181,7 @@ namespace TNS_EDU_TEST.Areas.Test.Pages
                 return new JsonResult(new { success = false, message = ex.Message }) { StatusCode = 500 };
             }
         }
+
 
         public class SubmitTestDto
         {

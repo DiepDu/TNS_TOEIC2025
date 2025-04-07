@@ -15,193 +15,305 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
     <style>
         body {
-            background-color: #E5F9FF;
+            background: linear-gradient(135deg, #E5F9FF 0%, #D1F1FF 100%);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             color: #2C3E50;
+            line-height: 1.6;
         }
 
         .container {
-            background-color: #FFF9E5;
-            border-radius: 15px;
-            padding: 25px;
-            margin: 30px auto;
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            background: #FFF9E5;
+            border-radius: 20px;
+            padding: 30px;
+            margin: 40px auto;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
             max-width: 1400px;
+            transition: box-shadow 0.3s ease;
         }
+
+            .container:hover {
+                box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+            }
 
         h2 {
             color: #2C3E50;
             font-weight: 700;
-            margin-bottom: 20px;
+            font-size: 28px;
+            margin-bottom: 25px;
             text-align: center;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 1.5px;
+            background: linear-gradient(90deg, #2C3E50, #3498DB);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .search-container {
             display: flex;
+            gap: 20px; /* Tăng khoảng cách giữa các phần tử cho thoải mái */
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: nowrap; /* Ngăn xuống hàng */
+            justify-content: space-between; /* Giãn đều các phần tử */
+            width: 100%; /* Đảm bảo container trải hết chiều rộng */
+        }
+
+        .search-group {
+            display: flex;
             gap: 10px;
             align-items: center;
-            margin-bottom: 20px;
         }
 
         .search-input, .form-control {
-            border-radius: 10px;
-            border: 1px solid #3498DB;
+            border-radius: 12px;
+            border: 2px solid #3498DB;
             background-color: #FFFFFF;
-            transition: all 0.3s ease;
+            padding: 10px 15px;
+            transition: all 0.4s ease;
+            flex-grow: 1; /* Cho phép input/select giãn tự nhiên */
+            min-width: 150px; /* Đảm bảo không quá nhỏ */
         }
-
             .search-input:focus, .form-control:focus {
                 border-color: #2980B9;
-                box-shadow: 0 0 8px rgba(52, 152, 219, 0.3);
-                background-color: #F9F9F9;
+                box-shadow: 0 0 10px rgba(52, 152, 219, 0.4);
+                background-color: #F9FBFF;
+                outline: none;
             }
 
-        .btn-add, .btn-search, .btn-save, .btn-cancel, .btn-action {
-            border-radius: 25px;
-            padding: 8px 16px;
+        .btn-add, .btn-search {
+            border-radius: 30px;
+            padding: 10px 20px;
             font-weight: 600;
-            transition: all 0.3s ease;
+            transition: all 0.4s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            white-space: nowrap; /* Ngăn chữ trong nút xuống hàng */
+        }
+        .btn-add, .btn-search, .btn-save, .btn-cancel {
+            border-radius: 30px;
+            padding: 10px 20px;
+            font-weight: 600;
+            transition: all 0.4s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
         .btn-add {
-            background-color: #3498DB;
-            border-color: #3498DB;
+            background: linear-gradient(45deg, #3498DB, #5DADE2);
+            border: none;
+            color: #FFFFFF;
         }
 
             .btn-add:hover {
-                background-color: #2980B9;
-                border-color: #2980B9;
-                transform: translateY(-2px);
+                background: linear-gradient(45deg, #2980B9, #4D94DB);
+                transform: translateY(-3px) scale(1.05);
+                box-shadow: 0 6px 16px rgba(52, 152, 219, 0.3);
+                color: #FFFFFF;
             }
 
         .btn-search {
-            background-color: #F1C40F;
-            border-color: #F1C40F;
+            background: linear-gradient(45deg, #F1C40F, #F7DC6F);
+            border: none;
+            color: #2C3E50;
         }
 
             .btn-search:hover {
-                background-color: #D4AC0D;
-                border-color: #D4AC0D;
+                background: linear-gradient(45deg, #D4AC0D, #E4C107);
+                transform: translateY(-3px) scale(1.05);
+                box-shadow: 0 6px 16px rgba(241, 196, 15, 0.3);
             }
 
         .btn-save {
-            background-color: #27AE60;
-            border-color: #27AE60;
+            background: linear-gradient(45deg, #27AE60, #52BE80);
+            border: none;
+            color: #FFFFFF;
         }
 
             .btn-save:hover {
-                background-color: #219653;
-                border-color: #219653;
+                background: linear-gradient(45deg, #219653, #48A368);
+                transform: translateY(-3px) scale(1.05);
+                box-shadow: 0 6px 16px rgba(39, 174, 96, 0.3);
             }
 
         .btn-cancel {
-            background-color: #95A5A6;
-            border-color: #95A5A6;
+            background: linear-gradient(45deg, #95A5A6, #BDC3C7);
+            border: none;
+            color: #2C3E50;
         }
 
             .btn-cancel:hover {
-                background-color: #7F8C8D;
-                border-color: #7F8C8D;
+                background: linear-gradient(45deg, #7F8C8D, #A6B1B2);
+                transform: translateY(-3px) scale(1.05);
+                box-shadow: 0 6px 16px rgba(149, 165, 166, 0.3);
+            }
+
+        .btn-action {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 6px;
+            font-size: 18px;
+            border: none;
+            transition: all 0.4s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+            .btn-action i {
+                margin: 0;
             }
 
         .btn-edit {
-            background-color: #F1C40F;
-            border-color: #F1C40F;
+            background: linear-gradient(45deg, #F1C40F, #F7DC6F);
+            color: #2C3E50;
         }
 
             .btn-edit:hover {
-                background-color: #D4AC0D;
-                border-color: #D4AC0D;
+                background: linear-gradient(45deg, #D4AC0D, #E4C107);
+                transform: scale(1.1);
+                box-shadow: 0 6px 16px rgba(241, 196, 15, 0.3);
             }
 
         .btn-delete {
-            background-color: #E74C3C;
-            border-color: #E74C3C;
+            background: linear-gradient(45deg, #E74C3C, #F1948A);
+            color: #FFFFFF;
         }
 
             .btn-delete:hover {
-                background-color: #C0392B;
-                border-color: #C0392B;
+                background: linear-gradient(45deg, #C0392B, #E57373);
+                transform: scale(1.1);
+                box-shadow: 0 6px 16px rgba(231, 76, 60, 0.3);
             }
 
         .btn-roles {
-            background-color: #8E44AD;
-            border-color: #8E44AD;
+            background: linear-gradient(45deg, #8E44AD, #BB8FCE);
+            color: #FFFFFF;
         }
 
             .btn-roles:hover {
-                background-color: #732D91;
-                border-color: #732D91;
+                background: linear-gradient(45deg, #732D91, #A569BD);
+                transform: scale(1.1);
+                box-shadow: 0 6px 16px rgba(142, 68, 173, 0.3);
             }
 
         .table {
-            background-color: #FFFFFF;
-            border-radius: 10px;
+            background: #FFFFFF;
+            border-radius: 15px;
             overflow: hidden;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+            border-collapse: separate;
+            border-spacing: 0;
         }
 
             .table th {
-                background-color: #3498DB;
+                background: linear-gradient(90deg, #3498DB, #5DADE2);
                 color: #FFFFFF;
                 text-align: center;
-                padding: 15px;
+                padding: 16px;
                 font-weight: 600;
+                font-size: 16px;
             }
 
             .table td {
                 vertical-align: middle;
-                padding: 12px;
+                padding: 14px;
+                border-bottom: 1px solid #ECF0F1;
             }
 
             .table tr:hover {
-                background-color: #F9F9F9;
+                background: #F8FAFF;
+                transition: background 0.3s ease;
+            }
+
+            .table th:nth-child(8), .table td:nth-child(8) {
+                width: 160px;
+                text-align: center;
             }
 
         .pagination .page-link {
             border-radius: 50%;
-            margin: 0 5px;
+            margin: 0 6px;
             color: #3498DB;
-            border: 1px solid #3498DB;
+            border: 2px solid #3498DB;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
         }
 
         .pagination .page-item.active .page-link {
-            background-color: #3498DB;
+            background: #3498DB;
             color: #FFFFFF;
+            border-color: #3498DB;
+        }
+
+        .pagination .page-link:hover {
+            background: #ECF0F1;
+            color: #2980B9;
         }
 
         .modal-content {
-            background-color: #FFF9E5;
-            border-radius: 15px;
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+            background: #FFF9E5;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            border: none;
         }
 
         .modal-header {
-            background-color: #3498DB;
+            background: linear-gradient(90deg, #3498DB, #5DADE2);
             color: #FFFFFF;
-            border-top-left-radius: 15px;
-            border-top-right-radius: 15px;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            padding: 15px 20px;
         }
+
+        .modal-title {
+            font-size: 22px;
+            font-weight: 600;
+        }
+
+        /* Sửa lỗi bảng phân quyền */
+        #rolesTableBody td {
+            text-align: center; /* Căn giữa nội dung */
+            vertical-align: middle; /* Căn giữa theo chiều dọc */
+            height: 50px; /* Đảm bảo chiều cao đồng đều */
+        }
+
+        #rolesTableBody input[type="checkbox"] {
+            width: 24px;
+            height: 24px;
+            margin: 0 auto; /* Căn giữa checkbox */
+            display: block; /* Đảm bảo checkbox là block để căn giữa */
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+            #rolesTableBody input[type="checkbox"]:hover {
+                transform: scale(1.1);
+            }
 
         .alert {
             position: fixed;
             top: 20px;
             right: 20px;
             z-index: 1050;
-            min-width: 300px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            min-width: 320px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+            padding: 15px 20px;
+            font-size: 16px;
         }
 
         .alert-success {
-            background-color: #27AE60;
+            background: linear-gradient(45deg, #27AE60, #52BE80);
             color: #FFFFFF;
         }
 
         .alert-danger {
-            background-color: #E74C3C;
+            background: linear-gradient(45deg, #E74C3C, #F1948A);
             color: #FFFFFF;
         }
     </style>
@@ -209,7 +321,6 @@
 <body>
     <div class="container">
         <h2><i class="fas fa-users me-2"></i>Quản lý người dùng</h2>
-
         <div class="search-container">
             <button class="btn btn-add"><i class="fas fa-plus me-2"></i>Thêm người dùng</button>
             <input type="text" class="form-control search-input" id="searchInput" placeholder="Tìm kiếm theo UserName" />
@@ -414,10 +525,10 @@
                         <td>${u.EmployeeName || 'Không liên kết'}</td>
                         <td>${roleNames}</td>
                         <td>
-                            <button class="btn btn-action btn-edit" onclick="showEditModal('${u.UserKey}')"><i class="fas fa-edit"></i> Sửa</button>
-                            <button class="btn btn-action btn-roles" onclick="showRolesModal('${u.UserKey}')"><i class="fas fa-user-shield"></i> Vai trò</button>
-                            <button class="btn btn-action btn-delete" onclick="showDeleteModal('${u.UserKey}')"><i class="fas fa-trash"></i> Xóa</button>
-                        </td>
+                        <button class="btn btn-action btn-edit" onclick="showEditModal('${u.UserKey}')"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-action btn-roles" onclick="showRolesModal('${u.UserKey}')"><i class="fas fa-user-shield"></i></button>
+                        <button class="btn btn-action btn-delete" onclick="showDeleteModal('${u.UserKey}')"><i class="fas fa-trash"></i></button>
+                       </td>      
                     </tr>
                 `);
             });
