@@ -42,7 +42,11 @@ namespace TNS_TOEICAdmin.Pages.Manage
             {
                 return Page();
             }
-            return new JsonResult(new { status = "ERROR", message = "Bạn không có quyền xem trang này!" }) { StatusCode = 403 };
+            else
+            {
+                TempData["Error"] = "ACCESS DENIED!!!";
+                return Page();
+            }
         }
 
         public async Task<IActionResult> OnGetGetDepartments([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string search = "")

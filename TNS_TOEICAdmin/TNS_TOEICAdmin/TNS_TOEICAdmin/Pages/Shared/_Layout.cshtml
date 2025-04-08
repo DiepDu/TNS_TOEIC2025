@@ -11,14 +11,370 @@
     <link href="~/lib/minible/css/icons.min.css" rel="stylesheet" type="text/css" />
     <link href="~/lib/minible/css/app.min.css" id="app-style" rel="stylesheet" type="text/css" />
     <link href="~/css/site.css" rel="stylesheet" />
+    <style>
+        /* Tổng thể */
+        body {
+            background: linear-gradient(135deg, #F0F7FF 0%, #F8F9FA 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #2C3E50;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+        /* Trong phần <style> của bạn */
+        #side-menu .nav-active {
+            font-weight: bold; /* In đậm */
+            background: linear-gradient(90deg, #1A73E8 0%, #AED6F1 100%) !important; /* Nền nổi bật */
+            color: #FFFFFF !important; /* Màu chữ trắng */
+        }
+        #layout-wrapper {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
 
+        /* Header */
+        #page-topbar {
+            background: linear-gradient(90deg, #AED6F1 0%, #D6EAF8 100%);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1030;
+            padding: 0;
+            height: 70px;
+        }
+
+        .navbar-header {
+            padding: 0 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 100%;
+            position: relative;
+        }
+
+        .navbar-brand-box {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 0 10px 10px 0;
+            padding: 10px 20px;
+            border: 1px solid #E0E7FF;
+            display: flex;
+            align-items: center;
+            height: 70px;
+        }
+
+            .navbar-brand-box:hover {
+                background: rgba(255, 255, 255, 0.2);
+            }
+
+        /* Sidebar */
+        .vertical-menu {
+            background: linear-gradient(180deg, #AED6F1 0%, #D6EAF8 100%);
+            border-radius: 0 15px 15px 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border-right: 1px solid #E0E7FF;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1031;
+            height: 100vh;
+            width: 250px;
+            padding-top: 70px; /* Để tránh nội dung bị che bởi header */
+            box-sizing: border-box;
+        }
+
+            .vertical-menu .navbar-brand-box {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                z-index: 1032;
+                height: 70px;
+                border-radius: 0;
+                border: none;
+                background: transparent;
+                padding: 0 20px;
+                box-sizing: border-box;
+            }
+
+        .sidebar-menu-scroll {
+            padding: 15px 0;
+            height: calc(100% - 70px);
+            overflow-y: auto;
+            margin-top: 0;
+        }
+
+        #side-menu a {
+            color: #2C3E50;
+            font-weight: 500;
+            padding: 12px 20px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid rgba(224, 231, 255, 0.3);
+            text-decoration: none;
+        }
+
+            #side-menu .mm-active > a,
+            #side-menu a:hover {
+                background: rgba(255, 255, 255, 0.2);
+                color: #1A73E8;
+                border-radius: 8px;
+            }
+
+        #side-menu .has-arrow::after {
+            transition: transform 0.3s ease;
+        }
+
+        #side-menu .mm-active > .has-arrow::after {
+            transform: rotate(-180deg);
+        }
+
+        .metismenu .mm-collapse {
+            display: none;
+        }
+
+        .metismenu .mm-show {
+            display: block !important;
+        }
+
+        ul.sub-menu {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            margin: 5px 0 5px 15px !important;
+            padding: 5px 0 !important;
+            border: 1px solid #E0E7FF;
+        }
+
+            ul.sub-menu a {
+                color: #2C3E50;
+                padding: 10px 25px !important;
+                font-size: 14px;
+                border-bottom: none;
+            }
+
+                ul.sub-menu a:hover {
+                    color: #1A73E8;
+                    background: rgba(255, 255, 255, 0.2);
+                    padding-left: 30px !important;
+                }
+
+        /* Dropdown chuông thông báo */
+        .noti-icon {
+            color: #2C3E50;
+            font-size: 22px;
+            padding: 10px;
+            transition: all 0.3s ease;
+        }
+
+            .noti-icon:hover {
+                color: #1A73E8;
+                transform: scale(1.1);
+            }
+
+        .badge {
+            min-width: 20px;
+            height: 20px;
+            line-height: 20px;
+            text-align: center;
+            background: #E74C3C;
+            border-radius: 50%;
+            font-size: 12px;
+            font-weight: bold;
+            box-shadow: 0 1px 4px rgba(231, 76, 60, 0.2);
+            position: absolute;
+            top: 15px;
+            right: 5px;
+            border: 1px solid #FFFFFF;
+        }
+
+        .dropdown-menu {
+            background: #FFFFFF;
+            border: 1px solid #E0E7FF;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 10px 0;
+            min-width: 300px;
+        }
+
+        .notification-item {
+            padding: 12px 15px;
+            transition: all 0.3s ease;
+            border-radius: 6px;
+            border-bottom: 1px solid rgba(224, 231, 255, 0.3);
+        }
+
+            .notification-item:hover {
+                background: rgba(174, 214, 241, 0.1);
+                color: #2C3E50;
+                transform: translateX(5px);
+            }
+
+        .avatar-title {
+            background: #AED6F1;
+            border: 1px solid #E0E7FF;
+        }
+
+        .notification-item:hover .avatar-title {
+            background: #D6EAF8;
+        }
+
+        /* Dropdown user avatar */
+        .header-profile-user {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #E0E7FF;
+            transition: all 0.3s ease;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .header-item:hover .header-profile-user {
+            border-color: #1A73E8;
+            transform: scale(1.05);
+        }
+
+        #txtEmployeeName {
+            color: #2C3E50;
+            font-weight: 500;
+            font-size: 15px;
+        }
+
+        .header-item:hover #txtEmployeeName {
+            color: #1A73E8;
+        }
+
+        .uil-angle-down {
+            color: #2C3E50;
+            transition: transform 0.3s ease;
+            font-size: 15px;
+        }
+
+        .header-item:hover .uil-angle-down {
+            transform: rotate(180deg);
+            color: #1A73E8;
+        }
+
+        .dropdown-menu-end {
+            min-width: 200px;
+            border: 1px solid #E0E7FF;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+            .dropdown-menu-end .dropdown-item {
+                padding: 10px 20px;
+                color: #2C3E50;
+                transition: all 0.3s ease;
+                border-radius: 6px;
+            }
+
+                .dropdown-menu-end .dropdown-item:hover {
+                    background: rgba(174, 214, 241, 0.1);
+                    color: #1A73E8;
+                    padding-left: 25px;
+                }
+
+        /* Main content */
+        .main-content {
+            padding: 20px;
+            flex: 1;
+            margin-top: 70px;
+            margin-left: 250px;
+            transition: margin-left .3s ease-out;
+        }
+
+        .page-content {
+            background: #FFFFFF;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border: 1px solid #E0E7FF;
+        }
+
+            .page-content:hover {
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            }
+
+        /* Làm nổi bật tiêu đề menu DATA TOEIC */
+        .standout-menu {
+            background: linear-gradient(90deg, #1A73E8 0%, #AED6F1 100%) !important;
+            color: #FFFFFF !important;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            padding: 14px 20px !important;
+            box-shadow: 0 2px 6px rgba(26, 115, 232, 0.3);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+            .standout-menu:hover {
+                background: linear-gradient(90deg, #1A73E8 0%, #D6EAF8 100%) !important;
+                transform: translateX(5px);
+            }
+
+        .standout-icon {
+            font-size: 20px !important;
+            margin-right: 12px;
+            transition: all 0.3s ease;
+        }
+
+        #side-menu .mm-active > a .standout-icon,
+        #side-menu a:hover .standout-icon {
+            color: #FFFFFF !important;
+            transform: scale(1.2);
+        }
+
+        /* Submenu nổi bật cho DATA TOEIC */
+        .standout-submenu {
+            background: rgba(255, 255, 255, 0.15) !important;
+            border: 1px solid #FFFFFF !important;
+            border-radius: 8px;
+            margin: 8px 0 8px 20px !important;
+            padding: 8px 0 !important;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+        }
+
+            .standout-submenu a {
+                font-weight: 500;
+                color: #2C3E50 !important;
+                padding: 12px 30px !important;
+                transition: all 0.3s ease;
+            }
+
+                .standout-submenu a:hover {
+                    background: rgba(26, 115, 232, 0.2) !important;
+                    color: #1A73E8 !important;
+                    padding-left: 35px !important;
+                    border-radius: 6px;
+                }
+
+        /* Nút nổi bật chung */
+        .standout-item a {
+            background: rgba(26, 115, 232, 0.1);
+            color: #2C3E50;
+            font-weight: 600;
+            padding: 14px 20px !important;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+        }
+
+            .standout-item.mm-active > a,
+            .standout-item a:hover {
+                background: linear-gradient(90deg, #1A73E8 0%, #AED6F1 100%) !important;
+                color: #FFFFFF !important;
+                transform: translateX(5px);
+            }
+    </style>
 </head>
-<body style="background-color: #f8f9fa">
+<body>
     <div id="layout-wrapper">
         <header id="page-topbar">
             <div class="navbar-header">
                 <div class="d-flex align-items-center">
-                    <!-- LOGO -->
                     <div class="navbar-brand-box">
                         <a href="~/Index" class="logo logo-dark">
                             <span class="logo-sm">
@@ -37,12 +393,8 @@
                             </span>
                         </a>
                     </div>
-                    <button type="button" class="btn btn-sm px-3 font-size-16 header-item waves-effect vertical-menu-btn">
-                        <i class="fa fa-fw fa-bars"></i>
-                    </button>
                 </div>
                 <div class="d-flex align-items-center">
-                    <!-- Notification Dropdown -->
                     <div class="dropdown d-inline-block">
                         <button type="button" class="btn header-item noti-icon waves-effect"
                                 id="page-header-notifications-dropdown"
@@ -72,14 +424,13 @@
                                 </div>
                             </li>
                             <li class="p-2 border-top">
-                                <a class="dropdown-item btn btn-sm btn-link font-size-14 text-center" href="#">
-                                    <i class="uil-arrow-circle-right me-1"></i> View More
+                                <a class="dropdown-item text-center" href="javascript:void(0);">
+                                    View More..
                                 </a>
                             </li>
                         </ul>
                     </div>
 
-                    <!-- User Dropdown -->
                     <div class="dropdown d-inline-block">
                         <button type="button" class="btn header-item waves-effect"
                                 id="page-header-user-dropdown"
@@ -95,27 +446,23 @@
                             aria-labelledby="page-header-user-dropdown">
                             <li>
                                 <a class="dropdown-item" href="~/Employee/Profile">
-                                    <i class="uil uil-user-circle font-size-18 align-middle text-muted me-1"></i>
-                                    View Profile
+                                    <i class="uil uil-user-circle font-size-18 align-middle text-muted me-1"></i> View Profile
                                 </a>
                             </li>
                             <li>
                                 <a class="dropdown-item" href="#">
-                                    <i class="uil uil-cog font-size-18 align-middle text-muted me-1"></i>
-                                    Settings
+                                    <i class="uil uil-cog font-size-18 align-middle text-muted me-1"></i> Settings
                                     <span class="badge bg-success-subtle text-success rounded-pill ms-2">03</span>
                                 </a>
                             </li>
                             <li>
                                 <a class="dropdown-item" href="#">
-                                    <i class="uil uil-lock-alt font-size-18 align-middle text-muted me-1"></i>
-                                    Lock Screen
+                                    <i class="uil uil-lock-alt font-size-18 align-middle text-muted me-1"></i> Lock Screen
                                 </a>
                             </li>
                             <li>
                                 <a class="dropdown-item" href="~/Account/SignedOut">
-                                    <i class="uil uil-sign-out-alt font-size-18 align-middle text-muted me-1"></i>
-                                    Sign Out
+                                    <i class="uil uil-sign-out-alt font-size-18 align-middle text-muted me-1"></i> Sign Out
                                 </a>
                             </li>
                         </ul>
@@ -124,69 +471,84 @@
             </div>
         </header>
 
-        <!-- Sidebar -->
         <div class="vertical-menu">
             <div class="navbar-brand-box">
                 <a href="~/Index" class="logo logo-dark">
                     <span class="logo-sm">
-                        <img src="~/images/logo-sm.png" alt="Small Dark Logo" height="32">
+                        <img src="~/images/logo-sm.png" alt="" height="32">
                     </span>
                     <span class="logo-lg">
-                        <img src="~/images/logo-dark.png" alt="Large Dark Logo" height="30">
+                        <img src="~/images/logo-dark.png" alt="" height="30">
                     </span>
                 </a>
                 <a href="~/Index" class="logo logo-light">
                     <span class="logo-sm">
-                        <img src="~/images/logo-sm.png" alt="Small Light Logo" height="32">
+                        <img src="~/images/logo-sm.png" alt="" height="32">
                     </span>
                     <span class="logo-lg">
-                        <img src="~/images/logo-light.png" alt="Large Light Logo" height="30">
+                        <img src="~/images/logo-light.png" alt="" height="30">
                     </span>
                 </a>
             </div>
-            <button type="button" class="btn btn-sm px-3 font-size-16 header-item waves-effect vertical-menu-btn">
-                <i class="fa fa-fw fa-bars"></i>
-            </button>
+
             <div data-simplebar class="sidebar-menu-scroll">
                 <div id="sidebar-menu">
                     <ul class="metismenu list-unstyled" id="side-menu">
                         <li>
-                            <a href="#" class="has-arrow waves-effect" style="text-decoration: none;">
-                                <i class="uil-notebooks"></i>
+                            <a href="javascript:void(0);" class="has-arrow waves-effect standout-menu">
+                                <i class="uil-notebooks standout-icon"></i>
                                 <span>DATA TOEIC</span>
                             </a>
-                            <ul class="sub-menu" aria-expanded="false">
-                                <li><a href="/TOEICPart1/QuestionList" style="text-decoration: none;">Part 1</a></li>
-                                <li><a href="/TOEICPart2/QuestionList" style="text-decoration: none;">Part 2</a></li>
-                                <li><a href="/TOEICPart3/QuestionList" style="text-decoration: none;">Part 3</a></li>
-                                <li><a href="/TOEICPart4/QuestionList" style="text-decoration: none;">Part 4</a></li>
-                                <li><a href="/TOEICPart5/QuestionList" style="text-decoration: none;">Part 5</a></li>
-                                <li><a href="/TOEICPart6/QuestionList" style="text-decoration: none;">Part 6</a></li>
-                                <li><a href="/TOEICPart7/QuestionList" style="text-decoration: none;">Part 7</a></li>
+                            <ul class="sub-menu standout-submenu" aria-expanded="false">
+                                <li><a href="/TOEICPart1/QuestionList">Part 1</a></li>
+                                <li><a href="/TOEICPart2/QuestionList">Part 2</a></li>
+                                <li><a href="/TOEICPart3/QuestionList">Part 3</a></li>
+                                <li><a href="/TOEICPart4/QuestionList">Part 4</a></li>
+                                <li><a href="/TOEICPart5/QuestionList">Part 5</a></li>
+                                <li><a href="/TOEICPart6/QuestionList">Part 6</a></li>
+                                <li><a href="/TOEICPart7/QuestionList">Part 7</a></li>
                             </ul>
                         </li>
-                        <li>
-                            <a href="#" class="has-arrow waves-effect" style="text-decoration: none;">
-                                <i class="uil-book-alt"></i>
-                                <span>TEACHERS</span>
+
+                        <li class="standout-item">
+                            <a href="~/Manage/Department" class="waves-effect">
+                                <i class="fas fa-building standout-icon"></i>
+                                <span>Departments</span>
                             </a>
-                            <ul class="sub-menu" aria-expanded="false">
-                                <li><a href="~/Employee/EmployeeList" style="text-decoration: none;">Employee List</a></li>
-                            </ul>
                         </li>
-                        <li>
-                            <a href="#" class="has-arrow waves-effect" style="text-decoration: none;">
-                                <i class="uil-book-alt"></i>
-                                <span>STUDENTS</span>
+
+                        <li class="standout-item">
+                            <a href="~/Manage/EmployeeList" class="waves-effect">
+                                <i class="fa fa-user-tie standout-icon"></i>
+                                <span>Employee List</span>
                             </a>
-                            <ul class="sub-menu" aria-expanded="false">
-                                <li><a href="~/Employee/EmployeeList" style="text-decoration: none;">Student List</a></li>
-                            </ul>
                         </li>
-                        <li>
-                            <a href="~/Guide/Index" style="text-decoration: none;">
-                                <i class="uil-youtube"></i>
-                                <span>GUIDE</span>
+
+                        <li class="standout-item">
+                            <a href="~/Manage/Users" class="waves-effect">
+                                <i class="fa fa-user standout-icon"></i>
+                                <span>Users</span>
+                            </a>
+                        </li>
+
+                        <li class="standout-item">
+                            <a href="~/Manage/Members" class="waves-effect">
+                                <i class="fa fa-id-badge standout-icon"></i>
+                                <span>Members</span>
+                            </a>
+                        </li>
+
+                        <li class="standout-item">
+                            <a href="~/Manage/Test" class="waves-effect">
+                                <i class="fa fa-file-alt standout-icon"></i>
+                                <span>Tests</span>
+                            </a>
+                        </li>
+
+                        <li class="standout-item">
+                            <a href="~/Manage/Result" class="waves-effect">
+                                <i class="fa fa-chart-bar standout-icon"></i>
+                                <span>Results</span>
                             </a>
                         </li>
                     </ul>
@@ -203,92 +565,124 @@
         </div>
     </div>
 
-    <!-- Scripts -->
-    <!-- Load local jQuery first -->
     <script src="~/lib/jquery/jquery.min.js"></script>
-    <!-- Load Bootstrap (includes Popper.js) -->
     <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <!-- Load MetisMenu -->
     <script src="~/lib/metismenu/metisMenu.min.js"></script>
-    <!-- Load DataTables -->
-    <script src="~/lib/datatables/js/dataTables.min.js"></script>
+    <script src="~/lib/simplebar/simplebar.min.js"></script>
+    <script src="~/lib/node-waves/waves.min.js"></script>
+    <script src="~/lib/datatables/js/jquery.dataTables.min.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // Check if jQuery is loaded before proceeding
             if (typeof jQuery === 'undefined') {
                 console.error('jQuery is not loaded. Check the file ~/lib/jquery/jquery.min.js.');
                 alert('jQuery could not be loaded. Please ensure the file exists in ~/lib/jquery/.');
             } else {
                 initializeScripts();
             }
+        });
 
-            function initializeScripts() {
-                // Function to load user data dynamically after login
-                function loadUserData() {
-                    $.ajax({
-                        url: "/Reports/Personal",
-                        type: "GET",
-                        success: function (data) {
-                            if (data && data.EmployeeName) {
-                                $("#txtAmountNoticeNotRead").text(data.NoticeNotRead || 0);
-                                let avatarUrl = data.EmployeeAvatar || "~/images/avatar/default-avatar.jpg";
-                                // Ensure the path starts with '/' if it's a relative path
-                                if (avatarUrl && !avatarUrl.startsWith('http') && !avatarUrl.startsWith('/')) {
-                                    avatarUrl = `/images/avatar/${avatarUrl}`;
-                                }
-                                $("#imgEmployeeAvatar").attr("src", avatarUrl);
-                                $("#txtEmployeeName").text(data.EmployeeName || "User");
-                            } else {
-                                console.warn("No user data returned from /Reports/Personal");
-                                $("#txtEmployeeName").text("User");
-                                $("#imgEmployeeAvatar").attr("src", "~/images/avatar/default-avatar.jpg");
-                            }
-                        },
-                        error: function (xhr) {
-                            console.error("Error fetching user data:", xhr.responseText);
-                            alert("Error loading user data: " + xhr.responseText);
-                            $("#txtEmployeeName").text("User");
-                            $("#imgEmployeeAvatar").attr("src", "~/images/avatar/default-avatar.jpg");
-                        }
-                    });
-                }
+        function initializeScripts() {
+            // Hàm làm nổi bật nút điều hướng dựa trên URL
+            function highlightActiveMenu() {
+                const currentPath = window.location.pathname.toLowerCase(); // Lấy đường dẫn hiện tại
+                const menuLinks = $('#side-menu a'); // Lấy tất cả các thẻ <a> trong menu
 
-                // Call loadUserData on page load
-                loadUserData();
+                menuLinks.each(function () {
+                    const linkPath = $(this).attr('href')?.toLowerCase(); // Lấy href của thẻ <a>
 
-                // Refresh user data periodically (optional)
-                function CallRefresh() {
-                    loadUserData();
-                }
-
-                // Manually initialize Bootstrap dropdowns
-                var dropdownToggles = document.querySelectorAll('[data-bs-toggle="dropdown"]');
-                dropdownToggles.forEach(function (toggle) {
-                    try {
-                        new bootstrap.Dropdown(toggle);
-                    } catch (e) {
-                        console.error("Error initializing dropdown:", e);
+                    // Kiểm tra nếu href khớp với đường dẫn hiện tại
+                    if (linkPath && currentPath === linkPath) {
+                        $(this).addClass('nav-active'); // Thêm class để làm nổi bật
+                    } else {
+                        $(this).removeClass('nav-active'); // Xóa class nếu không khớp
                     }
                 });
 
-                // Initialize DataTables globally (if needed)
-                if ($.fn.DataTable) {
-                    $('table.dataTable').DataTable({
-                        // Configuration options here
-                    });
+                // Xử lý đặc biệt cho menu con của "DATA TOEIC"
+                const submenuLinks = $('.sub-menu.standout-submenu a');
+                submenuLinks.each(function () {
+                    const submenuPath = $(this).attr('href')?.toLowerCase();
+                    if (submenuPath && currentPath === submenuPath) {
+                        $(this).addClass('nav-active');
+                        // Mở rộng menu cha nếu submenu đang hoạt động
+                        $(this).closest('.sub-menu').prev('a').addClass('mm-active');
+                        $(this).closest('.sub-menu').addClass('mm-show');
+                    }
+                });
+            }
+
+            function loadUserData() {
+                $.ajax({
+                    url: "/Reports/Personal",
+                    type: "GET",
+                    success: function (data) {
+                        if (data && data.EmployeeName) {
+                            $("#txtAmountNoticeNotRead").text(data.NoticeNotRead || 0);
+                            let avatarUrl = data.EmployeeAvatar || "~/images/avatar/default-avatar.jpg";
+                            if (avatarUrl && !avatarUrl.startsWith('http') && avatarUrl.startsWith('~/')) {
+                                avatarUrl = avatarUrl.replace('~/', '/');
+                            } else if (avatarUrl && !avatarUrl.startsWith('http') && !avatarUrl.startsWith('/')) {
+                                avatarUrl = `/images/avatar/${avatarUrl}`;
+                            }
+                            $("#imgEmployeeAvatar").attr("src", avatarUrl);
+                            $("#txtEmployeeName").text(data.EmployeeName || "User");
+                        } else {
+                            console.warn("No user data returned from /Reports/Personal");
+                            $("#txtEmployeeName").text("User");
+                            $("#imgEmployeeAvatar").attr("src", "/images/avatar/default-avatar.jpg");
+                        }
+                    },
+                    error: function (xhr) {
+                        console.error("Error fetching user data:", xhr.status, xhr.responseText);
+                        $("#txtEmployeeName").text("User");
+                        $("#imgEmployeeAvatar").attr("src", "/images/avatar/default-avatar.jpg");
+                    }
+                });
+            }
+
+            loadUserData();
+            highlightActiveMenu(); // Gọi hàm làm nổi bật ngay sau khi tải trang
+
+            var dropdownElementList = [].slice.call(document.querySelectorAll('[data-bs-toggle="dropdown"]'));
+            var dropdownList = dropdownElementList.map(function (dropdownToggleEl) {
+                try {
+                    return new bootstrap.Dropdown(dropdownToggleEl);
+                } catch (e) {
+                    console.error("Error initializing dropdown:", e);
+                    return null;
+                }
+            });
+
+            if ($.fn.metisMenu) {
+                $('#side-menu').metisMenu();
+                console.log('MetisMenu initialized.');
+            } else {
+                console.error('MetisMenu function is not available. Check if metisMenu.min.js is loaded.');
+            }
+
+            if ($.fn.DataTable) {
+                try {
+                    $('table.dataTable').DataTable({});
+                    console.log('DataTables initialized.');
+                } catch (e) {
+                    console.error("Error initializing DataTables:", e);
                 }
             }
-        });
+
+            if (typeof SimpleBar !== 'undefined') {
+                $('.sidebar-menu-scroll').each(function () {
+                    new SimpleBar(this);
+                });
+                console.log('SimpleBar initialized.');
+            }
+
+            if (typeof Waves !== 'undefined') {
+                Waves.init();
+                console.log('Waves initialized.');
+            }
+        }
     </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
-<style>
-    .badge {
-        min-width: 20px;
-        height: 20px;
-        line-height: 20px;
-        text-align: center;
-    }
-</style>
