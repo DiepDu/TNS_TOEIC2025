@@ -21,7 +21,7 @@
             padding: 0;
             overflow-x: hidden;
         }
-        /* Trong phần <style> của bạn */
+      
         #side-menu .nav-active {
             font-weight: bold; /* In đậm */
             background: linear-gradient(90deg, #1A73E8 0%, #AED6F1 100%) !important; /* Nền nổi bật */
@@ -196,7 +196,7 @@
             border-radius: 10px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             padding: 10px 0;
-            min-width: 300px;
+            width: 300px;
         }
 
         .notification-item {
@@ -518,7 +518,7 @@
                         </li>
 
                         <li class="standout-item">
-                            <a href="~/Manage/EmployeeList" class="waves-effect">
+                            <a href="~/Manage/Employee" class="waves-effect">
                                 <i class="fa fa-user-tie standout-icon"></i>
                                 <span>Employee List</span>
                             </a>
@@ -568,9 +568,9 @@
     <script src="~/lib/jquery/jquery.min.js"></script>
     <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="~/lib/metismenu/metisMenu.min.js"></script>
-    <script src="~/lib/simplebar/simplebar.min.js"></script>
-    <script src="~/lib/node-waves/waves.min.js"></script>
-    <script src="~/lib/datatables/js/jquery.dataTables.min.js"></script>
+    <script src="https://unpkg.com/simplebar@latest/dist/simplebar.min.js"></script>
+    <script src="https://unpkg.com/node-waves@latest/dist/waves.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {

@@ -1,0 +1,640 @@
+﻿@page "{handler?}"
+@model TNS_TOEICAdmin.Pages.Manage.EmployeeModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Quản lý nhân viên";
+}
+
+<style>
+    body {
+        background: linear-gradient(135deg, #E5F9FF 0%, #D1F1FF 100%);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        color: #2C3E50;
+        line-height: 1.6;
+    }
+
+    .container {
+        background: #FFF9E5;
+        border-radius: 20px;
+        padding: 30px;
+        margin: 40px auto;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        max-width: 1400px;
+        transition: box-shadow 0.3s ease;
+    }
+
+        .container:hover {
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+        }
+
+    h2 {
+        color: #2C3E50;
+        font-weight: 700;
+        font-size: 28px;
+        margin-bottom: 25px;
+        text-align: center;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        background: linear-gradient(90deg, #2C3E50, #3498DB);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .search-container {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        margin-bottom: 25px;
+        flex-wrap: nowrap;
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    .search-group {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .search-input, .form-control {
+        border-radius: 12px;
+        border: 2px solid #3498DB;
+        background-color: #FFFFFF;
+        padding: 10px 15px;
+        transition: all 0.4s ease;
+        flex-grow: 1;
+        min-width: 150px;
+    }
+
+        .search-input:focus, .form-control:focus {
+            border-color: #2980B9;
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.4);
+            background-color: #F9FBFF;
+            outline: none;
+        }
+
+    .btn-add, .btn-search, .btn-save, .btn-cancel {
+        border-radius: 30px;
+        padding: 10px 20px;
+        font-weight: 600;
+        transition: all 0.4s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        white-space: nowrap;
+    }
+
+    .btn-add {
+        background: linear-gradient(45deg, #3498DB, #5DADE2);
+        border: none;
+        color: #FFFFFF;
+    }
+
+        .btn-add:hover {
+            background: linear-gradient(45deg, #2980B9, #4D94DB);
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 6px 16px rgba(52, 152, 219, 0.3);
+            color: #FFFFFF;
+        }
+
+    .btn-search {
+        background: linear-gradient(45deg, #F1C40F, #F7DC6F);
+        border: none;
+        color: #2C3E50;
+    }
+
+        .btn-search:hover {
+            background: linear-gradient(45deg, #D4AC0D, #E4C107);
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 6px 16px rgba(241, 196, 15, 0.3);
+        }
+
+    .btn-save {
+        background: linear-gradient(45deg, #27AE60, #52BE80);
+        border: none;
+        color: #FFFFFF;
+    }
+
+        .btn-save:hover {
+            background: linear-gradient(45deg, #219653, #48A368);
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 6px 16px rgba(39, 174, 96, 0.3);
+        }
+
+    .btn-cancel {
+        background: linear-gradient(45deg, #95A5A6, #BDC3C7);
+        border: none;
+        color: #2C3E50;
+    }
+
+        .btn-cancel:hover {
+            background: linear-gradient(45deg, #7F8C8D, #A6B1B2);
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 6px 16px rgba(149, 165, 166, 0.3);
+        }
+
+    .btn-action {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 6px;
+        font-size: 18px;
+        border: none;
+        transition: all 0.4s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+        .btn-action i {
+            margin: 0;
+        }
+
+    .btn-edit {
+        background: linear-gradient(45deg, #F1C40F, #F7DC6F);
+        color: #2C3E50;
+    }
+
+        .btn-edit:hover {
+            background: linear-gradient(45deg, #D4AC0D, #E4C107);
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(241, 196, 15, 0.3);
+        }
+
+    .btn-delete {
+        background: linear-gradient(45deg, #E74C3C, #F1948A);
+        color: #FFFFFF;
+    }
+
+        .btn-delete:hover {
+            background: linear-gradient(45deg, #C0392B, #E57373);
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(231, 76, 60, 0.3);
+        }
+
+    .table {
+        background: #FFFFFF;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+        .table th {
+            background: linear-gradient(90deg, #3498DB, #5DADE2);
+            color: #FFFFFF;
+            text-align: center;
+            padding: 16px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .table td {
+            vertical-align: middle;
+            padding: 14px;
+            border-bottom: 1px solid #ECF0F1;
+        }
+
+        .table tr:hover {
+            background: #F8FAFF;
+            transition: background 0.3s ease;
+        }
+
+    .pagination .page-link {
+        border-radius: 50%;
+        margin: 0 6px;
+        color: #3498DB;
+        border: 2px solid #3498DB;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+
+    .pagination .page-item.active .page-link {
+        background: #3498DB;
+        color: #FFFFFF;
+        border-color: #3498DB;
+    }
+
+    .pagination .page-link:hover {
+        background: #ECF0F1;
+        color: #2980B9;
+    }
+
+    .modal-content {
+        background: #FFF9E5;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        border: none;
+    }
+
+    .modal-header {
+        background: linear-gradient(90deg, #3498DB, #5DADE2);
+        color: #FFFFFF;
+        border-top-left-radius: 20px;
+        border-top-right-radius: 20px;
+        padding: 15px 20px;
+    }
+
+    .modal-title {
+        font-size: 22px;
+        font-weight: 600;
+    }
+
+    .alert {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1050;
+        min-width: 320px;
+        border-radius: 12px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+        padding: 15px 20px;
+        font-size: 16px;
+    }
+
+    .alert-success {
+        background: linear-gradient(45deg, #27AE60, #52BE80);
+        color: #FFFFFF;
+    }
+
+    .alert-danger {
+        background: linear-gradient(45deg, #E74C3C, #F1948A);
+        color: #FFFFFF;
+    }
+</style>
+
+<div class="container">
+    <h2><i class="fas fa-users me-2"></i>Quản lý nhân viên</h2>
+    <div class="search-container">
+        <button class="btn btn-add" onclick="showAddModal()"><i class="fas fa-plus me-2"></i>Thêm nhân viên</button>
+        <div class="search-group">
+            <input type="text" class="form-control search-input" id="searchInput" placeholder="Tìm kiếm theo tên..." />
+            <select class="form-control" id="statusFilter">
+                <option value="">Tất cả trạng thái</option>
+                <option value="active">Còn làm</option>
+                <option value="inactive">Đã nghỉ</option>
+            </select>
+            <button class="btn btn-search" onclick="searchEmployees()"><i class="fas fa-search me-2"></i>Tìm kiếm</button>
+        </div>
+    </div>
+
+    <table class="table table-bordered table-hover">
+        <thead>
+            <tr>
+                <th>Mã nhân viên</th>
+                <th>Họ và tên</th>
+                <th>Phòng ban</th>
+                <th>Email công ty</th>
+                <th>Trạng thái</th>
+                <th>Hành động</th>
+            </tr>
+        </thead>
+        <tbody id="employeeTableBody"></tbody>
+    </table>
+
+    <div class="text-center mt-3">
+        <button class="btn btn-search" id="loadMoreBtn" style="display: none;">
+            <i class="fas fa-plus me-2"></i>Tải thêm
+        </button>
+    </div>
+</div>
+
+<div class="modal fade" id="employeeModal" tabindex="-1" aria-labelledby="employeeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="employeeModalLabel">Thêm nhân viên</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="employeeForm">
+                    <input type="hidden" id="employeeKey" name="employeeKey" />
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="employeeID" class="form-label">Mã nhân viên</label>
+                            <input type="text" class="form-control" id="employeeID" name="employeeID" required />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="lastName" class="form-label">Họ</label>
+                            <input type="text" class="form-control" id="lastName" name="lastName" required />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="firstName" class="form-label">Tên</label>
+                            <input type="text" class="form-control" id="firstName" name="firstName" required />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="departmentKey" class="form-label">Phòng ban</label>
+                            <select class="form-control" id="departmentKey" name="departmentKey">
+                                <option value="">Chọn phòng ban</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="companyEmail" class="form-label">Email công ty</label>
+                            <input type="email" class="form-control" id="companyEmail" name="companyEmail" required />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="startingDate" class="form-label">Ngày bắt đầu</label>
+                            <input type="date" class="form-control" id="startingDate" name="startingDate" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="leavingDate" class="form-label">Ngày nghỉ</label>
+                            <input type="date" class="form-control" id="leavingDate" name="leavingDate" />
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-save"><i class="fas fa-save me-2"></i>Lưu</button>
+                        <button type="button" class="btn btn-cancel" data-bs-dismiss="modal"><i class="fas fa-times me-2"></i>Hủy</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let employees = [];
+        let departments = [];
+        let loadedRows = 0; // Theo dõi số hàng đã tải
+        const pageSize = 10;
+        let searchTerm = '';
+        let statusFilter = '';
+        let isEditMode = false;
+        let isLoading = false; // Tránh gọi nhiều lần khi đang tải
+
+        $(document).ready(function () {
+            loadEmployees(); // Tải dữ liệu ban đầu
+            loadDepartments();
+            $('.btn-add').on('click', showAddModal); // Giữ nguyên cho nút "Thêm nhân viên"
+            $('#loadMoreBtn').on('click', loadMoreEmployees); // Giữ nguyên cho nút "Tải thêm"
+        });
+
+        // Sửa hàm loadEmployees
+        function loadEmployees(search = '', status = '') {
+            searchTerm = search;
+            statusFilter = status;
+            loadedRows = 0; // Reset khi tải mới
+            employees = []; // Reset danh sách nhân viên
+
+            const dataToSend = {
+                offset: loadedRows,
+                pageSize: pageSize,
+                search: searchTerm,
+                status: statusFilter
+            };
+
+            isLoading = true;
+            $.ajax({
+                url: '/Manage/Employee?handler=GetEmployees',
+                method: 'GET',
+                data: dataToSend,
+                cache: false,
+                success: function (response) {
+                    console.log('Response:', response); // Debug
+                    if (response && response.data) {
+                        employees = Array.isArray(response.data) ? response.data : [];
+                        loadedRows += employees.length;
+                        renderEmployees(true); // true để không xóa bảng
+                        toggleLoadMoreButton(response.hasMore); // Kiểm tra có dữ liệu để tải thêm không
+                    } else {
+                        renderEmployees(true);
+                        toggleLoadMoreButton(false);
+                    }
+                    isLoading = false;
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error loading employees:', error); // Debug lỗi
+                    showAlert('danger', 'Không thể tải danh sách nhân viên.');
+                    isLoading = false;
+                }
+            });
+        }
+
+        // Hàm tải thêm dữ liệu
+        function loadMoreEmployees() {
+            if (isLoading) return;
+
+            const dataToSend = {
+                offset: loadedRows,
+                pageSize: pageSize,
+                search: searchTerm,
+                status: statusFilter
+            };
+
+            isLoading = true;
+            $.ajax({
+                url: '/Manage/Employee?handler=GetEmployees',
+                method: 'GET',
+                data: dataToSend,
+                cache: false,
+                success: function (response) {
+                    console.log('Response:', response); // Debug
+                    if (response && response.data) {
+                        const newEmployees = Array.isArray(response.data) ? response.data : [];
+                        employees = employees.concat(newEmployees);
+                        loadedRows += newEmployees.length;
+                        renderEmployees(false); // false để thêm vào bảng
+                        toggleLoadMoreButton(response.hasMore);
+                    }
+                    isLoading = false;
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error loading more employees:', error); // Debug lỗi
+                    showAlert('danger', 'Không thể tải thêm nhân viên.');
+                    isLoading = false;
+                }
+            });
+        }
+
+        // Sửa hàm renderEmployees
+        function renderEmployees(clearTable = false) {
+            const tbody = $('#employeeTableBody');
+            if (clearTable) tbody.empty();
+
+            if (employees.length > 0) {
+                employees.forEach(emp => {
+                    const row = `<tr>
+                                    <td>${emp.EmployeeID || 'N/A'}</td>
+                                    <td>${(emp.LastName || '') + ' ' + (emp.FirstName || '')}</td>
+                                    <td>${emp.DepartmentName || 'Chưa có phòng ban'}</td>
+                                    <td>${emp.CompanyEmail || 'N/A'}</td>
+                                    <td>${emp.LeavingDate ? 'Đã nghỉ' : 'Còn làm'}</td>
+                                    <td>
+                                        <button class="btn btn-action btn-edit" onclick="showEditModal('${emp.EmployeeKey}')"><i class="fas fa-edit"></i></button>
+                                        <button class="btn btn-action btn-delete" onclick="deleteEmployee('${emp.EmployeeKey}', ${emp.LeavingDate ? 'true' : 'false'})"><i class="fas fa-trash"></i></button>
+                                    </td>
+                                </tr>`;
+                    tbody.append(row);
+                });
+            } else if (clearTable) {
+                tbody.append('<tr><td colspan="6" class="text-center">Không có dữ liệu</td></tr>');
+            }
+        }
+
+        // Hàm hiển thị/ẩn nút Load More
+        function toggleLoadMoreButton(hasMore) {
+            const loadMoreBtn = $('#loadMoreBtn');
+            if (hasMore) {
+                loadMoreBtn.show();
+            } else {
+                loadMoreBtn.hide();
+            }
+        }
+
+        function loadDepartments() {
+            $.ajax({
+                url: '/Manage/Employee?handler=GetDepartments',
+                method: 'GET',
+                success: function (data) {
+                    departments = Array.isArray(data) ? data : [];
+                    populateDepartmentDropdown();
+                },
+                error: function () {
+                    showAlert('danger', 'Không thể tải danh sách phòng ban.');
+                }
+            });
+        }
+
+        function showAddModal() {
+            isEditMode = false;
+            $('#employeeModalLabel').text('Thêm nhân viên');
+            $('#employeeForm')[0].reset();
+            $('#employeeKey').val('');
+            populateDepartmentDropdown();
+            $('#employeeModal').modal('show');
+        }
+
+        function showEditModal(employeeKey) {
+            const employee = employees.find(emp => emp.EmployeeKey === employeeKey);
+            if (employee) {
+                isEditMode = true;
+                $('#employeeModalLabel').text('Sửa nhân viên');
+                $('#employeeKey').val(employee.EmployeeKey);
+                $('#employeeID').val(employee.EmployeeID);
+                $('#lastName').val(employee.LastName);
+                $('#firstName').val(employee.FirstName);
+                $('#companyEmail').val(employee.CompanyEmail);
+                $('#startingDate').val(employee.StartingDate ? new Date(employee.StartingDate).toISOString().split('T')[0] : '');
+                $('#leavingDate').val(employee.LeavingDate ? new Date(employee.LeavingDate).toISOString().split('T')[0] : '');
+                populateDepartmentDropdown(employee.DepartmentKey ? employee.DepartmentKey.toString() : '');
+                $('#employeeModal').modal('show');
+            }
+        }
+
+        function populateDepartmentDropdown(selectedKey = '') {
+            const departmentSelect = $('#departmentKey');
+            departmentSelect.empty();
+            departmentSelect.append('<option value="">Chọn phòng ban</option>');
+            departments.forEach(dept => {
+                const isSelected = dept.DepartmentKey && selectedKey && dept.DepartmentKey.toString() === selectedKey.toString() ? 'selected' : '';
+                departmentSelect.append(`<option value="${dept.DepartmentKey}" ${isSelected}>${dept.DepartmentName}</option>`);
+            });
+        }
+
+        function searchEmployees() {
+            const searchValue = $('#searchInput').val().trim();
+            const statusValue = $('#statusFilter').val();
+            loadEmployees(searchValue, statusValue); // Tải lại từ đầu khi tìm kiếm
+        }
+
+        $('#employeeForm').on('submit', function (e) {
+            e.preventDefault();
+            const employee = {
+                EmployeeKey: $('#employeeKey').val() || '00000000-0000-0000-0000-000000000000',
+                EmployeeID: $('#employeeID').val(),
+                LastName: $('#lastName').val(),
+                FirstName: $('#firstName').val(),
+                DepartmentKey: $('#departmentKey').val() || null,
+                CompanyEmail: $('#companyEmail').val(),
+                StartingDate: $('#startingDate').val() || null,
+                LeavingDate: $('#leavingDate').val() || null
+            };
+
+            if (!employee.EmployeeID || !employee.LastName || !employee.FirstName || !employee.CompanyEmail) {
+                showAlert('danger', 'Vui lòng điền đầy đủ các trường bắt buộc!');
+                return;
+            }
+
+            const url = isEditMode ? '/Manage/Employee?handler=Update' : '/Manage/Employee?handler=Create';
+            const method = isEditMode ? 'PUT' : 'POST';
+
+            $.ajax({
+                url: url,
+                method: method,
+                contentType: 'application/json',
+                data: JSON.stringify(employee),
+                headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
+                success: function (response) {
+                    if (response.success) {
+                        $('#employeeModal').modal('hide');
+                        showAlert('success', response.message);
+                        loadEmployees(searchTerm, statusFilter); // Tải lại từ đầu sau khi lưu
+                    } else {
+                        showAlert('danger', response.message || 'Lỗi khi lưu nhân viên!');
+                    }
+                },
+                error: function () {
+                    showAlert('danger', isEditMode ? 'Cập nhật thất bại.' : 'Thêm thất bại.');
+                }
+            });
+        });
+
+        function deleteEmployee(employeeKey, isSoftDeleted) {
+            const confirmMessage = isSoftDeleted
+                ? 'Nhân viên đã bị xóa mềm. Bạn có muốn xóa cứng nhân viên này?'
+                : 'Bạn có chắc muốn xóa mềm nhân viên này?';
+            const handler = isSoftDeleted ? 'Delete' : 'SoftDelete';
+            const method = isSoftDeleted ? 'DELETE' : 'POST';
+
+            if (confirm(confirmMessage)) {
+                let ajaxOptions = {
+                    url: `/Manage/Employee?handler=${handler}`,
+                    method: method,
+                    headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
+                    success: function (response) {
+                        if (response.success) {
+                            showAlert('success', response.message);
+                            loadEmployees(searchTerm, statusFilter); // Tải lại từ đầu sau khi xóa
+                        } else {
+                            showAlert('danger', response.message || `Lỗi khi ${isSoftDeleted ? 'xóa cứng' : 'xóa mềm'} nhân viên!`);
+                        }
+                    },
+                    error: function () {
+                        showAlert('danger', `Lỗi khi ${isSoftDeleted ? 'xóa cứng' : 'xóa mềm'} nhân viên!`);
+                    }
+                };
+
+                if (method !== 'GET') {
+                    ajaxOptions.contentType = 'application/json';
+                    ajaxOptions.data = JSON.stringify({ employeeKey: employeeKey });
+                } else {
+                    ajaxOptions.data = { employeeKey: employeeKey };
+                }
+
+                $.ajax(ajaxOptions);
+            }
+        }
+
+        function showAlert(type, message) {
+            const alertDiv = $(`
+                            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                                ${message}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        `);
+            alertDiv.css({
+                position: 'fixed',
+                top: '20px',
+                right: '20px',
+                zIndex: 9999
+            });
+            $('body').append(alertDiv);
+            setTimeout(() => alertDiv.alert('close'), 3000);
+        }
+    </script>
+}
