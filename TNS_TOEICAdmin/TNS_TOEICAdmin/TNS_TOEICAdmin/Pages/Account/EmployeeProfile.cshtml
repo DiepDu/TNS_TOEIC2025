@@ -1,0 +1,379 @@
+﻿@page
+@model TNS_TOEICAdmin.Pages.Account.EmployeeProfileModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Hồ sơ nhân viên";
+}
+
+<div class="container">
+    <div class="profile-header">
+        <img src="@Model.Avatar" alt="Employee Image" class="profile-image" id="employeeImage" onclick="document.getElementById('imageUpload').click();">
+        <input type="file" id="imageUpload" style="display:none;" accept="image/*" onchange="previewAndUploadImage(this)">
+    </div>
+
+    <div class="profile-details">
+        <div class="detail-item">
+            <span class="label">Mã nhân viên:</span>
+            <span class="value">@Model.EmployeeID</span>
+        </div>
+        <div class="detail-item">
+            <span class="label">Họ và tên:</span>
+            <span class="value">@Model.LastName @Model.FirstName</span>
+        </div>
+        <div class="detail-item">
+            <span class="label">Phòng ban:</span>
+            <span class="value">@Model.DepartmentName</span>
+        </div>
+        <div class="detail-item">
+            <span class="label">Email công ty:</span>
+            <span class="value">@Model.CompanyEmail</span>
+        </div>
+        <div class="detail-item">
+            <span class="label">Ngày bắt đầu:</span>
+            <span class="value">@(Model.StartingDate.HasValue ? Model.StartingDate.Value.ToString("dd/MM/yyyy") : "Chưa có")</span>
+        </div>
+        <div class="detail-item">
+            <span class="label">Ngày nghỉ:</span>
+            <span class="value">@(Model.LeavingDate.HasValue ? Model.LeavingDate.Value.ToString("dd/MM/yyyy") : "Còn làm")</span>
+        </div>
+    </div>
+
+    <div class="action-buttons">
+        <button class="btn edit" onclick="openPopup()">Chỉnh sửa</button>
+        <a href="/Account/ChangePassword" class="btn change-password">Đổi mật khẩu</a>
+    </div>
+</div>
+
+<div id="popup" class="popup">
+    <div class="popup-content">
+        <span class="close-btn" onclick="closepopup()">×</span>
+        <h3>Chỉnh sửa hồ sơ</h3>
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="error-message">@Model.ErrorMessage</div>
+        }
+        <form id="edit-form" method="post" asp-page-handler="SaveChanges">
+            <label for="lastName">Họ:</label>
+            <input type="text" id="lastName" name="LastName" maxlength="50" value="@Model.LastName" required>
+
+            <label for="firstName">Tên:</label>
+            <input type="text" id="firstName" name="FirstName" maxlength="50" value="@Model.FirstName" required>
+
+            <button type="submit" class="btn save">Lưu</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openPopup() {
+        document.getElementById("popup").style.display = "flex";
+    }
+
+    function closepopup() {
+        document.getElementById("popup").style.display = "none";
+    }
+
+    function previewAndUploadImage(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                document.getElementById('employeeImage').src = e.target.result;
+            };
+            reader.readAsDataURL(input.files[0]);
+
+            const formData = new FormData();
+            formData.append("image", input.files[0]);
+
+            fetch('/Account/EmployeeProfile?handler=UploadImage', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("Ảnh đã được cập nhật thành công.");
+                    } else {
+                        alert("Lỗi: " + data.errorMessage);
+                    }
+                })
+                .catch(error => console.error('Lỗi khi tải ảnh lên:', error));
+        }
+    }
+</script>
+
+<style>
+    /* Tái sử dụng style từ trang Users, chỉ điều chỉnh một số điểm */
+    body {
+        font-family: 'Poppins', sans-serif;
+        margin: 0;
+        padding: 0;
+        background: linear-gradient(135deg, #E5F9FF 0%, #D1F1FF 100%); /* Đồng bộ với Employee */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        overflow-y: auto;
+    }
+
+    .container {
+        max-width: 650px;
+        width: 90%;
+        background: #FFF9E5; /* Đồng bộ với Employee */
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        border-radius: 20px;
+        padding: 30px;
+        margin: 40px auto; /* Đồng bộ với Employee */
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+        .container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+
+    .profile-header {
+        text-align: center;
+        margin-bottom: 30px;
+        position: relative;
+    }
+
+    .profile-image {
+        width: 160px;
+        height: 160px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 5px solid #fff;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        cursor: pointer;
+    }
+
+        .profile-image:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+    .profile-details {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 15px;
+        margin: 0 10px;
+        box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
+    }
+
+    .detail-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 15px;
+        padding: 10px 0;
+        border-bottom: 1px solid #e9ecef;
+        transition: background 0.3s ease;
+    }
+
+        .detail-item:hover {
+            background: #e9ecef;
+            border-radius: 8px;
+        }
+
+    .label {
+        font-weight: 600;
+        color: #2c3e50;
+        font-size: 16px;
+    }
+
+    .value {
+        color: #7f8c8d;
+        font-size: 16px;
+        font-weight: 400;
+    }
+
+    .action-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin-top: 30px;
+    }
+
+    .btn {
+        padding: 12px 25px;
+        border: none;
+        border-radius: 25px;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 180px;
+    }
+
+        .btn.edit {
+            background: linear-gradient(90deg, #ff6f61 0%, #ff8a65 100%);
+            color: #fff;
+            box-shadow: 0 5px 15px rgba(255, 111, 97, 0.4);
+        }
+
+            .btn.edit:hover {
+                background: linear-gradient(90deg, #ff8a65 0%, #ff6f61 100%);
+                transform: translateY(-3px);
+                box-shadow: 0 8px 20px rgba(255, 111, 97, 0.6);
+            }
+
+        .btn.change-password {
+            background: linear-gradient(90deg, #1e90ff 0%, #00ddeb 100%);
+            color: #fff;
+            box-shadow: 0 5px 15px rgba(30, 144, 255, 0.4);
+        }
+
+            .btn.change-password:hover {
+                background: linear-gradient(90deg, #00ddeb 0%, #1e90ff 100%);
+                transform: translateY(-3px);
+                box-shadow: 0 8px 20px rgba(30, 144, 255, 0.6);
+            }
+
+    .popup {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.6);
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+
+    .popup-content {
+        background: #FFF9E5; /* Đồng bộ với Employee */
+        padding: 30px;
+        border-radius: 15px;
+        position: relative;
+        width: 90%;
+        max-width: 400px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        animation: slideIn 0.3s ease;
+    }
+
+    @@keyframes slideIn {
+        from {
+            transform: translateY(-50px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    .close-btn {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        font-size: 24px;
+        color: #7f8c8d;
+        cursor: pointer;
+        transition: color 0.3s ease;
+    }
+
+        .close-btn:hover {
+            color: #ff6f61;
+        }
+
+    .popup-content h3 {
+        margin: 0 0 20px;
+        font-size: 24px;
+        color: #2c3e50;
+        text-align: center;
+    }
+
+    form label {
+        display: block;
+        margin: 10px 0 5px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #2c3e50;
+    }
+
+    form input {
+        width: 95%;
+        padding: 12px;
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        font-size: 14px;
+        color: #2c3e50;
+        background: #f8f9fa;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+        form input:focus {
+            border-color: #1e90ff;
+            box-shadow: 0 0 8px rgba(30, 144, 255, 0.2);
+            outline: none;
+        }
+
+    .btn.save {
+        background: linear-gradient(90deg, #28a745 0%, #34c759 100%);
+        color: #fff;
+        font-weight: 500;
+        box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        margin-top: 15px;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        text-align: center;
+    }
+
+        .btn.save:hover {
+            background: linear-gradient(90deg, #34c759 0%, #28a745 100%);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(40, 167, 69, 0.6);
+        }
+
+    .error-message {
+        color: #ff6f61;
+        font-size: 14px;
+        margin-bottom: 15px;
+        text-align: center;
+        display: block;
+        background: #fff5f5;
+        padding: 8px;
+        border-radius: 8px;
+    }
+
+    @@media (max-width: 768px) {
+        .container {
+            width: 95%;
+            padding: 20px;
+        }
+
+        .profile-image {
+            width: 120px;
+            height: 120px;
+        }
+
+        .detail-item {
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn {
+            width: 100%;
+        }
+
+        .popup-content {
+            width: 90%;
+            padding: 20px;
+        }
+    }
+</style>

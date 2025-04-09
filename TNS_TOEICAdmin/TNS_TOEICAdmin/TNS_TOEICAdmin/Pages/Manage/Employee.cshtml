@@ -1,4 +1,4 @@
-﻿@page "{handler?}"
+﻿@page 
 @model TNS_TOEICAdmin.Pages.Manage.EmployeeModel
 @{
     Layout = "_Layout";
@@ -542,6 +542,161 @@
             loadEmployees(searchValue, statusValue); // Tải lại từ đầu khi tìm kiếm
         }
 
+        // $('#employeeForm').on('submit', function (e) {
+        //     debugger;
+        //     e.preventDefault();
+        //     const employee = {
+        //         EmployeeKey: $('#employeeKey').val() || '00000000-0000-0000-0000-000000000000',
+        //         EmployeeID: $('#employeeID').val(),
+        //         LastName: $('#lastName').val(),
+        //         FirstName: $('#firstName').val(),
+        //         DepartmentKey: $('#departmentKey').val() || null,
+        //         CompanyEmail: $('#companyEmail').val(),
+        //         StartingDate: $('#startingDate').val() || null,
+        //         LeavingDate: $('#leavingDate').val() || null
+        //     };
+
+        //     if (!employee.EmployeeID || !employee.LastName || !employee.FirstName || !employee.CompanyEmail) {
+        //         showAlert('danger', 'Vui lòng điền đầy đủ các trường bắt buộc!');
+        //         return;
+        //     }
+
+        //     const url = isEditMode ? '/Manage/Employee?handler=Update' : '/Manage/Employee?handler=Create';
+        //     const method = isEditMode ? 'PUT' : 'POST';
+
+        //     $.ajax({
+        //         url: url,
+        //         method: method,
+        //         contentType: 'application/json',
+        //         data: JSON.stringify(employee),
+        //         headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
+        //         success: function (response) {
+        //             if (response.success) {
+        //                 $('#employeeModal').modal('hide');
+        //                 showAlert('success', response.message);
+        //                 loadEmployees(searchTerm, statusFilter); // Tải lại danh sách
+        //             } else {
+        //                 showAlert('danger', response.message || 'Lỗi khi lưu nhân viên!');
+        //             }
+        //         },
+        //         error: function (xhr, status, error) {
+        //             console.error('Error:', xhr.status, error); // Debug lỗi chi tiết
+        //             showAlert('danger', isEditMode ? `Cập nhật thất bại: ${xhr.statusText}` : `Thêm thất bại: ${xhr.statusText}`);
+        //         }
+        //     });
+        // });
+
+        // function deleteEmployee(employeeKey, isSoftDeleted) {
+        //     const confirmMessage = isSoftDeleted
+        //         ? 'Nhân viên đã bị xóa mềm. Bạn có muốn xóa cứng nhân viên này?'
+        //         : 'Bạn có chắc muốn xóa mềm nhân viên này?';
+        //     const handler = isSoftDeleted ? 'Delete' : 'SoftDelete';
+        //     const method = isSoftDeleted ? 'DELETE' : 'POST';
+
+        //     if (confirm(confirmMessage)) {
+        //         $.ajax({
+        //             url: `/Manage/Employee?handler=${handler}`,
+        //             method: method,
+        //             headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
+        //             contentType: 'application/json',
+        //             data: JSON.stringify({ employeeKey: employeeKey }), // Đảm bảo gửi dữ liệu dưới dạng JSON
+        //             success: function (response) {
+        //                 if (response.success) {
+        //                     showAlert('success', response.message);
+        //                     loadEmployees(searchTerm, statusFilter); // Tải lại danh sách
+        //                 } else {
+        //                     showAlert('danger', response.message || `Lỗi khi ${isSoftDeleted ? 'xóa cứng' : 'xóa mềm'} nhân viên!`);
+        //                 }
+        //             },
+        //             error: function (xhr, status, error) {
+        //                 console.error('Error:', xhr.status, error); // Debug lỗi chi tiết
+        //                 showAlert('danger', `Lỗi khi ${isSoftDeleted ? 'xóa cứng' : 'xóa mềm'} nhân viên: ${xhr.statusText}`);
+        //             }
+        //         });
+        //     }
+        // }
+
+        // $('#employeeForm').on('submit', function (e) {
+        //     e.preventDefault();
+        //     const employee = {
+        //         EmployeeKey: $('#employeeKey').val() || '00000000-0000-0000-0000-000000000000',
+        //         EmployeeID: $('#employeeID').val(),
+        //         LastName: $('#lastName').val(),
+        //         FirstName: $('#firstName').val(),
+        //         DepartmentKey: $('#departmentKey').val() || null,
+        //         CompanyEmail: $('#companyEmail').val(),
+        //         StartingDate: $('#startingDate').val() || null,
+        //         LeavingDate: $('#leavingDate').val() || null
+        //     };
+
+        //     if (!employee.EmployeeID || !employee.LastName || !employee.FirstName || !employee.CompanyEmail) {
+        //         showAlert('danger', 'Vui lòng điền đầy đủ các trường bắt buộc!');
+        //         return;
+        //     }
+
+        //     const url = isEditMode ? '/Manage/Employee?handler=Update' : '/Manage/Employee?handler=Create';
+        //     $.ajax({
+        //         url: url,
+        //         method: 'POST',
+        //         contentType: 'application/json',
+        //         data: JSON.stringify(employee),
+        //         headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
+        //         success: function (response) {
+        //             if (response.success) {
+        //                 $('#employeeModal').modal('hide');
+        //                 showAlert('success', response.message);
+        //                 loadEmployees(currentPage, searchTerm, statusFilter);
+        //             } else {
+        //                 showAlert('danger', response.message || 'Lỗi khi lưu nhân viên!');
+        //             }
+        //         },
+        //         error: function () {
+        //             showAlert('danger', isEditMode ? 'Cập nhật thất bại.' : 'Thêm thất bại.');
+        //         }
+        //     });
+        // });
+
+        // function deleteEmployee(employeeKey, isSoftDeleted) {
+        //     if (!isSoftDeleted) {
+        //         if (confirm('Bạn có chắc muốn xóa mềm nhân viên này?')) {
+        //             $.ajax({
+        //                 url: '/Manage/Employee?handler=SoftDelete',
+        //                 method: 'GET',
+        //                 data: { employeeKey: employeeKey },
+        //                 success: function (response) {
+        //                     if (response.success) {
+        //                         showAlert('success', response.message);
+        //                         loadEmployees(currentPage, searchTerm, statusFilter);
+        //                     } else {
+        //                         showAlert('danger', response.message || 'Lỗi khi xóa mềm nhân viên!');
+        //                     }
+        //                 },
+        //                 error: function () {
+        //                     showAlert('danger', 'Lỗi khi xóa mềm nhân viên!');
+        //                 }
+        //             });
+        //         }
+        //     } else {
+        //         if (confirm('Nhân viên đã bị xóa mềm. Bạn có muốn xóa cứng nhân viên này?')) {
+        //             $.ajax({
+        //                 url: '/Manage/Employee?handler=Delete',
+        //                 method: 'GET',
+        //                 data: { employeeKey: employeeKey },
+        //                 success: function (response) {
+        //                     if (response.success) {
+        //                         showAlert('success', response.message);
+        //                         loadEmployees(currentPage, searchTerm, statusFilter);
+        //                     } else {
+        //                         showAlert('danger', response.message || 'Lỗi khi xóa nhân viên!');
+        //                     }
+        //                 },
+        //                 error: function () {
+        //                     showAlert('danger', 'Lỗi khi xóa nhân viên!');
+        //                 }
+        //             });
+        //         }
+        //     }
+        // }
         $('#employeeForm').on('submit', function (e) {
             e.preventDefault();
             const employee = {
@@ -561,65 +716,91 @@
             }
 
             const url = isEditMode ? '/Manage/Employee?handler=Update' : '/Manage/Employee?handler=Create';
-            const method = isEditMode ? 'PUT' : 'POST';
 
             $.ajax({
                 url: url,
-                method: method,
+                method: 'POST', // Giữ POST cho cả Create và Update để đồng nhất
                 contentType: 'application/json',
                 data: JSON.stringify(employee),
                 headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
                 success: function (response) {
                     if (response.success) {
                         $('#employeeModal').modal('hide');
-                        showAlert('success', response.message);
-                        loadEmployees(searchTerm, statusFilter); // Tải lại từ đầu sau khi lưu
+                        showAlert('success', response.message || (isEditMode ? 'Cập nhật nhân viên thành công!' : 'Thêm nhân viên thành công!'));
+                        loadEmployees(searchTerm, statusFilter); // Tải lại từ đầu với Load More
                     } else {
                         showAlert('danger', response.message || 'Lỗi khi lưu nhân viên!');
                     }
                 },
-                error: function () {
-                    showAlert('danger', isEditMode ? 'Cập nhật thất bại.' : 'Thêm thất bại.');
+                error: function (xhr, status, error) {
+                    console.error('Error:', xhr.status, error); // Debug chi tiết
+                    showAlert('danger', isEditMode ? `Cập nhật thất bại: ${xhr.statusText}` : `Thêm thất bại: ${xhr.statusText}`);
                 }
             });
         });
-
         function deleteEmployee(employeeKey, isSoftDeleted) {
             const confirmMessage = isSoftDeleted
                 ? 'Nhân viên đã bị xóa mềm. Bạn có muốn xóa cứng nhân viên này?'
                 : 'Bạn có chắc muốn xóa mềm nhân viên này?';
             const handler = isSoftDeleted ? 'Delete' : 'SoftDelete';
-            const method = isSoftDeleted ? 'DELETE' : 'POST';
 
             if (confirm(confirmMessage)) {
-                let ajaxOptions = {
-                    url: `/Manage/Employee?handler=${handler}`,
-                    method: method,
+                $.ajax({
+                    url: `/Manage/Employee?handler=${handler}&employeeKey=${employeeKey}`, // Gửi qua query string
+                    method: 'GET', // Phù hợp với OnGetDelete và OnGetSoftDelete
                     headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
+                    beforeSend: function () {
+                        console.log('Sending GET request to:', `/Manage/Employee?handler=${handler}&employeeKey=${employeeKey}`);
+                    },
                     success: function (response) {
-                        if (response.success) {
-                            showAlert('success', response.message);
-                            loadEmployees(searchTerm, statusFilter); // Tải lại từ đầu sau khi xóa
+                        console.log('Response:', response);
+                        if (response && response.success) {
+                            showAlert('success', response.message || (isSoftDeleted ? 'Xóa nhân viên thành công!' : 'Xóa mềm nhân viên thành công!'));
+                            loadEmployees(searchTerm, statusFilter); // Tải lại với Load More
                         } else {
                             showAlert('danger', response.message || `Lỗi khi ${isSoftDeleted ? 'xóa cứng' : 'xóa mềm'} nhân viên!`);
                         }
                     },
-                    error: function () {
-                        showAlert('danger', `Lỗi khi ${isSoftDeleted ? 'xóa cứng' : 'xóa mềm'} nhân viên!`);
+                    error: function (xhr, status, error) {
+                        console.error('Error details:', {
+                            status: xhr.status,
+                            statusText: xhr.statusText,
+                            responseText: xhr.responseText
+                        });
+                        showAlert('danger', `Lỗi khi ${isSoftDeleted ? 'xóa cứng' : 'xóa mềm'} nhân viên: ${xhr.statusText || 'Không rõ nguyên nhân'}`);
                     }
-                };
-
-                if (method !== 'GET') {
-                    ajaxOptions.contentType = 'application/json';
-                    ajaxOptions.data = JSON.stringify({ employeeKey: employeeKey });
-                } else {
-                    ajaxOptions.data = { employeeKey: employeeKey };
-                }
-
-                $.ajax(ajaxOptions);
+                });
             }
         }
+        // function deleteEmployee(employeeKey, isSoftDeleted) {
+        //     debugger;
+        //     const confirmMessage = isSoftDeleted
+        //         ? 'Nhân viên đã bị xóa mềm. Bạn có muốn xóa cứng nhân viên này?'
+        //         : 'Bạn có chắc muốn xóa mềm nhân viên này?';
+        //     const handler = isSoftDeleted ? 'Delete' : 'SoftDelete';
 
+        //     if (confirm(confirmMessage)) {
+        //         $.ajax({
+        //             url: `/Manage/Employee?handler=${handler}`,
+        //             method: 'POST', // Dùng POST thay vì GET để gửi dữ liệu an toàn hơn
+        //             contentType: 'application/json',
+        //             data: JSON.stringify({ employeeKey: employeeKey }), // Gửi JSON thay vì query string
+        //             headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
+        //             success: function (response) {
+        //                 if (response.success) {
+        //                     showAlert('success', response.message || (isSoftDeleted ? 'Xóa nhân viên thành công!' : 'Xóa mềm nhân viên thành công!'));
+        //                     loadEmployees(searchTerm, statusFilter); // Tải lại từ đầu với Load More
+        //                 } else {
+        //                     showAlert('danger', response.message || `Lỗi khi ${isSoftDeleted ? 'xóa cứng' : 'xóa mềm'} nhân viên!`);
+        //                 }
+        //             },
+        //             error: function (xhr, status, error) {
+        //                 console.error('Error:', xhr.status, error); // Debug chi tiết
+        //                 showAlert('danger', `Lỗi khi ${isSoftDeleted ? 'xóa cứng' : 'xóa mềm'} nhân viên: ${xhr.statusText}`);
+        //             }
+        //         });
+        //     }
+        // }
         function showAlert(type, message) {
             const alertDiv = $(`
                             <div class="alert alert-${type} alert-dismissible fade show" role="alert">
