@@ -1,13 +1,13 @@
 ﻿@page
 @model TNS_TOEICAdmin.Pages.Account.EmployeeProfileModel
 @{
-    Layout = "_Layout";
+    Layout = "";
     ViewData["Title"] = "Hồ sơ nhân viên";
 }
 
 <div class="container">
     <div class="profile-header">
-        <img src="@Model.Avatar" alt="Employee Image" class="profile-image" id="employeeImage" onclick="document.getElementById('imageUpload').click();">
+        <img src="@Model.PhotoPath" alt="Employee Image" class="profile-image" id="employeeImage" onclick="document.getElementById('imageUpload').click();">
         <input type="file" id="imageUpload" style="display:none;" accept="image/*" onchange="previewAndUploadImage(this)">
     </div>
 
@@ -64,45 +64,48 @@
     </div>
 </div>
 
-<script>
-    function openPopup() {
-        document.getElementById("popup").style.display = "flex";
-    }
 
-    function closepopup() {
-        document.getElementById("popup").style.display = "none";
-    }
+    <script>
+        function openPopup() {
+            document.getElementById("popup").style.display = "flex";
+        }
 
-    function previewAndUploadImage(input) {
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                document.getElementById('employeeImage').src = e.target.result;
-            };
-            reader.readAsDataURL(input.files[0]);
+        function closepopup() {
+            document.getElementById("popup").style.display = "none";
+        }
 
-            const formData = new FormData();
-            formData.append("image", input.files[0]);
+        function previewAndUploadImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    document.getElementById('employeeImage').src = e.target.result;
+                };
+                reader.readAsDataURL(input.files[0]);
 
-            fetch('/Account/EmployeeProfile?handler=UploadImage', {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
-                }
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert("Ảnh đã được cập nhật thành công.");
-                    } else {
-                        alert("Lỗi: " + data.errorMessage);
+                const formData = new FormData();
+                formData.append("image", input.files[0]);
+
+                fetch('/Account/EmployeeProfile?handler=UploadImage', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
                     }
                 })
-                .catch(error => console.error('Lỗi khi tải ảnh lên:', error));
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert("Ảnh đã được cập nhật thành công.");
+                        } else {
+                            alert("Lỗi: " + data.errorMessage);
+                        }
+                    })
+                    .catch(error => console.error('Lỗi khi tải ảnh lên:', error));
+            }
         }
-    }
-</script>
+    </script>
+
+
 
 <style>
     /* Tái sử dụng style từ trang Users, chỉ điều chỉnh một số điểm */

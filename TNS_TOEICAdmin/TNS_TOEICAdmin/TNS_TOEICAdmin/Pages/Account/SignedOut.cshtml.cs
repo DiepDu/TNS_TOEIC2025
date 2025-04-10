@@ -15,7 +15,7 @@ namespace TNS_TOEICAdmin.Pages.Account
 
             }
 
-            return Page();
+            return RedirectToPage("/Account/Login");
         }
     }
 }

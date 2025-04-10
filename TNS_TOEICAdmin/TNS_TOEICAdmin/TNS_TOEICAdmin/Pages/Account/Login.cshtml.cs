@@ -38,12 +38,12 @@ namespace TNS_TOEICAdmin.Pages.Account
             }
 
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            ReturnUrl = returnUrl ?? "/Admin/Index"; // Mặc định chuyển hướng về Admin nếu không có returnUrl
+            ReturnUrl = returnUrl ?? "/Index"; // Mặc định chuyển hướng về Admin nếu không có returnUrl
         }
 
         public async Task<IActionResult> OnPostAsync(string returnUrl = null)
         {
-            ReturnUrl = returnUrl ?? "/Admin/Index";
+            ReturnUrl = returnUrl ?? "/Index";
 
             if (!ModelState.IsValid)
             {

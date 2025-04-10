@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Data;
 using System.Data.SqlClient;
-using TNS_TOEICAdmin.Pages.Account;
 
 namespace TNS_TOEICAdmin.DataAccess
 {
@@ -9,7 +8,16 @@ namespace TNS_TOEICAdmin.DataAccess
     {
         private static readonly string _connectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
 
-        public EmployeeProfile GetEmployeeProfile(string employeeKey)
+        static EmployeeProfileAccessData()
+        {
+            if (string.IsNullOrEmpty(_connectionString))
+            {
+                throw new InvalidOperationException("Connection string is null or empty.");
+            }
+            Console.WriteLine($"Initialized connection string: {_connectionString}");
+        }
+
+        public static EmployeeProfile GetEmployeeProfile(string employeeKey)
         {
             using (SqlConnection connection = new SqlConnection(_connectionString))
             {
@@ -18,7 +26,7 @@ namespace TNS_TOEICAdmin.DataAccess
                     connection.Open();
                     string query = @"
                         SELECT e.EmployeeID, e.LastName, e.FirstName, e.DepartmentKey, d.DepartmentName, 
-                               e.CompanyEmail, e.StartingDate, e.LeavingDate, e.Avatar
+                               e.CompanyEmail, e.StartingDate, e.LeavingDate, e.PhotoPath
                         FROM HRM_Employee e
                         LEFT JOIN HRM_Department d ON e.DepartmentKey = d.DepartmentKey
                         WHERE e.EmployeeKey = @EmployeeKey";
@@ -39,7 +47,7 @@ namespace TNS_TOEICAdmin.DataAccess
                                     CompanyEmail = reader["CompanyEmail"].ToString(),
                                     StartingDate = reader.IsDBNull("StartingDate") ? (DateTime?)null : reader.GetDateTime("StartingDate"),
                                     LeavingDate = reader.IsDBNull("LeavingDate") ? (DateTime?)null : reader.GetDateTime("LeavingDate"),
-                                    Avatar = reader["Avatar"]?.ToString()
+                                    PhotoPath = reader["PhotoPath"]?.ToString()
                                 };
                             }
                         }
@@ -47,13 +55,13 @@ namespace TNS_TOEICAdmin.DataAccess
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error fetching employee profile: {ex.Message}");
+                    Console.WriteLine($"Error fetching employee profile for EmployeeKey {employeeKey}: {ex.Message}");
                 }
                 return null;
             }
         }
 
-        public bool UpdateEmployeeProfile(string employeeKey, string lastName, string firstName)
+        public static bool UpdateEmployeeProfile(string employeeKey, string lastName, string firstName)
         {
             using (SqlConnection connection = new SqlConnection(_connectionString))
             {
@@ -63,8 +71,8 @@ namespace TNS_TOEICAdmin.DataAccess
                     string query = "UPDATE HRM_Employee SET LastName = @LastName, FirstName = @FirstName WHERE EmployeeKey = @EmployeeKey";
                     using (SqlCommand command = new SqlCommand(query, connection))
                     {
-                        command.Parameters.AddWithValue("@LastName", lastName);
-                        command.Parameters.AddWithValue("@FirstName", firstName);
+                        command.Parameters.AddWithValue("@LastName", lastName ?? (object)DBNull.Value);
+                        command.Parameters.AddWithValue("@FirstName", firstName ?? (object)DBNull.Value);
                         command.Parameters.AddWithValue("@EmployeeKey", Guid.Parse(employeeKey));
                         int rowsAffected = command.ExecuteNonQuery();
                         return rowsAffected > 0;
@@ -72,20 +80,20 @@ namespace TNS_TOEICAdmin.DataAccess
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error updating employee profile: {ex.Message}");
+                    Console.WriteLine($"Error updating employee profile for EmployeeKey {employeeKey}: {ex.Message}");
                     return false;
                 }
             }
         }
 
-        public string GetEmployeeAvatar(string employeeKey)
+        public static string GetEmployeeAvatar(string employeeKey)
         {
             using (SqlConnection connection = new SqlConnection(_connectionString))
             {
                 try
                 {
                     connection.Open();
-                    string query = "SELECT Avatar FROM HRM_Employee WHERE EmployeeKey = @EmployeeKey";
+                    string query = "SELECT PhotoPath FROM HRM_Employee WHERE EmployeeKey = @EmployeeKey";
                     using (SqlCommand command = new SqlCommand(query, connection))
                     {
                         command.Parameters.AddWithValue("@EmployeeKey", Guid.Parse(employeeKey));
@@ -95,23 +103,23 @@ namespace TNS_TOEICAdmin.DataAccess
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error fetching employee avatar: {ex.Message}");
+                    Console.WriteLine($"Error fetching PhotoPath for EmployeeKey {employeeKey}: {ex.Message}");
                     return null;
                 }
             }
         }
 
-        public bool UpdateEmployeeAvatar(string employeeKey, string avatarPath)
+        public static bool UpdateEmployeeAvatar(string employeeKey, string photoPath)
         {
             using (SqlConnection connection = new SqlConnection(_connectionString))
             {
                 try
                 {
                     connection.Open();
-                    string query = "UPDATE HRM_Employee SET Avatar = @Avatar WHERE EmployeeKey = @EmployeeKey";
+                    string query = "UPDATE HRM_Employee SET PhotoPath = @PhotoPath WHERE EmployeeKey = @EmployeeKey";
                     using (SqlCommand command = new SqlCommand(query, connection))
                     {
-                        command.Parameters.AddWithValue("@Avatar", avatarPath);
+                        command.Parameters.AddWithValue("@PhotoPath", photoPath ?? (object)DBNull.Value);
                         command.Parameters.AddWithValue("@EmployeeKey", Guid.Parse(employeeKey));
                         int rowsAffected = command.ExecuteNonQuery();
                         return rowsAffected > 0;
@@ -119,10 +127,70 @@ namespace TNS_TOEICAdmin.DataAccess
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error updating employee avatar: {ex.Message}");
+                    Console.WriteLine($"Error updating PhotoPath for EmployeeKey {employeeKey}: {ex.Message}");
                     return false;
                 }
             }
         }
+
+        public static string GetUserPassword(string employeeKey)
+        {
+            using (SqlConnection connection = new SqlConnection(_connectionString))
+            {
+                try
+                {
+                    connection.Open();
+                    string query = "SELECT Password FROM SYS_Users WHERE EmployeeKey = @EmployeeKey";
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@EmployeeKey", Guid.Parse(employeeKey));
+                        object result = command.ExecuteScalar();
+                        return result?.ToString();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error fetching password for EmployeeKey {employeeKey}: {ex.Message}");
+                    return null;
+                }
+            }
+        }
+
+        public static bool UpdateUserPassword(string employeeKey, string newPassword)
+        {
+            using (SqlConnection connection = new SqlConnection(_connectionString))
+            {
+                try
+                {
+                    connection.Open();
+                    string query = "UPDATE SYS_Users SET Password = @Password WHERE EmployeeKey = @EmployeeKey";
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@Password", newPassword);
+                        command.Parameters.AddWithValue("@EmployeeKey", Guid.Parse(employeeKey));
+                        int rowsAffected = command.ExecuteNonQuery();
+                        return rowsAffected > 0;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error updating password for EmployeeKey {employeeKey}: {ex.Message}");
+                    return false;
+                }
+            }
+        }
+    }
+
+    public class EmployeeProfile
+    {
+        public string EmployeeID { get; set; }
+        public string LastName { get; set; }
+        public string FirstName { get; set; }
+        public Guid? DepartmentKey { get; set; }
+        public string DepartmentName { get; set; }
+        public string CompanyEmail { get; set; }
+        public DateTime? StartingDate { get; set; }
+        public DateTime? LeavingDate { get; set; }
+        public string PhotoPath { get; set; }
     }
 }
