@@ -12,7 +12,7 @@ using TNS_EDU_TEST.Areas.Test.Models;
 namespace TNS_EDU_TEST.Areas.Test.Pages
 {
     [IgnoreAntiforgeryToken]
-    [Authorize]
+    //[Authorize]
     public class ResultTestModel : PageModel
     {
         public Guid TestKey { get; set; }

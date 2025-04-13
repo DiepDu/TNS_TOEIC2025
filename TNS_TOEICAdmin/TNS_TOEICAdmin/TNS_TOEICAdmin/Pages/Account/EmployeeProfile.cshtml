@@ -13,27 +13,27 @@
 
     <div class="profile-details">
         <div class="detail-item">
-            <span class="label">Mã nhân viên:</span>
+            <span class="label">EmployeeCode:</span>
             <span class="value">@Model.EmployeeID</span>
         </div>
         <div class="detail-item">
-            <span class="label">Họ và tên:</span>
+            <span class="label">FullName:</span>
             <span class="value">@Model.LastName @Model.FirstName</span>
         </div>
         <div class="detail-item">
-            <span class="label">Phòng ban:</span>
+            <span class="label">Departmennt</span>
             <span class="value">@Model.DepartmentName</span>
         </div>
         <div class="detail-item">
-            <span class="label">Email công ty:</span>
+            <span class="label">CompanyEmail:</span>
             <span class="value">@Model.CompanyEmail</span>
         </div>
         <div class="detail-item">
-            <span class="label">Ngày bắt đầu:</span>
+            <span class="label">StartDate:</span>
             <span class="value">@(Model.StartingDate.HasValue ? Model.StartingDate.Value.ToString("dd/MM/yyyy") : "Chưa có")</span>
         </div>
         <div class="detail-item">
-            <span class="label">Ngày nghỉ:</span>
+            <span class="label">DayOff:</span>
             <span class="value">@(Model.LeavingDate.HasValue ? Model.LeavingDate.Value.ToString("dd/MM/yyyy") : "Còn làm")</span>
         </div>
     </div>
@@ -47,19 +47,19 @@
 <div id="popup" class="popup">
     <div class="popup-content">
         <span class="close-btn" onclick="closepopup()">×</span>
-        <h3>Chỉnh sửa hồ sơ</h3>
+        <h3>EditProfile</h3>
         @if (!string.IsNullOrEmpty(Model.ErrorMessage))
         {
             <div class="error-message">@Model.ErrorMessage</div>
         }
         <form id="edit-form" method="post" asp-page-handler="SaveChanges">
-            <label for="lastName">Họ:</label>
+            <label for="lastName">SurName:</label>
             <input type="text" id="lastName" name="LastName" maxlength="50" value="@Model.LastName" required>
 
-            <label for="firstName">Tên:</label>
+            <label for="firstName">Name:</label>
             <input type="text" id="firstName" name="FirstName" maxlength="50" value="@Model.FirstName" required>
 
-            <button type="submit" class="btn save">Lưu</button>
+            <button type="submit" class="btn save">Save</button>
         </form>
     </div>
 </div>
@@ -95,12 +95,12 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            alert("Ảnh đã được cập nhật thành công.");
+                        alert("Photo has been updated successfully.");
                         } else {
-                            alert("Lỗi: " + data.errorMessage);
+                            alert("Error: " + data.errorMessage);
                         }
                     })
-                    .catch(error => console.error('Lỗi khi tải ảnh lên:', error));
+                .catch(error => console.error('Error uploading imageError uploading image:', error));
             }
         }
     </script>

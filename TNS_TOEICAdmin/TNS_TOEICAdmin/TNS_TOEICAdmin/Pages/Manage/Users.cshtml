@@ -2,7 +2,7 @@
 @model TNS_TOEICAdmin.Pages.Manage.UsersModel
 
 @{
-    ViewData["Title"] = "Quản lý người dùng";
+    ViewData["Title"] = "User Management";
 }
 
 <!DOCTYPE html>
@@ -13,336 +13,32 @@
     <title>@ViewData["Title"]</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
-    <style>
-        body {
-            background: linear-gradient(135deg, #E5F9FF 0%, #D1F1FF 100%);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: #2C3E50;
-            line-height: 1.6;
-        }
-
-        .container {
-            background: #FFF9E5;
-            border-radius: 20px;
-            padding: 30px;
-            margin: 40px auto;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-            max-width: 1400px;
-            transition: box-shadow 0.3s ease;
-        }
-
-            .container:hover {
-                box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
-            }
-
-        h2 {
-            color: #2C3E50;
-            font-weight: 700;
-            font-size: 28px;
-            margin-bottom: 25px;
-            text-align: center;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            background: linear-gradient(90deg, #2C3E50, #3498DB);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .search-container {
-            display: flex;
-            gap: 20px; /* Tăng khoảng cách giữa các phần tử cho thoải mái */
-            align-items: center;
-            margin-bottom: 25px;
-            flex-wrap: nowrap; /* Ngăn xuống hàng */
-            justify-content: space-between; /* Giãn đều các phần tử */
-            width: 100%; /* Đảm bảo container trải hết chiều rộng */
-        }
-
-        .search-group {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .search-input, .form-control {
-            border-radius: 12px;
-            border: 2px solid #3498DB;
-            background-color: #FFFFFF;
-            padding: 10px 15px;
-            transition: all 0.4s ease;
-            flex-grow: 1; /* Cho phép input/select giãn tự nhiên */
-            min-width: 150px; /* Đảm bảo không quá nhỏ */
-        }
-            .search-input:focus, .form-control:focus {
-                border-color: #2980B9;
-                box-shadow: 0 0 10px rgba(52, 152, 219, 0.4);
-                background-color: #F9FBFF;
-                outline: none;
-            }
-
-        .btn-add, .btn-search {
-            border-radius: 30px;
-            padding: 10px 20px;
-            font-weight: 600;
-            transition: all 0.4s ease;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            white-space: nowrap; /* Ngăn chữ trong nút xuống hàng */
-        }
-        .btn-add, .btn-search, .btn-save, .btn-cancel {
-            border-radius: 30px;
-            padding: 10px 20px;
-            font-weight: 600;
-            transition: all 0.4s ease;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        .btn-add {
-            background: linear-gradient(45deg, #3498DB, #5DADE2);
-            border: none;
-            color: #FFFFFF;
-        }
-
-            .btn-add:hover {
-                background: linear-gradient(45deg, #2980B9, #4D94DB);
-                transform: translateY(-3px) scale(1.05);
-                box-shadow: 0 6px 16px rgba(52, 152, 219, 0.3);
-                color: #FFFFFF;
-            }
-
-        .btn-search {
-            background: linear-gradient(45deg, #F1C40F, #F7DC6F);
-            border: none;
-            color: #2C3E50;
-        }
-
-            .btn-search:hover {
-                background: linear-gradient(45deg, #D4AC0D, #E4C107);
-                transform: translateY(-3px) scale(1.05);
-                box-shadow: 0 6px 16px rgba(241, 196, 15, 0.3);
-            }
-
-        .btn-save {
-            background: linear-gradient(45deg, #27AE60, #52BE80);
-            border: none;
-            color: #FFFFFF;
-        }
-
-            .btn-save:hover {
-                background: linear-gradient(45deg, #219653, #48A368);
-                transform: translateY(-3px) scale(1.05);
-                box-shadow: 0 6px 16px rgba(39, 174, 96, 0.3);
-            }
-
-        .btn-cancel {
-            background: linear-gradient(45deg, #95A5A6, #BDC3C7);
-            border: none;
-            color: #2C3E50;
-        }
-
-            .btn-cancel:hover {
-                background: linear-gradient(45deg, #7F8C8D, #A6B1B2);
-                transform: translateY(-3px) scale(1.05);
-                box-shadow: 0 6px 16px rgba(149, 165, 166, 0.3);
-            }
-
-        .btn-action {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            padding: 0;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 6px;
-            font-size: 18px;
-            border: none;
-            transition: all 0.4s ease;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-            .btn-action i {
-                margin: 0;
-            }
-
-        .btn-edit {
-            background: linear-gradient(45deg, #F1C40F, #F7DC6F);
-            color: #2C3E50;
-        }
-
-            .btn-edit:hover {
-                background: linear-gradient(45deg, #D4AC0D, #E4C107);
-                transform: scale(1.1);
-                box-shadow: 0 6px 16px rgba(241, 196, 15, 0.3);
-            }
-
-        .btn-delete {
-            background: linear-gradient(45deg, #E74C3C, #F1948A);
-            color: #FFFFFF;
-        }
-
-            .btn-delete:hover {
-                background: linear-gradient(45deg, #C0392B, #E57373);
-                transform: scale(1.1);
-                box-shadow: 0 6px 16px rgba(231, 76, 60, 0.3);
-            }
-
-        .btn-roles {
-            background: linear-gradient(45deg, #8E44AD, #BB8FCE);
-            color: #FFFFFF;
-        }
-
-            .btn-roles:hover {
-                background: linear-gradient(45deg, #732D91, #A569BD);
-                transform: scale(1.1);
-                box-shadow: 0 6px 16px rgba(142, 68, 173, 0.3);
-            }
-
-        .table {
-            background: #FFFFFF;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
-            border-collapse: separate;
-            border-spacing: 0;
-        }
-
-            .table th {
-                background: linear-gradient(90deg, #3498DB, #5DADE2);
-                color: #FFFFFF;
-                text-align: center;
-                padding: 16px;
-                font-weight: 600;
-                font-size: 16px;
-            }
-
-            .table td {
-                vertical-align: middle;
-                padding: 14px;
-                border-bottom: 1px solid #ECF0F1;
-            }
-
-            .table tr:hover {
-                background: #F8FAFF;
-                transition: background 0.3s ease;
-            }
-
-            .table th:nth-child(8), .table td:nth-child(8) {
-                width: 160px;
-                text-align: center;
-            }
-
-        .pagination .page-link {
-            border-radius: 50%;
-            margin: 0 6px;
-            color: #3498DB;
-            border: 2px solid #3498DB;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-        }
-
-        .pagination .page-item.active .page-link {
-            background: #3498DB;
-            color: #FFFFFF;
-            border-color: #3498DB;
-        }
-
-        .pagination .page-link:hover {
-            background: #ECF0F1;
-            color: #2980B9;
-        }
-
-        .modal-content {
-            background: #FFF9E5;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-            border: none;
-        }
-
-        .modal-header {
-            background: linear-gradient(90deg, #3498DB, #5DADE2);
-            color: #FFFFFF;
-            border-top-left-radius: 20px;
-            border-top-right-radius: 20px;
-            padding: 15px 20px;
-        }
-
-        .modal-title {
-            font-size: 22px;
-            font-weight: 600;
-        }
-
-        /* Sửa lỗi bảng phân quyền */
-        #rolesTableBody td {
-            text-align: center; /* Căn giữa nội dung */
-            vertical-align: middle; /* Căn giữa theo chiều dọc */
-            height: 50px; /* Đảm bảo chiều cao đồng đều */
-        }
-
-        #rolesTableBody input[type="checkbox"] {
-            width: 24px;
-            height: 24px;
-            margin: 0 auto; /* Căn giữa checkbox */
-            display: block; /* Đảm bảo checkbox là block để căn giữa */
-            cursor: pointer;
-            transition: transform 0.3s ease;
-        }
-
-            #rolesTableBody input[type="checkbox"]:hover {
-                transform: scale(1.1);
-            }
-
-        .alert {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1050;
-            min-width: 320px;
-            border-radius: 12px;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-            padding: 15px 20px;
-            font-size: 16px;
-        }
-
-        .alert-success {
-            background: linear-gradient(45deg, #27AE60, #52BE80);
-            color: #FFFFFF;
-        }
-
-        .alert-danger {
-            background: linear-gradient(45deg, #E74C3C, #F1948A);
-            color: #FFFFFF;
-        }
-    </style>
 </head>
 <body>
     <div class="container">
-        <h2><i class="fas fa-users me-2"></i>Quản lý người dùng</h2>
+        <h2><i class="fas fa-users me-2"></i>User Management</h2>
         <div class="search-container">
-            <button class="btn btn-add"><i class="fas fa-plus me-2"></i>Thêm người dùng</button>
-            <input type="text" class="form-control search-input" id="searchInput" placeholder="Tìm kiếm theo UserName" />
+            <button class="btn btn-add"><i class="fas fa-plus me-2"></i>Add User</button>
+            <input type="text" class="form-control search-input" id="searchInput" placeholder="Search by UserName" />
             <select class="form-control" id="activateFilter">
-                <option value="">Tất cả trạng thái</option>
-                <option value="1">Kích hoạt</option>
-                <option value="0">Khóa</option>
+                <option value="">All Statuses</option>
+                <option value="1">Activated</option>
+                <option value="0">Locked</option>
             </select>
-            <button class="btn btn-search" onclick="searchUsers()"><i class="fas fa-search me-2"></i>Tìm kiếm</button>
+            <button class="btn btn-search" onclick="searchUsers()"><i class="fas fa-search me-2"></i>Search</button>
         </div>
 
         <table class="table table-bordered table-hover">
             <thead>
                 <tr>
                     <th>UserName</th>
-                    <th>Mô tả</th>
-                    <th>Trạng thái</th>
-                    <th>Lần đăng nhập cuối</th>
-                    <th>Số lần đăng nhập sai</th>
-                    <th>Tên nhân viên</th>
-                    <th>Vai trò</th>
-                    <th>Hành động</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th>Last Login</th>
+                    <th>Failed Login Attempts</th>
+                    <th>Employee Name</th>
+                    <th>Roles</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody id="userTableBody"></tbody>
@@ -357,7 +53,7 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="userModalLabel">Thêm người dùng</h5>
+                    <h5 class="modal-title" id="userModalLabel">Add User</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -370,33 +66,33 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="password" class="form-label">Password</label>
-                                <input type="password" class="form-control" id="password" name="password" placeholder="Chỉ nhập khi tạo mới hoặc cấp lại" />
+                                <input type="password" class="form-control" id="password" name="password" placeholder="Enter only when creating or resetting" />
                             </div>
                             <div class="col-md-12 mb-3">
-                                <label for="description" class="form-label">Mô tả</label>
+                                <label for="description" class="form-label">Description</label>
                                 <textarea class="form-control" id="description" name="description"></textarea>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="employeeKey" class="form-label">Nhân viên</label>
+                                <label for="employeeKey" class="form-label">Employee</label>
                                 <select class="form-control" id="employeeKey" name="employeeKey">
-                                    <option value="">Không liên kết</option>
+                                    <option value="">Not Linked</option>
                                 </select>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="activate" class="form-label">Trạng thái</label>
+                                <label for="activate" class="form-label">Status</label>
                                 <select class="form-control" id="activate" name="activate">
-                                    <option value="1">Kích hoạt</option>
-                                    <option value="0">Khóa</option>
+                                    <option value="1">Activated</option>
+                                    <option value="0">Locked</option>
                                 </select>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="expireDate" class="form-label">Ngày hết hạn</label>
+                                <label for="expireDate" class="form-label">Expiration Date</label>
                                 <input type="date" class="form-control" id="expireDate" name="expireDate" />
                             </div>
                         </div>
                         <div class="text-end">
-                            <button type="submit" class="btn btn-save"><i class="fas fa-save me-2"></i>Lưu</button>
-                            <button type="button" class="btn btn-cancel" data-bs-dismiss="modal"><i class="fas fa-times me-2"></i>Hủy</button>
+                            <button type="submit" class="btn btn-save"><i class="fas fa-save me-2"></i>Save</button>
+                            <button type="button" class="btn btn-cancel" data-bs-dismiss="modal"><i class="fas fa-times me-2"></i>Cancel</button>
                         </div>
                     </form>
                 </div>
@@ -404,368 +100,673 @@
         </div>
     </div>
 
-    <!-- Modal phân quyền -->
+    <!-- Roles Modal -->
     <div class="modal fade" id="rolesModal" tabindex="-1" aria-labelledby="rolesModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="rolesModalLabel">Phân quyền người dùng</h5>
+                    <h5 class="modal-title" id="rolesModalLabel">Assign User Roles</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="roleSelect" class="form-label">Thêm vai trò</label>
+                        <label for="roleSelect" class="form-label">Add Role</label>
                         <select class="form-control" id="roleSelect">
-                            <option value="">Chọn vai trò</option>
-                            <!-- Điền bằng JS -->
+                            <option value="">Select Role</option>
+                            <!-- Populated by JS -->
                         </select>
-                        <button class="btn btn-add mt-2" onclick="addRole()">Thêm</button>
+                        <button class="btn btn-add mt-2" onclick="addRole()">Add</button>
                     </div>
                     <table class="table table-bordered">
                         <thead>
                             <tr>
-                                <th>Vai trò</th>
-                                <th>Đọc</th>
-                                <th>Sửa</th>
-                                <th>Thêm</th>
-                                <th>Xóa</th>
-                                <th>Phê duyệt</th>
-                                <th>Hành động</th>
+                                <th>Role</th>
+                                <th>Read</th>
+                                <th>Edit</th>
+                                <th>Add</th>
+                                <th>Delete</th>
+                                <th>Approve</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="rolesTableBody"></tbody>
                     </table>
                     <div class="text-end">
-                        <button class="btn btn-save" onclick="saveRoles()">Lưu</button>
+                        <button class="btn btn-save" onclick="saveRoles()">Save</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-@*     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> *@
     @section Scripts {
-    <script>
-        let users = [];
-        let roles = [];
-        let currentUserKey = null;
-        let currentPage = 1;
-        const pageSize = 10;
-        let searchTerm = '';
-        let activateFilter = '';
-        let isEditMode = false;
+        <script>
+            let users = [];
+            let roles = [];
+            let currentUserKey = null;
+            let currentPage = 1;
+            const pageSize = 10;
+            let searchTerm = '';
+            let activateFilter = '';
+            let isEditMode = false;
 
-        $(document).ready(function () {
-            loadUsers();
-            loadRoles();
-            $('.btn-add').on('click', showAddModal);
-        });
+            $(document).ready(function () {
+                loadUsers();
+                loadRoles();
+                $('.btn-add').on('click', showAddModal);
+            });
 
-        function loadUsers(page = 1, search = '', activate = '') {
-            currentPage = page;
-            searchTerm = search;
-            activateFilter = activate;
+            function loadUsers(page = 1, search = '', activate = '') {
+                currentPage = page;
+                searchTerm = search;
+                activateFilter = activate;
 
-            // Tạo object data chỉ chứa các tham số có giá trị
-            let data = { page: currentPage, pageSize: pageSize };
-            if (search.trim() !== '') {
-                data.search = search;
-            }
-            if (activate !== '') {
-                data.activate = activate;
-            }
-
-            $.ajax({
-                url: '/Manage/Users?handler=GetUsers',
-                method: 'GET',
-                data: data,
-                success: function (data) {
-                    users = Array.isArray(data) ? data : [];
-                    renderUsers();
-                    renderPagination();
-                },
-                error: function () {
-                    showAlert('danger', 'Không thể tải danh sách người dùng.');
+                // Create data object with only non-empty parameters
+                let data = { page: currentPage, pageSize: pageSize };
+                if (search.trim() !== '') {
+                    data.search = search;
                 }
-            });
-        }
-
-        function loadRoles() {
-            $.ajax({
-                url: '/Manage/Users?handler=GetAllRoles',
-                method: 'GET',
-                success: function (data) {
-                    roles = Array.isArray(data) ? data : [];
-                    populateRoleSelect();
-                },
-                error: function () {
-                    showAlert('danger', 'Không thể tải danh sách vai trò.');
+                if (activate !== '') {
+                    data.activate = activate;
                 }
-            });
-        }
-
-        function renderUsers() {
-            const tbody = $('#userTableBody');
-            tbody.empty();
-            let filteredUsers = users; // Không lọc ở client-side nữa, để server xử lý
-
-            const startIndex = (currentPage - 1) * pageSize;
-            const endIndex = Math.min(startIndex + pageSize, filteredUsers.length);
-            const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
-
-            paginatedUsers.forEach(u => {
-                const roleNames = u.Roles ? u.Roles.map(r => r.RoleName).join(', ') : 'Chưa có';
-                tbody.append(`
-                    <tr>
-                        <td>${u.UserName || 'N/A'}</td>
-                        <td>${u.Description || ''}</td>
-                        <td>${u.Activate ? 'Kích hoạt' : 'Khóa'}</td>
-                        <td>${u.LastLoginDate || 'Chưa đăng nhập'}</td>
-                        <td>${u.FailedPasswordAttemptCount || 0}</td>
-                        <td>${u.EmployeeName || 'Không liên kết'}</td>
-                        <td>${roleNames}</td>
-                        <td>
-                        <button class="btn btn-action btn-edit" onclick="showEditModal('${u.UserKey}')"><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-action btn-roles" onclick="showRolesModal('${u.UserKey}')"><i class="fas fa-user-shield"></i></button>
-                        <button class="btn btn-action btn-delete" onclick="showDeleteModal('${u.UserKey}')"><i class="fas fa-trash"></i></button>
-                       </td>      
-                    </tr>
-                `);
-            });
-        }
-
-function renderPagination() {
-    const totalItems = users.length; // Dùng tổng số từ server trả về
-    const totalPages = Math.ceil(totalItems / pageSize);
-    const pagination = $('#pagination');
-    pagination.empty();
-
-    pagination.append(`<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-        <a class="page-link" href="#" onclick="loadUsers(${currentPage - 1}, '${searchTerm}', '${activateFilter}')"><i class="fas fa-chevron-left"></i></a>
-    </li>`);
-
-    for (let i = 1; i <= totalPages; i++) {
-        pagination.append(`<li class="page-item ${i === currentPage ? 'active' : ''}">
-            <a class="page-link" href="#" onclick="loadUsers(${i}, '${searchTerm}', '${activateFilter}')">${i}</a>
-        </li>`);
-    }
-
-    pagination.append(`<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
-        <a class="page-link" href="#" onclick="loadUsers(${currentPage + 1}, '${searchTerm}', '${activateFilter}')"><i class="fas fa-chevron-right"></i></a>
-    </li>`);
-}
-
-        function showAddModal() {
-            isEditMode = false;
-            $('#userModalLabel').text('Thêm người dùng');
-            $('#userForm')[0].reset();
-            $('#userKey').val('');
-            $('#password').prop('required', true);
-            populateEmployeeDropdown();
-            $('#userModal').modal('show');
-        }
-
-        function showEditModal(userKey) {
-            const user = users.find(u => u.UserKey === userKey);
-            if (user) {
-                isEditMode = true;
-                $('#userModalLabel').text('Sửa người dùng');
-                $('#userKey').val(user.UserKey);
-                $('#userName').val(user.UserName);
-                $('#password').val('').prop('required', false);
-                $('#description').val(user.Description || '');
-                $('#activate').val(user.Activate ? '1' : '0');
-                // Sửa để dùng ExpireDate thay vì LastLoginDate
-                $('#expireDate').val(user.ExpireDate ? user.ExpireDate.split(' ')[0] : ''); // Chỉ lấy phần ngày (yyyy-MM-dd)
-                // Đảm bảo EmployeeKey được truyền dưới dạng chuỗi
-                populateEmployeeDropdown(user.EmployeeKey ? user.EmployeeKey.toString() : '');
-                $('#userModal').modal('show');
-            }
-        }
-
-        function showDeleteModal(userKey) {
-            currentUserKey = userKey;
-            // Tạo modal xóa nếu cần (tương tự Department)
-            if (confirm('Bạn có chắc chắn muốn xóa người dùng này?')) {
-                deleteUser(userKey);
-            }
-        }
-
-        function showRolesModal(userKey) {
-            currentUserKey = userKey;
-            const user = users.find(u => u.UserKey === userKey);
-            if (user) {
-                $('#rolesModalLabel').text(`Phân quyền cho ${user.UserName}`);
-                renderRoles(user.Roles || []);
-                $('#rolesModal').modal('show');
-            }
-        }
-
-        function populateEmployeeDropdown(selectedKey = '') {
-            $.ajax({
-                url: '/Manage/Users?handler=GetEmployees',
-                method: 'GET',
-                success: function (data) {
-                    const employeeSelect = $('#employeeKey');
-                    employeeSelect.empty();
-                    employeeSelect.append('<option value="">Không liên kết</option>');
-                    data.forEach(emp => {
-                        // Chuyển EmployeeKey thành chuỗi để so sánh
-                        const isSelected = emp.EmployeeKey.toString() === selectedKey ? 'selected' : '';
-                        employeeSelect.append(`<option value="${emp.EmployeeKey}" ${isSelected}>${emp.FirstName} ${emp.LastName}</option>`);
-                    });
-                },
-                error: function () {
-                    showAlert('danger', 'Không thể tải danh sách nhân viên.');
-                }
-            });
-        }
-
-        function populateRoleSelect() {
-            const roleSelect = $('#roleSelect');
-            roleSelect.empty();
-            roleSelect.append('<option value="">Chọn vai trò</option>');
-            roles.forEach(role => {
-                roleSelect.append(`<option value="${role.RoleKey}">${role.RoleName}</option>`);
-            });
-        }
-
-        function renderRoles(userRoles) {
-            const tbody = $('#rolesTableBody');
-            tbody.empty();
-            userRoles.forEach(role => {
-                tbody.append(`
-                            <tr data-role-key="${role.RoleKey}">
-                                <td>${role.RoleName}</td>
-                                <td><input type="checkbox" ${role.RoleRead ? 'checked' : ''} data-field="RoleRead"></td>
-                                <td><input type="checkbox" ${role.RoleEdit ? 'checked' : ''} data-field="RoleEdit"></td>
-                                <td><input type="checkbox" ${role.RoleAdd ? 'checked' : ''} data-field="RoleAdd"></td>
-                                <td><input type="checkbox" ${role.RoleDel ? 'checked' : ''} data-field="RoleDel"></td>
-                                <td><input type="checkbox" ${role.RoleApproval ? 'checked' : ''} data-field="RoleApproval"></td>
-                                <td><button class="btn btn-action btn-delete" onclick="removeRole('${role.RoleKey}')"><i class="fas fa-trash"></i></button></td>
-                            </tr>
-                        `);
-            });
-        }
-
-        function addRole() {
-            const roleKey = $('#roleSelect').val();
-            if (!roleKey) return;
-            const role = roles.find(r => r.RoleKey === roleKey);
-            const user = users.find(u => u.UserKey === currentUserKey);
-            if (user && role && !user.Roles.some(r => r.RoleKey === roleKey)) {
-                user.Roles.push({ RoleKey: role.RoleKey, RoleName: role.RoleName, RoleRead: false, RoleEdit: false, RoleAdd: false, RoleDel: false, RoleApproval: false });
-                renderRoles(user.Roles);
-            }
-        }
-
-        function removeRole(roleKey) {
-            const user = users.find(u => u.UserKey === currentUserKey);
-            if (user) {
-                user.Roles = user.Roles.filter(r => r.RoleKey !== roleKey);
-                renderRoles(user.Roles);
-            }
-        }
-
-        function saveRoles() {
-            const user = users.find(u => u.UserKey === currentUserKey);
-            if (user) {
-                const updatedRoles = [];
-                $('#rolesTableBody tr').each(function () {
-                    const roleKey = $(this).data('role-key');
-                    const role = {
-                        RoleKey: roleKey,
-                        RoleName: $(this).find('td:first').text(),
-                        RoleRead: $(this).find('[data-field="RoleRead"]').is(':checked'),
-                        RoleEdit: $(this).find('[data-field="RoleEdit"]').is(':checked'),
-                        RoleAdd: $(this).find('[data-field="RoleAdd"]').is(':checked'),
-                        RoleDel: $(this).find('[data-field="RoleDel"]').is(':checked'),
-                        RoleApproval: $(this).find('[data-field="RoleApproval"]').is(':checked')
-                    };
-                    updatedRoles.push(role);
-                });
 
                 $.ajax({
-                    url: '/Manage/Users?handler=UpdateRoles',
-                    method: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify({ UserKey: currentUserKey, Roles: updatedRoles }),
-                    headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
-                    success: function () {
-                        user.Roles = updatedRoles;
-                        $('#rolesModal').modal('hide');
-                        showAlert('success', 'Cập nhật vai trò thành công!');
+                    url: '/Manage/Users?handler=GetUsers',
+                    method: 'GET',
+                    data: data,
+                    success: function (data) {
+                        users = Array.isArray(data) ? data : [];
                         renderUsers();
+                        renderPagination();
                     },
                     error: function () {
-                        showAlert('danger', 'Cập nhật vai trò thất bại.');
+                        showAlert('danger', 'Failed to load user list.');
                     }
                 });
             }
-        }
 
-        $('#userForm').on('submit', function (e) {
-            e.preventDefault();
-            const formData = {
-                UserKey: $('#userKey').val() || '00000000-0000-0000-0000-000000000000',
-                UserName: $('#userName').val(),
-                Password: $('#password').val() || null,
-                Description: $('#description').val() || null,
-                EmployeeKey: $('#employeeKey').val() || null,
-                Activate: $('#activate').val() === '1',
-                ExpireDate: $('#expireDate').val() || null
-            };
+            function loadRoles() {
+                $.ajax({
+                    url: '/Manage/Users?handler=GetAllRoles',
+                    method: 'GET',
+                    success: function (data) {
+                        roles = Array.isArray(data) ? data : [];
+                        populateRoleSelect();
+                    },
+                    error: function () {
+                        showAlert('danger', 'Failed to load role list.');
+                    }
+                });
+            }
 
-            const url = isEditMode ? '/Manage/Users?handler=Update' : '/Manage/Users?handler=Create';
-            $.ajax({
-                url: url,
-                method: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(formData),
-                headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
-                success: function (data) {
-                    $('#userModal').modal('hide');
-                    showAlert('success', data.message || (isEditMode ? 'Cập nhật người dùng thành công!' : 'Thêm người dùng thành công!'));
-                    loadUsers(currentPage, searchTerm, activateFilter);
-                },
-                error: function () {
-                    showAlert('danger', isEditMode ? 'Cập nhật thất bại.' : 'Thêm thất bại.');
+            function renderUsers() {
+                const tbody = $('#userTableBody');
+                tbody.empty();
+                let filteredUsers = users; // No client-side filtering, let server handle it
+
+                const startIndex = (currentPage - 1) * pageSize;
+                const endIndex = Math.min(startIndex + pageSize, filteredUsers.length);
+                const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
+                paginatedUsers.forEach(u => {
+                    const roleNames = u.Roles ? u.Roles.map(r => r.RoleName).join(', ') : 'None';
+                    tbody.append(`
+                                <tr>
+                                    <td>${u.UserName || 'N/A'}</td>
+                                    <td>${u.Description || ''}</td>
+                                    <td>${u.Activate ? 'Activated' : 'Locked'}</td>
+                                    <td>${u.LastLoginDate || 'Never Logged In'}</td>
+                                    <td>${u.FailedPasswordAttemptCount || 0}</td>
+                                    <td>${u.EmployeeName || 'Not Linked'}</td>
+                                    <td>${roleNames}</td>
+                                    <td>
+                                    <button class="btn btn-action btn-edit" onclick="showEditModal('${u.UserKey}')"><i class="fas fa-edit"></i></button>
+                                    <button class="btn btn-action btn-roles" onclick="showRolesModal('${u.UserKey}')"><i class="fas fa-user-shield"></i></button>
+                                    <button class="btn btn-action btn-delete" onclick="showDeleteModal('${u.UserKey}')"><i class="fas fa-trash"></i></button>
+                                   </td>
+                                </tr>
+                            `);
+                });
+            }
+
+            function renderPagination() {
+                const totalItems = users.length; // Use total count from server response
+                const totalPages = Math.ceil(totalItems / pageSize);
+                const pagination = $('#pagination');
+                pagination.empty();
+
+                pagination.append(`<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                            <a class="page-link" href="#" onclick="loadUsers(${currentPage - 1}, '${searchTerm}', '${activateFilter}')"><i class="fas fa-chevron-left"></i></a>
+                        </li>`);
+
+                for (let i = 1; i <= totalPages; i++) {
+                    pagination.append(`<li class="page-item ${i === currentPage ? 'active' : ''}">
+                                <a class="page-link" href="#" onclick="loadUsers(${i}, '${searchTerm}', '${activateFilter}')">${i}</a>
+                            </li>`);
                 }
-            });
-        });
 
-        function deleteUser(userKey) {
-            $.ajax({
-                url: '/Manage/Users?handler=Delete',
-                method: 'GET',
-                data: { userKey: userKey },
-                success: function () {
-                    showAlert('success', 'Xóa người dùng thành công!');
-                    loadUsers(currentPage, searchTerm, activateFilter);
-                },
-                error: function () {
-                    showAlert('danger', 'Xóa người dùng thất bại.');
+                pagination.append(`<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                            <a class="page-link" href="#" onclick="loadUsers(${currentPage + 1}, '${searchTerm}', '${activateFilter}')"><i class="fas fa-chevron-right"></i></a>
+                        </li>`);
+            }
+
+            function showAddModal() {
+                isEditMode = false;
+                $('#userModalLabel').text('Add User');
+                $('#userForm')[0].reset();
+                $('#userKey').val('');
+                $('#password').prop('required', true);
+                populateEmployeeDropdown();
+                $('#userModal').modal('show');
+            }
+
+            function showEditModal(userKey) {
+                const user = users.find(u => u.UserKey === userKey);
+                if (user) {
+                    isEditMode = true;
+                    $('#userModalLabel').text('Edit User');
+                    $('#userKey').val(user.UserKey);
+                    $('#userName').val(user.UserName);
+                    $('#password').val('').prop('required', false);
+                    $('#description').val(user.Description || '');
+                    $('#activate').val(user.Activate ? '1' : '0');
+                    // Use ExpireDate instead of LastLoginDate
+                    $('#expireDate').val(user.ExpireDate ? user.ExpireDate.split(' ')[0] : ''); // Take only date part (yyyy-MM-dd)
+                    // Ensure EmployeeKey is passed as string
+                    populateEmployeeDropdown(user.EmployeeKey ? user.EmployeeKey.toString() : '');
+                    $('#userModal').modal('show');
                 }
-            });
-        }
+            }
 
-        function searchUsers() {
-            const searchValue = $('#searchInput').val().trim();
-            const activateValue = $('#activateFilter').val();
-            loadUsers(1, searchValue, activateValue);
-        }
-        function showAlert(type, message) {
-            const alertDiv = $(`
-                        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-                            ${message}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    `);
-            $('body').append(alertDiv);
-            setTimeout(() => alertDiv.alert('close'), 3000);
-        }
-    </script>
+            function showDeleteModal(userKey) {
+                currentUserKey = userKey;
+                // Create delete confirmation if needed (similar to Department)
+                if (confirm('Are you sure you want to delete this user?')) {
+                    deleteUser(userKey);
+                }
+            }
+
+            function showRolesModal(userKey) {
+                currentUserKey = userKey;
+                const user = users.find(u => u.UserKey === userKey);
+                if (user) {
+                    $('#rolesModalLabel').text(`Assign Roles for ${user.UserName}`);
+                    renderRoles(user.Roles || []);
+                    $('#rolesModal').modal('show');
+                }
+            }
+
+            function populateEmployeeDropdown(selectedKey = '') {
+                $.ajax({
+                    url: '/Manage/Users?handler=GetEmployees',
+                    method: 'GET',
+                    success: function (data) {
+                        const employeeSelect = $('#employeeKey');
+                        employeeSelect.empty();
+                        employeeSelect.append('<option value="">Not Linked</option>');
+                        data.forEach(emp => {
+                            // Convert EmployeeKey to string for comparison
+                            const isSelected = emp.EmployeeKey.toString() === selectedKey ? 'selected' : '';
+                            employeeSelect.append(`<option value="${emp.EmployeeKey}" ${isSelected}>${emp.FirstName} ${emp.LastName}</option>`);
+                        });
+                    },
+                    error: function () {
+                        showAlert('danger', 'Failed to load employee list.');
+                    }
+                });
+            }
+
+            function populateRoleSelect() {
+                const roleSelect = $('#roleSelect');
+                roleSelect.empty();
+                roleSelect.append('<option value="">Select Role</option>');
+                roles.forEach(role => {
+                    roleSelect.append(`<option value="${role.RoleKey}">${role.RoleName}</option>`);
+                });
+            }
+
+            function renderRoles(userRoles) {
+                const tbody = $('#rolesTableBody');
+                tbody.empty();
+                userRoles.forEach(role => {
+                    tbody.append(`
+                                        <tr data-role-key="${role.RoleKey}">
+                                            <td>${role.RoleName}</td>
+                                            <td><input type="checkbox" ${role.RoleRead ? 'checked' : ''} data-field="RoleRead"></td>
+                                            <td><input type="checkbox" ${role.RoleEdit ? 'checked' : ''} data-field="RoleEdit"></td>
+                                            <td><input type="checkbox" ${role.RoleAdd ? 'checked' : ''} data-field="RoleAdd"></td>
+                                            <td><input type="checkbox" ${role.RoleDel ? 'checked' : ''} data-field="RoleDel"></td>
+                                            <td><input type="checkbox" ${role.RoleApproval ? 'checked' : ''} data-field="RoleApproval"></td>
+                                            <td><button class="btn btn-action btn-delete" onclick="removeRole('${role.RoleKey}')"><i class="fas fa-trash"></i></button></td>
+                                        </tr>
+                                    `);
+                });
+            }
+
+            function addRole() {
+                const roleKey = $('#roleSelect').val();
+                if (!roleKey) return;
+                const role = roles.find(r => r.RoleKey === roleKey);
+                const user = users.find(u => u.UserKey === currentUserKey);
+                if (user && role && !user.Roles.some(r => r.RoleKey === roleKey)) {
+                    user.Roles.push({ RoleKey: role.RoleKey, RoleName: role.RoleName, RoleRead: false, RoleEdit: false, RoleAdd: false, RoleDel: false, RoleApproval: false });
+                    renderRoles(user.Roles);
+                }
+            }
+
+            function removeRole(roleKey) {
+                const user = users.find(u => u.UserKey === currentUserKey);
+                if (user) {
+                    user.Roles = user.Roles.filter(r => r.RoleKey !== roleKey);
+                    renderRoles(user.Roles);
+                }
+            }
+
+            function saveRoles() {
+                const user = users.find(u => u.UserKey === currentUserKey);
+                if (user) {
+                    const updatedRoles = [];
+                    $('#rolesTableBody tr').each(function () {
+                        const roleKey = $(this).data('role-key');
+                        const role = {
+                            RoleKey: roleKey,
+                            RoleName: $(this).find('td:first').text(),
+                            RoleRead: $(this).find('[data-field="RoleRead"]').is(':checked'),
+                            RoleEdit: $(this).find('[data-field="RoleEdit"]').is(':checked'),
+                            RoleAdd: $(this).find('[data-field="RoleAdd"]').is(':checked'),
+                            RoleDel: $(this).find('[data-field="RoleDel"]').is(':checked'),
+                            RoleApproval: $(this).find('[data-field="RoleApproval"]').is(':checked')
+                        };
+                        updatedRoles.push(role);
+                    });
+
+                    $.ajax({
+                        url: '/Manage/Users?handler=UpdateRoles',
+                        method: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ UserKey: currentUserKey, Roles: updatedRoles }),
+                        headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
+                        success: function () {
+                            user.Roles = updatedRoles;
+                            $('#rolesModal').modal('hide');
+                            showAlert('success', 'Roles updated successfully!');
+                            renderUsers();
+                        },
+                        error: function () {
+                            showAlert('danger', 'Failed to update roles.');
+                        }
+                    });
+                }
+            }
+
+            $('#userForm').on('submit', function (e) {
+                e.preventDefault();
+                const formData = {
+                    UserKey: $('#userKey').val() || '00000000-0000-0000-0000-000000000000',
+                    UserName: $('#userName').val(),
+                    Password: $('#password').val() || null,
+                    Description: $('#description').val() || null,
+                    EmployeeKey: $('#employeeKey').val() || null,
+                    Activate: $('#activate').val() === '1',
+                    ExpireDate: $('#expireDate').val() || null
+                };
+
+                const url = isEditMode ? '/Manage/Users?handler=Update' : '/Manage/Users?handler=Create';
+                $.ajax({
+                    url: url,
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(formData),
+                    headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
+                    success: function (data) {
+                        $('#userModal').modal('hide');
+                        showAlert('success', data.message || (isEditMode ? 'User updated successfully!' : 'User added successfully!'));
+                        loadUsers(currentPage, searchTerm, activateFilter);
+                    },
+                    error: function () {
+                        showAlert('danger', isEditMode ? 'Update failed.' : 'Add failed.');
+                    }
+                });
+            });
+
+            function deleteUser(userKey) {
+                $.ajax({
+                    url: '/Manage/Users?handler=Delete',
+                    method: 'GET',
+                    data: { userKey: userKey },
+                    success: function () {
+                        showAlert('success', 'User deleted successfully!');
+                        loadUsers(currentPage, searchTerm, activateFilter);
+                    },
+                    error: function () {
+                        showAlert('danger', 'Failed to delete user.');
+                    }
+                });
+            }
+
+            function searchUsers() {
+                const searchValue = $('#searchInput').val().trim();
+                const activateValue = $('#activateFilter').val();
+                loadUsers(1, searchValue, activateValue);
+            }
+
+            function showAlert(type, message) {
+                const alertDiv = $(`
+                                    <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                                        ${message}
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                    </div>
+                                `);
+                $('body').append(alertDiv);
+                setTimeout(() => alertDiv.alert('close'), 3000);
+            }
+        </script>
     }
 </body>
 </html>
+<style>
+    body {
+        background: linear-gradient(135deg, #E5F9FF 0%, #D1F1FF 100%);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        color: #2C3E50;
+        line-height: 1.6;
+    }
+
+    .container {
+        background: #FFF9E5;
+        border-radius: 20px;
+        padding: 30px;
+        margin: 40px auto;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        max-width: 1400px;
+        transition: box-shadow 0.3s ease;
+    }
+
+        .container:hover {
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+        }
+
+    h2 {
+        color: #2C3E50;
+        font-weight: 700;
+        font-size: 28px;
+        margin-bottom: 25px;
+        text-align: center;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        background: linear-gradient(90deg, #2C3E50, #3498DB);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .search-container {
+        display: flex;
+        gap: 20px; /* Increase spacing between elements for comfort */
+        align-items: center;
+        margin-bottom: 25px;
+        flex-wrap: nowrap; /* Prevent wrapping */
+        justify-content: space-between; /* Distribute elements evenly */
+        width: 100%; /* Ensure container spans full width */
+    }
+
+    .search-group {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .search-input, .form-control {
+        border-radius: 12px;
+        border: 2px solid #3498DB;
+        background-color: #FFFFFF;
+        padding: 10px 15px;
+        transition: all 0.4s ease;
+        flex-grow: 1; /* Allow input/select to expand naturally */
+        min-width: 150px; /* Ensure not too small */
+    }
+
+        .search-input:focus, .form-control:focus {
+            border-color: #2980B9;
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.4);
+            background-color: #F9FBFF;
+            outline: none;
+        }
+
+    .btn-add, .btn-search {
+        border-radius: 30px;
+        padding: 10px 20px;
+        font-weight: 600;
+        transition: all 0.4s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        white-space: nowrap; /* Prevent button text from wrapping */
+    }
+
+    .btn-add, .btn-search, .btn-save, .btn-cancel {
+        border-radius: 30px;
+        padding: 10px 20px;
+        font-weight: 600;
+        transition: all 0.4s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-add {
+        background: linear-gradient(45deg, #3498DB, #5DADE2);
+        border: none;
+        color: #FFFFFF;
+    }
+
+        .btn-add:hover {
+            background: linear-gradient(45deg, #2980B9, #4D94DB);
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 6px 16px rgba(52, 152, 219, 0.3);
+            color: #FFFFFF;
+        }
+
+    .btn-search {
+        background: linear-gradient(45deg, #F1C40F, #F7DC6F);
+        border: none;
+        color: #2C3E50;
+    }
+
+        .btn-search:hover {
+            background: linear-gradient(45deg, #D4AC0D, #E4C107);
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 6px 16px rgba(241, 196, 15, 0.3);
+        }
+
+    .btn-save {
+        background: linear-gradient(45deg, #27AE60, #52BE80);
+        border: none;
+        color: #FFFFFF;
+    }
+
+        .btn-save:hover {
+            background: linear-gradient(45deg, #219653, #48A368);
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 6px 16px rgba(39, 174, 96, 0.3);
+        }
+
+    .btn-cancel {
+        background: linear-gradient(45deg, #95A5A6, #BDC3C7);
+        border: none;
+        color: #2C3E50;
+    }
+
+        .btn-cancel:hover {
+            background: linear-gradient(45deg, #7F8C8D, #A6B1B2);
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 6px 16px rgba(149, 165, 166, 0.3);
+        }
+
+    .btn-action {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 6px;
+        font-size: 18px;
+        border: none;
+        transition: all 0.4s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+        .btn-action i {
+            margin: 0;
+        }
+
+    .btn-edit {
+        background: linear-gradient(45deg, #F1C40F, #F7DC6F);
+        color: #2C3E50;
+    }
+
+        .btn-edit:hover {
+            background: linear-gradient(45deg, #D4AC0D, #E4C107);
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(241, 196, 15, 0.3);
+        }
+
+    .btn-delete {
+        background: linear-gradient(45deg, #E74C3C, #F1948A);
+        color: #FFFFFF;
+    }
+
+        .btn-delete:hover {
+            background: linear-gradient(45deg, #C0392B, #E57373);
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(231, 76, 60, 0.3);
+        }
+
+    .btn-roles {
+        background: linear-gradient(45deg, #8E44AD, #BB8FCE);
+        color: #FFFFFF;
+    }
+
+        .btn-roles:hover {
+            background: linear-gradient(45deg, #732D91, #A569BD);
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(142, 68, 173, 0.3);
+        }
+
+    .table {
+        background: #FFFFFF;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+        .table th {
+            background: linear-gradient(90deg, #3498DB, #5DADE2);
+            color: #FFFFFF;
+            text-align: center;
+            padding: 16px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .table td {
+            vertical-align: middle;
+            padding: 14px;
+            border-bottom: 1px solid #ECF0F1;
+        }
+
+        .table tr:hover {
+            background: #F8FAFF;
+            transition: background 0.3s ease;
+        }
+
+        .table th:nth-child(8), .table td:nth-child(8) {
+            width: 160px;
+            text-align: center;
+        }
+
+    .pagination .page-link {
+        border-radius: 50%;
+        margin: 0 6px;
+        color: #3498DB;
+        border: 2px solid #3498DB;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+
+    .pagination .page-item.active .page-link {
+        background: #3498DB;
+        color: #FFFFFF;
+        border-color: #3498DB;
+    }
+
+    .pagination .page-link:hover {
+        background: #ECF0F1;
+        color: #2980B9;
+    }
+
+    .modal-content {
+        background: #FFF9E5;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        border: none;
+    }
+
+    .modal-header {
+        background: linear-gradient(90deg, #3498DB, #5DADE2);
+        color: #FFFFFF;
+        border-top-left-radius: 20px;
+        border-top-right-radius: 20px;
+        padding: 15px 20px;
+    }
+
+    .modal-title {
+        font-size: 22px;
+        font-weight: 600;
+    }
+
+    /* Fix roles table alignment */
+    #rolesTableBody td {
+        text-align: center; /* Center content */
+        vertical-align: middle; /* Vertically center */
+        height: 50px; /* Ensure consistent height */
+    }
+
+    #rolesTableBody input[type="checkbox"] {
+        width: 24px;
+        height: 24px;
+        margin: 0 auto; /* Center checkbox */
+        display: block; /* Ensure checkbox is block for centering */
+        cursor: pointer;
+        transition: transform 0.3s ease;
+    }
+
+        #rolesTableBody input[type="checkbox"]:hover {
+            transform: scale(1.1);
+        }
+
+    .alert {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1050;
+        min-width: 320px;
+        border-radius: 12px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+        padding: 15px 20px;
+        font-size: 16px;
+    }
+
+    .alert-success {
+        background: linear-gradient(45deg, #27AE60, #52BE80);
+        color: #FFFFFF;
+    }
+
+    .alert-danger {
+        background: linear-gradient(45deg, #E74C3C, #F1948A);
+        color: #FFFFFF;
+    }
+</style>

@@ -83,7 +83,7 @@
                     body: JSON.stringify({
                         resultKey: resultKey,
                         questionKey: questionKey,
-                        selectAnswerKey: answerKey, // Có thể là null khi bỏ chọn
+                        selectAnswerKey: answerKey, 
                         timeSpent: timeSpent,
                         part: part
                     })
@@ -196,7 +196,6 @@
             updateQuestionList();
         }
 
-        // Cập nhật: Hỗ trợ bỏ chọn đáp án
         function selectAnswer(questionKey, answerKey) {
             let question = questions.find(q => q.questionKey === questionKey);
             if (!question) {

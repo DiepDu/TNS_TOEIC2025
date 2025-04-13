@@ -129,4 +129,27 @@ namespace TNS_Auth
         }
 
     }
+    public class MyCryptographyMembers
+    {
+        public static string HashPassMember(string nPass)
+        {
+            using (SHA1 mHash = SHA1.Create())
+            {
+                string trimmedPass = nPass.Trim();
+                byte[] pwordData = Encoding.UTF8.GetBytes(trimmedPass);
+                byte[] nHash = mHash.ComputeHash(pwordData);
+                string result = BitConverter.ToString(nHash).Replace("-", "").ToLower();
+                Console.WriteLine($"[Admin] HashPassMember input: '{trimmedPass}', output: {result}, length: {result.Length}");
+                return result;
+            }
+        }
+
+
+
+        public static Boolean VerifyHashMember(string NewPass, string OldPass)
+        {
+            string HashNewPass = HashPassMember(NewPass);
+            return (OldPass == HashNewPass);
+        }
+    }
 }

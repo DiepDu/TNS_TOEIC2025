@@ -35,30 +35,35 @@
                         <div><img src="~/images/logo-light.png" style="width:400px;" alt="Logo" /></div>
                         <div class="card">
                             <div style="padding: 0 25px 20px 25px">
-                                <form method="post">
-                                    <div style="color:red; font-weight:bold;" asp-validation-summary="All"></div>
-                                    <div class="row">
-                                        <div>
-                                            <p class="text-truncate mt-1 mb-0">Member ID</p>
-                                        </div>
-                                        <div>
-                                            <input asp-for="Input.MemberId" class="form-control" style="background-color:#e8f0fe" />
-                                            <span asp-validation-for="Input.MemberId" class="text-danger"></span>
-                                        </div>
-                                        <div style="height:20px"></div>
-                                        <div>
-                                            <p class="text-truncate mt-1 mb-0">Password</p>
-                                        </div>
-                                        <div>
-                                            <input asp-for="Input.Password" class="form-control" type="password" style="background-color:#e8f0fe" />
-                                            <span asp-validation-for="Input.Password" class="text-danger"></span>
-                                        </div>
-                                        <div style="height:20px"></div>
-                                        <div>
-                                            <button type="submit" class="btn btn-primary waves-effect waves-light w-100">Log in</button>
-                                        </div>
-                                    </div>
-                                </form>
+                          <form method="post">
+    <div style="color:red; font-weight:bold;" asp-validation-summary="All"></div>
+    <div class="row">
+        <div>
+            <p class="text-truncate mt-1 mb-0">Member ID</p>
+        </div>
+        <div>
+            <input asp-for="Input.MemberId" class="form-control" style="background-color:#e8f0fe" />
+            <span asp-validation-for="Input.MemberId" class="text-danger"></span>
+        </div>
+        <div style="height:20px"></div>
+        <div>
+            <p class="text-truncate mt-1 mb-0">Password</p>
+        </div>
+        <div>
+            <input asp-for="Input.Password" class="form-control" type="password" style="background-color:#e8f0fe" />
+            <span asp-validation-for="Input.Password" class="text-danger"></span>
+        </div>
+        <div style="height:20px"></div>
+        <div>
+            <button type="submit" class="btn btn-primary waves-effect waves-light w-100">Log in</button>
+        </div>
+        <div style="height:20px"></div>
+        <div class="d-flex justify-content-between">
+            <a href="/Account/ForgotPassword" class="text-primary">Forgot Password?</a>
+            <a href="/Account/CreateAccount" class="text-primary">CreateAccount</a>
+        </div>
+    </div>
+</form>
                             </div>
                         </div>
                     </div>

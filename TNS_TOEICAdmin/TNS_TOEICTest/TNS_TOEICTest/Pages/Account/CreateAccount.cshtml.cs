@@ -87,7 +87,7 @@ namespace TNS_TOEICTest.Pages.Account
 
             if (isSuccess)
             {
-                return RedirectToPage("/Login"); // Chuyển hướng sau khi tạo tài khoản thành công
+                return RedirectToPage("Account/Login");
             }
             else
             {

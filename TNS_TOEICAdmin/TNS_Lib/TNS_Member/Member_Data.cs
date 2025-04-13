@@ -23,7 +23,7 @@ namespace TNS.Member
             MessageError = "";
             string zSQL = "SELECT MemberKey, MemberName, Avatar, Password,Activate "
                         + "FROM[dbo].[EDU_Member]  "
-                        + "WHERE MemberID = @MemberID ";
+                        + "WHERE MemberID = @MemberID AND Activate = 1 ";
             DataTable zTable = new DataTable();
             string zConnectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
             try
@@ -120,10 +120,11 @@ namespace TNS.Member
         {
             using (SHA1 mHash = SHA1.Create())
             {
-                byte[] pwordData = Encoding.UTF8.GetBytes(nPass.Trim());
+                string trimmedPass = nPass.Trim();
+                byte[] pwordData = Encoding.UTF8.GetBytes(trimmedPass);
                 byte[] nHash = mHash.ComputeHash(pwordData);
                 string result = BitConverter.ToString(nHash).Replace("-", "").ToLower();
-                Console.WriteLine($"HashPass input: {nPass}, output: {result}");
+                Console.WriteLine($"[Test] HashPass input: '{trimmedPass}', output: {result}, length: {result.Length}");
                 return result;
             }
         }

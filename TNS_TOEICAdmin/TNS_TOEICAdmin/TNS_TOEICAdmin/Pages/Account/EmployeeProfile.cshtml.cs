@@ -170,7 +170,7 @@ namespace TNS_TOEICAdmin.Pages.Account
             else
             {
                 Console.WriteLine("Failed to update PhotoPath in database.");
-                return new JsonResult(new { success = false, errorMessage = "Không thể cập nhật ảnh." });
+                return new JsonResult(new { success = false, errorMessage = "Unable to update photo." });
             }
         }
     }

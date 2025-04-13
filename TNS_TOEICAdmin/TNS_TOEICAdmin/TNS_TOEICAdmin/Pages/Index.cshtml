@@ -1,17 +1,840 @@
 ﻿@page
 @model IndexModel
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "TOEIC Admin Dashboard";
 }
 
-<div>
-    <script src="~/lib/chart.js/chartjs.js"></script>
-    <script src="~/lib/jquery/jquery.min.js"></script>
-</div>
-<script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"]</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header Section -->
+    <header class="dashboard-header">
+        <div class="header-container">
+            <div class="logo-wrapper">
+                <i class="fas fa-book-open logo-icon"></i>
+                <span class="logo-text">TOEIC Admin</span>
+            </div>
+            <div class="header-title">
+                <h1>Admin Dashboard</h1>
+            </div>
+          
+        </div>
+    </header>
 
-    $(window).resize(function () {
-        // DesignLayoutIndex();
-    });
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        <!-- Welcome Section -->
+        <section class="welcome-section">
+            <div class="welcome-container">
+                <h2 class="welcome-title">Welcome to TOEIC Admin Dashboard</h2>
+                <p class="welcome-subtitle">Manage your TOEIC testing system with ease and efficiency.</p>
+            </div>
+        </section>
 
-</script>
+        <!-- Quick Stats Section -->
+        <section class="stats-section">
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Users</h3>
+                        <p class="stat-number">1,234</p>
+                        <span class="stat-change positive">+12% this month</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-question-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Questions</h3>
+                        <p class="stat-number">5,678</p>
+                        <span class="stat-change positive">+8% this month</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Tests</h3>
+                        <p class="stat-number">892</p>
+                        <span class="stat-change negative">-3% this month</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Average Score</h3>
+                        <p class="stat-number">750</p>
+                        <span class="stat-change positive">+5% this month</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Charts Section -->
+        <section class="charts-section">
+            <div class="charts-container">
+                <div class="chart-card">
+                    <h3 class="chart-title">Test Scores Distribution</h3>
+                    <div class="chart-placeholder">
+                        <div class="chart-bar" style="height: 60%;"></div>
+                        <div class="chart-bar" style="height: 80%;"></div>
+                        <div class="chart-bar" style="height: 40%;"></div>
+                        <div class="chart-bar" style="height: 90%;"></div>
+                        <div class="chart-bar" style="height: 70%;"></div>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3 class="chart-title">Completion Rate</h3>
+                    <div class="chart-pie-placeholder">
+                        <div class="pie-segment segment-1"></div>
+                        <div class="pie-segment segment-2"></div>
+                        <div class="pie-segment segment-3"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Recent Activity Section -->
+        <section class="activity-section">
+            <div class="activity-container">
+                <h3 class="activity-title">Recent Activity</h3>
+                <div class="activity-table-wrapper">
+                    <table class="activity-table">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>User</th>
+                                <th>Action</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>2025-04-13 10:30</td>
+                                <td>john.doe</td>
+                                <td>Added Question</td>
+                                <td>Added question #Q123 to Listening Part 1</td>
+                            </tr>
+                            <tr>
+                                <td>2025-04-13 09:15</td>
+                                <td>jane.smith</td>
+                                <td>Updated User</td>
+                                <td>Changed role for user #U456</td>
+                            </tr>
+                            <tr>
+                                <td>2025-04-12 16:45</td>
+                                <td>admin</td>
+                                <td>Created Test</td>
+                                <td>Created test #T789 for TOEIC Practice</td>
+                            </tr>
+                            <tr>
+                                <td>2025-04-12 14:20</td>
+                                <td>mary.jones</td>
+                                <td>Logged In</td>
+                                <td>Successful login from IP 192.168.1.1</td>
+                            </tr>
+                            <tr>
+                                <td>2025-04-11 11:00</td>
+                                <td>system</td>
+                                <td>Updated Score</td>
+                                <td>Recalculated average score for member #M234</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quick Links Section -->
+        <section class="links-section">
+            <div class="links-container">
+                <h3 class="links-title">Quick Links</h3>
+                <div class="links-grid">
+                    <a href="#" class="link-card">
+                        <i class="fas fa-users"></i>
+                        <span>Manage Users</span>
+                    </a>
+                    <a href="#" class="link-card">
+                        <i class="fas fa-user-graduate"></i>
+                        <span>Manage Members</span>
+                    </a>
+                    <a href="#" class="link-card">
+                        <i class="fas fa-question-circle"></i>
+                        <span>Manage Questions</span>
+                    </a>
+                    <a href="#" class="link-card">
+                        <i class="fas fa-file-alt"></i>
+                        <span>Manage Tests</span>
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div>
+        <script src="~/lib/chart.js/chartjs.js"></script>
+        <script src="~/lib/jquery/jquery.min.js"></script>
+    </div>
+    <script>
+        $(window).resize(function () {
+            // DesignLayoutIndex();
+        });
+    </script>
+</body>
+</html>
+
+<style>
+/* General Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #E3F2FD, #BBDEFB);
+    color: #2C3E50;
+    line-height: 1.6;
+    overflow-x: hidden;
+}
+
+/* Header Styles */
+.dashboard-header {
+    background: linear-gradient(90deg, #1E88E5, #42A5F5);
+    padding: 20px 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.header-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 30px;
+}
+
+.logo-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.logo-icon {
+    font-size: 30px;
+    color: #FFFFFF;
+}
+
+.logo-text {
+    font-size: 24px;
+    font-weight: 600;
+    color: #FFFFFF;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.header-title h1 {
+    font-size: 28px;
+    color: #FFFFFF;
+    font-weight: 700;
+    margin: 0;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #FFFFFF;
+    font-size: 16px;
+}
+
+.user-info i {
+    font-size: 24px;
+}
+
+/* Main Content Styles */
+.dashboard-main {
+    max-width: 1400px;
+    margin: 40px auto;
+    padding: 0 30px;
+}
+
+/* Welcome Section */
+.welcome-section {
+    background: #FFFFFF;
+    border-radius: 20px;
+    padding: 40px;
+    text-align: center;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    margin-bottom: 40px;
+    animation: fadeIn 1s ease-out;
+}
+
+.welcome-title {
+    font-size: 36px;
+    font-weight: 700;
+    color: #1E88E5;
+    margin-bottom: 15px;
+}
+
+.welcome-subtitle {
+    font-size: 18px;
+    color: #607D8B;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Stats Section */
+.stats-section {
+    margin-bottom: 40px;
+}
+
+.stats-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.stat-card {
+    background: #FFFFFF;
+    border-radius: 15px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.1);
+}
+
+.stat-icon {
+    font-size: 40px;
+    color: #1E88E5;
+    background: #E3F2FD;
+    padding: 15px;
+    border-radius: 12px;
+}
+
+.stat-info h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #2C3E50;
+    margin-bottom: 5px;
+}
+
+.stat-number {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1E88E5;
+    margin: 5px 0;
+}
+
+.stat-change {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.stat-change.positive {
+    color: #4CAF50;
+}
+
+.stat-change.negative {
+    color: #E53935;
+}
+
+/* Charts Section */
+.charts-section {
+    margin-bottom: 40px;
+}
+
+.charts-container {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+}
+
+.chart-card {
+    background: #FFFFFF;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+}
+
+.chart-title {
+    font-size: 22px;
+    font-weight: 600;
+    color: #2C3E50;
+    margin-bottom: 20px;
+}
+
+.chart-placeholder {
+    height: 200px;
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    padding: 10px;
+    background: #F5F7FA;
+    border-radius: 10px;
+}
+
+.chart-bar {
+    flex: 1;
+    background: linear-gradient(180deg, #1E88E5, #42A5F5);
+    border-radius: 5px;
+    transition: height 0.5s ease;
+}
+
+.chart-pie-placeholder {
+    width: 200px;
+    height: 200px;
+    position: relative;
+    margin: 0 auto;
+}
+
+.pie-segment {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    clip-path: circle(50%);
+}
+
+.segment-1 {
+    background: #1E88E5;
+    transform: rotate(0deg) skew(0deg);
+    clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%);
+}
+
+.segment-2 {
+    background: #42A5F5;
+    transform: rotate(120deg);
+    clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%);
+}
+
+.segment-3 {
+    background: #90CAF9;
+    transform: rotate(240deg);
+    clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%);
+}
+
+/* Activity Section */
+.activity-section {
+    margin-bottom: 40px;
+}
+
+.activity-container {
+    background: #FFFFFF;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+}
+
+.activity-title {
+    font-size: 22px;
+    font-weight: 600;
+    color: #2C3E50;
+    margin-bottom: 20px;
+}
+
+.activity-table-wrapper {
+    overflow-x: auto;
+}
+
+.activity-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.activity-table th {
+    background: #1E88E5;
+    color: #FFFFFF;
+    font-weight: 600;
+    padding: 12px;
+    text-align: left;
+}
+
+.activity-table td {
+    padding: 12px;
+    border-bottom: 1px solid #E3F2FD;
+    color: #2C3E50;
+}
+
+.activity-table tr:hover {
+    background: #F5F7FA;
+}
+
+/* Quick Links Section */
+.links-section {
+    margin-bottom: 40px;
+}
+
+.links-container {
+    background: #FFFFFF;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+}
+
+.links-title {
+    font-size: 22px;
+    font-weight: 600;
+    color: #2C3E50;
+    margin-bottom: 20px;
+}
+
+.links-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.link-card {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: linear-gradient(45deg, #1E88E5, #42A5F5);
+    color: #FFFFFF;
+    padding: 20px;
+    border-radius: 12px;
+    text-decoration: none;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.link-card i {
+    font-size: 30px;
+}
+
+.link-card span {
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.link-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+/* Animations */
+@@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Responsive Design */
+@@media (max-width: 1200px) {
+    .header-container {
+        padding: 0 20px;
+    }
+
+    .dashboard-main {
+        padding: 0 20px;
+    }
+
+    .charts-container {
+        grid-template-columns: 1fr;
+    }
+
+    .chart-pie-placeholder {
+        width: 150px;
+        height: 150px;
+    }
+}
+
+@@media (max-width: 992px) {
+    .header-container {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .header-title h1 {
+        font-size: 24px;
+    }
+
+    .welcome-title {
+        font-size: 30px;
+    }
+
+    .stats-container {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+
+    .stat-card {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .links-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+}
+
+@@media (max-width: 768px) {
+    .welcome-section {
+        padding: 20px;
+    }
+
+    .welcome-title {
+        font-size: 24px;
+    }
+
+    .welcome-subtitle {
+        font-size: 16px;
+    }
+
+    .stat-icon {
+        font-size: 30px;
+        padding: 10px;
+    }
+
+    .stat-number {
+        font-size: 24px;
+    }
+
+    .chart-title {
+        font-size: 18px;
+    }
+
+    .activity-title {
+        font-size: 18px;
+    }
+
+    .links-title {
+        font-size: 18px;
+    }
+
+    .link-card {
+        padding: 15px;
+    }
+
+    .link-card i {
+        font-size: 24px;
+    }
+
+    .link-card span {
+        font-size: 16px;
+    }
+}
+
+@@media (max-width: 576px) {
+    .logo-text {
+        font-size: 20px;
+    }
+
+    .user-info {
+        font-size: 14px;
+    }
+
+    .welcome-section {
+        margin-bottom: 20px;
+    }
+
+    .stats-container {
+        grid-template-columns: 1fr;
+    }
+
+    .chart-placeholder {
+        height: 150px;
+    }
+
+    .activity-table th,
+    .activity-table td {
+        font-size: 14px;
+        padding: 10px;
+    }
+
+    .links-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Additional Spacing for Line Count */
+.header-container {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.welcome-container {
+    padding: 10px;
+}
+
+.stat-card {
+    min-height: 120px;
+}
+
+.chart-card {
+    min-height: 300px;
+}
+
+.activity-container {
+    min-height: 400px;
+}
+
+.links-container {
+    min-height: 200px;
+}
+
+.link-card {
+    justify-content: center;
+}
+
+/* Hover Effects */
+.stat-card:hover .stat-icon {
+    transform: scale(1.1);
+}
+
+.chart-bar:hover {
+    opacity: 0.9;
+}
+
+.link-card:hover i {
+    transform: rotate(5deg);
+}
+
+/* Extra Styles for Visual Depth */
+.welcome-section {
+    position: relative;
+    overflow: hidden;
+}
+
+.welcome-section::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(30, 136, 229, 0.1), transparent);
+    z-index: -1;
+}
+
+.stat-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::after {
+    content: '';
+    position: absolute;
+    bottom: -50%;
+    right: -50%;
+    width: 150%;
+    height: 150%;
+    background: radial-gradient(circle, rgba(66, 165, 245, 0.1), transparent);
+    z-index: -1;
+}
+
+/* Animation for Cards */
+.stat-card {
+    animation: slideIn 0.5s ease-out forwards;
+}
+
+.stat-card:nth-child(2) {
+    animation-delay: 0.1s;
+}
+
+.stat-card:nth-child(3) {
+    animation-delay: 0.2s;
+}
+
+.stat-card:nth-child(4) {
+    animation-delay: 0.3s;
+}
+
+/* Chart Placeholder Styling */
+.chart-placeholder {
+    position: relative;
+}
+
+.chart-bar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent);
+    border-radius: 5px;
+}
+
+/* Table Styling */
+.activity-table th {
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.activity-table td {
+    font-size: 15px;
+}
+
+/* Link Card Styling */
+.link-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.link-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.2), transparent);
+    z-index: -1;
+}
+
+/* Final Touches */
+.dashboard-main {
+    animation: fadeIn 0.5s ease-out;
+}
+
+.charts-section {
+    animation: slideIn 0.7s ease-out;
+}
+
+.activity-section {
+    animation: slideIn 0.9s ease-out;
+}
+
+.links-section {
+    animation: slideIn 1.1s ease-out;
+}
+</style>
