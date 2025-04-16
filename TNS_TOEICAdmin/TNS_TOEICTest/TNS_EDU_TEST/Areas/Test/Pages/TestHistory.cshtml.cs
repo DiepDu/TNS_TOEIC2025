@@ -24,22 +24,22 @@ namespace TNS_EDU_TEST.Areas.Test.Pages
             _configuration = configuration;
         }
 
-        // OnGet chỉ gọi hàm LoadTestHistory
+        
         public void OnGet()
         {
-            // Lấy MemberKey từ Cookies (giả sử tên cookie là "MemberKey")
+           
             string memberKey = User.Claims.FirstOrDefault(c => c.Type == "MemberKey" || c.Type == ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(memberKey))
             {
-                // Xử lý khi không có MemberKey (ví dụ: chuyển hướng đến trang login)
+                
                 return;
             }
 
-            // Gọi hàm ADO.NET để lấy dữ liệu
+           
             TestHistoryItems = TestHistoryAccessData.LoadTestHistory(memberKey);
         }
 
-        // Hàm ADO.NET xử lý truy vấn dữ liệu từ Database
+     
       
     }
 

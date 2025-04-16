@@ -77,7 +77,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
         public IActionResult OnPostUpdateStatistics()
         {
             CheckAuth();
-            if (!IsFullAdmin && !UserLogin.Role.IsUpdate)
+            if (!IsFullAdmin)
                 return new JsonResult(new { status = "ERROR", message = "Bạn không có quyền cập nhật thống kê!" });
 
             try
