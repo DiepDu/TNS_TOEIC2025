@@ -4,7 +4,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
-using TNS_EDU_TEST.Areas.Test.Models; 
+using TNS_EDU_TEST.Areas.Test.Models;
+using TNS_EDU_TEST.Areas.Test.Pages;
 
 namespace TNS_EDU_TEST.Areas.Test.Models
 {
@@ -190,6 +191,49 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                 });
 
                 return (testInfo, resultQuestions);
+            }
+        }
+        public static async Task InsertFeedbackAsync(QuestionFeedback feedback)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                var query = @"
+            INSERT INTO QuestionFeedbacks (
+                FeedbackKey,
+                QuestionKey,
+                MemberKey,
+                FeedbackText,
+                CreatedOn,
+                Part,
+                Parent,
+                Status
+            )
+            VALUES (
+                @FeedbackKey,
+                @QuestionKey,
+                @MemberKey,
+                @FeedbackText,
+                @CreatedOn,
+                @Part,
+                @Parent,
+                @Status
+            )";
+
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@FeedbackKey", feedback.FeedbackKey);
+                    command.Parameters.AddWithValue("@QuestionKey", feedback.QuestionKey);
+                    command.Parameters.AddWithValue("@MemberKey", feedback.MemberKey);
+                    command.Parameters.AddWithValue("@FeedbackText", feedback.FeedbackText ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@CreatedOn", feedback.CreatedOn);
+                    command.Parameters.AddWithValue("@Part", feedback.Part);
+                    command.Parameters.AddWithValue("@Parent", (object)feedback.Parent ?? DBNull.Value); // Xử lý Parent có thể null
+                    command.Parameters.AddWithValue("@Status", feedback.Status);
+
+                    await command.ExecuteNonQueryAsync();
+                }
             }
         }
         public class TestInfo

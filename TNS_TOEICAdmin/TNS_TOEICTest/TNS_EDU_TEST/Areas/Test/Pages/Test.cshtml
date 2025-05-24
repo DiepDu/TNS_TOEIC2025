@@ -50,648 +50,669 @@
         </div>
     </div>
 
-    <script>
-        let currentPart = 1;
-        let rawJson = '@Html.Raw(Model.QuestionsJson)';
-        let questions = rawJson ? JSON.parse(rawJson) : [];
-        let testKey = '@Model.TestKey';
-        let resultKey = '@Model.ResultKey';
-        let timeRemaining = @Model.TimeRemaining.TotalSeconds;
-        const resourceBaseUrl = 'https://localhost:7078';
+ <script>
+    let currentPart = 1;
+    let rawJson = '@Html.Raw(Model.QuestionsJson)';
+    let questions = rawJson ? JSON.parse(rawJson) : [];
+    let testKey = '@Model.TestKey';
+    let resultKey = '@Model.ResultKey';
+    let timeRemaining = @Model.TimeRemaining.TotalSeconds;
+    const resourceBaseUrl = 'https://localhost:7078';
 
-        let flaggedQuestions = new Set();
-        let questionStates = {};
-        let debounceTimers = {};
+    let flaggedQuestions = new Set();
+    let questionStates = {};
+    let debounceTimers = {};
+    let sidebarState = 0; // Biến theo dõi trạng thái: 0 - ẩn cả hai, 1 - hiển thị sidebar-left, 2 - hiển thị sidebar-right
 
-        function debounce(func, wait) {
-            return function (...args) {
-                const questionKey = args[0];
-                clearTimeout(debounceTimers[questionKey]);
-                debounceTimers[questionKey] = setTimeout(() => func.apply(this, args), wait);
+    function debounce(func, wait) {
+        return function (...args) {
+            const questionKey = args[0];
+            clearTimeout(debounceTimers[questionKey]);
+            debounceTimers[questionKey] = setTimeout(() => func.apply(this, args), wait);
+        };
+    }
+
+    const debouncedSaveAnswer = debounce(saveAnswer, 1000);
+
+    async function saveAnswer(questionKey, answerKey, timeSpent, part) {
+        try {
+            const response = await fetch('/MainTest?handler=SaveAnswer', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    resultKey: resultKey,
+                    questionKey: questionKey,
+                    selectAnswerKey: answerKey, 
+                    timeSpent: timeSpent,
+                    part: part
+                })
+            });
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                console.error('Error saving answer:', data.message || 'Unknown error');
+            }
+        } catch (error) {
+            console.error('Error saving answer:', error);
+        }
+    }
+
+    function initializeQuestionState(questionKey, part) {
+        if (!questionStates[questionKey]) {
+            questionStates[questionKey] = {
+                isVisible: false,
+                hasInteracted: false,
+                startTime: null,
+                lastAnswerTime: null,
+                timeSpent: 0,
+                answerChanges: 0,
+                part: part
             };
         }
+    }
 
-        const debouncedSaveAnswer = debounce(saveAnswer, 1000);
+    function setupIntersectionObserver() {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const questionKey = entry.target.getAttribute('data-question-key');
+                if (!questionStates[questionKey]) return;
 
-        async function saveAnswer(questionKey, answerKey, timeSpent, part) {
-            try {
-                const response = await fetch('/MainTest?handler=SaveAnswer', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        resultKey: resultKey,
-                        questionKey: questionKey,
-                        selectAnswerKey: answerKey, 
-                        timeSpent: timeSpent,
-                        part: part
-                    })
-                });
-                const data = await response.json();
-                if (!response.ok || !data.success) {
-                    console.error('Error saving answer:', data.message || 'Unknown error');
+                if (entry.isIntersecting) {
+                    questionStates[questionKey].isVisible = true;
+                    checkStartTime(questionKey);
+                } else {
+                    questionStates[questionKey].isVisible = false;
                 }
-            } catch (error) {
-                console.error('Error saving answer:', error);
+            });
+        }, {
+            threshold: 0.5
+        });
+
+        document.querySelectorAll('.question-container, .sub-question').forEach(element => {
+            const questionKey = element.getAttribute('data-question-key');
+            if (questionKey) {
+                observer.observe(element);
+            }
+        });
+    }
+
+    function checkStartTime(questionKey) {
+        const state = questionStates[questionKey];
+        if (state.isVisible && state.hasInteracted && !state.startTime) {
+            state.startTime = Date.now();
+        }
+    }
+
+    async function loadFlaggedQuestions() {
+        try {
+            const response = await fetch(`/MainTest?handler=FlaggedQuestions&resultKey=${resultKey}`);
+            const data = await response.json();
+            if (response.ok && Array.isArray(data)) {
+                flaggedQuestions = new Set(data);
+                updateQuestionList();
+            } else {
+                console.error('Error loading flagged questions:', data.message || 'Unknown error');
+            }
+        } catch (error) {
+            console.error('Error loading flagged questions:', error);
+        }
+    }
+
+    async function saveFlaggedQuestion(questionKey, isFlagged) {
+        try {
+            const response = await fetch('/MainTest?handler=SaveFlaggedQuestion', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    resultKey: resultKey,
+                    questionKey: questionKey,
+                    isFlagged: isFlagged
+                })
+            });
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                console.error('Error saving flagged question:', data.message || 'Unknown error');
+            }
+        } catch (error) {
+            console.error('Error saving flagged question:', error);
+        }
+    }
+
+    async function toggleFlag(questionKey) {
+        const flagElement = document.querySelector(`.flag-icon[data-question-key="${questionKey}"]`);
+        const isFlagged = flaggedQuestions.has(questionKey);
+
+        if (isFlagged) {
+            flaggedQuestions.delete(questionKey);
+            flagElement.classList.remove('flagged');
+            await saveFlaggedQuestion(questionKey, false);
+        } else {
+            flaggedQuestions.add(questionKey);
+            flagElement.classList.add('flagged');
+            await saveFlaggedQuestion(questionKey, true);
+        }
+        updateQuestionList();
+    }
+
+    function selectAnswer(questionKey, answerKey) {
+        let question = questions.find(q => q.questionKey === questionKey);
+        if (!question) {
+            for (const parent of questions) {
+                if (parent.children) {
+                    question = parent.children.find(child => child.questionKey === questionKey);
+                    if (question) break;
+                }
             }
         }
 
-        function initializeQuestionState(questionKey, part) {
-            if (!questionStates[questionKey]) {
-                questionStates[questionKey] = {
-                    isVisible: false,
-                    hasInteracted: false,
-                    startTime: null,
-                    lastAnswerTime: null,
-                    timeSpent: 0,
-                    answerChanges: 0,
-                    part: part
-                };
-            }
+        if (!question) {
+            console.error(`Question with key ${questionKey} not found.`);
+            return;
         }
 
-        function setupIntersectionObserver() {
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    const questionKey = entry.target.getAttribute('data-question-key');
-                    if (!questionStates[questionKey]) return;
+        const radioButton = document.querySelector(`input[name="answer_${questionKey}"][value="${answerKey}"]`);
+        if (!radioButton) return;
 
-                    if (entry.isIntersecting) {
-                        questionStates[questionKey].isVisible = true;
-                        checkStartTime(questionKey);
-                    } else {
-                        questionStates[questionKey].isVisible = false;
-                    }
-                });
-            }, {
-                threshold: 0.5
-            });
+        // Kiểm tra xem đáp án đã được chọn chưa
+        const isAlreadySelected = question.userAnswerKey === answerKey;
 
-            document.querySelectorAll('.question-container, .sub-question').forEach(element => {
-                const questionKey = element.getAttribute('data-question-key');
-                if (questionKey) {
-                    observer.observe(element);
-                }
-            });
-        }
+        if (isAlreadySelected) {
+            // Bỏ chọn đáp án
+            radioButton.checked = false;
+            updateAnswer(questionKey, null); // Đặt userAnswerKey về null
 
-        function checkStartTime(questionKey) {
             const state = questionStates[questionKey];
-            if (state.isVisible && state.hasInteracted && !state.startTime) {
-                state.startTime = Date.now();
-            }
-        }
+            if (state && state.startTime) {
+                const currentTime = Date.now();
+                let timeDiff;
 
-        async function loadFlaggedQuestions() {
-            try {
-                const response = await fetch(`/MainTest?handler=FlaggedQuestions&resultKey=${resultKey}`);
-                const data = await response.json();
-                if (response.ok && Array.isArray(data)) {
-                    flaggedQuestions = new Set(data);
-                    updateQuestionList();
+                if (state.lastAnswerTime) {
+                    timeDiff = (currentTime - state.lastAnswerTime) / 1000;
+                    state.answerChanges += 1;
                 } else {
-                    console.error('Error loading flagged questions:', data.message || 'Unknown error');
+                    timeDiff = (currentTime - state.startTime) / 1000;
                 }
-            } catch (error) {
-                console.error('Error loading flagged questions:', error);
+
+                state.timeSpent += timeDiff;
+                state.lastAnswerTime = currentTime;
+
+                // Gửi request với selectAnswerKey = null
+                debouncedSaveAnswer(
+                    questionKey,
+                    null, // Bỏ chọn
+                    Math.round(state.timeSpent),
+                    state.part
+                );
+            }
+        } else {
+            // Chọn đáp án mới
+            radioButton.checked = true;
+            updateAnswer(questionKey, answerKey);
+
+            const state = questionStates[questionKey];
+            if (state && state.startTime) {
+                const currentTime = Date.now();
+                let timeDiff;
+
+                if (state.lastAnswerTime) {
+                    timeDiff = (currentTime - state.lastAnswerTime) / 1000;
+                    state.answerChanges += 1;
+                } else {
+                    timeDiff = (currentTime - state.startTime) / 1000;
+                }
+
+                state.timeSpent += timeDiff;
+                state.lastAnswerTime = currentTime;
+
+                debouncedSaveAnswer(
+                    questionKey,
+                    answerKey,
+                    Math.round(state.timeSpent),
+                    state.part
+                );
             }
         }
+    }
 
-        async function saveFlaggedQuestion(questionKey, isFlagged) {
-            try {
-                const response = await fetch('/MainTest?handler=SaveFlaggedQuestion', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        resultKey: resultKey,
-                        questionKey: questionKey,
-                        isFlagged: isFlagged
-                    })
-                });
-                const data = await response.json();
-                if (!response.ok || !data.success) {
-                    console.error('Error saving flagged question:', data.message || 'Unknown error');
-                }
-            } catch (error) {
-                console.error('Error saving flagged question:', error);
-            }
-        }
-
-        async function toggleFlag(questionKey) {
-            const flagElement = document.querySelector(`.flag-icon[data-question-key="${questionKey}"]`);
-            const isFlagged = flaggedQuestions.has(questionKey);
-
-            if (isFlagged) {
-                flaggedQuestions.delete(questionKey);
-                flagElement.classList.remove('flagged');
-                await saveFlaggedQuestion(questionKey, false);
-            } else {
-                flaggedQuestions.add(questionKey);
-                flagElement.classList.add('flagged');
-                await saveFlaggedQuestion(questionKey, true);
-            }
-            updateQuestionList();
-        }
-
-        function selectAnswer(questionKey, answerKey) {
-            let question = questions.find(q => q.questionKey === questionKey);
-            if (!question) {
-                for (const parent of questions) {
-                    if (parent.children) {
-                        question = parent.children.find(child => child.questionKey === questionKey);
-                        if (question) break;
-                    }
-                }
-            }
-
-            if (!question) {
-                console.error(`Question with key ${questionKey} not found.`);
-                return;
-            }
-
-            const radioButton = document.querySelector(`input[name="answer_${questionKey}"][value="${answerKey}"]`);
-            if (!radioButton) return;
-
-            // Kiểm tra xem đáp án đã được chọn chưa
-            const isAlreadySelected = question.userAnswerKey === answerKey;
-
-            if (isAlreadySelected) {
-                // Bỏ chọn đáp án
-                radioButton.checked = false;
-                updateAnswer(questionKey, null); // Đặt userAnswerKey về null
-
-                const state = questionStates[questionKey];
-                if (state && state.startTime) {
-                    const currentTime = Date.now();
-                    let timeDiff;
-
-                    if (state.lastAnswerTime) {
-                        timeDiff = (currentTime - state.lastAnswerTime) / 1000;
-                        state.answerChanges += 1;
-                    } else {
-                        timeDiff = (currentTime - state.startTime) / 1000;
-                    }
-
-                    state.timeSpent += timeDiff;
-                    state.lastAnswerTime = currentTime;
-
-                    // Gửi request với selectAnswerKey = null
-                    debouncedSaveAnswer(
-                        questionKey,
-                        null, // Bỏ chọn
-                        Math.round(state.timeSpent),
-                        state.part
-                    );
+    function startTimer() {
+        const timerElement = document.getElementById('timer');
+        setInterval(() => {
+            if (timeRemaining > 0) {
+                timeRemaining--;
+                let minutes = Math.floor(timeRemaining / 60);
+                let seconds = Math.floor(timeRemaining % 60);
+                timerElement.textContent = `Time: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                if (timeRemaining <= 300) {
+                    timerElement.classList.add('warning');
                 }
             } else {
-                // Chọn đáp án mới
-                radioButton.checked = true;
-                updateAnswer(questionKey, answerKey);
-
-                const state = questionStates[questionKey];
-                if (state && state.startTime) {
-                    const currentTime = Date.now();
-                    let timeDiff;
-
-                    if (state.lastAnswerTime) {
-                        timeDiff = (currentTime - state.lastAnswerTime) / 1000;
-                        state.answerChanges += 1;
-                    } else {
-                        timeDiff = (currentTime - state.startTime) / 1000;
-                    }
-
-                    state.timeSpent += timeDiff;
-                    state.lastAnswerTime = currentTime;
-
-                    debouncedSaveAnswer(
-                        questionKey,
-                        answerKey,
-                        Math.round(state.timeSpent),
-                        state.part
-                    );
-                }
+                timerElement.textContent = 'Time: 00:00';
+                submitTest();
             }
-        }
+        }, 1000);
+    }
 
-        function startTimer() {
-            const timerElement = document.getElementById('timer');
-            setInterval(() => {
-                if (timeRemaining > 0) {
-                    timeRemaining--;
-                    let minutes = Math.floor(timeRemaining / 60);
-                    let seconds = Math.floor(timeRemaining % 60);
-                    timerElement.textContent = `Time: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                    if (timeRemaining <= 300) {
-                        timerElement.classList.add('warning');
-                    }
-                } else {
-                    timerElement.textContent = 'Time: 00:00';
-                  
-                        submitTest();
-                    
-                }
-            }, 1000);
-        }
+    function switchPart(part, element) {
+        currentPart = part;
+        document.querySelectorAll('.part-btn').forEach(btn => btn.classList.remove('active'));
+        element.classList.add('active');
+        renderContent();
+        updateQuestionList();
+    }
 
-        function switchPart(part, element) {
-            currentPart = part;
-            document.querySelectorAll('.part-btn').forEach(btn => btn.classList.remove('active'));
-            element.classList.add('active');
-            renderContent();
-            updateQuestionList();
-        }
-
-        function renderSimplePart(container) {
-            const partQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
-            let html = '';
-            partQuestions.forEach(question => {
-                initializeQuestionState(question.questionKey, question.part);
-                const isFlagged = flaggedQuestions.has(question.questionKey);
+    function renderSimplePart(container) {
+        const partQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
+        let html = '';
+        partQuestions.forEach(question => {
+            initializeQuestionState(question.questionKey, question.part);
+            const isFlagged = flaggedQuestions.has(question.questionKey);
+            html += `
+                <div class="question-container" id="question-${question.questionKey}" data-question-key="${question.questionKey}">
+                    <h2>Question ${question.order}</h2>
+                    <span class="flag-icon ${isFlagged ? 'flagged' : ''}" data-question-key="${question.questionKey}"><i class="fas fa-flag"></i></span>
+                    ${question.questionImage ? `<img src="${resourceBaseUrl}${question.questionImage}" alt="Question Image" class="question-image" loading="lazy">` : ''}
+                    ${question.questionVoice ? `
+                        <audio controls class="question-audio">
+                            <source src="${resourceBaseUrl}${question.questionVoice}" type="audio/mpeg">
+                            Your browser does not support the audio element.
+                        </audio>` : ''}
+                    ${question.questionText ? `<div class="question-text">${question.questionText}</div>` : ''}
+                    <div class="answer-options">
+            `;
+            question.answers.forEach((answer, idx) => {
+                const label = (currentPart === 1 || currentPart === 2)
+                    ? (answer.ranking === 1 ? 'A' : answer.ranking === 2 ? 'B' : answer.ranking === 3 ? 'C' : answer.ranking === 4 ? 'D' : '?')
+                    : String.fromCharCode(65 + idx);
+                const isChecked = answer.answerKey === question.userAnswerKey ? 'checked' : '';
+                const isSelected = answer.answerKey === question.userAnswerKey ? 'selected' : '';
                 html += `
-                    <div class="question-container" id="question-${question.questionKey}" data-question-key="${question.questionKey}">
-                        <h2>Question ${question.order}</h2>
-                        <span class="flag-icon ${isFlagged ? 'flagged' : ''}" data-question-key="${question.questionKey}"><i class="fas fa-flag"></i></span>
-                        ${question.questionImage ? `<img src="${resourceBaseUrl}${question.questionImage}" alt="Question Image" class="question-image" loading="lazy">` : ''}
-                        ${question.questionVoice ? `
+                    <div class="answer-option ${isSelected}" onclick="selectAnswer('${question.questionKey}', '${answer.answerKey}')">
+                        <input type="radio" name="answer_${question.questionKey}" id="answer_${answer.answerKey}"
+                               value="${answer.answerKey}" ${isChecked}>
+                        <label for="answer_${answer.answerKey}">
+                            <span class="label-text">${label}</span>
+                            ${currentPart === 1 || currentPart === 2 ? '' : `<span class="colon">:</span> <span class="answer-content">${answer.answerText}</span>`}
+                        </label>
+                    </div>
+                `;
+            });
+            html += '</div></div>';
+        });
+        container.innerHTML = html;
+
+        document.querySelectorAll('.question-container, .sub-question').forEach(element => {
+            const questionKey = element.getAttribute('data-question-key');
+            if (questionKey) {
+                const answerOptions = element.querySelector('.answer-options');
+                if (answerOptions) {
+                    answerOptions.addEventListener('mouseover', () => {
+                        if (questionStates[questionKey]) {
+                            questionStates[questionKey].hasInteracted = true;
+                            checkStartTime(questionKey);
+                        }
+                    });
+                }
+            }
+        });
+
+        document.querySelectorAll('.flag-icon').forEach(flag => {
+            flag.addEventListener('click', () => {
+                const questionKey = flag.getAttribute('data-question-key');
+                toggleFlag(questionKey);
+            });
+        });
+
+        setupIntersectionObserver();
+    }
+
+    function renderComplexPart(container) {
+        const parentQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
+        let html = '';
+
+        if (parentQuestions.length === 0) {
+            container.innerHTML = `<p>No questions available for Part ${currentPart}.</p>`;
+            return;
+        }
+
+        parentQuestions.forEach(parent => {
+            html += `
+                <div class="part3-container">
+                    <div class="part3-left">
+                        <h2>Part ${currentPart}: Conversation</h2>
+                        ${parent.questionImage ? `<img src="${resourceBaseUrl}${parent.questionImage}" alt="Part ${currentPart} Image" class="question-image" loading="lazy">` : ''}
+                        ${parent.questionVoice ? `
                             <audio controls class="question-audio">
-                                <source src="${resourceBaseUrl}${question.questionVoice}" type="audio/mpeg">
+                                <source src="${resourceBaseUrl}${parent.questionVoice}" type="audio/mpeg">
                                 Your browser does not support the audio element.
                             </audio>` : ''}
-                        ${question.questionText ? `<div class="question-text">${question.questionText}</div>` : ''}
+                        ${parent.questionText ? `<div class="question-text">${parent.questionText}</div>` : ''}
+                    </div>
+                    <div class="part3-right">
+            `;
+            const children = parent.children || [];
+            children.forEach(child => {
+                initializeQuestionState(child.questionKey, child.part);
+                const isFlagged = flaggedQuestions.has(child.questionKey);
+                html += `
+                    <div class="sub-question" id="question-${child.questionKey}" data-question-key="${child.questionKey}">
+                        <h4>Question ${child.order}${child.questionText ? `<span class="question-content">: ${child.questionText}</span>` : ''}</h4>
+                        <span class="flag-icon ${isFlagged ? 'flagged' : ''}" data-question-key="${child.questionKey}"><i class="fas fa-flag"></i></span>
+                        ${child.questionImage ? `<img src="${resourceBaseUrl}${child.questionImage}" alt="Sub Question Image" class="sub-question-image" loading="lazy">` : ''}
+                        ${child.questionVoice ? `
+                            <audio controls class="sub-question-audio">
+                                <source src="${resourceBaseUrl}${child.questionVoice}" type="audio/mpeg">
+                                Your browser does not support the audio element.
+                            </audio>` : ''}
                         <div class="answer-options">
                 `;
-                question.answers.forEach((answer, idx) => {
-                    const label = (currentPart === 1 || currentPart === 2)
-                        ? (answer.ranking === 1 ? 'A' : answer.ranking === 2 ? 'B' : answer.ranking === 3 ? 'C' : answer.ranking === 4 ? 'D' : '?')
-                        : String.fromCharCode(65 + idx);
-                    const isChecked = answer.answerKey === question.userAnswerKey ? 'checked' : '';
-                    const isSelected = answer.answerKey === question.userAnswerKey ? 'selected' : '';
+                child.answers.forEach((answer, idx) => {
+                    const label = String.fromCharCode(65 + idx);
+                    const isChecked = answer.answerKey === child.userAnswerKey ? 'checked' : '';
+                    const isSelected = answer.answerKey === child.userAnswerKey ? 'selected' : '';
                     html += `
-                        <div class="answer-option ${isSelected}" onclick="selectAnswer('${question.questionKey}', '${answer.answerKey}')">
-                            <input type="radio" name="answer_${question.questionKey}" id="answer_${answer.answerKey}"
+                        <div class="answer-option ${isSelected}" onclick="selectAnswer('${child.questionKey}', '${answer.answerKey}')">
+                            <input type="radio" name="answer_${child.questionKey}" id="answer_${answer.answerKey}"
                                    value="${answer.answerKey}" ${isChecked}>
                             <label for="answer_${answer.answerKey}">
                                 <span class="label-text">${label}</span>
-                                ${currentPart === 1 || currentPart === 2 ? '' : `<span class="colon">:</span> <span class="answer-content">${answer.answerText}</span>`}
+                                <span class="colon">:</span>
+                                <span class="answer-content">${answer.answerText}</span>
                             </label>
                         </div>
                     `;
                 });
                 html += '</div></div>';
             });
-            container.innerHTML = html;
+            html += '</div></div>';
+        });
+        container.innerHTML = html;
 
-            document.querySelectorAll('.question-container, .sub-question').forEach(element => {
-                const questionKey = element.getAttribute('data-question-key');
-                if (questionKey) {
-                    const answerOptions = element.querySelector('.answer-options');
-                    if (answerOptions) {
-                        answerOptions.addEventListener('mouseover', () => {
-                            if (questionStates[questionKey]) {
-                                questionStates[questionKey].hasInteracted = true;
-                                checkStartTime(questionKey);
-                            }
-                        });
-                    }
-                }
-            });
-
-            document.querySelectorAll('.flag-icon').forEach(flag => {
-                flag.addEventListener('click', () => {
-                    const questionKey = flag.getAttribute('data-question-key');
-                    toggleFlag(questionKey);
-                });
-            });
-
-            setupIntersectionObserver();
-        }
-
-        function renderComplexPart(container) {
-            const parentQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
-            let html = '';
-
-            if (parentQuestions.length === 0) {
-                container.innerHTML = `<p>No questions available for Part ${currentPart}.</p>`;
-                return;
-            }
-
-            parentQuestions.forEach(parent => {
-                html += `
-                    <div class="part3-container">
-                        <div class="part3-left">
-                            <h2>Part ${currentPart}: Conversation</h2>
-                            ${parent.questionImage ? `<img src="${resourceBaseUrl}${parent.questionImage}" alt="Part ${currentPart} Image" class="question-image" loading="lazy">` : ''}
-                            ${parent.questionVoice ? `
-                                <audio controls class="question-audio">
-                                    <source src="${resourceBaseUrl}${parent.questionVoice}" type="audio/mpeg">
-                                    Your browser does not support the audio element.
-                                </audio>` : ''}
-                            ${parent.questionText ? `<div class="question-text">${parent.questionText}</div>` : ''}
-                        </div>
-                        <div class="part3-right">
-                `;
-                const children = parent.children || [];
-                children.forEach(child => {
-                    initializeQuestionState(child.questionKey, child.part);
-                    const isFlagged = flaggedQuestions.has(child.questionKey);
-                    html += `
-                        <div class="sub-question" id="question-${child.questionKey}" data-question-key="${child.questionKey}">
-                            <h4>Question ${child.order}${child.questionText ? `<span class="question-content">: ${child.questionText}</span>` : ''}</h4>
-                            <span class="flag-icon ${isFlagged ? 'flagged' : ''}" data-question-key="${child.questionKey}"><i class="fas fa-flag"></i></span>
-                            ${child.questionImage ? `<img src="${resourceBaseUrl}${child.questionImage}" alt="Sub Question Image" class="sub-question-image" loading="lazy">` : ''}
-                            ${child.questionVoice ? `
-                                <audio controls class="sub-question-audio">
-                                    <source src="${resourceBaseUrl}${child.questionVoice}" type="audio/mpeg">
-                                    Your browser does not support the audio element.
-                                </audio>` : ''}
-                            <div class="answer-options">
-                    `;
-                    child.answers.forEach((answer, idx) => {
-                        const label = String.fromCharCode(65 + idx);
-                        const isChecked = answer.answerKey === child.userAnswerKey ? 'checked' : '';
-                        const isSelected = answer.answerKey === child.userAnswerKey ? 'selected' : '';
-                        html += `
-                            <div class="answer-option ${isSelected}" onclick="selectAnswer('${child.questionKey}', '${answer.answerKey}')">
-                                <input type="radio" name="answer_${child.questionKey}" id="answer_${answer.answerKey}"
-                                       value="${answer.answerKey}" ${isChecked}>
-                                <label for="answer_${answer.answerKey}">
-                                    <span class="label-text">${label}</span>
-                                    <span class="colon">:</span>
-                                    <span class="answer-content">${answer.answerText}</span>
-                                </label>
-                            </div>
-                        `;
+        document.querySelectorAll('.question-container, .sub-question').forEach(element => {
+            const questionKey = element.getAttribute('data-question-key');
+            if (questionKey) {
+                const answerOptions = element.querySelector('.answer-options');
+                if (answerOptions) {
+                    answerOptions.addEventListener('mouseover', () => {
+                        if (questionStates[questionKey]) {
+                            questionStates[questionKey].hasInteracted = true;
+                            checkStartTime(questionKey);
+                        }
                     });
-                    html += '</div></div>';
-                });
-                html += '</div></div>';
-            });
-            container.innerHTML = html;
-
-            document.querySelectorAll('.question-container, .sub-question').forEach(element => {
-                const questionKey = element.getAttribute('data-question-key');
-                if (questionKey) {
-                    const answerOptions = element.querySelector('.answer-options');
-                    if (answerOptions) {
-                        answerOptions.addEventListener('mouseover', () => {
-                            if (questionStates[questionKey]) {
-                                questionStates[questionKey].hasInteracted = true;
-                                checkStartTime(questionKey);
-                            }
-                        });
-                    }
-                }
-            });
-
-            document.querySelectorAll('.flag-icon').forEach(flag => {
-                flag.addEventListener('click', () => {
-                    const questionKey = flag.getAttribute('data-question-key');
-                    toggleFlag(questionKey);
-                });
-            });
-
-            setupIntersectionObserver();
-        }
-
-        function renderContent() {
-            const container = document.getElementById('main-content-wrapper');
-            if ([1, 2, 5].includes(currentPart)) {
-                renderSimplePart(container);
-            } else {
-                renderComplexPart(container);
-            }
-        }
-
-        // Cập nhật: Hỗ trợ bỏ chọn trên giao diện
-        function updateAnswer(questionKey, answerKey) {
-            let question = questions.find(q => q.questionKey === questionKey);
-            if (!question) {
-                for (const parent of questions) {
-                    if (parent.children) {
-                        question = parent.children.find(child => child.questionKey === questionKey);
-                        if (question) break;
-                    }
-                }
-            }
-
-            if (question) {
-                question.userAnswerKey = answerKey; // Có thể là null khi bỏ chọn
-                const answerOptions = document.querySelectorAll(`.answer-option input[name="answer_${questionKey}"]`);
-                answerOptions.forEach(option => {
-                    const parent = option.parentElement;
-                    if (answerKey === null) {
-                        option.checked = false;
-                        parent.classList.remove('selected');
-                    } else if (option.value === answerKey) {
-                        parent.classList.add('selected');
-                    } else {
-                        parent.classList.remove('selected');
-                    }
-                });
-                updateQuestionList();
-            } else {
-                console.error(`Question with key ${questionKey} not found.`);
-            }
-        }
-
-        function updateQuestionList() {
-            const listContainer = document.getElementById('question-list');
-            const answeredContainer = document.getElementById('answered-count');
-            let html = '';
-            let displayedQuestions = [];
-
-            if (currentPart <= 2 || currentPart === 5) {
-                displayedQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
-            } else {
-                const parentQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
-                displayedQuestions = parentQuestions.reduce((acc, parent) => {
-                    return acc.concat(parent.children || []);
-                }, []);
-            }
-
-            const answeredCount = displayedQuestions.filter(q => q.userAnswerKey && q.userAnswerKey !== '').length;
-            const totalCount = displayedQuestions.length;
-            answeredContainer.innerHTML = `Answered: ${answeredCount}/${totalCount}`;
-
-            displayedQuestions.forEach((q, index) => {
-                const isSelected = q.userAnswerKey && q.userAnswerKey !== '';
-                const isFlagged = flaggedQuestions.has(q.questionKey);
-                html += `<a href="#" class="question-circle ${isSelected ? 'selected' : ''} ${isFlagged ? 'flagged' : ''}" onclick="scrollToQuestion('${q.questionKey}')">${q.order || 'N/A'}</a>`;
-            });
-            listContainer.innerHTML = html;
-            updateProgressCircle();
-        }
-
-        function scrollToQuestion(questionKey) {
-            const element = document.getElementById(`question-${questionKey}`);
-            if (element) {
-                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        }
-
-        function showConfirmationModal(title, message, onConfirm) {
-            const modal = document.getElementById('confirmation-modal');
-            const modalTitle = document.getElementById('modal-title');
-            const modalMessage = document.getElementById('modal-message');
-            const confirmBtn = document.getElementById('modal-confirm');
-            const cancelBtn = document.getElementById('modal-cancel');
-
-            modalTitle.textContent = title;
-            modalMessage.textContent = message;
-            modal.classList.add('active');
-
-            confirmBtn.onclick = () => {
-                modal.classList.remove('active');
-                if (onConfirm) onConfirm();
-            };
-
-            cancelBtn.onclick = () => {
-                modal.classList.remove('active');
-            };
-        }
-
-function submitTest() {
-    showConfirmationModal(
-        'Submit Test',
-        'Are you sure you want to submit your test?',
-        async () => {
-            // Tính số phút còn lại từ timeRemaining (tổng số giây)
-            const remainingMinutes = Math.floor(timeRemaining / 60);
-
-            try {
-                const response = await fetch('/MainTest?handler=SubmitTest', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        testKey: testKey,
-                        resultKey: resultKey,
-                        remainingMinutes: remainingMinutes
-                    })
-                });
-
-                const data = await response.json();
-                if (response.ok && data.success) {
-                    // Cập nhật URL để truyền cả testKey và resultKey
-                    window.location.href = `/Test/ResultTest?testKey=${testKey}&resultKey=${resultKey}`;
-                } else {
-                    alert('Error submitting test: ' + (data.message || 'Unknown error'));
-                }
-            } catch (error) {
-                console.error('Error submitting test:', error);
-                alert('An error occurred while submitting the test.');
-            }
-        }
-    );
-}
-
-        function exitTest() {
-            showConfirmationModal(
-                'Exit Test',
-                'Are you sure you want to exit the test? Your progress may not be saved.',
-                () => {
-                    window.location.href = '/Test/Ready';
-                }
-            );
-        }
-
-        function toggleSidebar() {
-            document.querySelector('.sidebar-left').classList.toggle('active');
-            document.querySelector('.sidebar-right').classList.toggle('active');
-        }
-
-        window.onload = async function () {
-            await loadFlaggedQuestions();
-            startTimer();
-            renderContent();
-            updateQuestionList();
-
-            questions.forEach(q => {
-                initializeQuestionState(q.questionKey, q.part);
-                if (q.children) {
-                    q.children.forEach(child => initializeQuestionState(child.questionKey, child.part));
-                }
-            });
-        };
-
-        document.addEventListener('keydown', (event) => {
-            if (event.key >= '1' && event.key <= '7') {
-                const part = parseInt(event.key);
-                const partBtn = document.querySelector(`.part-btn[data-part="${part}"]`);
-                if (partBtn) {
-                    switchPart(part, partBtn);
-                }
-            }
-
-            if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
-                event.preventDefault();
-                const questionCircles = Array.from(document.querySelectorAll('.question-circle'));
-                if (questionCircles.length === 0) return;
-
-                let currentQuestion = questionCircles.find(circle => circle.classList.contains('active'));
-                let currentIndex = currentQuestion ? questionCircles.indexOf(currentQuestion) : 0;
-
-                if (event.key === 'ArrowUp' && currentIndex > 0) {
-                    currentIndex--;
-                } else if (event.key === 'ArrowDown' && currentIndex < questionCircles.length - 1) {
-                    currentIndex++;
-                }
-
-                const nextQuestion = questionCircles[currentIndex];
-                if (nextQuestion) {
-                    questionCircles.forEach(circle => circle.classList.remove('active'));
-                    nextQuestion.classList.add('active');
-                    const questionKey = nextQuestion.getAttribute('onclick').match(/'([^']+)'/)[1];
-                    scrollToQuestion(questionKey);
                 }
             }
         });
 
-        function getTotalQuestions() {
-            let total = 0;
-            questions.forEach(q => {
-                if (q.parent === null) {
-                    if (q.children && q.children.length > 0) {
-                        total += q.children.length;
-                    } else {
-                        total += 1;
-                    }
-                }
+        document.querySelectorAll('.flag-icon').forEach(flag => {
+            flag.addEventListener('click', () => {
+                const questionKey = flag.getAttribute('data-question-key');
+                toggleFlag(questionKey);
             });
-            return total;
-        }
+        });
 
-        function getAnsweredQuestions() {
-            let answered = 0;
-            questions.forEach(q => {
-                if (q.parent === null && q.children && q.children.length > 0) {
-                    answered += q.children.filter(child => child.userAnswerKey && child.userAnswerKey !== '').length;
-                } else if (q.parent === null && q.userAnswerKey && q.userAnswerKey !== '') {
-                    answered += 1;
+        setupIntersectionObserver();
+    }
+
+    function renderContent() {
+        const container = document.getElementById('main-content-wrapper');
+        if ([1, 2, 5].includes(currentPart)) {
+            renderSimplePart(container);
+        } else {
+            renderComplexPart(container);
+        }
+    }
+
+    // Cập nhật: Hỗ trợ bỏ chọn trên giao diện
+    function updateAnswer(questionKey, answerKey) {
+        let question = questions.find(q => q.questionKey === questionKey);
+        if (!question) {
+            for (const parent of questions) {
+                if (parent.children) {
+                    question = parent.children.find(child => child.questionKey === questionKey);
+                    if (question) break;
                 }
-            });
-            return answered;
-        }
-
-        function updateProgressCircle() {
-            const totalQuestions = getTotalQuestions();
-            const answeredQuestions = getAnsweredQuestions();
-            const text = document.getElementById('progress-text');
-            text.textContent = `${answeredQuestions}/${totalQuestions}`;
-        }
-      window.onpageshow = function (event) {
-            if (event.persisted) {
-                // Trang được tải từ cache, buộc làm mới để gọi OnGetAsync
-                window.location.reload();
             }
+        }
+
+        if (question) {
+            question.userAnswerKey = answerKey; // Có thể là null khi bỏ chọn
+            const answerOptions = document.querySelectorAll(`.answer-option input[name="answer_${questionKey}"]`);
+            answerOptions.forEach(option => {
+                const parent = option.parentElement;
+                if (answerKey === null) {
+                    option.checked = false;
+                    parent.classList.remove('selected');
+                } else if (option.value === answerKey) {
+                    parent.classList.add('selected');
+                } else {
+                    parent.classList.remove('selected');
+                }
+            });
+            updateQuestionList();
+        } else {
+            console.error(`Question with key ${questionKey} not found.`);
+        }
+    }
+
+    function updateQuestionList() {
+        const listContainer = document.getElementById('question-list');
+        const answeredContainer = document.getElementById('answered-count');
+        let html = '';
+        let displayedQuestions = [];
+
+        if (currentPart <= 2 || currentPart === 5) {
+            displayedQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
+        } else {
+            const parentQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
+            displayedQuestions = parentQuestions.reduce((acc, parent) => {
+                return acc.concat(parent.children || []);
+            }, []);
+        }
+
+        const answeredCount = displayedQuestions.filter(q => q.userAnswerKey && q.userAnswerKey !== '').length;
+        const totalCount = displayedQuestions.length;
+        answeredContainer.innerHTML = `Answered: ${answeredCount}/${totalCount}`;
+
+        displayedQuestions.forEach((q, index) => {
+            const isSelected = q.userAnswerKey && q.userAnswerKey !== '';
+            const isFlagged = flaggedQuestions.has(q.questionKey);
+            html += `<a href="#" class="question-circle ${isSelected ? 'selected' : ''} ${isFlagged ? 'flagged' : ''}" onclick="scrollToQuestion('${q.questionKey}')">${q.order || 'N/A'}</a>`;
+        });
+        listContainer.innerHTML = html;
+        updateProgressCircle();
+    }
+
+    function scrollToQuestion(questionKey) {
+        const element = document.getElementById(`question-${questionKey}`);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    function showConfirmationModal(title, message, onConfirm) {
+        const modal = document.getElementById('confirmation-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const confirmBtn = document.getElementById('modal-confirm');
+        const cancelBtn = document.getElementById('modal-cancel');
+
+        modalTitle.textContent = title;
+        modalMessage.textContent = message;
+        modal.classList.add('active');
+
+        confirmBtn.onclick = () => {
+            modal.classList.remove('active');
+            if (onConfirm) onConfirm();
         };
-     
-      
-    </script>
+
+        cancelBtn.onclick = () => {
+            modal.classList.remove('active');
+        };
+    }
+
+    function submitTest() {
+        showConfirmationModal(
+            'Submit Test',
+            'Are you sure you want to submit your test?',
+            async () => {
+                // Tính số phút còn lại từ timeRemaining (tổng số giây)
+                const remainingMinutes = Math.floor(timeRemaining / 60);
+
+                try {
+                    const response = await fetch('/MainTest?handler=SubmitTest', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            testKey: testKey,
+                            resultKey: resultKey,
+                            remainingMinutes: remainingMinutes
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (response.ok && data.success) {
+                        // Cập nhật URL để truyền cả testKey và resultKey
+                        window.location.href = `/Test/ResultTest?testKey=${testKey}&resultKey=${resultKey}`;
+                    } else {
+                        alert('Error submitting test: ' + (data.message || 'Unknown error'));
+                    }
+                } catch (error) {
+                    console.error('Error submitting test:', error);
+                    alert('An error occurred while submitting the test.');
+                }
+            }
+        );
+    }
+
+    function exitTest() {
+        showConfirmationModal(
+            'Exit Test',
+            'Are you sure you want to exit the test? Your progress may not be saved.',
+            () => {
+                window.location.href = '/Test/Ready';
+            }
+        );
+    }
+
+    function toggleSidebar() {
+        const leftSidebar = document.querySelector('.sidebar-left');
+        const rightSidebar = document.querySelector('.sidebar-right');
+
+        // Hành vi trên màn hình nhỏ (dưới 768px)
+        if (window.innerWidth <= 768) {
+            sidebarState = (sidebarState + 1) % 3; // Chuyển trạng thái: 0 -> 1 -> 2 -> 0
+
+            if (sidebarState === 1) {
+                // Trạng thái 1: Hiển thị sidebar-left, ẩn sidebar-right
+                leftSidebar.classList.add('active');
+                rightSidebar.classList.remove('active');
+            } else if (sidebarState === 2) {
+                // Trạng thái 2: Ẩn sidebar-left, hiển thị sidebar-right
+                leftSidebar.classList.remove('active');
+                rightSidebar.classList.add('active');
+            } else {
+                // Trạng thái 0: Ẩn cả hai
+                leftSidebar.classList.remove('active');
+                rightSidebar.classList.remove('active');
+            }
+        } else {
+            // Hành vi trên màn hình lớn (trên 768px): Giữ nguyên như cũ
+            leftSidebar.classList.toggle('active');
+            rightSidebar.classList.toggle('active');
+        }
+    }
+
+    window.onload = async function () {
+        await loadFlaggedQuestions();
+        startTimer();
+        renderContent();
+        updateQuestionList();
+
+        questions.forEach(q => {
+            initializeQuestionState(q.questionKey, q.part);
+            if (q.children) {
+                q.children.forEach(child => initializeQuestionState(child.questionKey, child.part));
+            }
+        });
+    };
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key >= '1' && event.key <= '7') {
+            const part = parseInt(event.key);
+            const partBtn = document.querySelector(`.part-btn[data-part="${part}"]`);
+            if (partBtn) {
+                switchPart(part, partBtn);
+            }
+        }
+
+        if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+            event.preventDefault();
+            const questionCircles = Array.from(document.querySelectorAll('.question-circle'));
+            if (questionCircles.length === 0) return;
+
+            let currentQuestion = questionCircles.find(circle => circle.classList.contains('active'));
+            let currentIndex = currentQuestion ? questionCircles.indexOf(currentQuestion) : 0;
+
+            if (event.key === 'ArrowUp' && currentIndex > 0) {
+                currentIndex--;
+            } else if (event.key === 'ArrowDown' && currentIndex < questionCircles.length - 1) {
+                currentIndex++;
+            }
+
+            const nextQuestion = questionCircles[currentIndex];
+            if (nextQuestion) {
+                questionCircles.forEach(circle => circle.classList.remove('active'));
+                nextQuestion.classList.add('active');
+                const questionKey = nextQuestion.getAttribute('onclick').match(/'([^']+)'/)[1];
+                scrollToQuestion(questionKey);
+            }
+        }
+    });
+
+    function getTotalQuestions() {
+        let total = 0;
+        questions.forEach(q => {
+            if (q.parent === null) {
+                if (q.children && q.children.length > 0) {
+                    total += q.children.length;
+                } else {
+                    total += 1;
+                }
+            }
+        });
+        return total;
+    }
+
+    function getAnsweredQuestions() {
+        let answered = 0;
+        questions.forEach(q => {
+            if (q.parent === null && q.children && q.children.length > 0) {
+                answered += q.children.filter(child => child.userAnswerKey && child.userAnswerKey !== '').length;
+            } else if (q.parent === null && q.userAnswerKey && q.userAnswerKey !== '') {
+                answered += 1;
+            }
+        });
+        return answered;
+    }
+
+    function updateProgressCircle() {
+        const totalQuestions = getTotalQuestions();
+        const answeredQuestions = getAnsweredQuestions();
+        const text = document.getElementById('progress-text');
+        text.textContent = `${answeredQuestions}/${totalQuestions}`;
+    }
+
+    window.onpageshow = function (event) {
+        if (event.persisted) {
+            // Trang được tải từ cache, buộc làm mới để gọi OnGetAsync
+            window.location.reload();
+        }
+    };
+</script>
     <div class="confirmation-modal" id="confirmation-modal">
         <div class="modal-content">
             <h3 id="modal-title">Confirm Action</h3>

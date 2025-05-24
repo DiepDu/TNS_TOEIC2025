@@ -15,273 +15,681 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <!-- Font Awesome for icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
-    <style>
-        body {
-            background-color: #E5F9FF;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: #2C3E50;
-        }
+<style>
 
+  /* Table container for sticky header */
+.table-container {
+    max-height: 500px; /* Giới hạn chiều cao bảng */
+    overflow-y: auto; /* Chỉ cuộn dọc */
+    overflow-x: hidden; /* Tắt cuộn ngang */
+    border-radius: 10px; /* Bo góc */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Bóng đổ nhẹ hơn */
+    background: #FFFFFF; /* Nền trắng */
+    border: 1px solid #ECF1FF; /* Viền dịu hơn */
+    margin-bottom: 20px;
+}
+
+/* Table custom */
+.table-custom {
+    width: 100%;
+    border-collapse: separate; /* Để viền bo góc */
+    border-spacing: 0;
+    background: #FFFFFF;
+    font-size: 0.9375rem; /* 15px */
+    color: #2C3E50;
+}
+
+/* Header bảng */
+.table-custom thead th {
+    position: sticky; /* Cố định header */
+    top: 0;
+    background: linear-gradient(90deg, #4A90E2 0%, #B3CFFA 100%); /* Gradient dịu hơn */
+    color: #FFFFFF; /* Chữ trắng, giữ tương phản đọc được */
+    text-align: center;
+    padding: 14px 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    border-bottom: 2px solid #ECF1FF; /* Viền dưới dịu hơn */
+    z-index: 10;
+}
+
+/* Viền cho các ô header */
+.table-custom thead th:first-child {
+    border-top-left-radius: 10px;
+}
+
+.table-custom thead th:last-child {
+    border-top-right-radius: 10px;
+}
+
+/* Các ô trong tbody */
+.table-custom tbody td {
+    vertical-align: middle;
+    padding: 12px 10px;
+    border-bottom: 1px solid #ECF1FF; /* Viền nhẹ hơn */
+    max-width: 150px; /* Giảm chiều rộng để tránh tràn */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Cắt ngắn nội dung dài */
+}
+
+/* Hiệu ứng hover cho hàng */
+.table-custom tbody tr:hover {
+    background: rgba(174, 214, 241, 0.05); /* Hover nhạt hơn */
+    transition: background-color 0.3s ease;
+    transform: translateX(2px);
+}
+
+/* Viền cho các ô trong bảng */
+.table-custom td,
+.table-custom th {
+    border-right: 1px solid #ECF1FF; /* Viền dọc dịu hơn */
+}
+
+.table-custom td:last-child,
+.table-custom th:last-child {
+    border-right: none;
+}
+
+/* Cột hành động */
+.table-custom td:last-child {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    min-width: 80px; /* Đảm bảo cột hành động đủ rộng */
+}
+
+/* Button styles trong bảng */
+.table-custom .btn-edit,
+.table-custom .btn-delete {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.table-custom .btn-edit {
+    background-color: #F4D03F; /* Màu vàng */
+}
+
+.table-custom .btn-edit:hover {
+    background-color: #D4AC0D; /* Màu vàng đậm */
+    transform: scale(1.1);
+}
+
+.table-custom .btn-delete {
+    background-color: #E74C3C; /* Màu đỏ */
+}
+
+.table-custom .btn-delete:hover {
+    background-color: #C0392B; /* Màu đỏ đậm */
+    transform: scale(1.1);
+}
+
+/* Responsive */
+/* Responsive */
+@@media (max-width: 768px) {
+    .table-container {
+        width: 100%; /* Đảm bảo container co giãn */
+    }
+
+    .table-custom {
+        width: 100%; /* Bảng co giãn theo container */
+    }
+
+    .table-custom tbody td {
+        max-width: 100px; /* Giảm chiều rộng trên mobile */
+    }
+}
+
+    /* Định nghĩa biến CSS */
+    :root {
+        --primary: #1E90FF; /* Màu chính */
+        --primary-dark: #1873CC;
+        --secondary: #F4D03F; /* Màu tìm kiếm */
+        --secondary-dark: #D4AC0D;
+        --danger: #E74C3C; /* Màu xóa */
+        --danger-dark: #C0392B;
+        --success: #27AE60; /* Màu lưu */
+        --success-dark: #219653;
+        --neutral: #95A5A6; /* Màu hủy */
+        --neutral-dark: #7F8C8D;
+        --warning: #E67E22; /* Màu cảnh báo */
+        --info: #3498DB; /* Màu thông tin */
+        --bg-light: #F0F8FF; /* Nền body */
+        --bg-container: #FFFACD; /* Nền container */
+        --bg-white: #FFFFFF;
+        --text-dark: #1A252F; /* Tăng tương phản */
+        --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+        --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.15);
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-lg: 20px;
+        --font-primary: 'Inter', 'Roboto', 'Segoe UI', Tahoma, sans-serif;
+        --font-size-h2: 1.75rem; /* 28px */
+        --font-size-label: 0.875rem; /* 14px */
+        --font-size-input: 1rem; /* 16px */
+        --font-size-table: 0.9375rem; /* 15px */
+    }
+
+    /* Reset và base styles */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: var(--font-primary);
+        background-color: var(--bg-light);
+        color: var(--text-dark);
+        font-size: var(--font-size-input);
+        line-height: 1.6;
+        overflow-x: hidden;
+    }
+
+    /* Container */
+    .container {
+        background-color: var(--bg-container);
+        border-radius: var(--radius-md);
+        padding: 20px;
+        margin: 20px auto;
+        box-shadow: var(--shadow-md);
+        max-width: 1200px;
+        position: relative;
+    }
+
+    /* Typography */
+    h2 {
+        font-size: var(--font-size-h2);
+        font-weight: 700;
+        color: var(--text-dark);
+        margin-bottom: 20px;
+        text-align: center;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .form-label {
+        font-size: var(--font-size-label);
+        font-weight: 500;
+        color: var(--text-dark);
+    }
+
+    /* Search container */
+    .search-container {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 20px;
+        position: relative;
+    }
+
+    .search-input {
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--primary);
+        padding: 8px 15px;
+        background-color: var(--bg-white);
+        font-size: var(--font-size-input);
+        transition: all 0.3s ease;
+        flex: 1;
+    }
+
+    .search-input:focus {
+        border-color: var(--primary-dark);
+        box-shadow: 0 0 6px rgba(30, 144, 255, 0.3);
+        background-color: #F9F9F9;
+        outline: none;
+    }
+
+    .search-input::placeholder {
+        color: var(--neutral);
+        opacity: 0.7;
+        transition: opacity 0.3s ease;
+    }
+
+    .search-input:focus::placeholder {
+        opacity: 0.3;
+    }
+
+    /* Loading indicator */
+    .loading-spinner {
+        display: none;
+        position: absolute;
+        right: 50px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 20px;
+        height: 20px;
+        border: 2px solid var(--primary);
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @@keyframes spin {
+        to { transform: translateY(-50%) rotate(360deg); }
+    }
+
+    /* Buttons */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-lg);
+        padding: 8px;
+        font-size: var(--font-size-input);
+        font-weight: 600;
+        transition: transform 0.2s ease, background-color 0.2s ease;
+        border: none;
+        cursor: pointer;
+    }
+
+    .btn-add,
+    .btn-search {
+        width: 40px;
+        height: 40px;
+        padding: 0;
+    }
+
+    .btn-add {
+        background-color: var(--primary);
+        color: #FFFFFF;
+    }
+
+    .btn-add:hover {
+        background-color: var(--primary-dark);
+        transform: scale(1.05);
+    }
+
+    .btn-search {
+        background-color: var(--secondary);
+        color: #FFFFFF;
+    }
+
+    .btn-search:hover {
+        background-color: var(--secondary-dark);
+        transform: scale(1.05);
+    }
+
+    .btn-save {
+        background-color: var(--success);
+        color: #FFFFFF;
+        padding: 8px 16px;
+    }
+
+    .btn-save:hover {
+        background-color: var(--success-dark);
+        transform: scale(1.05);
+    }
+
+    .btn-cancel {
+        background-color: var(--neutral);
+        color: #FFFFFF;
+        padding: 8px 16px;
+    }
+
+    .btn-cancel:hover {
+        background-color: var(--neutral-dark);
+        transform: scale(1.05);
+    }
+
+    .btn-edit {
+        background-color: var(--secondary);
+        color: #FFFFFF;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+    }
+
+    .btn-edit:hover {
+        background-color: var(--secondary-dark);
+        transform: scale(1.1);
+    }
+
+    /* Nút Delete trong bảng */
+    .table .btn-delete {
+        background-color: var(--danger);
+        color: #FFFFFF;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+    }
+
+    .table .btn-delete:hover {
+        background-color: var(--danger-dark);
+        transform: scale(1.1);
+    }
+
+    /* Nút Delete trong modal Confirm Deletion */
+    .btn-confirm-delete {
+        background-color: var(--danger);
+        color: #FFFFFF;
+        padding: 8px 16px;
+        border-radius: var(--radius-lg);
+    }
+
+    .btn-confirm-delete:hover {
+        background-color: var(--danger-dark);
+        transform: scale(1.05);
+    }
+
+    .btn:disabled {
+        background-color: var(--neutral);
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .btn.loading::after {
+        content: '';
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid #FFFFFF;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin-left: 8px;
+    }
+
+    /* Table container for sticky header */
+    .table-container {
+        max-height: 500px; /* Giới hạn chiều cao bảng */
+        overflow-y: auto;
+        border-radius: var(--radius-sm);
+        box-shadow: var(--shadow-sm);
+    }
+
+    /* Table */
+    .table {
+        background-color: var(--bg-white);
+        width: 100%;
+        font-size: var(--font-size-table);
+        margin-bottom: 0;
+    }
+
+    .table thead th {
+        position: sticky;
+        top: 0;
+        background-color: var(--primary);
+        color: #FFFFFF;
+        text-align: center;
+        padding: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        z-index: 10;
+    }
+
+    .table td {
+        vertical-align: middle;
+        padding: 10px;
+        border-bottom: 1px solid var(--bg-light);
+        max-width: 200px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .table tr:hover {
+        background-color: #F9F9F9;
+        transition: background-color 0.2s ease;
+    }
+
+    /* Action column */
+    .table td:last-child {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+    }
+
+    /* Pagination */
+    .pagination {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 20px;
+    }
+
+    .pagination .page-link {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        color: var(--primary);
+        border: 1px solid var(--primary);
+        font-size: var(--font-size-input);
+        transition: all 0.2s ease;
+    }
+
+    .pagination .page-item.active .page-link {
+        background-color: var(--primary);
+        color: #FFFFFF;
+        border-color: var(--primary);
+    }
+
+    .pagination .page-link:hover {
+        background-color: var(--primary-dark);
+        color: #FFFFFF;
+        border-color: var(--primary-dark);
+        transform: scale(1.05);
+    }
+
+    .pagination .page-item.disabled .page-link {
+        color: var(--neutral);
+        border-color: var(--neutral);
+        cursor: not-allowed;
+    }
+
+    /* Modal */
+    .modal-content {
+        background-color: var(--bg-container);
+        border-radius: var(--radius-md);
+        border: none;
+        box-shadow: var(--shadow-md);
+        animation: slideIn 0.3s ease forwards;
+    }
+
+    @@keyframes slideIn {
+        from { transform: translateY(-50px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    .modal-header {
+        background-color: var(--primary);
+        color: #FFFFFF;
+        border-top-left-radius: var(--radius-md);
+        border-top-right-radius: var(--radius-md);
+        padding: 15px 20px;
+    }
+
+    .modal-title {
+        font-size: var(--font-size-h2);
+        font-weight: 600;
+    }
+
+    .modal-body {
+        padding: 20px;
+    }
+
+    /* Form layout */
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 15px;
+    }
+
+    .form-control {
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--primary);
+        background-color: var(--bg-white);
+        font-size: var(--font-size-input);
+        padding: 8px 12px;
+        transition: all 0.2s ease;
+    }
+
+    .form-control:focus {
+        border-color: var(--primary-dark);
+        box-shadow: 0 0 6px rgba(30, 144, 255, 0.3);
+        background-color: #F9F9F9;
+        outline: none;
+    }
+
+    .form-control.is-invalid {
+        border-color: var(--danger);
+        background-color: #FFF2F2;
+    }
+
+    .form-control.is-valid {
+        border-color: var(--success);
+        background-color: #E8F5E9;
+    }
+
+    /* Alert */
+    .alert {
+        position: fixed;
+        min-width: 300px;
+        border-radius: var(--radius-sm);
+        box-shadow: var(--shadow-sm);
+        padding: 15px;
+        z-index: 1050;
+        animation: slideInRight 0.3s ease forwards;
+    }
+
+    .alert.top-right {
+        top: 20px;
+        right: 20px;
+    }
+
+    .alert.top-center {
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    .alert.bottom-right {
+        bottom: 20px;
+        right: 20px;
+    }
+
+    @@keyframes slideInRight {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+
+    .alert-success {
+        background-color: var(--success);
+        color: #FFFFFF;
+    }
+
+    .alert-danger {
+        background-color: var(--danger);
+        color: #FFFFFF;
+    }
+
+    .alert-warning {
+        background-color: var(--warning);
+        color: #FFFFFF;
+    }
+
+    .alert-info {
+        background-color: var(--info);
+        color: #FFFFFF;
+    }
+
+    .alert .btn-close {
+        filter: invert(1);
+        opacity: 0.8;
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
         .container {
-            background-color: #FFF9E5;
-            border-radius: 15px;
-            padding: 25px;
-            margin: 30px auto;
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
-            max-width: 1200px;
-        }
-
-        h2 {
-            color: #2C3E50;
-            font-weight: 700;
-            margin-bottom: 20px;
-            text-align: center;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .btn-add {
-            background-color: #3498DB;
-            border-color: #3498DB;
-            border-radius: 25px;
-            padding: 10px 20px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-            .btn-add:hover {
-                background-color: #2980B9;
-                border-color: #2980B9;
-                transform: translateY(-2px);
-            }
-
-        .search-container {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .search-input {
-            border-radius: 25px;
-            border: 1px solid #3498DB;
-            padding: 10px 15px;
-            background-color: #FFFFFF;
-            transition: all 0.3s ease;
-        }
-
-            .search-input:focus {
-                border-color: #2980B9;
-                box-shadow: 0 0 8px rgba(52, 152, 219, 0.3);
-                background-color: #F9F9F9;
-            }
-
-        .btn-search {
-            background-color: #F1C40F;
-            border-color: #F1C40F;
-            border-radius: 25px;
-            padding: 10px 20px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-            .btn-search:hover {
-                background-color: #D4AC0D;
-                border-color: #D4AC0D;
-                transform: translateY(-2px);
-            }
-
-        .table {
-            background-color: #FFFFFF;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-        }
-
-            .table th {
-                background-color: #3498DB;
-                color: #FFFFFF;
-                text-align: center;
-                padding: 15px;
-                font-weight: 600;
-                text-transform: uppercase;
-            }
-
-            .table td {
-                vertical-align: middle;
-                padding: 12px;
-                border-bottom: 1px solid #E5F9FF;
-            }
-
-            .table tr:hover {
-                background-color: #F9F9F9;
-                transition: background-color 0.2s ease;
-            }
-
-        .btn-action {
-            border-radius: 20px;
-            padding: 6px 12px;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-
-        .btn-edit {
-            background-color: #F1C40F;
-            border-color: #F1C40F;
-        }
-
-            .btn-edit:hover {
-                background-color: #D4AC0D;
-                border-color: #D4AC0D;
-                transform: translateY(-2px);
-            }
-
-        .btn-delete {
-            background-color: #E74C3C;
-            border-color: #E74C3C;
-        }
-
-            .btn-delete:hover {
-                background-color: #C0392B;
-                border-color: #C0392B;
-                transform: translateY(-2px);
-            }
-
-        .pagination .page-link {
-            border-radius: 50%;
-            margin: 0 5px;
-            color: #3498DB;
-            border: 1px solid #3498DB;
-            transition: all 0.3s ease;
-        }
-
-        .pagination .page-item.active .page-link {
-            background-color: #3498DB;
-            color: #FFFFFF;
-            border-color: #3498DB;
-        }
-
-        .pagination .page-link:hover {
-            background-color: #2980B9;
-            color: #FFFFFF;
-            border-color: #2980B9;
-        }
-
-        .modal-content {
-            background-color: #FFF9E5;
-            border-radius: 15px;
-            border: none;
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-        }
-
-        .modal-header {
-            background-color: #3498DB;
-            color: #FFFFFF;
-            border-top-left-radius: 15px;
-            border-top-right-radius: 15px;
-            padding: 15px 20px;
-        }
-
-        .modal-title {
-            font-weight: 600;
-        }
-
-        .modal-body {
-            padding: 20px;
-        }
-
-        .form-control {
-            border-radius: 10px;
-            border: 1px solid #3498DB;
-            background-color: #FFFFFF;
-            transition: all 0.3s ease;
-        }
-
-            .form-control:focus {
-                border-color: #2980B9;
-                box-shadow: 0 0 8px rgba(52, 152, 219, 0.3);
-                background-color: #F9F9F9;
-            }
-
-        .btn-save {
-            background-color: #27AE60;
-            border-color: #27AE60;
-            border-radius: 25px;
-            padding: 10px 20px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-            .btn-save:hover {
-                background-color: #219653;
-                border-color: #219653;
-                transform: translateY(-2px);
-            }
-
-        .btn-cancel {
-            background-color: #95A5A6;
-            border-color: #95A5A6;
-            border-radius: 25px;
-            padding: 10px 20px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-            .btn-cancel:hover {
-                background-color: #7F8C8D;
-                border-color: #7F8C8D;
-                transform: translateY(-2px);
-            }
-
-        .alert {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1050;
-            min-width: 300px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin: 10px;
             padding: 15px;
         }
 
-        .alert-success {
-            background-color: #27AE60;
-            color: #FFFFFF;
+        .search-container {
+            flex-wrap: wrap;
         }
 
-        .alert-danger {
-            background-color: #E74C3C;
-            color: #FFFFFF;
+        .search-input {
+            flex: 1 1 100%;
         }
-    </style>
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        .table {
+            min-width: 600px;
+        }
+
+        .modal-dialog {
+            margin: 10px;
+        }
+
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 576px) {
+        h2 {
+            font-size: 1.5rem;
+        }
+
+        .btn-add,
+        .btn-search {
+            width: 36px;
+            height: 36px;
+        }
+
+        .pagination .page-link {
+            width: 36px;
+            height: 36px;
+            font-size: 0.875rem;
+        }
+    }
+</style>
 </head>
 <body>
     <div class="container">
         <h2><i class="fas fa-building me-2"></i>Department management</h2>
 
-        <!-- Nút thêm và tìm kiếm -->
         <div class="search-container">
-            <button class="btn btn-add"><i class="fas fa-plus me-2"></i>Add Department</button>
+            <button class="btn btn-add" title="Add Department"><i class="fas fa-plus"></i></button>
             <input type="text" class="form-control search-input" id="searchInput" placeholder="Tìm kiếm theo DepartmentID hoặc Tên phòng ban" />
-            <button class="btn btn-search" onclick="searchDepartments()"><i class="fas fa-search me-2"></i>Search</button>
+            <button class="btn btn-search" title="Search" onclick="searchDepartments()"><i class="fas fa-search"></i></button>
+            <div class="loading-spinner"></div>
         </div>
 
         <!-- Danh sách phòng ban -->
-        <table class="table table-bordered table-hover">
-            <thead>
-                <tr>
-                    <th>DepartmentID</th>
-                    <th>DepartmentName</th>
-                    <th>ShortNName</th>
-                    <th>Address</th>
-                    <th>Parent</th>
-                    <th>Act</th>
-                </tr>
-            </thead>
-            <tbody id="departmentTableBody">
-                <!-- Dữ liệu sẽ được render bằng JavaScript -->
-            </tbody>
-        </table>
+        <div class="table-container">
+            <table class="table table-hover table-custom">
+                <thead>
+                    <tr>
+                        <th>DepartmentID</th>
+                        <th>DepartmentName</th>
+                        <th>ShortName</th>
+                        <th>Address</th>
+                        <th>Parent</th>
+                        <th>Act</th>
+                    </tr>
+                </thead>
+                <tbody id="departmentTableBody">
+                    <!-- Dữ liệu sẽ được render bằng JavaScript -->
+                </tbody>
+            </table>
+        </div>
 
         <!-- Phân trang -->
         <nav aria-label="Page navigation">
@@ -368,7 +776,9 @@
                     Are you sure you want to delete this department?
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-delete" id="confirmDeleteBtn"><i class="fas fa-trash me-2"></i>Delete</button>
+                    <button type="button" class="btn btn-confirm-delete" id="confirmDeleteBtn">
+                        <i class="fas fa-trash me-2"></i>Delete
+                    </button>
                     <button type="button" class="btn btn-cancel" data-bs-dismiss="modal"><i class="fas fa-times me-2"></i>Cancel</button>
                 </div>
             </div>
@@ -442,26 +852,26 @@
                 const parentShortName = dept.ParentShortName || 'Do not'; // Giữ nguyên PascalCase
                 const departmentKey = dept.DepartmentKey || ''; // Giữ nguyên PascalCase
 
-                tbody.append(`
-                            <tr>
-                                <td>${departmentID}</td>
-                                <td>${departmentName}</td>
-                                <td>${shortName}</td>
-                                <td>${address}</td>
-                                <td>${parentShortName}</td>
-                                <td>
-                                    <button class="btn btn-action btn-edit" onclick="showEditModal('${departmentKey}')">
-                                        <i class="fas fa-edit"></i> Edit
-                                    </button>
-                                    <button class="btn btn-action btn-delete" onclick="showDeleteModal('${departmentKey}')">
-                                        <i class="fas fa-trash"></i> Delete
-                                    </button>
-                                </td>
-                            </tr>
-                        `);
+                    tbody.append(`
+                <tr>
+                    <td>${departmentID}</td>
+                    <td>${departmentName}</td>
+                    <td>${shortName}</td>
+                    <td>${address}</td>
+                    <td>${parentShortName}</td>
+                    <td>
+                        <button class="btn btn-edit" title="Edit" onclick="showEditModal('${departmentKey}')"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-delete" title="Delete" onclick="showDeleteModal('${departmentKey}')"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+            `);
             });
         }
-
+            function searchDepartments() {
+                $('.loading-spinner').show();
+                const searchValue = $('#searchInput').val().trim();
+                loadDepartments(1, searchValue).always(() => $('.loading-spinner').hide());
+            }
         function renderPagination(totalItems) {
             const totalPages = Math.ceil(totalItems / pageSize);
             const pagination = $('#pagination');

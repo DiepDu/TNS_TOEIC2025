@@ -97,7 +97,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
         public static JsonResult GetList(string Search, int Level, DateTime FromDate, DateTime ToDate, int PageSize, int PageNumber, string StatusFilter)
         {
             string zMessage = "";
-            string zSQL = @"SELECT QuestionKey, QuestionText, QuestionImage, QuestionVoice, SkillLevel, AmountAccess, Publish, RecordStatus 
+            string zSQL = @"SELECT QuestionKey, QuestionText, QuestionImage, QuestionVoice, SkillLevel, AmountAccess, Publish, RecordStatus, Anomaly, CorrectRate
                        FROM [dbo].[TEC_Part1_Question] 
                        WHERE (CreatedOn >= @FromDate AND CreatedOn <= @ToDate) 
                        AND QuestionText LIKE @Search 

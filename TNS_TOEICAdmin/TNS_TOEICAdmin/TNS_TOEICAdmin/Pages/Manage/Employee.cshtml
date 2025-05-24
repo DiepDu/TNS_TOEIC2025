@@ -1,8 +1,8 @@
-﻿@page 
+﻿@page
 @model TNS_TOEICAdmin.Pages.Manage.EmployeeModel
 @{
     Layout = "_Layout";
-    ViewData["Title"] = "Quản lý nhân viên";
+    ViewData["Title"] = "Employee Management";
 }
 
 <style>
@@ -73,14 +73,38 @@
             outline: none;
         }
 
-    .btn-add, .btn-search, .btn-save, .btn-cancel {
+    .btn-add, .btn-search, .btn-save, .btn-cancel, #loadMoreBtn {
         border-radius: 30px;
-        padding: 10px 20px;
+        padding: 12px 24px;
         font-weight: 600;
-        transition: all 0.4s ease;
+        transition: all 0.3s ease;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         white-space: nowrap;
+        position: relative;
+        overflow: hidden;
     }
+
+        .btn-add::after, .btn-search::after, .btn-save::after, .btn-cancel::after, #loadMoreBtn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.5s ease, height 0.5s ease;
+        }
+
+        .btn-add:hover::after, .btn-search:hover::after, .btn-save:hover::after, .btn-cancel:hover::after, #loadMoreBtn:hover::after {
+            width: 200px;
+            height: 200px;
+        }
+
+        .btn-add:active, .btn-search:active, .btn-save:active, .btn-cancel:active, #loadMoreBtn:active {
+            transform: scale(0.95);
+        }
 
     .btn-add {
         background: linear-gradient(45deg, #3498DB, #5DADE2);
@@ -90,8 +114,8 @@
 
         .btn-add:hover {
             background: linear-gradient(45deg, #2980B9, #4D94DB);
-            transform: translateY(-3px) scale(1.05);
-            box-shadow: 0 6px 16px rgba(52, 152, 219, 0.3);
+            transform: translateY(-4px) scale(1.08) rotate(2deg);
+            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.4);
             color: #FFFFFF;
         }
 
@@ -99,13 +123,47 @@
         background: linear-gradient(45deg, #F1C40F, #F7DC6F);
         border: none;
         color: #2C3E50;
+        width: 60px;
+        height: 60px;
+        padding: 0;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
     }
 
         .btn-search:hover {
             background: linear-gradient(45deg, #D4AC0D, #E4C107);
-            transform: translateY(-3px) scale(1.05);
-            box-shadow: 0 6px 16px rgba(241, 196, 15, 0.3);
+            transform: translateY(-4px) scale(1.08);
+            box-shadow: 0 8px 20px rgba(241, 196, 15, 0.4);
         }
+
+    #loadMoreBtn {
+        background: linear-gradient(45deg, #F1C40F, #F7DC6F);
+        border: none;
+        color: #2C3E50;
+        width: auto;
+        padding: 12px 24px;
+        border-radius: 30px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        #loadMoreBtn:hover {
+            background: linear-gradient(45deg, #D4AC0D, #E4C107);
+            transform: translateY(-4px) scale(1.08) rotate(2deg);
+            box-shadow: 0 8px 20px rgba(241, 196, 15, 0.4);
+        }
+
+    .load-more-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        margin-top: 20px;
+    }
 
     .btn-save {
         background: linear-gradient(45deg, #27AE60, #52BE80);
@@ -115,8 +173,8 @@
 
         .btn-save:hover {
             background: linear-gradient(45deg, #219653, #48A368);
-            transform: translateY(-3px) scale(1.05);
-            box-shadow: 0 6px 16px rgba(39, 174, 96, 0.3);
+            transform: translateY(-4px) scale(1.08) rotate(2deg);
+            box-shadow: 0 8px 20px rgba(39, 174, 96, 0.4);
         }
 
     .btn-cancel {
@@ -127,24 +185,48 @@
 
         .btn-cancel:hover {
             background: linear-gradient(45deg, #7F8C8D, #A6B1B2);
-            transform: translateY(-3px) scale(1.05);
-            box-shadow: 0 6px 16px rgba(149, 165, 166, 0.3);
+            transform: translateY(-4px) scale(1.08) rotate(2deg);
+            box-shadow: 0 8px 20px rgba(149, 165, 166, 0.4);
         }
 
     .btn-action {
-        width: 40px;
-        height: 40px;
+        width: 32px;
+        height: 32px;
         border-radius: 50%;
         padding: 0;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        margin: 0 6px;
-        font-size: 18px;
+        margin: 0 4px;
+        font-size: 16px;
         border: none;
-        transition: all 0.4s ease;
+        transition: all 0.3s ease;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        position: relative;
+        overflow: hidden;
     }
+
+        .btn-action::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.5s ease, height 0.5s ease;
+        }
+
+        .btn-action:hover::after {
+            width: 100px;
+            height: 100px;
+        }
+
+        .btn-action:active {
+            transform: scale(0.9);
+        }
 
         .btn-action i {
             margin: 0;
@@ -157,8 +239,8 @@
 
         .btn-edit:hover {
             background: linear-gradient(45deg, #D4AC0D, #E4C107);
-            transform: scale(1.1);
-            box-shadow: 0 6px 16px rgba(241, 196, 15, 0.3);
+            transform: scale(1.15) rotate(5deg);
+            box-shadow: 0 8px 20px rgba(241, 196, 15, 0.4);
         }
 
     .btn-delete {
@@ -168,32 +250,59 @@
 
         .btn-delete:hover {
             background: linear-gradient(45deg, #C0392B, #E57373);
-            transform: scale(1.1);
-            box-shadow: 0 6px 16px rgba(231, 76, 60, 0.3);
+            transform: scale(1.15) rotate(5deg);
+            box-shadow: 0 8px 20px rgba(231, 76, 60, 0.4);
         }
 
-    .table {
-        background: #FFFFFF;
-        border-radius: 15px;
-        overflow: hidden;
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
-        border-collapse: separate;
-        border-spacing: 0;
+    .action-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
     }
 
-        .table th {
+    .table-container {
+        max-height: 500px;
+        overflow-y: auto;
+        position: relative;
+        background: #FFFFFF;
+        border-radius: 15px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+    }
+
+    .table {
+        width: 100%;
+        background: #FFFFFF;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin-bottom: 0;
+    }
+
+        .table thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
             background: linear-gradient(90deg, #3498DB, #5DADE2);
-            color: #FFFFFF;
-            text-align: center;
-            padding: 16px;
-            font-weight: 600;
-            font-size: 16px;
         }
 
+        .table th {
+            color: #FFFFFF;
+            text-align: center;
+            padding: 12px;
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+            .table th:first-child {
+                background: linear-gradient(90deg, #1A6DB8, #3B8ECE);
+                box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.15);
+            }
+
         .table td {
+            background: #FFFFFF;
             vertical-align: middle;
-            padding: 14px;
+            padding: 8px;
             border-bottom: 1px solid #ECF0F1;
+            font-size: 14px;
         }
 
         .table tr:hover {
@@ -201,32 +310,25 @@
             transition: background 0.3s ease;
         }
 
-    .pagination .page-link {
-        border-radius: 50%;
-        margin: 0 6px;
-        color: #3498DB;
-        border: 2px solid #3498DB;
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.3s ease;
+    .table-container::-webkit-scrollbar {
+        width: 8px;
     }
 
-    .pagination .page-item.active .page-link {
-        background: #3498DB;
-        color: #FFFFFF;
-        border-color: #3498DB;
-    }
-
-    .pagination .page-link:hover {
+    .table-container::-webkit-scrollbar-track {
         background: #ECF0F1;
-        color: #2980B9;
+        border-radius: 10px;
     }
+
+    .table-container::-webkit-scrollbar-thumb {
+        background: #3498DB;
+        border-radius: 10px;
+    }
+
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #2980B9;
+        }
 
     .modal-content {
-        background: #FFF9E5;
         border-radius: 20px;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
         border: none;
@@ -238,6 +340,11 @@
         border-top-left-radius: 20px;
         border-top-right-radius: 20px;
         padding: 15px 20px;
+    }
+
+    .modal-body {
+        background: #FFF9E5;
+        padding: 20px;
     }
 
     .modal-title {
@@ -275,30 +382,32 @@
         <div class="search-group">
             <input type="text" class="form-control search-input" id="searchInput" placeholder="Search by name..." />
             <select class="form-control" id="statusFilter">
-                <option value="">All Statuses</option>
-                <option value="activate">Activate</option>
-                <option value="inactivate">Inactivate</option>
+                <option value="">All Status</option>
+                <option value="activate">Active</option>
+                <option value="inactivate">Inactive</option>
             </select>
-            <button class="btn btn-search" onclick="searchEmployees()"><i class="fas fa-search me-2"></i>Search</button>
+            <button class="btn btn-search" onclick="searchEmployees()"><i class="fas fa-search"></i></button>
         </div>
     </div>
 
-    <table class="table table-bordered table-hover">
-        <thead>
-            <tr>
-                <th>Employee ID</th>
-                <th>Full Name</th>
-                <th>Department</th>
-                <th>Company Email</th>
-                <th>Status</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody id="employeeTableBody"></tbody>
-    </table>
+    <div class="table-container">
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <th>Employee ID</th>
+                    <th>Full Name</th>
+                    <th>Department</th>
+                    <th>Company Email</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="employeeTableBody"></tbody>
+        </table>
+    </div>
 
-    <div class="text-center mt-3">
-        <button class="btn btn-search" id="loadMoreBtn" style="display: none;">
+    <div class="load-more-container text-center mt-3">
+        <button class="btn" id="loadMoreBtn" style="display: none;">
             <i class="fas fa-plus me-2"></i>Load More
         </button>
     </div>
@@ -360,26 +469,25 @@
     <script>
         let employees = [];
         let departments = [];
-        let loadedRows = 0; // Track loaded rows
+        let loadedRows = 0;
         const pageSize = 10;
         let searchTerm = '';
         let statusFilter = '';
         let isEditMode = false;
-        let isLoading = false; // Prevent multiple calls while loading
+        let isLoading = false;
 
         $(document).ready(function () {
-            loadEmployees(); // Load initial data
+            loadEmployees();
             loadDepartments();
-            $('.btn-add').on('click', showAddModal); // Keep for "Add Employee" button
-            $('#loadMoreBtn').on('click', loadMoreEmployees); // Keep for "Load More" button
+            $('.btn-add').on('click', showAddModal);
+            $('#loadMoreBtn').on('click', loadMoreEmployees);
         });
 
-        // Load employees function
         function loadEmployees(search = '', status = '') {
             searchTerm = search;
             statusFilter = status;
-            loadedRows = 0; // Reset when loading new
-            employees = []; // Reset employee list
+            loadedRows = 0;
+            employees = [];
 
             const dataToSend = {
                 offset: loadedRows,
@@ -395,12 +503,11 @@
                 data: dataToSend,
                 cache: false,
                 success: function (response) {
-                    console.log('Response:', response); // Debug
                     if (response && response.data) {
                         employees = Array.isArray(response.data) ? response.data : [];
-                        loadedRows += employees.length;
-                        renderEmployees(true); // true to not clear table
-                        toggleLoadMoreButton(response.hasMore); // Check if more data to load
+                        loadedRows = employees.length;
+                        renderEmployees(true);
+                        toggleLoadMoreButton(response.hasMore);
                     } else {
                         renderEmployees(true);
                         toggleLoadMoreButton(false);
@@ -408,14 +515,13 @@
                     isLoading = false;
                 },
                 error: function (xhr, status, error) {
-                    console.error('Error loading employees:', error); // Debug error
-                    showAlert('danger', 'Failed to load employee list.');
+                    console.error('Error loading employees:', error);
+                    showAlert('danger', 'Failed to load employees.');
                     isLoading = false;
                 }
             });
         }
 
-        // Load more data function
         function loadMoreEmployees() {
             if (isLoading) return;
 
@@ -433,25 +539,25 @@
                 data: dataToSend,
                 cache: false,
                 success: function (response) {
-                    console.log('Response:', response); // Debug
                     if (response && response.data) {
                         const newEmployees = Array.isArray(response.data) ? response.data : [];
-                        employees = employees.concat(newEmployees);
+                        employees = employees.concat(newEmployees.filter(newEmp =>
+                            !employees.some(existingEmp => existingEmp.EmployeeKey === newEmp.EmployeeKey)
+                        ));
                         loadedRows += newEmployees.length;
-                        renderEmployees(false); // false to append to table
+                        renderEmployees(true); // Clear table and re-render all employees
                         toggleLoadMoreButton(response.hasMore);
                     }
                     isLoading = false;
                 },
                 error: function (xhr, status, error) {
-                    console.error('Error loading more employees:', error); // Debug error
+                    console.error('Error loading more employees:', error);
                     showAlert('danger', 'Failed to load more employees.');
                     isLoading = false;
                 }
             });
         }
 
-        // Render employees function
         function renderEmployees(clearTable = false) {
             const tbody = $('#employeeTableBody');
             if (clearTable) tbody.empty();
@@ -462,24 +568,23 @@
                     const leavingDate = emp.LeavingDate ? new Date(emp.LeavingDate) : null;
                     const isInactivate = leavingDate && currentDate > leavingDate;
                     const row = `<tr>
-                                            <td>${emp.EmployeeID || 'N/A'}</td>
-                                            <td>${(emp.LastName || '') + ' ' + (emp.FirstName || '')}</td>
-                                            <td>${emp.DepartmentName || 'No Department'}</td>
-                                            <td>${emp.CompanyEmail || 'N/A'}</td>
-                                            <td>${isInactivate ? 'Inactivate' : 'Activate'}</td>
-                                            <td>
-                                                <button class="btn btn-action btn-edit" onclick="showEditModal('${emp.EmployeeKey}')"><i class="fas fa-edit"></i></button>
-                                                <button class="btn btn-action btn-delete" onclick="deleteEmployee('${emp.EmployeeKey}', ${isInactivate ? 'true' : 'false'})"><i class="fas fa-trash"></i></button>
-                                            </td>
-                                        </tr>`;
+                                <td>${emp.EmployeeID || 'N/A'}</td>
+                                <td>${(emp.LastName || '') + ' ' + (emp.FirstName || '')}</td>
+                                <td>${emp.DepartmentName || 'No Department'}</td>
+                                <td>${emp.CompanyEmail || 'N/A'}</td>
+                                <td>${isInactivate ? 'Inactive' : 'Active'}</td>
+                                <td class="action-buttons">
+                                    <button class="btn btn-action btn-edit" onclick="showEditModal('${emp.EmployeeKey}')"><i class="fas fa-edit"></i></button>
+                                    <button class="btn btn-action btn-delete" onclick="deleteEmployee('${emp.EmployeeKey}', ${isInactivate ? 'true' : 'false'})"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>`;
                     tbody.append(row);
                 });
             } else if (clearTable) {
-                tbody.append('<tr><td colspan="6" class="text-center">No Data</td></tr>');
+                tbody.append('<tr><td colspan="6" class="text-center">No data available</td></tr>');
             }
         }
 
-        // Show/hide Load More button
         function toggleLoadMoreButton(hasMore) {
             const loadMoreBtn = $('#loadMoreBtn');
             if (hasMore) {
@@ -498,7 +603,7 @@
                     populateDepartmentDropdown();
                 },
                 error: function () {
-                    showAlert('danger', 'Failed to load department list.');
+                    showAlert('danger', 'Failed to load departments.');
                 }
             });
         }
@@ -542,7 +647,7 @@
         function searchEmployees() {
             const searchValue = $('#searchInput').val().trim();
             const statusValue = $('#statusFilter').val();
-            loadEmployees(searchValue, statusValue); // Reload from start when searching
+            loadEmployees(searchValue, statusValue);
         }
 
         $('#employeeForm').on('submit', function (e) {
@@ -567,7 +672,7 @@
 
             $.ajax({
                 url: url,
-                method: 'POST', // Keep POST for both Create and Update for consistency
+                method: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify(employee),
                 headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
@@ -575,13 +680,13 @@
                     if (response.success) {
                         $('#employeeModal').modal('hide');
                         showAlert('success', response.message || (isEditMode ? 'Employee updated successfully!' : 'Employee added successfully!'));
-                        loadEmployees(searchTerm, statusFilter); // Reload from start with Load More
+                        loadEmployees(searchTerm, statusFilter);
                     } else {
                         showAlert('danger', response.message || 'Error saving employee!');
                     }
                 },
                 error: function (xhr, status, error) {
-                    console.error('Error:', xhr.status, error); // Detailed debug
+                    console.error('Error:', xhr.status, error);
                     showAlert('danger', isEditMode ? `Update failed: ${xhr.statusText}` : `Add failed: ${xhr.statusText}`);
                 }
             });
@@ -589,33 +694,25 @@
 
         function deleteEmployee(employeeKey, isSoftDeleted) {
             const confirmMessage = isSoftDeleted
-                ? 'Employee has been soft deleted. Do you want to permanently delete this employee?'
+                ? 'This employee is already soft deleted. Do you want to permanently delete this employee?'
                 : 'Are you sure you want to soft delete this employee?';
             const handler = isSoftDeleted ? 'Delete' : 'SoftDelete';
 
             if (confirm(confirmMessage)) {
                 $.ajax({
-                    url: `/Manage/Employee?handler=${handler}&employeeKey=${employeeKey}`, // Send via query string
-                    method: 'GET', // Matches OnGetDelete and OnGetSoftDelete
+                    url: `/Manage/Employee?handler=${handler}&employeeKey=${employeeKey}`,
+                    method: 'GET',
                     headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
-                    beforeSend: function () {
-                        console.log('Sending GET request to:', `/Manage/Employee?handler=${handler}&employeeKey=${employeeKey}`);
-                    },
                     success: function (response) {
-                        console.log('Response:', response);
                         if (response && response.success) {
-                            showAlert('success', response.message || (isSoftDeleted ? 'Employee deleted successfully!' : 'Employee soft deleted successfully!'));
-                            loadEmployees(searchTerm, statusFilter); // Reload with Load More
+                            showAlert('success', response.message || (isSoftDeleted ? 'Employee permanently deleted!' : 'Employee soft deleted!'));
+                            loadEmployees(searchTerm, statusFilter);
                         } else {
                             showAlert('danger', response.message || `Error ${isSoftDeleted ? 'permanently deleting' : 'soft deleting'} employee!`);
                         }
                     },
                     error: function (xhr, status, error) {
-                        console.error('Error details:', {
-                            status: xhr.status,
-                            statusText: xhr.statusText,
-                            responseText: xhr.responseText
-                        });
+                        console.error('Error details:', { status: xhr.status, statusText: xhr.statusText, responseText: xhr.responseText });
                         showAlert('danger', `Error ${isSoftDeleted ? 'permanently deleting' : 'soft deleting'} employee: ${xhr.statusText || 'Unknown reason'}`);
                     }
                 });
@@ -624,11 +721,11 @@
 
         function showAlert(type, message) {
             const alertDiv = $(`
-                                    <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-                                        ${message}
-                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                                    </div>
-                                `);
+                        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                            ${message}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    `);
             alertDiv.css({
                 position: 'fixed',
                 top: '20px',

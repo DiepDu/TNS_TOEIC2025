@@ -14,6 +14,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
+        /* CSS giữ nguyên như bạn cung cấp */
         * {
             margin: 0;
             padding: 0;
@@ -33,17 +34,17 @@
             position: relative;
         }
 
-            body::before {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: url('https://www.transparenttextures.com/patterns/stardust.png');
-                opacity: 0.1;
-                z-index: 0;
-            }
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('https://www.transparenttextures.com/patterns/stardust.png');
+            opacity: 0.1;
+            z-index: 0;
+        }
 
         .main-container {
             display: flex;
@@ -53,7 +54,7 @@
 
         .main-content {
             flex: 1;
-            margin: 0 160px 0 300px; /* Giảm margin-right từ 250px xuống 160px để dịch sang phải */
+            margin: 0 160px 0 300px;
             padding: 20px;
             overflow-y: auto;
             min-height: 100vh;
@@ -83,12 +84,12 @@
             border-radius: 10px;
         }
 
-            .main-content::-webkit-scrollbar-thumb:hover {
-                background: #81D4FA;
-            }
+        .main-content::-webkit-scrollbar-thumb:hover {
+            background: #81D4FA;
+        }
 
         .test-info {
-            display: none; /* Ẩn phần test-info trong main-content */
+            display: none;
         }
 
         .test-info-item {
@@ -98,19 +99,19 @@
         .test-info-label {
             font-weight: 700;
             color: #0288D1;
-            flex: 0 0 150px; /* Tăng chiều rộng từ 120px lên 150px để chứa nhãn dài */
-            text-align: left; /* Căn trái nhãn */
+            flex: 0 0 150px;
+            text-align: left;
             position: relative;
-            margin-right: 10px; /* Khoảng cách giữa nhãn và giá trị */
-            white-space: nowrap; /* Ngăn nhãn xuống hàng */
+            margin-right: 10px;
+            white-space: nowrap;
         }
 
         .test-info-value {
             font-weight: 400;
             color: #333;
-            flex: 1; /* Giá trị chiếm phần còn lại */
-            text-align: left; /* Căn trái giá trị */
-            margin-left: 5px; /* Thêm margin-left để dịch nội dung động sang phải */
+            flex: 1;
+            text-align: left;
+            margin-left: 5px;
         }
 
         .time-spent, .test-score {
@@ -122,12 +123,12 @@
         }
 
         .test-info-left {
-            width: 300px; /* Tăng chiều rộng để hiển thị đủ thông tin */
+            width: 300px;
             background: #FFECB3;
             padding: 20px;
             display: flex;
             flex-direction: column;
-            justify-content: center; /* Căn giữa theo chiều dọc */
+            justify-content: center;
             height: 100vh;
             position: fixed;
             left: 0;
@@ -136,16 +137,16 @@
             z-index: 1;
         }
 
-            .test-info-left h2 {
-                font-weight: 600;
-                color: #0288D1;
-                margin-bottom: 20px;
-                text-align: center;
-            }
+        .test-info-left h2 {
+            font-weight: 600;
+            color: #0288D1;
+            margin-bottom: 20px;
+            text-align: center;
+        }
 
         .test-info-item {
             display: flex;
-            align-items: center; /* Căn giữa theo chiều dọc */
+            align-items: center;
             margin-bottom: 15px;
             font-size: 1rem;
         }
@@ -153,32 +154,32 @@
         .test-info-label {
             font-weight: 700;
             color: #0288D1;
-            flex: 0 0 120px; /* Chiều rộng cố định cho nhãn */
-            text-align: left; /* Căn trái nhãn */
+            flex: 0 0 120px;
+            text-align: left;
             position: relative;
-            margin-right: 5px; /* Giảm khoảng cách từ 10px xuống 5px để dấu : gần nhãn hơn */
+            margin-right: 5px;
         }
 
-            .test-info-label::after {
-                content: '';
-                position: absolute;
-                right: -10px; /* Dịch dấu : gần nhãn hơn */
-                color: #0288D1;
-            }
+        .test-info-label::after {
+            content: '';
+            position: absolute;
+            right: -10px;
+            color: #0288D1;
+        }
 
         .test-info-value {
             font-weight: 400;
             color: #333;
-            flex: 1; /* Giá trị chiếm phần còn lại */
-            text-align: left; /* Căn trái giá trị */
+            flex: 1;
+            text-align: left;
         }
 
-            .test-info-value.time-spent, .test-info-value.test-score {
-                font-weight: 600;
-                background: linear-gradient(90deg, #0288D1, #4FC3F7);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-            }
+        .test-info-value.time-spent, .test-info-value.test-score {
+            font-weight: 600;
+            background: linear-gradient(90deg, #0288D1, #4FC3F7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
 
         .exit-btn {
             padding: 8px 20px;
@@ -191,11 +192,11 @@
             transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
         }
 
-            .exit-btn:hover {
-                transform: scale(1.1);
-                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-                background: #d32f2f;
-            }
+        .exit-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            background: #d32f2f;
+        }
 
         .question-container {
             background: #FFFFFF;
@@ -209,21 +210,21 @@
             animation: zoomIn 1s ease-in-out;
         }
 
-            .question-container.correct {
-                border: 3px solid #4CAF50;
-                box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
-            }
+        .question-container.correct {
+            border: 3px solid #4CAF50;
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
+        }
 
-            .question-container.incorrect {
-                border: 3px solid #F44336;
-                box-shadow: 0 0 15px rgba(244, 67, 54, 0.5);
-            }
+        .question-container.incorrect {
+            border: 3px solid #F44336;
+            box-shadow: 0 0 15px rgba(244, 67, 54, 0.5);
+        }
 
-            .question-container h2 {
-                font-weight: 600;
-                color: #000;
-                margin-bottom: 15px;
-            }
+        .question-container h2 {
+            font-weight: 600;
+            color: #000;
+            margin-bottom: 15px;
+        }
 
         .question-image {
             width: 300px;
@@ -237,9 +238,9 @@
             transition: transform 0.3s ease;
         }
 
-            .question-image:hover {
-                transform: scale(1.05);
-            }
+        .question-image:hover {
+            transform: scale(1.05);
+        }
 
         .question-audio {
             margin-bottom: 20px;
@@ -251,10 +252,10 @@
             animation: fadeIn 1.5s ease-in-out;
         }
 
-            .question-audio:hover {
-                transform: scale(1.02);
-                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            }
+        .question-audio:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
 
         .question-text {
             font-size: 1.2rem;
@@ -283,51 +284,51 @@
             transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
         }
 
-            .answer-option.selected {
-                background: #4FC3F7;
-            }
+        .answer-option.selected {
+            background: #4FC3F7;
+        }
 
-            .answer-option:hover {
-                background: #81D4FA;
-                transform: scale(1.02);
-                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            }
+        .answer-option:hover {
+            background: #81D4FA;
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
 
-            .answer-option input {
-                margin: 0;
-            }
+        .answer-option input {
+            margin: 0;
+        }
 
-            .answer-option label {
-                display: flex;
-                align-items: center;
-                font-size: 1rem;
-                color: #333;
-                margin: 0;
-                gap: 2px;
-            }
+        .answer-option label {
+            display: flex;
+            align-items: center;
+            font-size: 1rem;
+            color: #333;
+            margin: 0;
+            gap: 2px;
+        }
 
-            .answer-option .label-text {
-                font-weight: 600;
-                color: #000;
-                min-width: 15px;
-                text-align: left;
-                margin-right: -3px;
-            }
+        .answer-option .label-text {
+            font-weight: 600;
+            color: #000;
+            min-width: 15px;
+            text-align: left;
+            margin-right: -3px;
+        }
 
-            .answer-option .answer-content {
-                font-weight: normal;
-                color: #000;
-                font-size: 0.95rem;
-                line-height: 1;
-            }
+        .answer-option .answer-content {
+            font-weight: normal;
+            color: #000;
+            font-size: 0.95rem;
+            line-height: 1;
+        }
 
-            .answer-option .colon {
-                font-weight: normal;
-                color: #000;
-                line-height: 1;
-                position: relative;
-                top: -1.5px;
-            }
+        .answer-option .colon {
+            font-weight: normal;
+            color: #000;
+            line-height: 1;
+            position: relative;
+            top: -1.5px;
+        }
 
         .result-message {
             font-weight: 600;
@@ -335,13 +336,13 @@
             margin-top: 15px;
         }
 
-            .result-message.correct {
-                color: #4CAF50;
-            }
+        .result-message.correct {
+            color: #4CAF50;
+        }
 
-            .result-message.incorrect {
-                color: #F44336;
-            }
+        .result-message.incorrect {
+            color: #F44336;
+        }
 
         .explanation {
             background: #FFF3E0;
@@ -377,11 +378,11 @@
             padding-right: 20px;
         }
 
-            .part3-left h2 {
-                font-weight: 600;
-                color: #000;
-                margin-bottom: 15px;
-            }
+        .part3-left h2 {
+            font-weight: 600;
+            color: #000;
+            margin-bottom: 15px;
+        }
 
         .part3-right {
             display: flex;
@@ -394,23 +395,23 @@
             mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%);
         }
 
-            .part3-right::-webkit-scrollbar {
-                width: 8px;
-            }
+        .part3-right::-webkit-scrollbar {
+            width: 8px;
+        }
 
-            .part3-right::-webkit-scrollbar-track {
-                background: #f1f1f1;
-                border-radius: 10px;
-            }
+        .part3-right::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
 
-            .part3-right::-webkit-scrollbar-thumb {
-                background: #B3E5FC;
-                border-radius: 10px;
-            }
+        .part3-right::-webkit-scrollbar-thumb {
+            background: #B3E5FC;
+            border-radius: 10px;
+        }
 
-                .part3-right::-webkit-scrollbar-thumb:hover {
-                    background: #81D4FA;
-                }
+        .part3-right::-webkit-scrollbar-thumb:hover {
+            background: #81D4FA;
+        }
 
         .sub-question {
             background: #FFECB3;
@@ -420,26 +421,26 @@
             animation: fadeInUp 1s ease-in-out;
         }
 
-            .sub-question.correct {
-                border: 3px solid #4CAF50;
-                box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
-            }
+        .sub-question.correct {
+            border: 3px solid #4CAF50;
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
+        }
 
-            .sub-question.incorrect {
-                border: 3px solid #F44336;
-                box-shadow: 0 0 15px rgba(244, 67, 54, 0.5);
-            }
+        .sub-question.incorrect {
+            border: 3px solid #F44336;
+            box-shadow: 0 0 15px rgba(244, 67, 54, 0.5);
+        }
 
-            .sub-question h4 {
-                font-weight: 600;
-                color: #000;
-                margin-bottom: 10px;
-            }
+        .sub-question h4 {
+            font-weight: 600;
+            color: #000;
+            margin-bottom: 10px;
+        }
 
-                .sub-question h4 .question-content {
-                    font-weight: normal;
-                    color: #000;
-                }
+        .sub-question h4 .question-content {
+            font-weight: normal;
+            color: #000;
+        }
 
         .sub-question-image {
             width: 150px;
@@ -453,9 +454,9 @@
             animation: fadeIn 1.5s ease-in-out;
         }
 
-            .sub-question-image:hover {
-                transform: scale(1.05);
-            }
+        .sub-question-image:hover {
+            transform: scale(1.05);
+        }
 
         .sub-question-audio {
             width: 100%;
@@ -467,10 +468,10 @@
             animation: fadeIn 1.5s ease-in-out;
         }
 
-            .sub-question-audio:hover {
-                transform: scale(1.02);
-                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            }
+        .sub-question-audio:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
 
         .sidebar-right {
             width: 160px;
@@ -488,13 +489,13 @@
             z-index: 1;
         }
 
-            .sidebar-right h3 {
-                background: linear-gradient(90deg, #0288D1, #4FC3F7);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                animation: slideInDown 1s ease-in-out;
-                margin-bottom: 20px;
-            }
+        .sidebar-right h3 {
+            background: linear-gradient(90deg, #0288D1, #4FC3F7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: slideInDown 1s ease-in-out;
+            margin-bottom: 20px;
+        }
 
         .part-section {
             width: 100%;
@@ -511,23 +512,23 @@
             padding-bottom: 60px;
         }
 
-            .part-section::-webkit-scrollbar {
-                width: 8px;
-            }
+        .part-section::-webkit-scrollbar {
+            width: 8px;
+        }
 
-            .part-section::-webkit-scrollbar-track {
-                background: #f1f1f1;
-                border-radius: 10px;
-            }
+        .part-section::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
 
-            .part-section::-webkit-scrollbar-thumb {
-                background: #B3E5FC;
-                border-radius: 10px;
-            }
+        .part-section::-webkit-scrollbar-thumb {
+            background: #B3E5FC;
+            border-radius: 10px;
+        }
 
-                .part-section::-webkit-scrollbar-thumb:hover {
-                    background: #81D4FA;
-                }
+        .part-section::-webkit-scrollbar-thumb:hover {
+            background: #81D4FA;
+        }
 
         .question-circle {
             width: 40px;
@@ -544,21 +545,21 @@
             animation: zoomIn 0.5s ease-in-out;
         }
 
-            .question-circle.correct {
-                background: #4CAF50;
-                color: white;
-            }
+        .question-circle.correct {
+            background: #4CAF50;
+            color: white;
+        }
 
-            .question-circle.incorrect {
-                background: #F44336;
-                color: white;
-            }
+        .question-circle.incorrect {
+            background: #F44336;
+            color: white;
+        }
 
-            .question-circle:hover {
-                background: #81D4FA;
-                transform: scale(1.2);
-                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            }
+        .question-circle:hover {
+            background: #81D4FA;
+            transform: scale(1.2);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
 
         .progress-text-container {
             position: absolute;
@@ -585,7 +586,175 @@
             color: #F44336;
             margin-top: 15px;
             display: block;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3); /* Thêm bóng để nổi bật */
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        /* CSS cho nút Report */
+        .report-btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 16px;
+            margin-top: 15px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            background: linear-gradient(90deg, #0288D1, #4FC3F7);
+            color: white;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+        }
+
+        .report-btn:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 6px 20px rgba(2, 136, 209, 0.5);
+            background: linear-gradient(90deg, #4FC3F7, #0288D1);
+        }
+
+        .report-btn i {
+            margin-right: 8px;
+        }
+
+        /* CSS cho Modal */
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .report-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #FFFFFF;
+            border-radius: 15px;
+            padding: 20px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            z-index: 1001;
+            animation: zoomInModal 0.3s ease-out forwards;
+        }
+
+        .report-modal.show {
+            display: block;
+            transform: translate(-50%, -50%);
+        }
+
+        .modal-header {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #0288D1;
+            margin-bottom: 15px;
+            text-align: center;
+            position: relative;
+        }
+
+        .modal-body {
+            margin-bottom: 20px;
+        }
+
+        .report-textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            border: 1px solid #B3E5FC;
+            border-radius: 5px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+            resize: none;
+        }
+
+        .report-textarea:focus {
+            outline: none;
+            border-color: #0288D1;
+            box-shadow: 0 0 5px rgba(2, 136, 209, 0.3);
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .modal-btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .cancel-btn {
+            background: #f44336;
+            color: white;
+        }
+
+        .cancel-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(244, 67, 54, 0.3);
+            background: #d32f2f;
+        }
+
+        .send-btn {
+            background: linear-gradient(90deg, #0288D1, #4FC3F7);
+            color: white;
+        }
+
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(2, 136, 209, 0.3);
+            background: linear-gradient(90deg, #4FC3F7, #0288D1);
+        }
+
+        .close-btn {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            background: transparent;
+            border: none;
+            font-size: 1.2rem;
+            color: #333;
+            cursor: pointer;
+        }
+
+        .close-btn:hover {
+            color: #0288D1;
+        }
+
+        @@keyframes zoomInModal {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        @@keyframes fadeOutModal {
+            from {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+            to {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.9);
+            }
+        }
+
+        .report-modal.hide {
+            animation: fadeOutModal 0.3s ease-out forwards;
         }
 
         @@keyframes zoomIn {
@@ -593,7 +762,6 @@
                 transform: scale(0.5);
                 opacity: 0;
             }
-
             to {
                 transform: scale(1);
                 opacity: 1;
@@ -605,7 +773,6 @@
                 transform: translateY(-50px);
                 opacity: 0;
             }
-
             to {
                 transform: translateY(0);
                 opacity: 1;
@@ -616,7 +783,6 @@
             from {
                 opacity: 0;
             }
-
             to {
                 opacity: 1;
             }
@@ -627,7 +793,6 @@
                 transform: translateY(50px);
                 opacity: 0;
             }
-
             to {
                 transform: translateY(0);
                 opacity: 1;
@@ -636,7 +801,7 @@
 
         @@media (max-width: 768px) {
             .test-info-left {
-                display: none; /* Ẩn test-info-left trên thiết bị nhỏ */
+                display: none;
             }
 
             .sidebar-right {
@@ -649,12 +814,12 @@
                 z-index: 100;
             }
 
-                .sidebar-right.active {
-                    transform: translateX(0);
-                }
+            .sidebar-right.active {
+                transform: translateX(0);
+            }
 
             .main-content {
-                margin: 0; /* Bỏ margin để chiếm toàn bộ chiều rộng */
+                margin: 0;
                 padding: 20px 10px;
             }
 
@@ -679,10 +844,61 @@
                 -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%);
                 mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%);
             }
+
+            .report-modal {
+                width: 95%;
+                max-width: 400px;
+                padding: 15px;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+            }
+
+            .report-modal.show {
+                transform: translate(-50%, -50%);
+            }
+
+            .modal-header {
+                font-size: 1.2rem;
+            }
+
+            .report-textarea {
+                height: 80px;
+                font-size: 0.9rem;
+            }
+
+            .modal-btn {
+                padding: 6px 15px;
+                font-size: 0.9rem;
+            }
+        }
+
+        @@media (max-width: 480px) {
+            .report-modal {
+                width: 90%;
+                max-width: 320px;
+                padding: 10px;
+            }
+
+            .modal-header {
+                font-size: 1.1rem;
+            }
+
+            .report-textarea {
+                height: 70px;
+                font-size: 0.85rem;
+            }
+
+            .modal-btn {
+                padding: 5px 12px;
+                font-size: 0.85rem;
+            }
         }
     </style>
 </head>
 <body>
+    <div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999;"></div>
+
     <div class="main-container">
         <div class="test-info-left" id="test-info-left">
             <!-- Render thông tin bài thi bằng JS -->
@@ -692,7 +908,6 @@
                 <!-- Render bằng JS -->
             </div>
         </div>
-
         <div class="sidebar-right">
             <h3>Questions</h3>
             <div class="part-section" id="question-list"></div>
@@ -702,6 +917,22 @@
         </div>
     </div>
 
+    <div class="modal-backdrop" id="reportModalBackdrop"></div>
+    <div class="report-modal" id="reportModal">
+        <div class="modal-header">
+            Report Issue
+            <button class="close-btn" onclick="closeReportModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <textarea class="report-textarea" id="reportText" placeholder="Enter your feedback or issue with this question..."></textarea>
+        </div>
+        <div class="modal-footer">
+            <button class="modal-btn cancel-btn" onclick="closeReportModal()">Cancel</button>
+            <button class="modal-btn send-btn" onclick="sendReport()">Send</button>
+        </div>
+    </div>
+    <div id="toast-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;"></div>
+
     <script>
         let rawJson = '@Html.Raw(Model.QuestionsJson)';
         let questions = rawJson ? JSON.parse(rawJson) : [];
@@ -709,7 +940,6 @@
         let resultKey = '@Model.ResultKey';
         const resourceBaseUrl = 'https://localhost:7078';
 
-        // Thông tin bài thi từ Model
         const testInfo = {
             timeSpent: @Model.TimeSpent,
             maximumTime: @Model.MaximumTime,
@@ -718,62 +948,62 @@
             listeningScore: @Model.ListeningScore,
             readingScore: @Model.ReadingScore,
             testScore: @Model.TestScore
-                };
+        };
 
         function renderTestInfo() {
-            const container = document.getElementById('test-info-left'); // Render vào khu vực bên trái
+            const container = document.getElementById('test-info-left');
             let html = `
-                        <h2>Test Information</h2>
-                        <div class="test-info-item">
-                            <span class="test-info-label">Time Spent:</span>
-                            <span class="test-info-value time-spent">${testInfo.timeSpent} min</span>
-                        </div>
-                        <div class="test-info-item">
-                            <span class="test-info-label">Maximum Time:</span>
-                            <span class="test-info-value">${testInfo.maximumTime} min</span>
-                        </div>
-                        <div class="test-info-item">
-                            <span class="test-info-label">Test Name:</span>
-                            <span class="test-info-value">${testInfo.testName}</span>
-                        </div>
-                        <div class="test-info-item">
-                            <span class="test-info-label">Member:</span>
-                            <span class="test-info-value">${testInfo.member}</span>
-                        </div>
-                        <div class="test-info-item">
-                            <span class="test-info-label">Listening Score:</span>
-                            <span class="test-info-value">${testInfo.listeningScore}</span>
-                        </div>
-                        <div class="test-info-item">
-                            <span class="test-info-label">Reading Score:</span>
-                            <span class="test-info-value">${testInfo.readingScore}</span>
-                        </div>
-                        <div class="test-info-item">
-                            <span class="test-info-label">Total Score:</span>
-                            <span class="test-info-value test-score">${testInfo.testScore}</span>
-                        </div>
-                        <button class="exit-btn" onclick="exitResult()">Exit</button>
-                    `;
+                <h2>Test Information</h2>
+                <div class="test-info-item">
+                    <span class="test-info-label">Time Spent:</span>
+                    <span class="test-info-value time-spent">${testInfo.timeSpent} min</span>
+                </div>
+                <div class="test-info-item">
+                    <span class="test-info-label">Maximum Time:</span>
+                    <span class="test-info-value">${testInfo.maximumTime} min</span>
+                </div>
+                <div class="test-info-item">
+                    <span class="test-info-label">Test Name:</span>
+                    <span class="test-info-value">${testInfo.testName}</span>
+                </div>
+                <div class="test-info-item">
+                    <span class="test-info-label">Member:</span>
+                    <span class="test-info-value">${testInfo.member}</span>
+                </div>
+                <div class="test-info-item">
+                    <span class="test-info-label">Listening Score:</span>
+                    <span class="test-info-value">${testInfo.listeningScore}</span>
+                </div>
+                <div class="test-info-item">
+                    <span class="test-info-label">Reading Score:</span>
+                    <span class="test-info-value">${testInfo.readingScore}</span>
+                </div>
+                <div class="test-info-item">
+                    <span class="test-info-label">Total Score:</span>
+                    <span class="test-info-value test-score">${testInfo.testScore}</span>
+                </div>
+                <button class="exit-btn" onclick="exitResult()">Exit</button>
+            `;
             container.innerHTML = html;
         }
 
         function renderSimplePart(container, questions) {
             questions.forEach(question => {
                 const isCorrect = question.isCorrect === true;
-                const isNotAnswered = !question.userAnswerKey || question.userAnswerKey === ''; // Kiểm tra nếu không chọn đáp án
-                const shouldShowExplanation = (isNotAnswered || !isCorrect) && question.explanation; // Hiển thị lời giải nếu không trả lời hoặc sai
+                const isNotAnswered = !question.userAnswerKey || question.userAnswerKey === '';
+                const shouldShowExplanation = (isNotAnswered || !isCorrect) && question.explanation;
                 let html = `
-                            <div class="question-container ${isCorrect ? 'correct' : 'incorrect'}" data-question-key="${question.questionKey}">
-                                <h2>Question ${question.order}</h2>
-                                ${question.questionImage ? `<img src="${resourceBaseUrl}${question.questionImage}" alt="Question Image" class="question-image" loading="lazy">` : ''}
-                                ${question.questionVoice ? `
-                                    <audio controls class="question-audio">
-                                        <source src="${resourceBaseUrl}${question.questionVoice}" type="audio/mpeg">
-                                        Your browser does not support the audio element.
-                                    </audio>` : ''}
-                                ${question.questionText ? `<div class="question-text">${question.questionText}</div>` : ''}
-                                <div class="answer-options">
-                        `;
+                    <div class="question-container ${isCorrect ? 'correct' : 'incorrect'}" data-question-key="${question.questionKey}">
+                        <h2>Question ${question.order}</h2>
+                        ${question.questionImage ? `<img src="${resourceBaseUrl}${question.questionImage}" alt="Question Image" class="question-image" loading="lazy">` : ''}
+                        ${question.questionVoice ? `
+                            <audio controls class="question-audio">
+                                <source src="${resourceBaseUrl}${question.questionVoice}" type="audio/mpeg">
+                                Your browser does not support the audio element.
+                            </audio>` : ''}
+                        ${question.questionText ? `<div class="question-text">${question.questionText}</div>` : ''}
+                        <div class="answer-options">
+                `;
                 question.answers.forEach((answer, idx) => {
                     const label = (question.part === 1 || question.part === 2)
                         ? (answer.ranking === 1 ? 'A' : answer.ranking === 2 ? 'B' : answer.ranking === 3 ? 'C' : answer.ranking === 4 ? 'D' : '?')
@@ -781,15 +1011,15 @@
                     const isChecked = answer.answerKey === question.userAnswerKey ? 'checked' : '';
                     const isSelected = answer.answerKey === question.userAnswerKey ? 'selected' : '';
                     html += `
-                                <div class="answer-option ${isSelected}">
-                                    <input type="radio" name="answer_${question.questionKey}" id="answer_${answer.answerKey}"
-                                           value="${answer.answerKey}" ${isChecked} disabled>
-                                    <label for="answer_${answer.answerKey}">
-                                        <span class="label-text">${label}</span>
-                                        ${question.part === 1 || question.part === 2 ? '' : `<span class="colon">:</span> <span class="answer-content">${answer.answerText || ''}</span>`}
-                                    </label>
-                                </div>
-                            `;
+                        <div class="answer-option ${isSelected}">
+                            <input type="radio" name="answer_${question.questionKey}" id="answer_${answer.answerKey}"
+                                   value="${answer.answerKey}" ${isChecked} disabled>
+                            <label for="answer_${answer.answerKey}">
+                                <span class="label-text">${label}</span>
+                                ${question.part === 1 || question.part === 2 ? '' : `<span class="colon">:</span> <span class="answer-content">${answer.answerText || ''}</span>`}
+                            </label>
+                        </div>
+                    `;
                 });
                 html += `
                         </div>
@@ -797,6 +1027,9 @@
                             ${isCorrect ? 'You answered this question correctly' : (isNotAnswered ? 'You did not answer this question' : 'You answered this question incorrectly')}
                         </div>
                         ${shouldShowExplanation ? `<span class="solution-label">Solution:</span><div class="explanation">${question.explanation}</div>` : ''}
+                        <button class="report-btn" onclick="openReportModal('${question.questionKey}')">
+                            <i class="fas fa-flag"></i> Report
+                        </button>
                     </div>
                 `;
                 container.insertAdjacentHTML('beforeend', html);
@@ -805,49 +1038,49 @@
 
         function renderComplexPart(container, parent) {
             let html = `
-                        <div class="part3-container">
-                            <div class="part3-left">
-                                <h2>Part ${parent.part}: ${parent.part <= 4 ? 'Conversation' : 'Reading'}</h2>
-                                ${parent.questionImage ? `<img src="${resourceBaseUrl}${parent.questionImage}" alt="Part Image" class="question-image" loading="lazy">` : ''}
-                                ${parent.questionVoice ? `
-                                    <audio controls class="question-audio">
-                                        <source src="${resourceBaseUrl}${parent.questionVoice}" type="audio/mpeg">
-                                        Your browser does not support the audio element.
-                                    </audio>` : ''}
-                                ${parent.questionText ? `<div class="question-text">${parent.questionText}</div>` : ''}
-                            </div>
-                            <div class="part3-right">
-                    `;
+                <div class="part3-container">
+                    <div class="part3-left">
+                        <h2>Part ${parent.part}: ${parent.part <= 4 ? 'Conversation' : 'Reading'}</h2>
+                        ${parent.questionImage ? `<img src="${resourceBaseUrl}${parent.questionImage}" alt="Part Image" class="question-image" loading="lazy">` : ''}
+                        ${parent.questionVoice ? `
+                            <audio controls class="question-audio">
+                                <source src="${resourceBaseUrl}${parent.questionVoice}" type="audio/mpeg">
+                                Your browser does not support the audio element.
+                            </audio>` : ''}
+                        ${parent.questionText ? `<div class="question-text">${parent.questionText}</div>` : ''}
+                    </div>
+                    <div class="part3-right">
+            `;
             parent.children.forEach(child => {
                 const isCorrect = child.isCorrect === true;
-                const isNotAnswered = !child.userAnswerKey || child.userAnswerKey === ''; // Kiểm tra nếu không chọn đáp án
-                const shouldShowExplanation = (isNotAnswered || !isCorrect) && child.explanation; // Hiển thị lời giải nếu không trả lời hoặc sai
+                const isNotAnswered = !child.userAnswerKey || child.userAnswerKey === '';
+                const shouldShowExplanation = (isNotAnswered || !isCorrect) && child.explanation;
                 html += `
-                            <div class="sub-question ${isCorrect ? 'correct' : 'incorrect'}" data-question-key="${child.questionKey}">
-                                <h4>Question ${child.order}${child.questionText ? `<span class="question-content">: ${child.questionText}</span>` : ''}</h4>
-                                ${child.questionImage ? `<img src="${resourceBaseUrl}${child.questionImage}" alt="Sub Question Image" class="sub-question-image" loading="lazy">` : ''}
-                                ${child.questionVoice ? `
-                                    <audio controls class="sub-question-audio">
-                                        <source src="${resourceBaseUrl}${child.questionVoice}" type="audio/mpeg">
-                                        Your browser does not support the audio element.
-                                    </audio>` : ''}
-                                <div class="answer-options">
-                        `;
+                    <div class="sub-question ${isCorrect ? 'correct' : 'incorrect'}" data-question-key="${child.questionKey}">
+                        <h4>Question ${child.order}${child.questionText ? `<span class="question-content">: ${child.questionText}</span>` : ''}</h4>
+                        ${child.questionImage ? `<img src="${resourceBaseUrl}${child.questionImage}" alt="Sub Question Image" class="sub-question-image" loading="lazy">` : ''}
+                        ${child.questionVoice ? `
+                            <audio controls class="sub-question-audio">
+                                <source src="${resourceBaseUrl}${child.questionVoice}" type="audio/mpeg">
+                                Your browser does not support the audio element.
+                            </audio>` : ''}
+                        <div class="answer-options">
+                `;
                 child.answers.forEach((answer, idx) => {
                     const label = String.fromCharCode(65 + idx);
                     const isChecked = answer.answerKey === child.userAnswerKey ? 'checked' : '';
                     const isSelected = answer.answerKey === child.userAnswerKey ? 'selected' : '';
                     html += `
-                                <div class="answer-option ${isSelected}">
-                                    <input type="radio" name="answer_${child.questionKey}" id="answer_${answer.answerKey}"
-                                           value="${answer.answerKey}" ${isChecked} disabled>
-                                    <label for="answer_${answer.answerKey}">
-                                        <span class="label-text">${label}</span>
-                                        <span class="colon">:</span>
-                                        <span class="answer-content">${answer.answerText || ''}</span>
-                                    </label>
-                                </div>
-                            `;
+                        <div class="answer-option ${isSelected}">
+                            <input type="radio" name="answer_${child.questionKey}" id="answer_${answer.answerKey}"
+                                   value="${answer.answerKey}" ${isChecked} disabled>
+                            <label for="answer_${answer.answerKey}">
+                                <span class="label-text">${label}</span>
+                                <span class="colon">:</span>
+                                <span class="answer-content">${answer.answerText || ''}</span>
+                            </label>
+                        </div>
+                    `;
                 });
                 html += `
                         </div>
@@ -855,6 +1088,9 @@
                             ${isCorrect ? 'You answered this question correctly' : (isNotAnswered ? 'You did not answer this question' : 'You answered this question incorrectly')}
                         </div>
                         ${shouldShowExplanation ? `<span class="solution-label">Solution:</span><div class="explanation">${child.explanation}</div>` : ''}
+                        <button class="report-btn" onclick="openReportModal('${child.questionKey}')">
+                            <i class="fas fa-flag"></i> Report
+                        </button>
                     </div>
                 `;
             });
@@ -864,9 +1100,8 @@
 
         function renderContent() {
             const container = document.getElementById('main-content-wrapper');
-            container.innerHTML = ''; // Xóa nội dung cũ
+            container.innerHTML = '';
 
-            // Render câu hỏi
             questions.filter(q => q.parent === null).forEach(question => {
                 if ([1, 2, 5].includes(question.part)) {
                     renderSimplePart(container, [question]);
@@ -915,6 +1150,204 @@
         function exitResult() {
             window.location.href = '/Test/Ready';
         }
+
+        function openReportModal(questionKey) {
+            const modal = document.getElementById('reportModal');
+            const backdrop = document.getElementById('reportModalBackdrop');
+            const textarea = document.getElementById('reportText');
+            
+            modal.dataset.questionKey = questionKey;
+            textarea.value = '';
+            
+            modal.classList.add('show');
+            backdrop.style.display = 'block';
+        }
+
+        function closeReportModal() {
+            const modal = document.getElementById('reportModal');
+            const backdrop = document.getElementById('reportModalBackdrop');
+            const textarea = document.getElementById('reportText');
+            
+            modal.classList.add('hide');
+            setTimeout(() => {
+                modal.classList.remove('show', 'hide');
+                backdrop.style.display = 'none';
+                textarea.value = '';
+            }, 300);
+        }
+        function showToast(message, type = 'info', duration = 3000) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.textContent = message;
+    toast.style.minWidth = '200px';
+    toast.style.marginTop = '10px';
+    toast.style.padding = '10px 20px';
+    toast.style.color = '#fff';
+    toast.style.borderRadius = '5px';
+    toast.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.5s ease';
+
+    // Màu sắc theo type
+    switch(type) {
+        case 'success': toast.style.backgroundColor = '#4caf50'; break;  // xanh lá
+        case 'error': toast.style.backgroundColor = '#f44336'; break;    // đỏ
+        case 'warning': toast.style.backgroundColor = '#ff9800'; break;  // cam
+        default: toast.style.backgroundColor = '#2196f3'; // xanh dương
+    }
+
+    container.appendChild(toast);
+
+    // Fade in
+    requestAnimationFrame(() => {
+        toast.style.opacity = '1';
+    });
+
+    // Tự ẩn sau duration
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.addEventListener('transitionend', () => toast.remove());
+    }, duration);
+}
+// async function sendReport() {
+//     const modal = document.getElementById('reportModal');
+//     const questionKey = modal.dataset.questionKey;
+//     const feedbackText = document.getElementById('reportText').value.trim();
+
+//     if (!questionKey) return showToast('Thiếu QuestionKey.', 'error');
+//     if (!feedbackText) return showToast('Vui lòng nhập nội dung phản hồi.', 'warning');
+//     if (feedbackText.length > 500) return showToast('Phản hồi không được quá 500 ký tự.', 'warning');
+
+//     const guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+//     if (!guidPattern.test(questionKey)) return showToast('QuestionKey không hợp lệ.', 'error');
+
+//     let question = questions.find(q => q.questionKey === questionKey);
+//     let parentKey = null;
+//     if (!question) {
+//         for (const parent of questions) {
+//             if (parent.children) {
+//                 question = parent.children.find(child => child.questionKey === questionKey);
+//                 if (question) {
+//                     parentKey = parent.questionKey;
+//                     break;
+//                 }
+//             }
+//         }
+//     }
+
+//     if (!question) return showToast('Không tìm thấy câu hỏi.', 'error');
+
+//     const payload = {
+//         ResultKey: resultKey,
+//         QuestionKey: questionKey,
+//         FeedbackText: feedbackText,
+//         Part: question.part
+//     };
+//     if (parentKey) payload.Parent = parentKey;
+
+//     try {
+//         const response = await fetch('/Test/ResultTest?handler=SubmitFeedback', {
+//             method: 'POST',
+//             headers: {
+//                 'Content-Type': 'application/json',
+//                 'Accept': 'application/json'
+//             },
+//             body: JSON.stringify(payload)
+//         });
+
+//         const data = await response.json();
+//         if (response.ok && data.success) {
+//             showToast('Gửi phản hồi thành công!', 'success');
+//             closeReportModal();
+//         } else {
+//             showToast(`Gửi phản hồi thất bại: ${data.message || 'Lỗi không xác định'}`, 'error');
+//         }
+//     } catch (err) {
+//         console.error('Lỗi khi gửi phản hồi:', err);
+//         showToast('Đã xảy ra lỗi khi gửi phản hồi.', 'error');
+//     }
+// }
+async function sendReport() {
+    const modal = document.getElementById('reportModal');
+    const questionKey = modal.dataset.questionKey;
+    const feedbackText = document.getElementById('reportText').value.trim();
+
+    if (!questionKey) return showToast('Thiếu QuestionKey.', 'error');
+    if (!feedbackText) return showToast('Vui lòng nhập nội dung phản hồi.', 'warning');
+    if (feedbackText.length > 500) return showToast('Phản hồi không được quá 500 ký tự.', 'warning');
+
+    const guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!guidPattern.test(questionKey)) return showToast('QuestionKey không hợp lệ.', 'error');
+
+    let question = questions.find(q => q.questionKey === questionKey);
+    let parentKey = null;
+    if (!question) {
+        for (const parent of questions) {
+            if (parent.children) {
+                question = parent.children.find(child => child.questionKey === questionKey);
+                if (question) {
+                    parentKey = parent.questionKey;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (!question) return showToast('Không tìm thấy câu hỏi.', 'error');
+
+    const payload = {
+        ResultKey: resultKey,
+        QuestionKey: questionKey,
+        FeedbackText: feedbackText,
+        Part: question.part
+    };
+    if (parentKey) payload.Parent = parentKey;
+
+    try {
+        const response = await fetch('/Test/ResultTest?handler=SubmitFeedback', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        if (response.ok && data.success) {
+            const notifyPayload = {
+                QuestionKey: questionKey,
+                Part: question.part,
+                Member: '@Model.Member',
+                Summary: feedbackText
+            };
+            const notifyResponse = await fetch('https://localhost:7078/api/notify', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'ApiKey': '@Model.ApiKey'
+                },
+                body: JSON.stringify(notifyPayload)
+            });
+
+            const notifyData = await notifyResponse.json();
+            if (notifyResponse.ok && notifyData.success) {
+                showToast('Gửi phản hồi thành công!', 'success');
+                closeReportModal();
+            } else {
+                showToast(`Gửi thông báo thất bại: ${notifyData.message || 'Lỗi không xác định'}`, 'error');
+            }
+        } else {
+            showToast(`Gửi phản hồi thất bại: ${data.message || 'Lỗi không xác định'}`, 'error');
+        }
+    } catch (err) {
+        console.error('Lỗi khi gửi phản hồi:', err);
+        showToast('Đã xảy ra lỗi khi gửi phản hồi.', 'error');
+    }
+}
 
         window.onload = function () {
             renderTestInfo();

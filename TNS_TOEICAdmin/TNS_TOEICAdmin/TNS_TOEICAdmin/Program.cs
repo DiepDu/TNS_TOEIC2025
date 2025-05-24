@@ -23,6 +23,15 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 
 builder.Services.AddHttpContextAccessor();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowTestOrigin", policy =>
+    {
+        policy.WithOrigins("https://localhost:7003") // Cho phép Test (port 7003)
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
@@ -34,6 +43,8 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+
+app.UseCors("AllowTestOrigin");
 
 app.UseAuthentication();
 app.UseAuthorization();

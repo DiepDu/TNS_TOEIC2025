@@ -11,28 +11,551 @@
     <link href="~/lib/minible/css/icons.min.css" rel="stylesheet" type="text/css" />
     <link href="~/lib/minible/css/app.min.css" id="app-style" rel="stylesheet" type="text/css" />
     <link href="~/css/site.css" rel="stylesheet" />
-   
+    <style>
+        /* Tổng thể */
+        body {
+            background: linear-gradient(135deg, #F0F7FF 0%, #F8F9FA 100%) !important;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+            color: #2C3E50 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow-x: hidden !important;
+        }
+
+        #layout-wrapper {
+            min-height: 100vh !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+
+        /* Header */
+        #page-topbar {
+            background: linear-gradient(90deg, #AED6F1 0%, #D6EAF8 100%) !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            z-index: 1030 !important;
+            height: 60px !important;
+        }
+
+        .navbar-header {
+            padding: 0 10px !important;
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            height: 100% !important;
+        }
+
+        .navbar-brand-box {
+            padding: 0 10px !important;
+            height: 100% !important;
+            background: transparent !important;
+            border: none !important;
+            display: flex !important;
+            align-items: center !important;
+        }
+
+            .navbar-brand-box:hover {
+                background: rgba(255, 255, 255, 0.1) !important;
+            }
+
+        .btn-toggle-sidebar {
+            background: transparent !important;
+            border: none !important;
+            color: #2C3E50 !important;
+            padding: 10px !important;
+            transition: transform 0.2s ease !important;
+            width: 44px !important;
+            height: 44px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+
+            .btn-toggle-sidebar:hover {
+                color: #1A73E8 !important;
+                transform: scale(1.1) !important;
+            }
+
+        /* Sidebar */
+        #layout-wrapper .vertical-menu {
+            background: linear-gradient(180deg, #AED6F1 0%, #D6EAF8 100%) !important;
+            border-radius: 0 15px 15px 0 !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: -250px !important;
+            z-index: 1032 !important;
+            height: 100vh !important;
+            width: 250px !important;
+            padding-top: 60px !important;
+            opacity: 0 !important;
+            transition: left 0.3s ease, opacity 0.3s ease !important;
+        }
+
+            #layout-wrapper .vertical-menu.active {
+                left: 0 !important;
+                opacity: 1 !important;
+            }
+
+        .vertical-menu .navbar-brand-box {
+            position: absolute !important;
+            top: 0 !important;
+            width: 100% !important;
+            height: 60px !important;
+            padding: 0 !important;
+            background: transparent !important;
+            border: none !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+        }
+
+        .sidebar-overlay {
+            display: none !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            background: rgba(0, 0, 0, 0.3) !important;
+            z-index: 1031 !important;
+        }
+
+            .sidebar-overlay.active {
+                display: block !important;
+            }
+
+        .sidebar-menu-scroll {
+            padding: 10px 0 !important;
+            height: calc(100% - 60px) !important;
+            overflow-y: auto !important;
+            margin-top: 0 !important;
+        }
+
+        #side-menu {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+            #side-menu a {
+                color: #2C3E50 !important;
+                font-weight: 500 !important;
+                padding: 12px 20px !important;
+                transition: all 0.3s ease !important;
+                display: flex !important;
+                align-items: center !important;
+                border-bottom: 1px solid rgba(224, 231, 255, 0.3) !important;
+                font-size: 16px !important;
+                text-decoration: none !important;
+            }
+
+            #side-menu .nav-active {
+                background: linear-gradient(90deg, #1A73E8 0%, #AED6F1 100%) !important;
+                color: #FFFFFF !important;
+                font-weight: bold !important;
+            }
+
+            #side-menu .mm-active > a,
+            #side-menu a:hover {
+                background: rgba(255, 255, 255, 0.2) !important;
+                color: #1A73E8 !important;
+                border-radius: 8px !important;
+            }
+
+            #side-menu .has-arrow::after {
+                transition: transform 0.3s ease !important;
+            }
+
+            #side-menu .mm-active > .has-arrow::after {
+                transform: rotate(-180deg) !important;
+            }
+
+        .metismenu .mm-collapse {
+            display: none !important;
+        }
+
+        .metismenu .mm-show {
+            display: block !important;
+        }
+
+        ul.sub-menu {
+            background: rgba(255, 255, 255, 0.1) !important;
+            border-radius: 6px !important;
+            margin: 5px 0 5px 15px !important;
+            padding: 5px 0 !important;
+            border: 1px solid #E0E7FF !important;
+        }
+
+            ul.sub-menu a {
+                color: #2C3E50 !important;
+                padding: 10px 25px !important;
+                font-size: 15px !important;
+                border-bottom: none !important;
+            }
+
+                ul.sub-menu a:hover {
+                    color: #1A73E8 !important;
+                    background: rgba(255, 255, 255, 0.2) !important;
+                    padding-left: 30px !important;
+                }
+
+        /* Dropdown chuông thông báo */
+        .noti-icon {
+            color: #2C3E50 !important;
+            font-size: 24px !important;
+            padding: 10px !important;
+            transition: transform 0.2s ease !important;
+        }
+
+            .noti-icon:hover {
+                color: #1A73E8 !important;
+                transform: scale(1.1) !important;
+            }
+
+        .badge {
+            min-width: 20px !important;
+            height: 20px !important;
+            line-height: 20px !important;
+            text-align: center !important;
+            background: #E74C3C !important;
+            border-radius: 50% !important;
+            font-size: 12px !important;
+            font-weight: bold !important;
+            box-shadow: 0 1px 4px rgba(231, 76, 60, 0.2) !important;
+            position: absolute !important;
+            top: 5px !important;
+            right: 5px !important;
+            border: 1px solid #FFFFFF !important;
+        }
+
+        .dropdown-menu {
+            background: #FFFFFF !important;
+            border: 1px solid #E0E7FF !important;
+            border-radius: 10px !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+            padding: 10px 0 !important;
+            max-width: 90vw !important;
+            width: 300px !important;
+            position: absolute !important;
+            top: 100% !important;
+            right: 0 !important;
+        }
+
+        .notification-item {
+            padding: 12px 15px !important;
+            transition: all 0.3s ease !important;
+            border-radius: 6px !important;
+            border-bottom: 1px solid rgba(224, 231, 255, 0.3) !important;
+            font-size: 15px !important;
+        }
+
+            .notification-item:hover {
+                background: rgba(174, 214, 241, 0.1) !important;
+                color: #2C3E50 !important;
+            }
+
+        /* Dropdown user avatar */
+        .header-profile-user {
+            width: 44px !important;
+            height: 44px !important;
+            border: 1px solid #E0E7FF !important;
+            transition: transform 0.2s ease !important;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05) !important;
+        }
+
+        .header-item:hover .header-profile-user {
+            border-color: #1A73E8 !important;
+            transform: scale(1.05) !important;
+        }
+
+        #txtEmployeeName {
+            color: #2C3E50 !important;
+            font-weight: 500 !important;
+            font-size: 15px !important;
+        }
+
+        .header-item:hover #txtEmployeeName {
+            color: #1A73E8 !important;
+        }
+
+        .uil-angle-down {
+            color: #2C3E50 !important;
+            font-size: 15px !important;
+        }
+
+        .dropdown-menu-end {
+            min-width: 200px !important;
+            max-width: 90vw !important;
+            border: 1px solid #E0E7FF !important;
+            border-radius: 10px !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+            position: absolute !important;
+            top: 100% !important;
+            right: 0 !important;
+        }
+
+            .dropdown-menu-end .dropdown-item {
+                padding: 12px 20px !important;
+                color: #2C3E50 !important;
+                font-size: 15px !important;
+                transition: all 0.3s ease !important;
+                border-radius: 6px !important;
+            }
+
+                .dropdown-menu-end .dropdown-item:hover {
+                    background: rgba(174, 214, 241, 0.1) !important;
+                    color: #1A73E8 !important;
+                    padding-left: 25px !important;
+                }
+
+        /* Main content */
+        .main-content {
+            padding: 20px !important;
+            margin-top: 60px !important;
+            margin-left: 250px !important;
+            transition: margin-left 0.3s ease !important;
+        }
+
+        .page-content {
+            background: #FFFFFF !important;
+            border-radius: 10px !important;
+            padding: 20px !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+            border: 1px solid #E0E7FF !important;
+        }
+
+            .page-content:hover {
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+            }
+
+        /* Menu nổi bật */
+        .standout-menu {
+            background: linear-gradient(90deg, #1A73E8 0%, #AED6F1 100%) !important;
+            color: #FFFFFF !important;
+            font-size: 16px !important;
+            font-weight: 600 !important;
+            border-radius: 8px !important;
+            padding: 14px 20px !important;
+            box-shadow: 0 2px 6px rgba(26, 115, 232, 0.3) !important;
+            transition: all 0.3s ease !important;
+        }
+
+            .standout-menu:hover {
+                background: linear-gradient(90deg, #1A73E8 0%, #D6EAF8 100%) !important;
+            }
+
+        .standout-icon {
+            font-size: 20px !important;
+            margin-right: 12px !important;
+            transition: transform 0.3s ease !important;
+        }
+
+        #side-menu .mm-active > a .standout-icon,
+        #side-menu a:hover .standout-icon {
+            color: #FFFFFF !important;
+            transform: scale(1.2) !important;
+        }
+
+        .standout-submenu {
+            background: rgba(255, 255, 255, 0.15) !important;
+            border: 1px solid #FFFFFF !important;
+            border-radius: 8px !important;
+            margin: 8px 0 8px 20px !important;
+            padding: 8px 0 !important;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05) !important;
+        }
+
+            .standout-submenu a {
+                font-weight: 500 !important;
+                color: #2C3E50 !important;
+                padding: 12px 30px !important;
+                transition: all 0.3s ease !important;
+            }
+
+                .standout-submenu a:hover {
+                    background: rgba(26, 115, 232, 0.2) !important;
+                    color: #1A73E8 !important;
+                    padding-left: 35px !important;
+                    border-radius: 6px !important;
+                }
+
+        .standout-item a {
+            background: rgba(26, 115, 232, 0.1) !important;
+            color: #2C3E50 !important;
+            font-weight: 600 !important;
+            padding: 14px 20px !important;
+            border-radius: 8px !important;
+            transition: all 0.3s ease !important;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05) !important;
+        }
+
+            .standout-item.mm-active > a,
+            .standout-item a:hover {
+                background: linear-gradient(90deg, #1A73E8 0%, #AED6F1 100%) !important;
+                color: #FFFFFF !important;
+            }
+
+        /* Responsive - Dùng @@media để tương thích Razor */
+        @@media (max-width: 576px) {
+            /* Mobile */
+            #page-topbar {
+                height: 56px !important;
+            }
+
+            .navbar-header {
+                padding: 0 5px !important;
+            }
+
+            .navbar-brand-box {
+                padding: 0 5px !important;
+                height: 100% !important;
+            }
+
+                .navbar-brand-box .logo-lg {
+                    display: none !important;
+                }
+
+                .navbar-brand-box .logo-sm {
+                    display: block !important;
+                }
+
+            .header-profile-user {
+                width: 44px !important;
+                height: 44px !important;
+            }
+
+            #txtEmployeeName,
+            .uil-angle-down {
+                display: none !important;
+            }
+
+            .main-content {
+                margin-left: 0 !important;
+                padding: 15px !important;
+                margin-top: 56px !important;
+            }
+
+            .page-content {
+                padding: 15px !important;
+            }
+
+            #layout-wrapper .vertical-menu {
+                left: -250px !important;
+                width: 250px !important;
+                opacity: 0 !important;
+            }
+
+                #layout-wrapper .vertical-menu.active {
+                    left: 0 !important;
+                    opacity: 1 !important;
+                }
+
+            .dropdown-menu,
+            .dropdown-menu-end {
+                max-width: 85vw !important;
+                width: auto !important;
+                font-size: 16px !important;
+            }
+
+            .noti-icon {
+                font-size: 22px !important;
+            }
+
+            #side-menu a {
+                font-size: 16px !important;
+                padding: 14px 20px !important;
+            }
+
+            ul.sub-menu a {
+                font-size: 15px !important;
+                padding: 12px 25px !important;
+            }
+        }
+
+        @@media (min-width: 577px) and (max-width: 768px) {
+            /* Tablet */
+            #layout-wrapper .vertical-menu {
+                width: 60px !important;
+                left: 0 !important;
+                opacity: 1 !important;
+            }
+
+            .vertical-menu .navbar-brand-box,
+            #side-menu a span {
+                display: none !important;
+            }
+
+            #side-menu a {
+                justify-content: center !important;
+                padding: 12px !important;
+                font-size: 0 !important;
+            }
+
+            .standout-icon {
+                margin-right: 0 !important;
+                font-size: 22px !important;
+            }
+
+            .main-content {
+                margin-left: 60px !important;
+                padding: 15px !important;
+            }
+
+            .page-content {
+                padding: 15px !important;
+            }
+
+            .dropdown-menu,
+            .dropdown-menu-end {
+                max-width: 90vw !important;
+                width: auto !important;
+            }
+        }
+
+        @@media (min-width: 769px) {
+            /* Desktop */
+            #layout-wrapper .vertical-menu {
+                left: 0 !important;
+                width: 250px !important;
+                opacity: 1 !important;
+            }
+
+            .main-content {
+                margin-left: 250px !important;
+            }
+
+            .sidebar-overlay {
+                display: none !important;
+            }
+        }
+    </style>
 </head>
 <body>
     <div id="layout-wrapper">
         <header id="page-topbar">
             <div class="navbar-header">
                 <div class="d-flex align-items-center">
+                    <button class="btn btn-toggle-sidebar d-lg-none" aria-label="Toggle Sidebar">
+                        <i class="uil uil-bars font-size-24"></i>
+                    </button>
                     <div class="navbar-brand-box">
                         <a href="~/Index" class="logo logo-dark">
                             <span class="logo-sm">
-                                <img src="~/images/logo-sm.png" alt="Small Dark Logo" height="22">
+                                <img src="~/images/logo-sm.png" alt="Small Dark Logo" height="24">
                             </span>
                             <span class="logo-lg">
-                                <img src="~/images/logo-dark.png" alt="Large Dark Logo" height="20">
+                                <img src="~/images/logo-dark.png" alt="Large Dark Logo" height="22">
                             </span>
                         </a>
                         <a href="~/Index" class="logo logo-light">
                             <span class="logo-sm">
-                                <img src="~/images/logo-sm.png" alt="Small Light Logo" height="22">
+                                <img src="~/images/logo-sm.png" alt="Small Light Logo" height="24">
                             </span>
                             <span class="logo-lg">
-                                <img src="~/images/logo-light.png" alt="Large Light Logo" height="20">
+                                <img src="~/images/logo-light.png" alt="Large Light Logo" height="22">
                             </span>
                         </a>
                     </div>
@@ -43,7 +566,7 @@
                                 id="page-header-notifications-dropdown"
                                 data-bs-toggle="dropdown"
                                 aria-expanded="false">
-                            <i class="uil-bell"></i>
+                            <i class="uil-bell font-size-24"></i>
                             <span class="badge bg-danger rounded-pill" id="txtAmountNoticeNotRead">0</span>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-end p-0"
@@ -73,7 +596,6 @@
                             </li>
                         </ul>
                     </div>
-
                     <div class="dropdown d-inline-block">
                         <button type="button" class="btn header-item waves-effect"
                                 id="page-header-user-dropdown"
@@ -87,27 +609,10 @@
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end"
                             aria-labelledby="page-header-user-dropdown">
-                            <li>
-                                <a class="dropdown-item" href="/Account/EmployeeProfile">
-                                    <i class="uil uil-user-circle font-size-18 align-middle text-muted me-1"></i> View Profile
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item" href="#">
-                                    <i class="uil uil-cog font-size-18 align-middle text-muted me-1"></i> Settings
-                                    <span class="badge bg-success-subtle text-success rounded-pill ms-2">03</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item" href="#">
-                                    <i class="uil uil-lock-alt font-size-18 align-middle text-muted me-1"></i> Lock Screen
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item" href="~/Account/SignedOut">
-                                    <i class="uil uil-sign-out-alt font-size-18 align-middle text-muted me-1"></i> Sign Out
-                                </a>
-                            </li>
+                            <li><a class="dropdown-item" href="/Account/EmployeeProfile"><i class="uil uil-user-circle font-size-18 align-middle text-muted me-1"></i> View Profile</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="uil uil-cog font-size-18 align-middle text-muted me-1"></i> Settings <span class="badge bg-success-subtle text-success rounded-pill ms-2">03</span></a></li>
+                            <li><a class="dropdown-item" href="#"><i class="uil uil-lock-alt font-size-18 align-middle text-muted me-1"></i> Lock Screen</a></li>
+                            <li><a class="dropdown-item" href="~/Account/SignedOut"><i class="uil uil-sign-out-alt font-size-18 align-middle text-muted me-1"></i> Sign Out</a></li>
                         </ul>
                     </div>
                 </div>
@@ -115,6 +620,7 @@
         </header>
 
         <div class="vertical-menu">
+            <div class="sidebar-overlay"></div>
             <div class="navbar-brand-box">
                 <a href="~/Index" class="logo logo-dark">
                     <span class="logo-sm">
@@ -133,7 +639,6 @@
                     </span>
                 </a>
             </div>
-
             <div data-simplebar class="sidebar-menu-scroll">
                 <div id="sidebar-menu">
                     <ul class="metismenu list-unstyled" id="side-menu">
@@ -152,42 +657,36 @@
                                 <li><a href="/TOEICPart7/QuestionList">Part 7</a></li>
                             </ul>
                         </li>
-
                         <li class="standout-item">
                             <a href="~/Manage/Department" class="waves-effect">
                                 <i class="fas fa-building standout-icon"></i>
                                 <span>Departments</span>
                             </a>
                         </li>
-
                         <li class="standout-item">
                             <a href="~/Manage/Employee" class="waves-effect">
                                 <i class="fa fa-user-tie standout-icon"></i>
                                 <span>Employee List</span>
                             </a>
                         </li>
-
                         <li class="standout-item">
                             <a href="~/Manage/Users" class="waves-effect">
                                 <i class="fa fa-user standout-icon"></i>
                                 <span>Users</span>
                             </a>
                         </li>
-
                         <li class="standout-item">
                             <a href="~/Manage/Members" class="waves-effect">
                                 <i class="fa fa-id-badge standout-icon"></i>
                                 <span>Members</span>
                             </a>
                         </li>
-
                         <li class="standout-item">
                             <a href="~/Manage/Test" class="waves-effect">
                                 <i class="fa fa-file-alt standout-icon"></i>
                                 <span>Tests</span>
                             </a>
                         </li>
-
                         <li class="standout-item">
                             <a href="~/Manage/Result" class="waves-effect">
                                 <i class="fa fa-chart-bar standout-icon"></i>
@@ -211,50 +710,46 @@
     <script src="~/lib/jquery/jquery.min.js"></script>
     <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="~/lib/metismenu/metisMenu.min.js"></script>
-    <script src="https://unpkg.com/simplebar@latest/dist/simplebar.min.js"></script>
+    <script src="https://unpkg.com/simplebar@5.3.9/dist/simplebar.min.js"></script>
     <script src="https://unpkg.com/node-waves@latest/dist/waves.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            if (typeof jQuery === 'undefined') {
-                console.error('jQuery is not loaded. Check the file ~/lib/jquery/jquery.min.js.');
-                alert('jQuery could not be loaded. Please ensure the file exists in ~/lib/jquery/.');
-            } else {
-                initializeScripts();
-            }
-        });
+        $(document).ready(function () {
+            console.log('Document ready, initializing scripts.');
 
-        function initializeScripts() {
+            if (typeof jQuery === 'undefined') {
+                console.error('jQuery is not loaded. Check ~/lib/jquery/jquery.min.js.');
+                alert('jQuery could not be loaded. Please ensure the file exists in ~/lib/jquery/.');
+                return;
+            }
+
             // Hàm làm nổi bật nút điều hướng dựa trên URL
             function highlightActiveMenu() {
-                const currentPath = window.location.pathname.toLowerCase(); // Lấy đường dẫn hiện tại
-                const menuLinks = $('#side-menu a'); // Lấy tất cả các thẻ <a> trong menu
+                const currentPath = window.location.pathname.toLowerCase();
+                const menuLinks = $('#side-menu a');
 
                 menuLinks.each(function () {
-                    const linkPath = $(this).attr('href')?.toLowerCase(); // Lấy href của thẻ <a>
-
-                    // Kiểm tra nếu href khớp với đường dẫn hiện tại
+                    const linkPath = $(this).attr('href')?.toLowerCase();
                     if (linkPath && currentPath === linkPath) {
-                        $(this).addClass('nav-active'); // Thêm class để làm nổi bật
+                        $(this).addClass('nav-active');
                     } else {
-                        $(this).removeClass('nav-active'); // Xóa class nếu không khớp
+                        $(this).removeClass('nav-active');
                     }
                 });
 
-                // Xử lý đặc biệt cho menu con của "DATA TOEIC"
                 const submenuLinks = $('.sub-menu.standout-submenu a');
                 submenuLinks.each(function () {
                     const submenuPath = $(this).attr('href')?.toLowerCase();
                     if (submenuPath && currentPath === submenuPath) {
                         $(this).addClass('nav-active');
-                        // Mở rộng menu cha nếu submenu đang hoạt động
                         $(this).closest('.sub-menu').prev('a').addClass('mm-active');
                         $(this).closest('.sub-menu').addClass('mm-show');
                     }
                 });
             }
 
+            // Tải dữ liệu user
             function loadUserData() {
                 $.ajax({
                     url: "/Reports/Personal",
@@ -285,8 +780,9 @@
             }
 
             loadUserData();
-            highlightActiveMenu(); // Gọi hàm làm nổi bật ngay sau khi tải trang
+            highlightActiveMenu();
 
+            // Khởi tạo dropdown Bootstrap
             var dropdownElementList = [].slice.call(document.querySelectorAll('[data-bs-toggle="dropdown"]'));
             var dropdownList = dropdownElementList.map(function (dropdownToggleEl) {
                 try {
@@ -297,394 +793,127 @@
                 }
             });
 
+            // Khởi tạo MetisMenu cho submenu
             if ($.fn.metisMenu) {
-                $('#side-menu').metisMenu();
-                console.log('MetisMenu initialized.');
+                try {
+                    $('#side-menu').metisMenu();
+                    console.log('MetisMenu initialized successfully for sidebar menu.');
+                } catch (e) {
+                    console.error('Error initializing MetisMenu:', e);
+                }
             } else {
-                console.error('MetisMenu function is not available. Check if metisMenu.min.js is loaded.');
+                console.error('MetisMenu not available. Check ~/lib/metismenu/metisMenu.min.js.');
             }
 
+            // Khởi tạo DataTables
             if ($.fn.DataTable) {
                 try {
                     $('table.dataTable').DataTable({});
-                    console.log('DataTables initialized.');
+                    console.log('DataTables initialized successfully.');
                 } catch (e) {
-                    console.error("Error initializing DataTables:", e);
+                    console.error('Error initializing DataTables:', e);
                 }
             }
 
+            // Khởi tạo SimpleBar
             if (typeof SimpleBar !== 'undefined') {
-                $('.sidebar-menu-scroll').each(function () {
-                    new SimpleBar(this);
-                });
-                console.log('SimpleBar initialized.');
+                try {
+                    $('.sidebar-menu-scroll').each(function () {
+                        new SimpleBar(this);
+                    });
+                    console.log('SimpleBar initialized successfully.');
+                } catch (e) {
+                    console.error('Error initializing SimpleBar:', e);
+                }
+            } else {
+                console.error('SimpleBar not available. Check SimpleBar CDN.');
             }
 
+            // Khởi tạo Waves
             if (typeof Waves !== 'undefined') {
                 Waves.init();
-                console.log('Waves initialized.');
+                console.log('Waves initialized successfully.');
             }
-        }
+
+            // Khởi tạo trạng thái sidebar
+            function initSidebarState() {
+                const windowWidth = $(window).width();
+                const $verticalMenu = $('.vertical-menu');
+                const $overlay = $('.sidebar-overlay');
+
+                if (windowWidth <= 576) {
+                    // Mobile: Sidebar ẩn, overlay ẩn
+                    $verticalMenu.removeClass('active');
+                    $overlay.removeClass('active').hide();
+                    console.log('Mobile Init: Sidebar hidden, overlay hidden.');
+                    console.log('CSS Check - .vertical-menu:', $verticalMenu.css('left'), $verticalMenu.css('opacity'));
+                } else if (windowWidth <= 768) {
+                    // Tablet: Sidebar thu gọn (CSS xử lý width: 60px)
+                    $verticalMenu.removeClass('active');
+                    $overlay.removeClass('active').hide();
+                    console.log('Tablet Init: Sidebar collapsed, overlay hidden.');
+                } else {
+                    // Desktop: Sidebar hiển thị (CSS xử lý width: 250px)
+                    $verticalMenu.removeClass('active');
+                    $overlay.removeClass('active').hide();
+                    console.log('Desktop Init: Sidebar visible, overlay hidden.');
+                }
+            }
+
+            initSidebarState();
+            $(window).on('resize', initSidebarState);
+
+            // Toggle sidebar trên mobile
+            $('.btn-toggle-sidebar').on('click', function (e) {
+                e.preventDefault();
+                // Chỉ hoạt động trên mobile
+                if ($(window).width() <= 576) {
+                    console.log('Hamburger clicked (Mobile)!');
+                    const $verticalMenu = $('.vertical-menu');
+                    const $overlay = $('.sidebar-overlay');
+
+                    $verticalMenu.toggleClass('active');
+
+                    if ($verticalMenu.hasClass('active')) {
+                        $overlay.addClass('active').fadeIn(200);
+                        console.log('Sidebar opened (active class added), overlay shown.');
+                        console.log('CSS Check - .vertical-menu.active:', $verticalMenu.css('left'), $verticalMenu.css('opacity'));
+                    } else {
+                        $overlay.removeClass('active').fadeOut(200);
+                        console.log('Sidebar closed (active class removed), overlay hidden.');
+                        console.log('CSS Check - .vertical-menu:', $verticalMenu.css('left'), $verticalMenu.css('opacity'));
+                    }
+                } else {
+                    console.log('Hamburger clicked (ignored on non-mobile).');
+                }
+            });
+
+            // Đóng sidebar khi click overlay
+            $('.sidebar-overlay').on('click', function () {
+                if ($('.vertical-menu').hasClass('active')) {
+                    console.log('Overlay clicked, closing sidebar.');
+                    const $verticalMenu = $('.vertical-menu');
+                    const $overlay = $('.sidebar-overlay');
+                    $verticalMenu.removeClass('active');
+                    $overlay.removeClass('active').fadeOut(200);
+                    console.log('CSS Check - .vertical-menu:', $verticalMenu.css('left'), $verticalMenu.css('opacity'));
+                }
+            });
+
+            // Đóng sidebar khi click ngoài trên mobile
+            $(document).on('click', function (e) {
+                const $verticalMenu = $('.vertical-menu');
+                if ($(window).width() <= 576 && $verticalMenu.hasClass('active')) {
+                    if (!$(e.target).closest('.vertical-menu').length && !$(e.target).closest('.btn-toggle-sidebar').length) {
+                        console.log('Clicked outside sidebar on mobile, closing.');
+                        $verticalMenu.removeClass('active');
+                        $('.sidebar-overlay').removeClass('active').fadeOut(200);
+                        console.log('CSS Check - .vertical-menu:', $verticalMenu.css('left'), $verticalMenu.css('opacity'));
+                    }
+                }
+            });
+        });
     </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
-<style>
-    /* Tổng thể */
-    body {
-        background: linear-gradient(135deg, #F0F7FF 0%, #F8F9FA 100%);
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        color: #2C3E50;
-        margin: 0;
-        padding: 0;
-        overflow-x: hidden;
-    }
-
-    #side-menu .nav-active {
-        font-weight: bold; /* In đậm */
-        background: linear-gradient(90deg, #1A73E8 0%, #AED6F1 100%) !important; /* Nền nổi bật */
-        color: #FFFFFF !important; /* Màu chữ trắng */
-    }
-
-    #layout-wrapper {
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-    }
-
-    /* Header */
-    #page-topbar {
-        background: linear-gradient(90deg, #AED6F1 0%, #D6EAF8 100%);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        z-index: 1030;
-        padding: 0;
-        height: 70px;
-    }
-
-    .navbar-header {
-        padding: 0 25px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        height: 100%;
-        position: relative;
-    }
-
-    .navbar-brand-box {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 0 10px 10px 0;
-        padding: 10px 20px;
-        border: 1px solid #E0E7FF;
-        display: flex;
-        align-items: center;
-        height: 70px;
-    }
-
-        .navbar-brand-box:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-    /* Sidebar */
-    .vertical-menu {
-        background: linear-gradient(180deg, #AED6F1 0%, #D6EAF8 100%);
-        border-radius: 0 15px 15px 0;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        border-right: 1px solid #E0E7FF;
-        position: fixed;
-        top: 0;
-        left: 0;
-        z-index: 1031;
-        height: 100vh;
-        width: 250px;
-        padding-top: 70px; /* Để tránh nội dung bị che bởi header */
-        box-sizing: border-box;
-    }
-
-        .vertical-menu .navbar-brand-box {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            z-index: 1032;
-            height: 70px;
-            border-radius: 0;
-            border: none;
-            background: transparent;
-            padding: 0 20px;
-            box-sizing: border-box;
-        }
-
-    .sidebar-menu-scroll {
-        padding: 15px 0;
-        height: calc(100% - 70px);
-        overflow-y: auto;
-        margin-top: 0;
-    }
-
-    #side-menu a {
-        color: #2C3E50;
-        font-weight: 500;
-        padding: 12px 20px;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        border-bottom: 1px solid rgba(224, 231, 255, 0.3);
-        text-decoration: none;
-    }
-
-        #side-menu .mm-active > a,
-        #side-menu a:hover {
-            background: rgba(255, 255, 255, 0.2);
-            color: #1A73E8;
-            border-radius: 8px;
-        }
-
-    #side-menu .has-arrow::after {
-        transition: transform 0.3s ease;
-    }
-
-    #side-menu .mm-active > .has-arrow::after {
-        transform: rotate(-180deg);
-    }
-
-    .metismenu .mm-collapse {
-        display: none;
-    }
-
-    .metismenu .mm-show {
-        display: block !important;
-    }
-
-    ul.sub-menu {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 6px;
-        margin: 5px 0 5px 15px !important;
-        padding: 5px 0 !important;
-        border: 1px solid #E0E7FF;
-    }
-
-        ul.sub-menu a {
-            color: #2C3E50;
-            padding: 10px 25px !important;
-            font-size: 14px;
-            border-bottom: none;
-        }
-
-            ul.sub-menu a:hover {
-                color: #1A73E8;
-                background: rgba(255, 255, 255, 0.2);
-                padding-left: 30px !important;
-            }
-
-    /* Dropdown chuông thông báo */
-    .noti-icon {
-        color: #2C3E50;
-        font-size: 22px;
-        padding: 10px;
-        transition: all 0.3s ease;
-    }
-
-        .noti-icon:hover {
-            color: #1A73E8;
-            transform: scale(1.1);
-        }
-
-    .badge {
-        min-width: 20px;
-        height: 20px;
-        line-height: 20px;
-        text-align: center;
-        background: #E74C3C;
-        border-radius: 50%;
-        font-size: 12px;
-        font-weight: bold;
-        box-shadow: 0 1px 4px rgba(231, 76, 60, 0.2);
-        position: absolute;
-        top: 15px;
-        right: 5px;
-        border: 1px solid #FFFFFF;
-    }
-
-    .dropdown-menu {
-        background: #FFFFFF;
-        border: 1px solid #E0E7FF;
-        border-radius: 10px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        padding: 10px 0;
-        width: 300px;
-    }
-
-    .notification-item {
-        padding: 12px 15px;
-        transition: all 0.3s ease;
-        border-radius: 6px;
-        border-bottom: 1px solid rgba(224, 231, 255, 0.3);
-    }
-
-        .notification-item:hover {
-            background: rgba(174, 214, 241, 0.1);
-            color: #2C3E50;
-            transform: translateX(5px);
-        }
-
-    .avatar-title {
-        background: #AED6F1;
-        border: 1px solid #E0E7FF;
-    }
-
-    .notification-item:hover .avatar-title {
-        background: #D6EAF8;
-    }
-
-    /* Dropdown user avatar */
-    .header-profile-user {
-        width: 40px;
-        height: 40px;
-        border: 1px solid #E0E7FF;
-        transition: all 0.3s ease;
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-    }
-
-    .header-item:hover .header-profile-user {
-        border-color: #1A73E8;
-        transform: scale(1.05);
-    }
-
-    #txtEmployeeName {
-        color: #2C3E50;
-        font-weight: 500;
-        font-size: 15px;
-    }
-
-    .header-item:hover #txtEmployeeName {
-        color: #1A73E8;
-    }
-
-    .uil-angle-down {
-        color: #2C3E50;
-        transition: transform 0.3s ease;
-        font-size: 15px;
-    }
-
-    .header-item:hover .uil-angle-down {
-        transform: rotate(180deg);
-        color: #1A73E8;
-    }
-
-    .dropdown-menu-end {
-        min-width: 200px;
-        border: 1px solid #E0E7FF;
-        border-radius: 10px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-
-        .dropdown-menu-end .dropdown-item {
-            padding: 10px 20px;
-            color: #2C3E50;
-            transition: all 0.3s ease;
-            border-radius: 6px;
-        }
-
-            .dropdown-menu-end .dropdown-item:hover {
-                background: rgba(174, 214, 241, 0.1);
-                color: #1A73E8;
-                padding-left: 25px;
-            }
-
-    /* Main content */
-    .main-content {
-        padding: 20px;
-        flex: 1;
-        margin-top: 70px;
-        margin-left: 250px;
-        transition: margin-left .3s ease-out;
-    }
-
-    .page-content {
-        background: #FFFFFF;
-        border-radius: 10px;
-        padding: 25px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        border: 1px solid #E0E7FF;
-    }
-
-        .page-content:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-    /* Làm nổi bật tiêu đề menu DATA TOEIC */
-    .standout-menu {
-        background: linear-gradient(90deg, #1A73E8 0%, #AED6F1 100%) !important;
-        color: #FFFFFF !important;
-        font-size: 16px;
-        font-weight: 600;
-        border-radius: 8px;
-        padding: 14px 20px !important;
-        box-shadow: 0 2px 6px rgba(26, 115, 232, 0.3);
-        transition: all 0.3s ease;
-        cursor: pointer;
-    }
-
-        .standout-menu:hover {
-            background: linear-gradient(90deg, #1A73E8 0%, #D6EAF8 100%) !important;
-            transform: translateX(5px);
-        }
-
-    .standout-icon {
-        font-size: 20px !important;
-        margin-right: 12px;
-        transition: all 0.3s ease;
-    }
-
-    #side-menu .mm-active > a .standout-icon,
-    #side-menu a:hover .standout-icon {
-        color: #FFFFFF !important;
-        transform: scale(1.2);
-    }
-
-    /* Submenu nổi bật cho DATA TOEIC */
-    .standout-submenu {
-        background: rgba(255, 255, 255, 0.15) !important;
-        border: 1px solid #FFFFFF !important;
-        border-radius: 8px;
-        margin: 8px 0 8px 20px !important;
-        padding: 8px 0 !important;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-    }
-
-        .standout-submenu a {
-            font-weight: 500;
-            color: #2C3E50 !important;
-            padding: 12px 30px !important;
-            transition: all 0.3s ease;
-        }
-
-            .standout-submenu a:hover {
-                background: rgba(26, 115, 232, 0.2) !important;
-                color: #1A73E8 !important;
-                padding-left: 35px !important;
-                border-radius: 6px;
-            }
-
-    /* Nút nổi bật chung */
-    .standout-item a {
-        background: rgba(26, 115, 232, 0.1);
-        color: #2C3E50;
-        font-weight: 600;
-        padding: 14px 20px !important;
-        border-radius: 8px;
-        transition: all 0.3s ease;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-    }
-
-        .standout-item.mm-active > a,
-        .standout-item a:hover {
-            background: linear-gradient(90deg, #1A73E8 0%, #AED6F1 100%) !important;
-            color: #FFFFFF !important;
-            transform: translateX(5px);
-        }
-</style>

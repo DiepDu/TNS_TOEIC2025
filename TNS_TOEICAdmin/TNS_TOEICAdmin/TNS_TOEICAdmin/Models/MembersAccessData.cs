@@ -237,9 +237,23 @@ namespace TNS_TOEICAdmin.Models
             using (var conn = new SqlConnection(_connectionString))
             {
                 await conn.OpenAsync();
+
+                // Kiểm tra trùng MemberID
+                string checkSql = "SELECT COUNT(*) FROM [EDU_Member] WHERE MemberID = @MemberID";
+                using (var checkCmd = new SqlCommand(checkSql, conn))
+                {
+                    checkCmd.Parameters.AddWithValue("@MemberID", member.MemberID);
+                    int count = (int)await checkCmd.ExecuteScalarAsync();
+                    if (count > 0)
+                    {
+                        throw new InvalidOperationException("MemberID already exists.");
+                    }
+                }
+
+                // Nếu không trùng, tiến hành thêm member
                 string sql = @"
-                    INSERT INTO [EDU_Member] (MemberKey, MemberID, MemberName, Password, Gender, YearOld, DepartmentKey, Activate, ToeicScoreStudy, ToeicScoreExam, CreatedBy, CreatedOn)
-                    VALUES (@MemberKey, @MemberID, @MemberName, @Password, @Gender, @YearOld, @DepartmentKey, @Activate, @ToeicScoreStudy, @ToeicScoreExam, @CreatedBy, GETDATE())";
+            INSERT INTO [EDU_Member] (MemberKey, MemberID, MemberName, Password, Gender, YearOld, DepartmentKey, Activate, ToeicScoreStudy, ToeicScoreExam, CreatedBy, CreatedOn)
+            VALUES (@MemberKey, @MemberID, @MemberName, @Password, @Gender, @YearOld, @DepartmentKey, @Activate, @ToeicScoreStudy, @ToeicScoreExam, @CreatedBy, GETDATE())";
                 using (var cmd = new SqlCommand(sql, conn))
                 {
                     cmd.Parameters.AddWithValue("@MemberKey", member.MemberKey);
@@ -263,20 +277,35 @@ namespace TNS_TOEICAdmin.Models
             using (var conn = new SqlConnection(_connectionString))
             {
                 await conn.OpenAsync();
+
+                // Kiểm tra trùng MemberID, nhưng loại trừ bản ghi hiện tại (dựa trên MemberKey)
+                string checkSql = "SELECT COUNT(*) FROM [EDU_Member] WHERE MemberID = @MemberID AND MemberKey != @MemberKey";
+                using (var checkCmd = new SqlCommand(checkSql, conn))
+                {
+                    checkCmd.Parameters.AddWithValue("@MemberID", member.MemberID);
+                    checkCmd.Parameters.AddWithValue("@MemberKey", member.MemberKey);
+                    int count = (int)await checkCmd.ExecuteScalarAsync();
+                    if (count > 0)
+                    {
+                        throw new InvalidOperationException("MemberID already exists.");
+                    }
+                }
+
+                // Nếu không trùng, tiến hành sửa member
                 string sql = @"
-                    UPDATE [EDU_Member]
-                    SET MemberID = @MemberID, 
-                        MemberName = @MemberName, 
-                        Password = CASE WHEN @Password IS NOT NULL THEN @Password ELSE Password END, 
-                        Gender = @Gender, 
-                        YearOld = @YearOld, 
-                        DepartmentKey = @DepartmentKey, 
-                        Activate = @Activate,
-                        ToeicScoreStudy = @ToeicScoreStudy,
-                        ToeicScoreExam = @ToeicScoreExam,
-                        ModifiedBy = @ModifiedBy,
-                        ModifiedOn = GETDATE()
-                    WHERE MemberKey = @MemberKey";
+            UPDATE [EDU_Member]
+            SET MemberID = @MemberID, 
+                MemberName = @MemberName, 
+                Password = CASE WHEN @Password IS NOT NULL THEN @Password ELSE Password END, 
+                Gender = @Gender, 
+                YearOld = @YearOld, 
+                DepartmentKey = @DepartmentKey, 
+                Activate = @Activate,
+                ToeicScoreStudy = @ToeicScoreStudy,
+                ToeicScoreExam = @ToeicScoreExam,
+                ModifiedBy = @ModifiedBy,
+                ModifiedOn = GETDATE()
+            WHERE MemberKey = @MemberKey";
                 using (var cmd = new SqlCommand(sql, conn))
                 {
                     cmd.Parameters.AddWithValue("@MemberKey", member.MemberKey);

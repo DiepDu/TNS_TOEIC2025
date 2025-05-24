@@ -73,7 +73,7 @@ namespace TNS_TOEICAdmin.Models
                                 };
                             }
 
-                            if (!reader.IsDBNull(9)) // RoleKey bắt đầu từ cột 9
+                            if (!reader.IsDBNull(9)) 
                             {
                                 userDict[userKey].Roles.Add(new UserRole
                                 {
@@ -150,6 +150,20 @@ namespace TNS_TOEICAdmin.Models
             using (var conn = new SqlConnection(_connectionString))
             {
                 await conn.OpenAsync();
+
+                // Kiểm tra trùng UserName
+                string checkSql = "SELECT COUNT(*) FROM [SYS_Users] WHERE UserName = @UserName";
+                using (var checkCmd = new SqlCommand(checkSql, conn))
+                {
+                    checkCmd.Parameters.AddWithValue("@UserName", user.UserName);
+                    int count = (int)await checkCmd.ExecuteScalarAsync();
+                    if (count > 0)
+                    {
+                        throw new InvalidOperationException("UserName already exists.");
+                    }
+                }
+
+                // Nếu không trùng, tiến hành thêm user
                 string sql = @"
             INSERT INTO [SYS_Users] (UserKey, UserName, Password, Description, EmployeeKey, Activate, ExpireDate, FailedPasswordAttemptCount, CreatedBy)
             VALUES (@UserKey, @UserName, @Password, @Description, @EmployeeKey, @Activate, @ExpireDate, 0, @CreatedBy)";
@@ -173,6 +187,21 @@ namespace TNS_TOEICAdmin.Models
             using (var conn = new SqlConnection(_connectionString))
             {
                 await conn.OpenAsync();
+
+                // Kiểm tra trùng UserName, nhưng loại trừ bản ghi hiện tại (dựa trên UserKey)
+                string checkSql = "SELECT COUNT(*) FROM [SYS_Users] WHERE UserName = @UserName AND UserKey != @UserKey";
+                using (var checkCmd = new SqlCommand(checkSql, conn))
+                {
+                    checkCmd.Parameters.AddWithValue("@UserName", user.UserName);
+                    checkCmd.Parameters.AddWithValue("@UserKey", user.UserKey);
+                    int count = (int)await checkCmd.ExecuteScalarAsync();
+                    if (count > 0)
+                    {
+                        throw new InvalidOperationException("UserName already exists.");
+                    }
+                }
+
+                // Nếu không trùng, tiến hành sửa user
                 string sql = @"
             UPDATE [SYS_Users]
             SET UserName = @UserName, 
