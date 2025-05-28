@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using TNS_TOEICAdmin.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,16 +23,22 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     .AddCookie();
 
 builder.Services.AddHttpContextAccessor();
-
+builder.Services.AddSignalR(options =>
+{
+    options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
+    options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+});
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowTestOrigin", policy =>
     {
         policy.WithOrigins("https://localhost:7003") // Cho phép Test (port 7003)
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .AllowCredentials();
     });
 });
+
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
@@ -48,6 +55,8 @@ app.UseCors("AllowTestOrigin");
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapHub<NotificationHub>("/notificationHub");
 
 app.MapControllers();
 app.MapRazorPages();

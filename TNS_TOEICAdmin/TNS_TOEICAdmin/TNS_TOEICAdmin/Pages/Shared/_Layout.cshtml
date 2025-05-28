@@ -10,9 +10,10 @@
     <link href="~/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
     <link href="~/lib/minible/css/icons.min.css" rel="stylesheet" type="text/css" />
     <link href="~/lib/minible/css/app.min.css" id="app-style" rel="stylesheet" type="text/css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet" />
     <link href="~/css/site.css" rel="stylesheet" />
     <style>
-        /* Tổng thể */
+        /* Giữ nguyên style hiện tại */
         body {
             background: linear-gradient(135deg, #F0F7FF 0%, #F8F9FA 100%) !important;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
@@ -135,6 +136,12 @@
             margin-top: 0 !important;
         }
 
+            .sidebar-menu-scroll[data-simplebar] {
+                max-height: none !important;
+                height: calc(100% - 60px) !important;
+                overflow-y: auto !important;
+            }
+
         #side-menu {
             margin: 0 !important;
             padding: 0 !important;
@@ -215,6 +222,26 @@
                 transform: scale(1.1) !important;
             }
 
+        .messenger-icon {
+            color: #2C3E50 !important;
+            font-size: 24px !important;
+            padding: 10px !important;
+            transition: transform 0.2s ease !important;
+        }
+
+            .messenger-icon:hover {
+                color: #1A73E8 !important;
+                transform: scale(1.1) !important;
+            }
+
+            .noti-icon:focus, .messenger-icon:focus {
+                outline: none !important;
+                border: 2px solid #1A73E8 !important;
+                border-radius: 6px !important;
+                box-shadow: none !important;
+                padding: 8px !important;
+            }
+
         .badge {
             min-width: 20px !important;
             height: 20px !important;
@@ -244,6 +271,27 @@
             right: 0 !important;
         }
 
+        .notification-dropdown, .messenger-dropdown {
+            top: 60px !important;
+            right: 0 !important;
+            left: auto !important;
+            transform: none !important;
+            width: 33vw !important;
+        }
+
+        /* Áp dụng max-height cho dropdown thông báo và tin nhắn */
+        #notification-list[data-simplebar],
+        #messenger-list[data-simplebar] {
+            max-height: 400px !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+        }
+
+        .notification-header {
+            padding: 12px 15px !important;
+            border-bottom: 1px solid #E0E7FF !important;
+        }
+
         .notification-item {
             padding: 12px 15px !important;
             transition: all 0.3s ease !important;
@@ -255,6 +303,14 @@
             .notification-item:hover {
                 background: rgba(174, 214, 241, 0.1) !important;
                 color: #2C3E50 !important;
+            }
+
+            /* Cắt nội dung thông báo dài, thêm dấu ... */
+            .notification-item .flex-grow-1 h6 {
+                white-space: nowrap !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+                max-width: 100% !important;
             }
 
         /* Dropdown user avatar */
@@ -561,7 +617,7 @@
                     </div>
                 </div>
                 <div class="d-flex align-items-center">
-                    <div class="dropdown d-inline-block">
+                    <div class="dropdown d-inline-block position-relative">
                         <button type="button" class="btn header-item noti-icon waves-effect"
                                 id="page-header-notifications-dropdown"
                                 data-bs-toggle="dropdown"
@@ -569,30 +625,39 @@
                             <i class="uil-bell font-size-24"></i>
                             <span class="badge bg-danger rounded-pill" id="txtAmountNoticeNotRead">0</span>
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-end p-0"
+                        <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-end p-0 notification-dropdown"
                             aria-labelledby="page-header-notifications-dropdown">
-                            <li class="p-3">
+                            <li class="p-3 notification-header">
                                 <h5 class="m-0 font-size-16">Notifications</h5>
                             </li>
                             <li>
-                                <div data-simplebar style="max-height: 230px;">
-                                    <a href="#" class="dropdown-item text-dark notification-item d-flex align-items-start p-2">
-                                        <div class="flex-shrink-0 me-3">
-                                            <span class="avatar-title bg-primary rounded-circle font-size-16">
-                                                <i class="uil-shopping-basket"></i>
-                                            </span>
-                                        </div>
-                                        <div class="flex-grow-1">
-                                            <h6 class="mt-0 mb-1">New Notification</h6>
-                                            <p class="mb-0">This is a sample notification.</p>
-                                        </div>
-                                    </a>
+                                <div data-simplebar id="notification-list">
+                                    <!-- Danh sách thông báo sẽ được load bằng JavaScript -->
                                 </div>
                             </li>
-                            <li class="p-2 border-top">
-                                <a class="dropdown-item text-center" href="javascript:void(0);">
-                                    View More..
-                                </a>
+                            <li class="p-2 border-top" id="view-more" style="display: none;">
+                                <a class="dropdown-item text-center" href="javascript:void(0);">View More..</a>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="dropdown d-inline-block position-relative">
+                        <button type="button" class="btn header-item messenger-icon waves-effect"
+                                id="page-header-messenger-dropdown"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false">
+                            <i class="uil-comment font-size-24"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-end p-0 messenger-dropdown"
+                            aria-labelledby="page-header-messenger-dropdown">
+                            <li class="p-3 notification-header">
+                                <h5 class="m-0 font-size-16">Messages</h5>
+                            </li>
+                            <li>
+                                <div data-simplebar id="messenger-list">
+                                    <div class="text-center p-3">
+                                        <p class="text-muted">No messages available.</p>
+                                    </div>
+                                </div>
                             </li>
                         </ul>
                     </div>
@@ -714,6 +779,7 @@
     <script src="https://unpkg.com/node-waves@latest/dist/waves.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="~/lib/signalr/dist/browser/signalr.min.js"></script>
     <script>
         $(document).ready(function () {
             console.log('Document ready, initializing scripts.');
@@ -765,6 +831,8 @@
                             }
                             $("#imgEmployeeAvatar").attr("src", avatarUrl);
                             $("#txtEmployeeName").text(data.EmployeeName || "User");
+                            window.userKey = data.UserKey;
+                            initializeSignalR(window.userKey);
                         } else {
                             console.warn("No user data returned from /Reports/Personal");
                             $("#txtEmployeeName").text("User");
@@ -779,8 +847,154 @@
                 });
             }
 
+            // Tải số lượng thông báo chưa đọc khi load trang
+            function loadUnreadCount() {
+                $.ajax({
+                    url: "/NotificationHandler/GetUnreadCount",
+                    type: "GET",
+                    success: function (data) {
+                        $("#txtAmountNoticeNotRead").text(data.count || 0);
+                        if (data.count > 0) {
+                            shakeBell();
+                        }
+                    },
+                    error: function (xhr) {
+                        console.error("Error fetching unread count:", xhr.status, xhr.responseText);
+                    }
+                });
+            }
+
+            // Hàm tính thời gian tương đối (ví dụ: "5 phút trước")
+            function getTimeAgo(createdOn) {
+                const now = new Date();
+                const createdDate = new Date(createdOn);
+                const diffInMinutes = Math.floor((now - createdDate) / (1000 * 60)); // Chênh lệch tính bằng phút
+
+                if (diffInMinutes < 1) return "Vừa xong";
+                if (diffInMinutes < 60) return `${diffInMinutes} phút trước`;
+                const diffInHours = Math.floor(diffInMinutes / 60);
+                if (diffInHours < 24) return `${diffInHours} giờ trước`;
+                const diffInDays = Math.floor(diffInHours / 24);
+                return `${diffInDays} ngày trước`;
+            }
+
+            // Tải danh sách thông báo (30 bản ghi gần nhất) và đánh dấu đã đọc
+            let skip = 0;
+            const take = 30;
+            function loadNotifications() {
+                $.ajax({
+                    url: `/NotificationHandler/GetNotifications?skip=${skip}&take=${take}`,
+                    type: "GET",
+                    success: function (data) {
+                        console.log("Notifications data:", data);
+                        const $list = $("#notification-list");
+                        $list.empty();
+                        if (data.notifications && data.notifications.length > 0) {
+                            data.notifications.forEach(function (notification) {
+                                // Phân biệt icon dựa trên Type
+                                const iconClass = notification.Type === "Feedback" ? "uil-feedback" : "uil-comment-alt-message";
+                                $list.append(`
+                                            <a href="#" class="dropdown-item text-dark notification-item d-flex align-items-start p-2" data-notification-id="${notification.NotificationKey}">
+                                                <div class="flex-shrink-0 me-3">
+                                                    <span class="avatar-title bg-primary rounded-circle font-size-16">
+                                                        <i class="${iconClass}"></i>
+                                                    </span>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <h6 class="mt-0 mb-1">${notification.Content}</h6>
+                                                    <p class="mb-0 text-muted">${getTimeAgo(notification.CreatedOn)}</p>
+                                                </div>
+                                            </a>
+                                        `);
+                            });
+                            if (data.totalCount > skip + take) {
+                                $("#view-more").show();
+                            } else {
+                                $("#view-more").hide();
+                            }
+                            // Đánh dấu tất cả thông báo là đã đọc
+                            const notificationIds = data.notifications.map(n => n.NotificationKey);
+                            if (notificationIds.length > 0) {
+                                $.ajax({
+                                    url: "/NotificationHandler/MarkAsRead",
+                                    type: "POST",
+                                    contentType: "application/json",
+                                    data: JSON.stringify(notificationIds),
+                                    success: function () {
+                                        loadUnreadCount();
+                                    },
+                                    error: function (xhr) {
+                                        console.error("Error marking as read:", xhr.status, xhr.responseText);
+                                    }
+                                });
+                            }
+                        } else {
+                            $list.append(`
+                                        <div class="text-center p-3">
+                                            <p class="text-muted">Không có thông báo.</p>
+                                        </div>
+                                    `);
+                            $("#view-more").hide();
+                        }
+                    },
+                    error: function (xhr) {
+                        console.error("Error fetching notifications:", xhr.status, xhr.responseText);
+                        $("#notification-list").html(`
+                                    <div class="text-center p-3">
+                                        <p class="text-muted">Lỗi khi tải thông báo.</p>
+                                    </div>
+                                `);
+                        $("#view-more").hide();
+                    }
+                });
+            }
+
+            // Tải thêm thông báo khi click View More
+            $("#view-more").on("click", function (e) {
+                e.preventDefault(); // Ngăn hành vi mặc định của thẻ <a>
+                e.stopPropagation(); // Ngăn sự kiện lan truyền lên dropdown
+                skip += take;
+                loadNotifications();
+            });
+
+            // Hiệu ứng lắc chuông
+            function shakeBell() {
+                const $bell = $("#page-header-notifications-dropdown");
+                if (!$bell.hasClass("animate__shakeX")) {
+                    $bell.addClass("animate__shakeX");
+                    setTimeout(() => $bell.removeClass("animate__shakeX"), 500);
+                }
+            }
+
+            // Kết nối SignalR
+            function initializeSignalR(userKey) {
+                const connection = new signalR.HubConnectionBuilder()
+                    .withUrl("/notificationHub", { accessTokenFactory: () => userKey || "" })
+                    .build();
+
+                connection.on("ReceiveNotification", function (content) {
+                    console.log("New notification received:", content);
+                    loadUnreadCount();
+                    if (parseInt($("#txtAmountNoticeNotRead").text()) > 0) {
+                        shakeBell();
+                    }
+                });
+
+                connection.start()
+                    .then(() => console.log("SignalR connected"))
+                    .catch(err => console.error("SignalR connection error:", err));
+            }
+
+            // Xử lý click chuông
+            $("#page-header-notifications-dropdown").on("click", function () {
+                skip = 0; // Reset skip khi mở popup
+                loadNotifications();
+            });
+
+            // Khởi tạo các thành phần
             loadUserData();
             highlightActiveMenu();
+            loadUnreadCount();
 
             // Khởi tạo dropdown Bootstrap
             var dropdownElementList = [].slice.call(document.querySelectorAll('[data-bs-toggle="dropdown"]'));
@@ -842,18 +1056,15 @@
                 const $overlay = $('.sidebar-overlay');
 
                 if (windowWidth <= 576) {
-                    // Mobile: Sidebar ẩn, overlay ẩn
                     $verticalMenu.removeClass('active');
                     $overlay.removeClass('active').hide();
                     console.log('Mobile Init: Sidebar hidden, overlay hidden.');
                     console.log('CSS Check - .vertical-menu:', $verticalMenu.css('left'), $verticalMenu.css('opacity'));
                 } else if (windowWidth <= 768) {
-                    // Tablet: Sidebar thu gọn (CSS xử lý width: 60px)
                     $verticalMenu.removeClass('active');
                     $overlay.removeClass('active').hide();
                     console.log('Tablet Init: Sidebar collapsed, overlay hidden.');
                 } else {
-                    // Desktop: Sidebar hiển thị (CSS xử lý width: 250px)
                     $verticalMenu.removeClass('active');
                     $overlay.removeClass('active').hide();
                     console.log('Desktop Init: Sidebar visible, overlay hidden.');
@@ -866,7 +1077,6 @@
             // Toggle sidebar trên mobile
             $('.btn-toggle-sidebar').on('click', function (e) {
                 e.preventDefault();
-                // Chỉ hoạt động trên mobile
                 if ($(window).width() <= 576) {
                     console.log('Hamburger clicked (Mobile)!');
                     const $verticalMenu = $('.vertical-menu');

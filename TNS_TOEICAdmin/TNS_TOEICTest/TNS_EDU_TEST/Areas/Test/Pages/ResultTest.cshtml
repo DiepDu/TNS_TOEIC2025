@@ -1317,13 +1317,16 @@ async function sendReport() {
 
         const data = await response.json();
         if (response.ok && data.success) {
+            showToast('Gửi phản hồi thành công!', 'success');
+            closeReportModal();
+
             const notifyPayload = {
                 QuestionKey: questionKey,
                 Part: question.part,
                 Member: '@Model.Member',
                 Summary: feedbackText
             };
-            const notifyResponse = await fetch('https://localhost:7078/api/notify', {
+            await fetch('https://localhost:7078/api/notify', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1332,14 +1335,6 @@ async function sendReport() {
                 },
                 body: JSON.stringify(notifyPayload)
             });
-
-            const notifyData = await notifyResponse.json();
-            if (notifyResponse.ok && notifyData.success) {
-                showToast('Gửi phản hồi thành công!', 'success');
-                closeReportModal();
-            } else {
-                showToast(`Gửi thông báo thất bại: ${notifyData.message || 'Lỗi không xác định'}`, 'error');
-            }
         } else {
             showToast(`Gửi phản hồi thất bại: ${data.message || 'Lỗi không xác định'}`, 'error');
         }
