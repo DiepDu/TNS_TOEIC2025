@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta content="App for Bank" name="description" />
     <meta content="Themesbrand" name="TN Solution" />
+    <meta name="csrf-token" content="@Html.AntiForgeryToken()" /> <!-- Thêm meta tag CSRF -->
     <link rel="shortcut icon" href="~/images/favicon.ico">
     <link href="~/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
     <link href="~/lib/minible/css/icons.min.css" rel="stylesheet" type="text/css" />
@@ -770,6 +771,9 @@
                 </div>
             </div>
         </div>
+
+        <!-- Thêm render file _FeedbackPopup.cshtml -->
+        @await Html.PartialAsync("~/Pages/Shared/Partials/_FeedbackPopup.cshtml")
     </div>
 
     <script src="~/lib/jquery/jquery.min.js"></script>
@@ -780,6 +784,7 @@
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="~/lib/signalr/dist/browser/signalr.min.js"></script>
+    <script src="~/js/feedbackPopup.js"></script> <!-- Thêm tham chiếu đến file mới -->
     <script>
         $(document).ready(function () {
             console.log('Document ready, initializing scripts.');
@@ -891,21 +896,22 @@
                         $list.empty();
                         if (data.notifications && data.notifications.length > 0) {
                             data.notifications.forEach(function (notification) {
-                                // Phân biệt icon dựa trên Type
+                                // Phân biệt icon và hành động click dựa trên Type
                                 const iconClass = notification.Type === "Feedback" ? "uil-feedback" : "uil-comment-alt-message";
+                                const clickAction = notification.Type === "Feedback" ? 'data-bs-toggle="modal" data-bs-target="#feedbackModal"' : '';
                                 $list.append(`
-                                            <a href="#" class="dropdown-item text-dark notification-item d-flex align-items-start p-2" data-notification-id="${notification.NotificationKey}">
-                                                <div class="flex-shrink-0 me-3">
-                                                    <span class="avatar-title bg-primary rounded-circle font-size-16">
-                                                        <i class="${iconClass}"></i>
-                                                    </span>
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <h6 class="mt-0 mb-1">${notification.Content}</h6>
-                                                    <p class="mb-0 text-muted">${getTimeAgo(notification.CreatedOn)}</p>
-                                                </div>
-                                            </a>
-                                        `);
+                                                            <a href="#" class="dropdown-item text-dark notification-item d-flex align-items-start p-2" data-notification-id="${notification.NotificationKey}" ${clickAction}>
+                                                                <div class="flex-shrink-0 me-3">
+                                                                    <span class="avatar-title bg-primary rounded-circle font-size-16">
+                                                                        <i class="${iconClass}"></i>
+                                                                    </span>
+                                                                </div>
+                                                                <div class="flex-grow-1">
+                                                                    <h6 class="mt-0 mb-1">${notification.Content}</h6>
+                                                                    <p class="mb-0 text-muted">${getTimeAgo(notification.CreatedOn)}</p>
+                                                                </div>
+                                                            </a>
+                                                        `);
                             });
                             if (data.totalCount > skip + take) {
                                 $("#view-more").show();
@@ -930,20 +936,20 @@
                             }
                         } else {
                             $list.append(`
-                                        <div class="text-center p-3">
-                                            <p class="text-muted">Không có thông báo.</p>
-                                        </div>
-                                    `);
+                                                        <div class="text-center p-3">
+                                                            <p class="text-muted">Không có thông báo.</p>
+                                                        </div>
+                                                    `);
                             $("#view-more").hide();
                         }
                     },
                     error: function (xhr) {
                         console.error("Error fetching notifications:", xhr.status, xhr.responseText);
                         $("#notification-list").html(`
-                                    <div class="text-center p-3">
-                                        <p class="text-muted">Lỗi khi tải thông báo.</p>
-                                    </div>
-                                `);
+                                                    <div class="text-center p-3">
+                                                        <p class="text-muted">Lỗi khi tải thông báo.</p>
+                                                    </div>
+                                                `);
                         $("#view-more").hide();
                     }
                 });

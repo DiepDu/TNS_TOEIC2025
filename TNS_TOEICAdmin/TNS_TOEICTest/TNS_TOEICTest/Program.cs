@@ -5,6 +5,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers(); // Đăng ký dịch vụ cho API Controller
 builder.Services.AddRazorPages();  // Đăng ký dịch vụ cho Razor Pages
 
+// Thêm cấu hình CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAdmin", builder =>
+    {
+        builder.WithOrigins("http://localhost:7078") // URL của dự án Admin
+               .AllowAnyMethod()
+               .AllowAnyHeader();
+    });
+});
+
 builder.Services.AddRazorPages(options =>
 {
     // Yêu cầu đăng nhập cho trang Test
@@ -14,7 +25,6 @@ builder.Services.AddRazorPages(options =>
     // Route cho trang ResultTest
     options.Conventions.AddAreaPageRoute("Test", "/ResultTest", "Test/ResultTest");
 });
-builder.Services.AddSingleton<CreateAccountAccessData>();
 builder.Services.AddSingleton<CreateAccountAccessData>();
 builder.Services.AddSingleton<ProfileAccessData>();
 builder.Services.AddControllers()
@@ -39,6 +49,10 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
+// Áp dụng policy CORS trước UseRouting và UseAuthorization
+app.UseCors("AllowAdmin");
+
 app.UseRouting();
 
 app.UseAuthentication();

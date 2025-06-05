@@ -1,4 +1,7 @@
 ﻿using Microsoft.Data.SqlClient;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace TNS_TOEICAdmin.Models
 {
@@ -14,9 +17,9 @@ namespace TNS_TOEICAdmin.Models
 
                 // Kiểm tra trùng lặp dựa trên Type, Content, RelatedKey
                 var checkQuery = @"
-                SELECT COUNT(*) 
-                FROM Notifications 
-                WHERE Type = @Type AND Content = @Content AND RelatedKey = @RelatedKey";
+            SELECT COUNT(*) 
+            FROM Notifications 
+            WHERE Type = @Type AND Content = @Content AND RelatedKey = @RelatedKey";
                 using (var checkCommand = new SqlCommand(checkQuery, connection))
                 {
                     checkCommand.Parameters.AddWithValue("@Type", type);
@@ -27,12 +30,12 @@ namespace TNS_TOEICAdmin.Models
                 }
 
                 var query = @"
-                INSERT INTO Notifications (
-                    NotificationKey, Type, Content, RelatedKey, CreatedOn, TargetKey, TargetType, IsRead, Project
-                )
-                VALUES (
-                    @NotificationKey, @Type, @Content, @RelatedKey, @CreatedOn, @TargetKey, @TargetType, @IsRead, @Project
-                )";
+            INSERT INTO Notifications (
+                NotificationKey, Type, Content, RelatedKey, CreatedOn, TargetKey, TargetType, IsRead, Project
+            )
+            VALUES (
+                @NotificationKey, @Type, @Content, @RelatedKey, @CreatedOn, @TargetKey, @TargetType, @IsRead, @Project
+            )";
 
                 using (var command = new SqlCommand(query, connection))
                 {
@@ -59,12 +62,12 @@ namespace TNS_TOEICAdmin.Models
                 await connection.OpenAsync();
 
                 var query = @"
-                SELECT NotificationKey, Type, Content, RelatedKey, CreatedOn, TargetKey, TargetType, IsRead, Project
-                FROM Notifications
-                WHERE (TargetKey = @UserKey OR TargetKey = '00000000-0000-0000-0000-000000000000')
-                AND Project = @Project
-                ORDER BY CreatedOn DESC
-                OFFSET @Skip ROWS FETCH NEXT @Take ROWS ONLY";
+            SELECT NotificationKey, Type, Content, RelatedKey, CreatedOn, TargetKey, TargetType, IsRead, Project
+            FROM Notifications
+            WHERE (TargetKey = @UserKey OR TargetKey = '00000000-0000-0000-0000-000000000000')
+            AND Project = @Project
+            ORDER BY CreatedOn DESC
+            OFFSET @Skip ROWS FETCH NEXT @Take ROWS ONLY";
 
                 using (var command = new SqlCommand(query, connection))
                 {
@@ -103,10 +106,10 @@ namespace TNS_TOEICAdmin.Models
                 await connection.OpenAsync();
 
                 var query = @"
-                SELECT COUNT(*)
-                FROM Notifications
-                WHERE (TargetKey = @UserKey OR TargetKey = '00000000-0000-0000-0000-000000000000')
-                AND Project = @Project";
+            SELECT COUNT(*)
+            FROM Notifications
+            WHERE (TargetKey = @UserKey OR TargetKey = '00000000-0000-0000-0000-000000000000')
+            AND Project = @Project";
 
                 using (var command = new SqlCommand(query, connection))
                 {
@@ -125,10 +128,10 @@ namespace TNS_TOEICAdmin.Models
                 await connection.OpenAsync();
 
                 var query = @"
-                SELECT COUNT(*)
-                FROM Notifications
-                WHERE (TargetKey = @UserKey OR TargetKey = '00000000-0000-0000-0000-000000000000')
-                AND Project = @Project AND IsRead = 0";
+            SELECT COUNT(*)
+            FROM Notifications
+            WHERE (TargetKey = @UserKey OR TargetKey = '00000000-0000-0000-0000-000000000000')
+            AND Project = @Project AND IsRead = 0";
 
                 using (var command = new SqlCommand(query, connection))
                 {
@@ -147,11 +150,11 @@ namespace TNS_TOEICAdmin.Models
                 await connection.OpenAsync();
 
                 var query = @"
-                UPDATE Notifications
-                SET IsRead = 1
-                WHERE (TargetKey = @UserKey OR TargetKey = '00000000-0000-0000-0000-000000000000')
-                AND Project = @Project 
-                AND NotificationKey IN ({0})";
+            UPDATE Notifications
+            SET IsRead = 1
+            WHERE (TargetKey = @UserKey OR TargetKey = '00000000-0000-0000-0000-000000000000')
+            AND Project = @Project 
+            AND NotificationKey IN ({0})";
 
                 var notificationIdsString = string.Join(",", notificationIds.Select(id => $"'{id}'"));
                 query = string.Format(query, notificationIdsString);
@@ -162,6 +165,75 @@ namespace TNS_TOEICAdmin.Models
                     command.Parameters.AddWithValue("@Project", project);
 
                     await command.ExecuteNonQueryAsync();
+                }
+            }
+        }
+
+        public static async Task<List<Feedback>> GetFeedbacksAsync(int skip = 0, int take = 50)
+        {
+            var feedbacks = new List<Feedback>();
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                var query = @"
+            SELECT f.FeedbackKey, f.QuestionKey, f.MemberKey, f.FeedbackText, f.CreatedOn, f.Part, f.Status,
+                   m.MemberName, m.Avatar -- Thêm cột Avatar
+            FROM QuestionFeedbacks f
+            JOIN EDU_Member m ON f.MemberKey = m.MemberKey
+            WHERE f.Status != 1
+            ORDER BY f.CreatedOn ASC
+            OFFSET @Skip ROWS FETCH NEXT @Take ROWS ONLY";
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@Skip", skip);
+                    command.Parameters.AddWithValue("@Take", take);
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            feedbacks.Add(new Feedback
+                            {
+                                FeedbackKey = reader.GetGuid(0),
+                                QuestionKey = reader.GetGuid(1),
+                                MemberKey = reader.GetGuid(2),
+                                Content = reader.GetString(3),
+                                CreatedOn = reader.GetDateTime(4),
+                                Part = reader.GetInt32(5),
+                                Status = reader.GetInt32(6),
+                                Name = reader.GetString(7),
+                                AvatarUrl = reader.IsDBNull(8) ? "/images/avatar/default-avatar.jpg" : reader.GetString(8) // Lấy đường dẫn avatar
+                            });
+                        }
+                    }
+                }
+            }
+            return feedbacks;
+        }
+
+        public static async Task<int> GetFeedbackTotalCountAsync()
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                var query = "SELECT COUNT(*) FROM QuestionFeedbacks WHERE Status != 1";
+                using (var command = new SqlCommand(query, connection))
+                {
+                    return (int)await command.ExecuteScalarAsync();
+                }
+            }
+        }
+
+        public static async Task<bool> MarkFeedbackAsResolvedAsync(Guid feedbackId)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                var query = "UPDATE QuestionFeedbacks SET Status = 1 WHERE FeedbackKey = @FeedbackId";
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@FeedbackId", feedbackId);
+                    var rowsAffected = await command.ExecuteNonQueryAsync();
+                    return rowsAffected > 0;
                 }
             }
         }
@@ -179,4 +251,18 @@ namespace TNS_TOEICAdmin.Models
         public bool IsRead { get; set; }
         public string Project { get; set; }
     }
+
+    public class Feedback
+    {
+        public Guid FeedbackKey { get; set; }
+        public Guid QuestionKey { get; set; }
+        public Guid MemberKey { get; set; }
+        public string Content { get; set; }
+        public DateTime CreatedOn { get; set; }
+        public int Part { get; set; }
+        public int Status { get; set; }
+        public string Name { get; set; }
+        public string AvatarUrl { get; set; }
+    }
+
 }

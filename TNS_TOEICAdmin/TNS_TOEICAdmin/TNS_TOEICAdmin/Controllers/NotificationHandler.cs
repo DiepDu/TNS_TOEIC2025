@@ -11,16 +11,15 @@ using Microsoft.AspNetCore.Http;
 namespace TNS_TOEICAdmin.Controllers
 {
     [Route("[controller]")]
+    [IgnoreAntiforgeryToken]
     public class NotificationHandler : Controller
     {
-        private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly string _connectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
-        private readonly IHubContext<NotificationHub> _hubContext;
+        private readonly IHttpContextAccessor _httpContextAccessor; private readonly string _connectionString = TNS.DBConnection.Connecting.SQL_MainDatabase; private readonly IHubContext _hubContext;
 
         public NotificationHandler(IHttpContextAccessor httpContextAccessor, IHubContext<NotificationHub> hubContext)
         {
             _httpContextAccessor = httpContextAccessor;
-            _hubContext = hubContext;
+            _hubContext = (IHubContext?)hubContext;
         }
 
         [HttpPost("ProcessNotification")]
@@ -88,10 +87,50 @@ namespace TNS_TOEICAdmin.Controllers
             await NotificationAccessData.MarkAsReadAsync(userKey, "Admin", notificationIds);
             return Ok(new { success = true });
         }
+
+        [HttpGet("GetFeedbacks")]
+        public async Task<IActionResult> GetFeedbacks([FromQuery] int skip = 0, [FromQuery] int take = 50)
+        {
+            var userCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
+            var userLogin = new TNS_Auth.UserLogin_Info(userCookie ?? new ClaimsPrincipal());
+            var userKey = userLogin.UserKey;
+
+            if (string.IsNullOrEmpty(userKey))
+            {
+                return Unauthorized(new { success = false, message = "UserKey not found." });
+            }
+
+            var feedbacks = await NotificationAccessData.GetFeedbacksAsync(skip, take);
+            var totalCount = await NotificationAccessData.GetFeedbackTotalCountAsync();
+
+            return Json(new { feedbacks, totalCount, count = feedbacks.Count });
+        }
+
+        [HttpPost("MarkFeedbackAsResolved")]
+        public async Task<IActionResult> MarkFeedbackAsResolved([FromBody] Guid feedbackId)
+        {
+            var userCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
+            var userLogin = new TNS_Auth.UserLogin_Info(userCookie ?? new ClaimsPrincipal());
+            var userKey = userLogin.UserKey;
+
+            if (string.IsNullOrEmpty(userKey))
+            {
+                return Unauthorized(new { success = false, message = "UserKey not found." });
+            }
+
+            var success = await NotificationAccessData.MarkFeedbackAsResolvedAsync(feedbackId);
+            if (success)
+            {
+                await _hubContext.Clients.All.SendAsync("ReceiveNotification", $"Feedback {feedbackId} marked as resolved.");
+                return Json(new { success = true });
+            }
+            return Json(new { success = false, message = "Feedback not found." });
+        }
     }
 
     public class NotificationContentDto
     {
         public string Content { get; set; }
     }
+
 }

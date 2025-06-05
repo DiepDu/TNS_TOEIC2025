@@ -32,7 +32,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowTestOrigin", policy =>
     {
-        policy.WithOrigins("https://localhost:7003") // Cho phép Test (port 7003)
+        policy.WithOrigins("https://localhost:7003") 
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
