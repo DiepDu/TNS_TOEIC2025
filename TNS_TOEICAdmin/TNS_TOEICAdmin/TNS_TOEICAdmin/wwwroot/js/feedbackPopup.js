@@ -1,4 +1,4 @@
-﻿// Định nghĩa debounce
+﻿// Debounce function (Giữ nguyên)
 function debounce(func, wait) {
     let timeout;
     return function (...args) {
@@ -7,142 +7,177 @@ function debounce(func, wait) {
     };
 }
 
-// Khởi tạo biến
-let feedbackSkip = 0;
-const feedbackTake = 50;
+// Variables
+let feedbackSkip = 0; // Bắt đầu từ 0
+const feedbackTake = 50; // Đã sửa thành 50
 let isLoading = false;
 let hasMoreFeedbacks = true;
 let currentReplyFeedbackId = null;
+let initialLoadDone = false; // Biến cờ để kiểm soát lần tải đầu tiên
 
+// Helper: Get avatar URL (Giữ nguyên)
 function getAvatarUrl(feedback) {
-    const baseUrl = "https://localhost:7003"; // Domain của dự án Test
+    const baseUrl = "https://localhost:7003"; // Cần điều chỉnh nếu baseUrl của bạn khác
     return feedback.AvatarUrl ? `${baseUrl}${feedback.AvatarUrl}` : "/images/avatar/default-avatar.jpg";
 }
 
+// Helper: Convert datetime to time-ago (Giữ nguyên)
 function getFeedbackTimeAgo(createdOn) {
     const now = new Date();
     const createdDate = new Date(createdOn);
-    const diffInMinutes = Math.floor((now - createdDate) / (1000 * 60));
-    if (diffInMinutes < 1) return "Vừa xong";
-    if (diffInMinutes < 60) return `${diffInMinutes} phút trước`;
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return `${diffInHours} giờ trước`;
-    const diffInDays = Math.floor(diffInHours / 24);
-    return `${diffInDays} ngày trước`;
+    const diff = Math.floor((now - createdDate) / 60000);
+    if (diff < 1) return "Vừa xong";
+    if (diff < 60) return `${diff} phút trước`;
+    const hours = Math.floor(diff / 60);
+    if (hours < 24) return `${hours} giờ trước`;
+    return `${Math.floor(hours / 24)} ngày trước`;
 }
 
-function loadFeedbacks(append = false) {
-    if (isLoading || !hasMoreFeedbacks) return;
+// Render feedback (Giữ nguyên)
+function renderFeedback(fb) {
+    const avatarUrl = getAvatarUrl(fb);
+    const isResolved = fb.Status === 1;
+    const resolvedButtonStyle = isResolved ? 'style="display: none;"' : '';
+    return `
+        <div class="feedback-item" data-feedback-id="${fb.FeedbackKey}">
+            <div class="d-flex align-items-start">
+                <img src="${avatarUrl}" class="avatar" onerror="this.src='/images/avatar/default-avatar.jpg';">
+                <div class="content">
+                    <div class="name">${fb.Name}</div>
+                    <div class="text">${fb.Content}</div>
+                    <div class="time">Part ${fb.Part} - ${getFeedbackTimeAgo(fb.CreatedOn)}</div>
+                    <div class="actions">
+                        <button class="btn btn-sm btn-primary reply-feedback" data-feedback-id="${fb.FeedbackKey}" data-member-key="${fb.MemberKey}">Trả lời</button>
+                        <a class="btn btn-sm btn-secondary" href="/Question?key=${fb.QuestionKey}">Xem chi tiết</a>
+                        <button class="btn btn-sm btn-success mark-resolved" data-feedback-id="${fb.FeedbackKey}" ${resolvedButtonStyle}>Đã xử lý</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+}
+
+// Load feedbacks (Hàm này được sửa lại logic cuộn và cập nhật skip)
+function loadFeedbacks(isPrepending = false) {
+    // Nếu đang tải hoặc không còn feedback để tải VÀ đã tải lần đầu xong, thì thoát
+    if (isLoading || (!hasMoreFeedbacks && initialLoadDone)) {
+        console.log(`[Load] Aborted: isLoading=${isLoading}, hasMoreFeedbacks=${hasMoreFeedbacks}, initialLoadDone=${initialLoadDone}`);
+        return;
+    }
     isLoading = true;
     $("#loading-feedback").show();
 
-    const url = '/NotificationHandler/GetFeedbacks';
-    console.log('Calling GetFeedbacks:', url, { skip: feedbackSkip, take: feedbackTake });
+    const $list = $("#feedback-list");
+    const $container = $("#feedback-container")[0];
 
-    $.ajax({
-        url: `${url}?skip=${feedbackSkip}&take=${feedbackTake}`,
-        type: 'GET',
-        dataType: 'json',
-        success: function (data) {
-            console.log('GetFeedbacks response:', data);
-            const $list = $("#feedback-list");
-            if (!append) $list.empty();
+    // Lưu lại vị trí cuộn hiện tại và chiều cao nội dung trước khi tải thêm
+    const oldScrollHeight = $container.scrollHeight;
+    const oldScrollTop = $container.scrollTop;
 
-            if (data.feedbacks && data.feedbacks.length > 0) {
-                data.feedbacks.forEach(function (feedback) {
-                    const avatarUrl = getAvatarUrl(feedback);
-                    const isResolved = feedback.Status === 1;
-                    const resolvedButtonStyle = isResolved ? 'style="display: none;"' : '';
-                    const feedbackHtml = `
-                        <div class="feedback-item" data-feedback-id="${feedback.FeedbackKey}">
-                            <div class="d-flex align-items-start">
-                                <img src="${avatarUrl}" alt="Avatar" class="avatar" onerror="this.src='/images/avatar/default-avatar.jpg';">
-                                <div class="content">
-                                    <div class="name">${feedback.Name}</div>
-                                    <div class="text">${feedback.Content}</div>
-                                    <div class="time">Part ${feedback.Part} - ${getFeedbackTimeAgo(feedback.CreatedOn)}</div>
-                                    <div class="actions">
-                                        <button class="btn btn-sm btn-primary reply-feedback" data-feedback-id="${feedback.FeedbackKey}" data-member-key="${feedback.MemberKey}">Trả lời</button>
-                                        <a class="btn btn-sm btn-secondary" href="/Question?key=${feedback.QuestionKey}">Xem chi tiết</a>
-                                        <button class="btn btn-sm btn-success mark-resolved" data-feedback-id="${feedback.FeedbackKey}" ${resolvedButtonStyle}>Đã xử lý</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>`;
-                    $list.append(feedbackHtml);
-                });
-                feedbackSkip += data.count;
-                hasMoreFeedbacks = data.totalCount > feedbackSkip;
-                if (!append) {
-                    const container = $("#feedback-container")[0];
-                    container.scrollTop = container.scrollHeight;
-                }
-            } else {
-                hasMoreFeedbacks = false;
-                if ($list.is(":empty")) {
-                    $list.html('<p class="text-center text-muted">No feedbacks available.</p>');
-                }
+    // feedbackSkip đã được định nghĩa là số lượng item đã load.
+    // currentApiSkip chính là offset để lấy các tin cũ hơn nữa.
+    const currentApiSkip = feedbackSkip;
+
+    console.log(`[Load] Calling API with skip=${currentApiSkip}, take=${feedbackTake}, isPrepending=${isPrepending}`);
+
+    $.getJSON(`/NotificationHandler/GetFeedbacks?skip=${currentApiSkip}&take=${feedbackTake}`)
+        .done(data => {
+            const items = data.feedbacks || [];
+            console.log("[Load] API Response:", data);
+            console.log(`[Load] Items received: ${items.length}, totalCount from DB: ${data.totalCount}`);
+
+            if (!isPrepending) { // Lần tải đầu tiên (khi mở modal)
+                $list.empty(); // Xóa sạch nội dung cũ
+                // SẮP XẾP LẠI: Vì server trả về DESC, để hiển thị cũ nhất ở trên, mới nhất ở dưới, ta cần reverse()
+                items.reverse().forEach(fb => $list.append(renderFeedback(fb))); // Thêm từng feedback vào cuối
+                $container.scrollTop = $container.scrollHeight; // Cuộn xuống cuối cùng để thấy tin mới nhất
+                initialLoadDone = true; // Đánh dấu đã tải lần đầu xong
+                console.log("[Load] Initial load complete. Scrolled to bottom.");
+            } else { // Tải thêm tin cũ hơn (khi cuộn lên)
+                // Prepend từng feedback vào đầu danh sách (đúng thứ tự từ cũ đến mới trong batch)
+                // Server đã trả về DESC (mới nhất của batch tiếp theo đến cũ nhất của batch đó),
+                // vì vậy để prepend lên trên và giữ đúng thứ tự từ cũ đến mới, chúng ta cần reverse() trước khi prepend
+                items.reverse().forEach(fb => $list.prepend(renderFeedback(fb)));
+
+                // Điều chỉnh vị trí cuộn để giữ nguyên điểm nhìn
+                const newScrollHeight = $container.scrollHeight;
+                $container.scrollTop = oldScrollTop + (newScrollHeight - oldScrollHeight);
+                console.log(`[Load] Prepended items. oldScrollHeight=${oldScrollHeight}, newScrollHeight=${newScrollHeight}, oldScrollTop=${oldScrollTop}, newScrollTop=${$container.scrollTop}`);
             }
+
+            // Cập nhật feedbackSkip bằng số lượng feedback thực tế đã nhận được
+            feedbackSkip += items.length;
+            // hasMoreFeedbacks: true nếu tổng số feedback còn lại lớn hơn số lượng đã tải
+            hasMoreFeedbacks = data.totalCount > feedbackSkip;
+            console.log(`[Load] Updated feedbackSkip=${feedbackSkip}, hasMoreFeedbacks=${hasMoreFeedbacks}`);
+
+            // Xử lý trường hợp không còn feedback nữa hoặc không có feedback nào
+            if (!hasMoreFeedbacks && $list.children().length > 0) {
+                console.log("[Load] All feedbacks loaded.");
+            } else if (!hasMoreFeedbacks && $list.children().length === 0) {
+                $list.html('<p class="text-center text-muted">Chưa có phản hồi nào.</p>');
+                console.log("[Load] No feedbacks found.");
+            }
+        })
+        .fail(xhr => {
+            console.error("Lỗi khi tải phản hồi:", xhr.status, xhr.responseText);
+            if (!isPrepending) {
+                $("#feedback-list").html('<p class="text-center text-danger">Lỗi tải dữ liệu.</p>');
+            }
+        })
+        .always(() => {
             isLoading = false;
             $("#loading-feedback").hide();
-        },
-        error: function (xhr) {
-            console.error('Error fetching feedbacks:', xhr.status, xhr.statusText, xhr.responseText);
-            $("#feedback-list").html('<p class="text-center text-danger">Error loading feedbacks.</p>');
-            isLoading = false;
-            $("#loading-feedback").hide();
-        }
-    });
+            console.log("[Load] Loading finished.");
+        });
 }
 
+// Mark as resolved (Giữ nguyên)
 function markFeedbackAsResolved(feedbackId) {
-    const url = '/NotificationHandler/MarkFeedbackAsResolved';
-    console.log('Calling MarkFeedbackAsResolved:', url, { feedbackId });
-
     $.ajax({
-        url: url,
+        url: '/NotificationHandler/MarkFeedbackAsResolved',
         type: 'POST',
         contentType: 'application/json',
         data: JSON.stringify(feedbackId),
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader('X-CSRF-TOKEN', $('meta[name="csrf-token"]').attr('content') || '');
-        },
-        success: function (response) {
-            console.log('MarkFeedbackAsResolved response:', response);
-            if (response.success) {
-                $(`div[data-feedback-id="${feedbackId}"] .mark-resolved`).hide();
+        success: res => {
+            if (res.success) {
+                $(`div[data-feedback-id="${feedbackId}"]`).fadeOut(300, function () {
+                    $(this).remove();
+                    // Sau khi xóa, cần điều chỉnh lại feedbackSkip và hasMoreFeedbacks nếu item đó nằm trong số đã tải.
+                    feedbackSkip--; // Giảm số lượng feedback đã tải nếu item bị xóa khỏi danh sách
+                    if (feedbackSkip < 0) feedbackSkip = 0;
+                    // Không cần đặt hasMoreFeedbacks = true ở đây, vì việc xóa 1 item
+                    // không làm tăng số lượng item có thể tải thêm.
+                    // Nếu cần tải lại để đảm bảo trạng thái, hãy gọi loadFeedbacks(false);
+                });
             } else {
-                alert(response.message || 'Failed to mark feedback as resolved.');
+                alert(res.message || 'Xử lý thất bại.');
             }
         },
-        error: function (xhr) {
-            console.error('Error marking feedback:', xhr.status, xhr.statusText, xhr.responseText);
-            alert('Failed to mark feedback as resolved.');
+        error: xhr => {
+            console.error('Lỗi xử lý:', xhr);
+            alert('Xử lý thất bại.');
         }
     });
 }
 
+// Reply logic (Giữ nguyên)
 function sendReplyFeedback(feedbackId, replyText) {
-    const url = '/NotificationHandler/SendReplyFeedback';
-    console.log('Calling SendReplyFeedback:', url, { feedbackId, replyText });
-
     $.ajax({
-        url: url,
+        url: '/NotificationHandler/SendReplyFeedback',
         type: 'POST',
         contentType: 'application/json',
-        data: JSON.stringify({ feedbackId, replyText }),
-        success: function (response) {
-            console.log('SendReplyFeedback response:', response);
-            if (response.success) {
+        data: JSON.stringify({ feedbackId: feedbackId, replyText: replyText }),
+        success: res => {
+            if (res.success) {
                 closeReplyBox();
                 alert('Phản hồi đã được gửi.');
             } else {
-                alert(response.message || 'Failed to send reply.');
+                alert(res.message || 'Gửi phản hồi thất bại.');
             }
         },
-        error: function (xhr) {
-            console.error('Error sending reply:', xhr.status, xhr.statusText, xhr.responseText);
-            alert('Failed to send reply.');
+        error: xhr => {
+            console.error('Lỗi gửi phản hồi:', xhr);
+            alert('Gửi phản hồi thất bại.');
         }
     });
 }
@@ -159,58 +194,45 @@ function closeReplyBox() {
     $("#reply-text").val("");
 }
 
-// Gắn sự kiện
+// Initialize popup
 function initFeedbackPopup() {
-    try {
-        console.log('Initializing feedback popup events.');
-        $("#feedback-container").on("scroll", debounce(function () {
-            const scrollTop = $(this).scrollTop();
-            if (scrollTop < 50 && hasMoreFeedbacks && !isLoading) {
-                loadFeedbacks(true);
-            }
-        }, 200));
+    $("#feedback-container").on("scroll", debounce(function () {
+        // Cuộn lên gần đầu (scrollTop < 50) VÀ còn dữ liệu để tải VÀ không đang tải VÀ đã tải lần đầu xong
+        if ($(this).scrollTop() < 50 && hasMoreFeedbacks && !isLoading && initialLoadDone) {
+            console.log("Scroll event: Triggering loadFeedbacks(true)");
+            loadFeedbacks(true); // Tải thêm (prepend)
+        }
+    }, 200));
 
-        $(document).on("click", ".mark-resolved", function () {
-            const feedbackId = $(this).data("feedback-id");
-            console.log('Mark resolved clicked:', feedbackId);
-            markFeedbackAsResolved(feedbackId);
-        });
+    $(document).on("click", ".mark-resolved", function () {
+        markFeedbackAsResolved($(this).data("feedback-id"));
+    });
 
-        $(document).on("click", ".reply-feedback", function () {
-            const feedbackId = $(this).data("feedback-id");
-            console.log('Reply clicked:', feedbackId);
-            openReplyBox(feedbackId);
-        });
+    $(document).on("click", ".reply-feedback", function () {
+        openReplyBox($(this).data("feedback-id"));
+    });
 
-        $(document).on("click", ".btn-cancel-reply", function () {
-            closeReplyBox();
-        });
+    $(document).on("click", ".btn-cancel-reply", closeReplyBox);
 
-        $(document).on("click", ".btn-send-reply", function () {
-            const replyText = $("#reply-text").val().trim();
-            if (!replyText) {
-                alert("Vui lòng nhập nội dung phản hồi.");
-                return;
-            }
-            if (currentReplyFeedbackId) {
-                sendReplyFeedback(currentReplyFeedbackId, replyText);
-            }
-        });
+    $(document).on("click", ".btn-send-reply", function () {
+        const text = $("#reply-text").val().trim();
+        if (!text) return alert("Vui lòng nhập nội dung phản hồi.");
+        if (currentReplyFeedbackId) sendReplyFeedback(currentReplyFeedbackId, text);
+    });
 
-        $('#feedbackModal').on('show.bs.modal', function () {
-            console.log('Feedback modal opened.');
-            feedbackSkip = 0;
-            hasMoreFeedbacks = true;
-            loadFeedbacks();
-        });
+    $('#feedbackModal').on('show.bs.modal', function () {
+        console.log("Modal show event: Resetting and loading initial feedbacks.");
+        feedbackSkip = 0; // Reset skip về 0
+        hasMoreFeedbacks = true; // Reset cờ này
+        isLoading = false; // Đảm bảo reset isLoading
+        initialLoadDone = false; // Quan trọng: Đặt lại cờ này để đảm bảo load mới từ đầu
+        loadFeedbacks(false); // Tải lần đầu (không prepend)
+    });
 
-        $('#feedbackModal').on('hidden.bs.modal', function () {
-            closeReplyBox();
-        });
-    } catch (e) {
-        console.error("Error initializing feedback popup:", e);
-    }
+    $('#feedbackModal').on('hidden.bs.modal', closeReplyBox);
 }
 
-// Khởi tạo
-initFeedbackPopup();
+// Init
+$(document).ready(function () {
+    initFeedbackPopup();
+});

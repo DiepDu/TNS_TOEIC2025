@@ -14,6 +14,9 @@ namespace TNS_TOEICAdmin.Controllers
     [IgnoreAntiforgeryToken]
     public class NotificationHandler : Controller
     {
+        // Biến để lưu thông tin quyền
+        public TNS_Auth.UserLogin_Info UserLogin;
+        public bool IsFullAdmin { get; private set; }
         private readonly IHttpContextAccessor _httpContextAccessor; private readonly string _connectionString = TNS.DBConnection.Connecting.SQL_MainDatabase; private readonly IHubContext _hubContext;
 
         public NotificationHandler(IHttpContextAccessor httpContextAccessor, IHubContext<NotificationHub> hubContext)
@@ -88,8 +91,9 @@ namespace TNS_TOEICAdmin.Controllers
             return Ok(new { success = true });
         }
 
+
         [HttpGet("GetFeedbacks")]
-        public async Task<IActionResult> GetFeedbacks([FromQuery] int skip = 0, [FromQuery] int take = 50)
+        public async Task<IActionResult> GetFeedbacks([FromQuery] int skip = 0, [FromQuery] int take = 50) // Đã sửa take thành 50
         {
             var userCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
             var userLogin = new TNS_Auth.UserLogin_Info(userCookie ?? new ClaimsPrincipal());
@@ -100,11 +104,44 @@ namespace TNS_TOEICAdmin.Controllers
                 return Unauthorized(new { success = false, message = "UserKey not found." });
             }
 
+            CheckAuth(userLogin);
+
+            if (!IsFullAdmin && !UserLogin.Role.IsUpdate)
+            {
+                return Unauthorized(new { success = false, message = "Access denied. Requires Full or Questions Edit permission." });
+            }
+
             var feedbacks = await NotificationAccessData.GetFeedbacksAsync(skip, take);
             var totalCount = await NotificationAccessData.GetFeedbackTotalCountAsync();
 
-            return Json(new { feedbacks, totalCount, count = feedbacks.Count });
+            return Json(new { feedbacks, totalCount });
         }
+
+        // Thêm phương thức CheckAuth
+        private void CheckAuth(TNS_Auth.UserLogin_Info userLogin)
+        {
+            UserLogin = userLogin;
+
+            // Kiểm tra quyền Full trước
+            var fullRole = new TNS_Auth.Role_Info(UserLogin.UserKey, "Full");
+            if (fullRole.GetCode() == "200") // Có quyền Full trong DB
+            {
+                IsFullAdmin = true;
+                UserLogin.GetRole("Questions"); // Vẫn lấy nhưng không ảnh hưởng
+            }
+            else
+            {
+                IsFullAdmin = false;
+                UserLogin.GetRole("Questions"); // Lấy quyền Questions
+            }
+
+            // Đảm bảo Role được khởi tạo
+            if (UserLogin.Role == null)
+            {
+                UserLogin.GetRole("Questions");
+            }
+        }
+
 
         [HttpPost("MarkFeedbackAsResolved")]
         public async Task<IActionResult> MarkFeedbackAsResolved([FromBody] Guid feedbackId)

@@ -176,13 +176,13 @@ namespace TNS_TOEICAdmin.Models
             {
                 await connection.OpenAsync();
                 var query = @"
-            SELECT f.FeedbackKey, f.QuestionKey, f.MemberKey, f.FeedbackText, f.CreatedOn, f.Part, f.Status,
-                   m.MemberName, m.Avatar -- Thêm cột Avatar
-            FROM QuestionFeedbacks f
-            JOIN EDU_Member m ON f.MemberKey = m.MemberKey
-            WHERE f.Status != 1
-            ORDER BY f.CreatedOn ASC
-            OFFSET @Skip ROWS FETCH NEXT @Take ROWS ONLY";
+                    SELECT f.FeedbackKey, f.QuestionKey, f.MemberKey, f.FeedbackText, f.CreatedOn, f.Part, f.Status,
+                           m.MemberName, m.Avatar
+                    FROM QuestionFeedbacks f
+                    JOIN EDU_Member m ON f.MemberKey = m.MemberKey
+                    WHERE f.Status != 1
+                    ORDER BY f.CreatedOn DESC  -- ĐÃ SỬA: Thay đổi thành DESC để lấy bản mới nhất trước
+                    OFFSET @Skip ROWS FETCH NEXT @Take ROWS ONLY";
                 using (var command = new SqlCommand(query, connection))
                 {
                     command.Parameters.AddWithValue("@Skip", skip);
@@ -201,7 +201,7 @@ namespace TNS_TOEICAdmin.Models
                                 Part = reader.GetInt32(5),
                                 Status = reader.GetInt32(6),
                                 Name = reader.GetString(7),
-                                AvatarUrl = reader.IsDBNull(8) ? "/images/avatar/default-avatar.jpg" : reader.GetString(8) // Lấy đường dẫn avatar
+                                AvatarUrl = reader.IsDBNull(8) ? "/images/avatar/default-avatar.jpg" : reader.GetString(8)
                             });
                         }
                     }
