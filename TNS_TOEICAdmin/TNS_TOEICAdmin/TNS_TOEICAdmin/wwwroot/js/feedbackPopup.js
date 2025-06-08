@@ -56,11 +56,11 @@ function renderFeedback(fb) {
         </div>`;
 }
 
-// Load feedbacks (Giữ nguyên)
+// Load feedbacks (Đã điều chỉnh để trả về Promise)
 function loadFeedbacks(isPrepending = false) {
     if (isLoading || (!hasMoreFeedbacks && initialLoadDone)) {
         console.log(`[Load] Aborted: isLoading=${isLoading}, hasMoreFeedbacks=${hasMoreFeedbacks}, initialLoadDone=${initialLoadDone}`);
-        return;
+        return $.Deferred().resolve().promise(); // Trả về một promise đã resolved để không chặn chain
     }
     isLoading = true;
     $("#loading-feedback").show();
@@ -73,7 +73,7 @@ function loadFeedbacks(isPrepending = false) {
 
     console.log(`[Load] Calling API with skip=${currentApiSkip}, take=${feedbackTake}, isPrepending=${isPrepending}`);
 
-    $.getJSON(`/NotificationHandler/GetFeedbacks?skip=${currentApiSkip}&take=${feedbackTake}`)
+    return $.getJSON(`/NotificationHandler/GetFeedbacks?skip=${currentApiSkip}&take=${feedbackTake}`)
         .done(data => {
             const items = data.feedbacks || [];
             console.log("[Load] API Response:", data);
@@ -81,12 +81,15 @@ function loadFeedbacks(isPrepending = false) {
 
             if (!isPrepending) {
                 $list.empty();
+                // Sắp xếp lại để hiển thị từ cũ đến mới (nếu API trả về từ mới đến cũ)
                 items.reverse().forEach(fb => $list.append(renderFeedback(fb)));
-                $container.scrollTop = $container.scrollHeight;
                 initialLoadDone = true;
-                console.log("[Load] Initial load complete. Scrolled to bottom.");
-            } else {
+                console.log("[Load] Initial load complete.");
+            } else { // Tải thêm tin cũ hơn (khi cuộn lên)
+                // Prepend từng feedback vào đầu danh sách (đúng thứ tự từ cũ đến mới trong batch)
                 items.reverse().forEach(fb => $list.prepend(renderFeedback(fb)));
+
+                // Điều chỉnh vị trí cuộn để giữ nguyên điểm nhìn
                 const newScrollHeight = $container.scrollHeight;
                 $container.scrollTop = oldScrollTop + (newScrollHeight - oldScrollHeight);
                 console.log(`[Load] Prepended items. oldScrollHeight=${oldScrollHeight}, newScrollHeight=${newScrollHeight}, oldScrollTop=${oldScrollTop}, newScrollTop=${$container.scrollTop}`);
@@ -201,7 +204,7 @@ function viewDetail(feedbackId) {
         });
 }
 
-// Initialize popup (Giữ nguyên, chỉ cập nhật event view-detail)
+// Initialize popup (Đã cập nhật logic cuộn)
 function initFeedbackPopup() {
     $("#feedback-container").on("scroll", debounce(function () {
         if ($(this).scrollTop() < 50 && hasMoreFeedbacks && !isLoading && initialLoadDone) {
@@ -239,7 +242,15 @@ function initFeedbackPopup() {
         hasMoreFeedbacks = true;
         isLoading = false;
         initialLoadDone = false;
-        loadFeedbacks(false);
+
+        loadFeedbacks(false).done(() => {
+            // Thêm một setTimeout nhỏ ở đây để đảm bảo DOM đã render xong
+            setTimeout(() => {
+                const $container = $("#feedback-container")[0];
+                $container.scrollTop = $container.scrollHeight;
+                console.log("[Load] Scrolled to bottom (latest feedback) after loading with timeout.");
+            }, 50); // Độ trễ 50ms
+        });
     });
 
     $('#feedbackModal').on('hidden.bs.modal', closeReplyBox);

@@ -180,7 +180,7 @@ namespace TNS_TOEICAdmin.Models
                            m.MemberName, m.Avatar
                     FROM QuestionFeedbacks f
                     JOIN EDU_Member m ON f.MemberKey = m.MemberKey
-                    WHERE f.Status != 1
+                   
                     ORDER BY f.CreatedOn DESC  -- ĐÃ SỬA: Thay đổi thành DESC để lấy bản mới nhất trước
                     OFFSET @Skip ROWS FETCH NEXT @Take ROWS ONLY";
                 using (var command = new SqlCommand(query, connection))
@@ -215,7 +215,7 @@ namespace TNS_TOEICAdmin.Models
             using (var connection = new SqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
-                var query = "SELECT COUNT(*) FROM QuestionFeedbacks WHERE Status != 1";
+                var query = "SELECT COUNT(*) FROM QuestionFeedbacks";
                 using (var command = new SqlCommand(query, connection))
                 {
                     return (int)await command.ExecuteScalarAsync();
