@@ -7,17 +7,17 @@ function debounce(func, wait) {
     };
 }
 
-// Variables
-let feedbackSkip = 0; // Bắt đầu từ 0
-const feedbackTake = 50; // Đã sửa thành 50
+// Variables (Giữ nguyên)
+let feedbackSkip = 0;
+const feedbackTake = 50;
 let isLoading = false;
 let hasMoreFeedbacks = true;
 let currentReplyFeedbackId = null;
-let initialLoadDone = false; // Biến cờ để kiểm soát lần tải đầu tiên
+let initialLoadDone = false;
 
 // Helper: Get avatar URL (Giữ nguyên)
 function getAvatarUrl(feedback) {
-    const baseUrl = "https://localhost:7003"; // Cần điều chỉnh nếu baseUrl của bạn khác
+    const baseUrl = "https://localhost:7003";
     return feedback.AvatarUrl ? `${baseUrl}${feedback.AvatarUrl}` : "/images/avatar/default-avatar.jpg";
 }
 
@@ -48,7 +48,7 @@ function renderFeedback(fb) {
                     <div class="time">Part ${fb.Part} - ${getFeedbackTimeAgo(fb.CreatedOn)}</div>
                     <div class="actions">
                         <button class="btn btn-sm btn-primary reply-feedback" data-feedback-id="${fb.FeedbackKey}" data-member-key="${fb.MemberKey}">Trả lời</button>
-                        <a class="btn btn-sm btn-secondary" href="/Question?key=${fb.QuestionKey}">Xem chi tiết</a>
+                        <a class="btn btn-sm btn-secondary view-detail" data-feedback-id="${fb.FeedbackKey}" href="#">Xem chi tiết</a>
                         <button class="btn btn-sm btn-success mark-resolved" data-feedback-id="${fb.FeedbackKey}" ${resolvedButtonStyle}>Đã xử lý</button>
                     </div>
                 </div>
@@ -56,9 +56,8 @@ function renderFeedback(fb) {
         </div>`;
 }
 
-// Load feedbacks (Hàm này được sửa lại logic cuộn và cập nhật skip)
+// Load feedbacks (Giữ nguyên)
 function loadFeedbacks(isPrepending = false) {
-    // Nếu đang tải hoặc không còn feedback để tải VÀ đã tải lần đầu xong, thì thoát
     if (isLoading || (!hasMoreFeedbacks && initialLoadDone)) {
         console.log(`[Load] Aborted: isLoading=${isLoading}, hasMoreFeedbacks=${hasMoreFeedbacks}, initialLoadDone=${initialLoadDone}`);
         return;
@@ -68,13 +67,8 @@ function loadFeedbacks(isPrepending = false) {
 
     const $list = $("#feedback-list");
     const $container = $("#feedback-container")[0];
-
-    // Lưu lại vị trí cuộn hiện tại và chiều cao nội dung trước khi tải thêm
     const oldScrollHeight = $container.scrollHeight;
     const oldScrollTop = $container.scrollTop;
-
-    // feedbackSkip đã được định nghĩa là số lượng item đã load.
-    // currentApiSkip chính là offset để lấy các tin cũ hơn nữa.
     const currentApiSkip = feedbackSkip;
 
     console.log(`[Load] Calling API with skip=${currentApiSkip}, take=${feedbackTake}, isPrepending=${isPrepending}`);
@@ -85,32 +79,23 @@ function loadFeedbacks(isPrepending = false) {
             console.log("[Load] API Response:", data);
             console.log(`[Load] Items received: ${items.length}, totalCount from DB: ${data.totalCount}`);
 
-            if (!isPrepending) { // Lần tải đầu tiên (khi mở modal)
-                $list.empty(); // Xóa sạch nội dung cũ
-                // SẮP XẾP LẠI: Vì server trả về DESC, để hiển thị cũ nhất ở trên, mới nhất ở dưới, ta cần reverse()
-                items.reverse().forEach(fb => $list.append(renderFeedback(fb))); // Thêm từng feedback vào cuối
-                $container.scrollTop = $container.scrollHeight; // Cuộn xuống cuối cùng để thấy tin mới nhất
-                initialLoadDone = true; // Đánh dấu đã tải lần đầu xong
+            if (!isPrepending) {
+                $list.empty();
+                items.reverse().forEach(fb => $list.append(renderFeedback(fb)));
+                $container.scrollTop = $container.scrollHeight;
+                initialLoadDone = true;
                 console.log("[Load] Initial load complete. Scrolled to bottom.");
-            } else { // Tải thêm tin cũ hơn (khi cuộn lên)
-                // Prepend từng feedback vào đầu danh sách (đúng thứ tự từ cũ đến mới trong batch)
-                // Server đã trả về DESC (mới nhất của batch tiếp theo đến cũ nhất của batch đó),
-                // vì vậy để prepend lên trên và giữ đúng thứ tự từ cũ đến mới, chúng ta cần reverse() trước khi prepend
+            } else {
                 items.reverse().forEach(fb => $list.prepend(renderFeedback(fb)));
-
-                // Điều chỉnh vị trí cuộn để giữ nguyên điểm nhìn
                 const newScrollHeight = $container.scrollHeight;
                 $container.scrollTop = oldScrollTop + (newScrollHeight - oldScrollHeight);
                 console.log(`[Load] Prepended items. oldScrollHeight=${oldScrollHeight}, newScrollHeight=${newScrollHeight}, oldScrollTop=${oldScrollTop}, newScrollTop=${$container.scrollTop}`);
             }
 
-            // Cập nhật feedbackSkip bằng số lượng feedback thực tế đã nhận được
             feedbackSkip += items.length;
-            // hasMoreFeedbacks: true nếu tổng số feedback còn lại lớn hơn số lượng đã tải
             hasMoreFeedbacks = data.totalCount > feedbackSkip;
             console.log(`[Load] Updated feedbackSkip=${feedbackSkip}, hasMoreFeedbacks=${hasMoreFeedbacks}`);
 
-            // Xử lý trường hợp không còn feedback nữa hoặc không có feedback nào
             if (!hasMoreFeedbacks && $list.children().length > 0) {
                 console.log("[Load] All feedbacks loaded.");
             } else if (!hasMoreFeedbacks && $list.children().length === 0) {
@@ -142,12 +127,8 @@ function markFeedbackAsResolved(feedbackId) {
             if (res.success) {
                 $(`div[data-feedback-id="${feedbackId}"]`).fadeOut(300, function () {
                     $(this).remove();
-                    // Sau khi xóa, cần điều chỉnh lại feedbackSkip và hasMoreFeedbacks nếu item đó nằm trong số đã tải.
-                    feedbackSkip--; // Giảm số lượng feedback đã tải nếu item bị xóa khỏi danh sách
+                    feedbackSkip--;
                     if (feedbackSkip < 0) feedbackSkip = 0;
-                    // Không cần đặt hasMoreFeedbacks = true ở đây, vì việc xóa 1 item
-                    // không làm tăng số lượng item có thể tải thêm.
-                    // Nếu cần tải lại để đảm bảo trạng thái, hãy gọi loadFeedbacks(false);
                 });
             } else {
                 alert(res.message || 'Xử lý thất bại.');
@@ -194,13 +175,38 @@ function closeReplyBox() {
     $("#reply-text").val("");
 }
 
-// Initialize popup
+// Updated function to handle view detail with dynamic part
+function viewDetail(feedbackId) {
+    $.getJSON(`/NotificationHandler/GetFeedbackDetail?feedbackKey=${feedbackId}`)
+        .done(data => {
+            if (data.success) {
+                const feedback = data.feedback;
+                let url;
+                if ([1, 2, 5].includes(feedback.Part)) {
+                    url = `/TOEICPart${feedback.Part}/Question?Key=${feedback.QuestionKey}`;
+                } else if ([3, 4, 6, 7].includes(feedback.Part)) {
+                    url = `/ToeicPart${feedback.Part}/Question?Key=${feedback.QuestionKey}&source=QuestionSubList`;
+                } else {
+                    alert("Part không hợp lệ.");
+                    return;
+                }
+                window.location.href = url; // Chuyển hướng đến URL tương ứng
+            } else {
+                alert(data.message || "Không thể lấy thông tin chi tiết.");
+            }
+        })
+        .fail(xhr => {
+            console.error("Lỗi khi lấy chi tiết:", xhr);
+            alert("Lỗi khi lấy chi tiết.");
+        });
+}
+
+// Initialize popup (Giữ nguyên, chỉ cập nhật event view-detail)
 function initFeedbackPopup() {
     $("#feedback-container").on("scroll", debounce(function () {
-        // Cuộn lên gần đầu (scrollTop < 50) VÀ còn dữ liệu để tải VÀ không đang tải VÀ đã tải lần đầu xong
         if ($(this).scrollTop() < 50 && hasMoreFeedbacks && !isLoading && initialLoadDone) {
             console.log("Scroll event: Triggering loadFeedbacks(true)");
-            loadFeedbacks(true); // Tải thêm (prepend)
+            loadFeedbacks(true);
         }
     }, 200));
 
@@ -220,13 +226,20 @@ function initFeedbackPopup() {
         if (currentReplyFeedbackId) sendReplyFeedback(currentReplyFeedbackId, text);
     });
 
+    $(document).on("click", ".view-detail", function (e) {
+        e.preventDefault();
+        const feedbackId = $(this).data("feedback-id");
+        console.log("View detail clicked for FeedbackKey:", feedbackId);
+        viewDetail(feedbackId);
+    });
+
     $('#feedbackModal').on('show.bs.modal', function () {
         console.log("Modal show event: Resetting and loading initial feedbacks.");
-        feedbackSkip = 0; // Reset skip về 0
-        hasMoreFeedbacks = true; // Reset cờ này
-        isLoading = false; // Đảm bảo reset isLoading
-        initialLoadDone = false; // Quan trọng: Đặt lại cờ này để đảm bảo load mới từ đầu
-        loadFeedbacks(false); // Tải lần đầu (không prepend)
+        feedbackSkip = 0;
+        hasMoreFeedbacks = true;
+        isLoading = false;
+        initialLoadDone = false;
+        loadFeedbacks(false);
     });
 
     $('#feedbackModal').on('hidden.bs.modal', closeReplyBox);

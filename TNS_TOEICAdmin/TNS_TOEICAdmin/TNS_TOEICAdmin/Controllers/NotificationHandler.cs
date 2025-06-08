@@ -95,6 +95,7 @@ namespace TNS_TOEICAdmin.Controllers
         [HttpGet("GetFeedbacks")]
         public async Task<IActionResult> GetFeedbacks([FromQuery] int skip = 0, [FromQuery] int take = 50) // Đã sửa take thành 50
         {
+
             var userCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
             var userLogin = new TNS_Auth.UserLogin_Info(userCookie ?? new ClaimsPrincipal());
             var userKey = userLogin.UserKey;
@@ -162,6 +163,65 @@ namespace TNS_TOEICAdmin.Controllers
                 return Json(new { success = true });
             }
             return Json(new { success = false, message = "Feedback not found." });
+        }
+
+        [HttpGet("GetFeedbackDetail")]
+        public async Task<IActionResult> GetFeedbackDetail([FromQuery] Guid feedbackKey)
+        {
+            var userCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
+            var userLogin = new TNS_Auth.UserLogin_Info(userCookie ?? new ClaimsPrincipal());
+            var userKey = userLogin.UserKey;
+
+            if (string.IsNullOrEmpty(userKey))
+            {
+                return Unauthorized(new { success = false, message = "UserKey not found." });
+            }
+
+            CheckAuth(userLogin);
+
+            if (!IsFullAdmin && !UserLogin.Role.IsUpdate)
+            {
+                return Unauthorized(new { success = false, message = "Access denied. Requires Full or Questions Edit permission." });
+            }
+
+            try
+            {
+                using (var connection = new SqlConnection(TNS.DBConnection.Connecting.SQL_MainDatabase))
+                {
+                    await connection.OpenAsync();
+                    var query = @"
+                SELECT TOP (1) [FeedbackKey], [QuestionKey], [Parent], [MemberKey], [FeedbackText], [CreatedOn], [Part], [Status]
+                FROM [TNS_Toeic].[dbo].[QuestionFeedbacks]
+                WHERE [FeedbackKey] = @FeedbackKey";
+                    using (var command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@FeedbackKey", feedbackKey);
+                        using (var reader = await command.ExecuteReaderAsync())
+                        {
+                            if (await reader.ReadAsync())
+                            {
+                                var feedback = new
+                                {
+                                    FeedbackKey = reader.GetGuid(0),
+                                    QuestionKey = reader.GetGuid(1),
+                                    Parent = reader.IsDBNull(2) ? (Guid?)null : reader.GetGuid(2),
+                                    MemberKey = reader.GetGuid(3),
+                                    FeedbackText = reader.GetString(4),
+                                    CreatedOn = reader.GetDateTime(5),
+                                    Part = reader.GetInt32(6),
+                                    Status = reader.GetInt32(7)
+                                };
+                                return Json(new { success = true, feedback });
+                            }
+                            return Json(new { success = false, message = "Feedback not found." });
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error fetching feedback: " + ex.Message });
+            }
         }
     }
 
