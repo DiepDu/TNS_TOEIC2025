@@ -1,8 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using TNS_TOEICAdmin.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -30,9 +28,9 @@ builder.Services.AddSignalR(options =>
 });
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowTestOrigin", policy =>
+    options.AddPolicy("AllowChat", policy =>
     {
-        policy.WithOrigins("https://localhost:7003") 
+        policy.WithOrigins("https://localhost:7078", "https://localhost:7003")
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -51,13 +49,13 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 
-app.UseCors("AllowTestOrigin");
+app.UseCors("AllowChat");
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapHub<NotificationHub>("/notificationHub");
-
+app.MapHub<ChatHub>("/chatHub");
 app.MapControllers();
 app.MapRazorPages();
 
