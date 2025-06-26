@@ -33,7 +33,22 @@ namespace TNS_TOEICTest.Controllers
             var result = await ChatAccessData.GetConversationsAsync(userKey, memberKey, currentMemberKey);
             return Ok(result);
         }
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchContacts([FromQuery] string query)
+        {
+            var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
+            var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
+            var memberKey = memberLogin.MemberKey;
 
+            if (string.IsNullOrEmpty(memberKey))
+                return Unauthorized(new { success = false, message = "MemberKey not found" });
+
+            if (string.IsNullOrEmpty(query))
+                return Ok(new List<Dictionary<string, object>>());
+
+            var results = await ChatAccessData.SearchContactsAsync(query, memberKey);
+            return Ok(results);
+        }
         [HttpGet("messages/{conversationKey}")]
         public async Task<IActionResult> GetMessages(string conversationKey, [FromQuery] int skip = 0)
         {

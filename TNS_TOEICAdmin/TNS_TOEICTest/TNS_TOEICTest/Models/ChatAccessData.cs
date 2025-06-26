@@ -123,6 +123,81 @@ namespace TNS_TOEICAdmin.Models
     };
         }
 
+        public static async Task<List<Dictionary<string, object>>> SearchContactsAsync(string query, string memberKey)
+        {
+            var results = new List<Dictionary<string, object>>();
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                // Tìm kiếm trong Conversations (Group)
+                var groupQuery = @"
+            SELECT c.ConversationKey, c.Name AS Name, c.GroupAvatar AS Avatar, 'Group' AS UserType
+            FROM Conversations c
+            JOIN ConversationParticipants cp ON c.ConversationKey = cp.ConversationKey
+            WHERE c.ConversationType = 'Group'
+            AND cp.UserKey = @MemberKey
+            AND c.Name LIKE '%' + @Query + '%'";
+
+                // Tìm kiếm trong EDU_Member (loại bỏ bản thân)
+                var memberQuery = @"
+            SELECT m.MemberKey AS UserKey, m.MemberName AS Name, m.Avatar AS Avatar, 'Member' AS UserType
+            FROM EDU_Member m
+            WHERE m.MemberName LIKE '%' + @Query + '%'
+            AND m.MemberKey != @MemberKey";
+
+                // Tìm kiếm trong SYS_Users và HRM_Employee (loại bỏ bản thân)
+                var userQuery = @"
+            SELECT u.UserKey, u.UserName AS Name, e.PhotoPath AS Avatar, 'Admin' AS UserType
+            FROM SYS_Users u
+            JOIN HRM_Employee e ON u.EmployeeKey = e.EmployeeKey
+            WHERE u.UserName LIKE '%' + @Query + '%'
+            AND u.UserKey != @MemberKey";
+
+                var queries = new[]
+                {
+            (query: groupQuery, hasConversationKey: true, hasUserKey: false),
+            (query: memberQuery, hasConversationKey: false, hasUserKey: true),
+            (query: userQuery, hasConversationKey: false, hasUserKey: true)
+        };
+                foreach (var (q, hasConversationKey, hasUserKey) in queries)
+                {
+                    using (var command = new SqlCommand(q, connection))
+                    {
+                        command.Parameters.AddWithValue("@MemberKey", memberKey);
+                        command.Parameters.AddWithValue("@Query", query);
+                        using (var reader = await command.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                var result = new Dictionary<string, object>
+                        {
+                            { "Name", reader["Name"] },
+                            { "Avatar", reader["Avatar"] ?? "/images/avatar/default-avatar.jpg" },
+                            { "UserType", reader["UserType"] }
+                        };
+                                if (hasConversationKey && reader["ConversationKey"] != DBNull.Value)
+                                    result["ConversationKey"] = reader["ConversationKey"];
+                                else
+                                    result["ConversationKey"] = DBNull.Value;
+
+                                if (hasUserKey && reader["UserKey"] != DBNull.Value)
+                                    result["UserKey"] = reader["UserKey"];
+                                else
+                                    result["UserKey"] = DBNull.Value;
+
+                                if (result["UserType"].ToString() == "Admin" && !string.IsNullOrEmpty(result["Avatar"].ToString()))
+                                    result["Avatar"] = $"https://localhost:7078/{result["Avatar"]}";
+                                results.Add(result);
+                            }
+                        }
+                    }
+                }
+            }
+            return results;
+        }
+
+
         public static async Task<List<Dictionary<string, object>>> GetMessagesAsync(string conversationKey, int skip = 0)
         {
             var messages = new List<Dictionary<string, object>>();
