@@ -59,15 +59,13 @@ namespace TNS_TOEICAdmin.Models
                         COALESCE(
                             (SELECT TOP 1 cp2.UserType 
                              FROM ConversationParticipants cp2 
-                             JOIN EDU_Member m ON cp2.UserKey = m.MemberKey 
-                             WHERE cp2.ConversationKey = c.ConversationKey AND cp2.UserKey != @MemberKey AND cp2.UserType = 'Member'),
-                            (SELECT TOP 1 cp2.UserType 
-                             FROM ConversationParticipants cp2 
-                             JOIN SYS_Users u ON cp2.UserKey = u.UserKey 
-                             WHERE cp2.ConversationKey = c.ConversationKey AND cp2.UserKey != @MemberKey AND cp2.UserType = 'Admin'),
+                             WHERE cp2.ConversationKey = c.ConversationKey AND cp2.UserKey != @MemberKey),
                             NULL
                         )
                 END AS PartnerUserType,
+                (SELECT TOP 1 cp2.UserKey 
+                 FROM ConversationParticipants cp2 
+                 WHERE cp2.ConversationKey = c.ConversationKey AND cp2.UserKey != @MemberKey) AS PartnerUserKey,
                 c.LastMessageKey,
                 c.LastMessageTime,
                 m.Content,
@@ -111,6 +109,14 @@ namespace TNS_TOEICAdmin.Models
                         { "Name", reader["Name"] ?? (object)DBNull.Value },
                         { "IsBanned", reader["IsBanned"] }
                     };
+
+                            // Thêm UserKey và UserType cho 1-1
+                            if (reader["ConversationType"].ToString() != "Group")
+                            {
+                                conversation.Add("PartnerUserKey", reader["PartnerUserKey"] ?? (object)DBNull.Value);
+                                conversation.Add("PartnerUserType", reader["PartnerUserType"] ?? (object)DBNull.Value);
+                            }
+
                             conversations.Add(conversation);
                             totalUnreadCount += Convert.ToInt32(reader["UnreadCount"] ?? 0);
                         }
@@ -132,7 +138,7 @@ namespace TNS_TOEICAdmin.Models
                 await connection.OpenAsync();
 
                 var groupQuery = @"
-            SELECT c.ConversationKey, c.Name AS Name, c.GroupAvatar AS Avatar, 'Group' AS UserType
+            SELECT c.ConversationKey, c.Name AS Name, c.GroupAvatar AS Avatar, 'Group' AS UserType, c.ConversationType
             FROM Conversations c
             JOIN ConversationParticipants cp ON c.ConversationKey = cp.ConversationKey
             WHERE c.ConversationType = 'Group'
@@ -145,7 +151,12 @@ namespace TNS_TOEICAdmin.Models
                     FROM Conversations c
                     JOIN ConversationParticipants cp1 ON c.ConversationKey = cp1.ConversationKey
                     JOIN ConversationParticipants cp2 ON c.ConversationKey = cp2.ConversationKey
-                    WHERE cp1.UserKey = @MemberKey AND cp2.UserKey = m.MemberKey AND c.ConversationType = 'Private') AS ConversationKey
+                    WHERE cp1.UserKey = @MemberKey AND cp2.UserKey = m.MemberKey AND c.ConversationType = 'Private') AS ConversationKey,
+                   (SELECT TOP 1 c.ConversationType 
+                    FROM Conversations c
+                    JOIN ConversationParticipants cp1 ON c.ConversationKey = cp1.ConversationKey
+                    JOIN ConversationParticipants cp2 ON c.ConversationKey = cp2.ConversationKey
+                    WHERE cp1.UserKey = @MemberKey AND cp2.UserKey = m.MemberKey AND c.ConversationType = 'Private') AS ConversationType
             FROM EDU_Member m
             WHERE m.MemberName LIKE '%' + @Query + '%'
             AND m.MemberKey != @MemberKey";
@@ -156,7 +167,12 @@ namespace TNS_TOEICAdmin.Models
                     FROM Conversations c
                     JOIN ConversationParticipants cp1 ON c.ConversationKey = cp1.ConversationKey
                     JOIN ConversationParticipants cp2 ON c.ConversationKey = cp2.ConversationKey
-                    WHERE cp1.UserKey = @MemberKey AND cp2.UserKey = u.UserKey AND c.ConversationType = 'Private') AS ConversationKey
+                    WHERE cp1.UserKey = @MemberKey AND cp2.UserKey = u.UserKey AND c.ConversationType = 'Private') AS ConversationKey,
+                   (SELECT TOP 1 c.ConversationType 
+                    FROM Conversations c
+                    JOIN ConversationParticipants cp1 ON c.ConversationKey = cp1.ConversationKey
+                    JOIN ConversationParticipants cp2 ON c.ConversationKey = cp2.ConversationKey
+                    WHERE cp1.UserKey = @MemberKey AND cp2.UserKey = u.UserKey AND c.ConversationType = 'Private') AS ConversationType
             FROM SYS_Users u
             JOIN HRM_Employee e ON u.EmployeeKey = e.EmployeeKey
             WHERE u.UserName LIKE '%' + @Query + '%'
@@ -193,6 +209,11 @@ namespace TNS_TOEICAdmin.Models
                                     result["UserKey"] = reader["UserKey"];
                                 else
                                     result["UserKey"] = DBNull.Value;
+
+                                if (reader["ConversationType"] != DBNull.Value)
+                                    result["ConversationType"] = reader["ConversationType"];
+                                else
+                                    result["ConversationType"] = DBNull.Value;
 
                                 if (result["UserType"].ToString() == "Admin" && !string.IsNullOrEmpty(result["Avatar"].ToString()))
                                     result["Avatar"] = $"https://localhost:7078/{result["Avatar"]}";

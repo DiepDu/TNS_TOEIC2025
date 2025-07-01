@@ -9,6 +9,7 @@
     let currentConversationKey = null;
     let currentUserKey = null;
     let currentUserType = null;
+    let currentConversationType = null;
     let skip = 0;
     let allMessages = [];
 
@@ -93,7 +94,11 @@
                 const li = document.createElement("li");
                 li.className = "p-2 border-bottom border-white border-opacity-25";
                 li.innerHTML = `
-                    <a href="#" class="d-flex justify-content-between text-white conversation-item" data-conversation-key="${conv.ConversationKey}">
+                    <a href="#" class="d-flex justify-content-between text-white conversation-item" 
+                       data-conversation-key="${conv.ConversationKey}" 
+                       data-user-key="${conv.ConversationType !== 'Group' ? (conv.PartnerUserKey || '') : ''}" 
+                       data-user-type="${conv.ConversationType !== 'Group' ? (conv.PartnerUserType || '') : ''}"
+                       data-conversation-type="${conv.ConversationType || ''}">
                         <div class="d-flex">
                             <img src="${conv.Avatar || '/images/avatar/default-avatar.jpg'}" alt="avatar" class="rounded-circle me-3" style="width: 48px; height: 48px;">
                             <div><p class="fw-bold mb-0">${conv.DisplayName || "Unknown"}</p><p class="small mb-0">${conv.LastMessage || "No messages"}</p></div>
@@ -119,13 +124,21 @@
             const response = await fetch(`/api/conversations/search?query=${encodeURIComponent(query)}&memberKey=${encodeURIComponent(memberKey)}`);
             if (!response.ok) throw new Error(`Search failed: ${await response.text()} (Status: ${response.status})`);
             const results = await response.json();
+            console.log("Search results:", results);
             searchResults.innerHTML = results.length === 0 ? `<div class="no-results">Not Found</div>` : results.map(result => `
-                <div class="search-result-item" onclick="selectContact(${JSON.stringify(result)})" onmousedown="event.preventDefault()">
+                <div class="search-result-item" data-contact='${JSON.stringify(result).replace(/'/g, "\\'")}' onmousedown="event.preventDefault()">
                     <img src="${result.Avatar || '/images/avatar/default-avatar.jpg'}" alt="${result.Name}" class="rounded-circle">
                     <p>${result.Name}</p>
                 </div>
             `).join("");
             searchResults.classList.add("show");
+            document.querySelectorAll(".search-result-item").forEach(item => {
+                item.addEventListener("click", () => {
+                    const contact = JSON.parse(item.getAttribute("data-contact"));
+                    selectContact(contact);
+                    console.log("Selected contact:", contact); // Thêm log để kiểm tra dữ liệu khi click
+                });
+            });
         } catch (err) {
             console.error("Search error:", err);
             searchResults.innerHTML = `<div class="no-results">Not Found</div>`;
@@ -137,6 +150,7 @@
         currentConversationKey = contact.ConversationKey || null;
         currentUserKey = contact.UserKey || null;
         currentUserType = contact.UserType || null;
+        currentConversationType = contact.ConversationType || null;
         headerAvatar.src = contact.Avatar || '/images/avatar/default-avatar.jpg';
         headerName.textContent = contact.Name || "Unknown";
         chatHeader.style.display = "flex";
@@ -146,16 +160,29 @@
         conversationListContainer.classList.remove("focused");
         skip = 0;
         allMessages = [];
-        if (currentConversationKey) loadMessages(currentConversationKey); // Chỉ load nếu ConversationKey tồn tại
+        if (currentConversationKey) loadMessages(currentConversationKey);
+        console.log("Current values after selectContact:", {
+            currentConversationKey,
+            currentUserKey,
+            currentUserType,
+            currentConversationType
+        }); // Thêm log để kiểm tra giá trị sau khi chọn
     }
 
     function addConversationClickListeners() {
         document.querySelectorAll(".conversation-item").forEach(item => {
             item.addEventListener("click", (e) => {
                 e.preventDefault();
-                currentConversationKey = item.getAttribute("data-conversation-key");
-                currentUserKey = null;
-                currentUserType = null;
+                const conversationKey = item.getAttribute("data-conversation-key");
+                const userKey = item.getAttribute("data-user-key") || null;
+                const userType = item.getAttribute("data-user-type") || null;
+                const conversationType = item.getAttribute("data-conversation-type") || null;
+
+                currentConversationKey = conversationKey;
+                currentUserKey = userKey;
+                currentUserType = userType;
+                currentConversationType = conversationType;
+
                 const conv = item.closest("li").querySelector(".conversation-item");
                 headerAvatar.src = conv.querySelector("img").src;
                 headerName.textContent = conv.querySelector("p.fw-bold").textContent;
@@ -167,12 +194,18 @@
                 skip = 0;
                 allMessages = [];
                 loadMessages(currentConversationKey);
+                console.log("Current values after conversation click:", {
+                    currentConversationKey,
+                    currentUserKey,
+                    currentUserType,
+                    currentConversationType
+                }); // Thêm log để kiểm tra giá trị sau khi click
             });
         });
     }
 
     async function loadMessages(conversationKey, append = false) {
-        if (!conversationKey) return; // Không load nếu ConversationKey là null
+        if (!conversationKey) return;
         const url = `/api/conversations/messages/${conversationKey}?skip=${skip}&memberKey=${encodeURIComponent(memberKey)}`;
         try {
             const response = await fetch(url);
@@ -307,7 +340,6 @@
                 formData.append("Content", messageText);
                 if (selectedFile) formData.append("File", selectedFile);
 
-                // Nếu chưa có ConversationKey, gọi API để tạo mới
                 if (!currentConversationKey && currentUserKey) {
                     const initResponse = await fetch("/api/conversations/init", {
                         method: "POST",
@@ -316,6 +348,7 @@
                     if (!initResponse.ok) throw new Error("Init conversation failed");
                     const initData = await initResponse.json();
                     currentConversationKey = initData.ConversationKey;
+                    currentConversationType = initData.ConversationType || "Private";
                 }
 
                 const response = await fetch("/api/conversations/messages", {
@@ -333,6 +366,12 @@
                 console.error("Send message failed:", err);
             }
         }
+        console.log("Current values after send:", {
+            currentConversationKey,
+            currentUserKey,
+            currentUserType,
+            currentConversationType
+        }); // Thêm log để kiểm tra giá trị sau khi gửi
     });
     if (openChat) openChat.addEventListener("click", () => {
         if (chatModal) {
@@ -354,6 +393,12 @@
             pinnedSection.innerHTML = `<p>${allMessages.find(m => m.IsPinned)?.Content || "No pinned messages"} (${allMessages.filter(m => m.IsPinned).length}/3 pinned)</p>`;
             pinnedSection.style.display = allMessages.some(m => m.IsPinned) ? "block" : "none";
         }
+        console.log("Current values after receive:", {
+            currentConversationKey,
+            currentUserKey,
+            currentUserType,
+            currentConversationType
+        }); // Thêm log để kiểm tra giá trị khi nhận tin nhắn
     });
 
     if (searchInput) {
@@ -385,5 +430,11 @@
     if (chatHeader) chatHeader.addEventListener("click", (e) => {
         if (e.target.closest(".call-icons") || e.target.closest(".btn-close")) return;
         showPinnedPopup();
+        console.log("Current values on header click:", {
+            currentConversationKey,
+            currentUserKey,
+            currentUserType,
+            currentConversationType
+        }); // Thêm log để kiểm tra giá trị khi click header
     });
 });
