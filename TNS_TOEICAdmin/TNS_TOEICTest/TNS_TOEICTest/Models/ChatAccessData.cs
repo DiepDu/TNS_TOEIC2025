@@ -72,12 +72,12 @@ namespace TNS_TOEICAdmin.Models
                 c.LastMessageTime,
                 m.Content,
                 m.SenderKey,
-                c.Name
+                c.Name,
+                cp.IsBanned
             FROM ConversationParticipants cp
             JOIN Conversations c ON cp.ConversationKey = c.ConversationKey
             LEFT JOIN Messages m ON c.LastMessageKey = m.MessageKey
             WHERE cp.UserKey = @MemberKey
-            AND cp.IsBanned = 0
             AND cp.IsApproved = 1
             AND c.IsActive = 1";
 
@@ -96,7 +96,7 @@ namespace TNS_TOEICAdmin.Models
                                 avatarUrl = $"https://localhost:7078/{avatarUrl}";
                             }
                             var lastMessage = reader["SenderKey"] != DBNull.Value && reader["Content"] != DBNull.Value
-                                ? (reader["SenderKey"].ToString() == currentMemberKey ? "Bạn: " : reader["DisplayName"] + ": ") + reader["Content"].ToString()
+                                ? (reader["SenderKey"].ToString() == currentMemberKey ? "Bạn: " : reader["DisplayName"] + ": ") + (Convert.ToInt32(reader["IsBanned"]) == 1 ? "Đã bị chặn" : reader["Content"].ToString())
                                 : "No messages";
                             var conversation = new Dictionary<string, object>
                     {
@@ -108,7 +108,8 @@ namespace TNS_TOEICAdmin.Models
                         { "LastMessageKey", reader["LastMessageKey"] ?? (object)DBNull.Value },
                         { "LastMessageTime", reader["LastMessageTime"] ?? (object)DBNull.Value },
                         { "LastMessage", lastMessage },
-                        { "Name", reader["Name"] ?? (object)DBNull.Value }
+                        { "Name", reader["Name"] ?? (object)DBNull.Value },
+                        { "IsBanned", reader["IsBanned"] }
                     };
                             conversations.Add(conversation);
                             totalUnreadCount += Convert.ToInt32(reader["UnreadCount"] ?? 0);
@@ -130,7 +131,6 @@ namespace TNS_TOEICAdmin.Models
             {
                 await connection.OpenAsync();
 
-                // Tìm kiếm trong Conversations (Group)
                 var groupQuery = @"
             SELECT c.ConversationKey, c.Name AS Name, c.GroupAvatar AS Avatar, 'Group' AS UserType
             FROM Conversations c
@@ -139,16 +139,24 @@ namespace TNS_TOEICAdmin.Models
             AND cp.UserKey = @MemberKey
             AND c.Name LIKE '%' + @Query + '%'";
 
-                // Tìm kiếm trong EDU_Member (loại bỏ bản thân)
                 var memberQuery = @"
-            SELECT m.MemberKey AS UserKey, m.MemberName AS Name, m.Avatar AS Avatar, 'Member' AS UserType
+            SELECT m.MemberKey AS UserKey, m.MemberName AS Name, m.Avatar AS Avatar, 'Member' AS UserType,
+                   (SELECT TOP 1 c.ConversationKey 
+                    FROM Conversations c
+                    JOIN ConversationParticipants cp1 ON c.ConversationKey = cp1.ConversationKey
+                    JOIN ConversationParticipants cp2 ON c.ConversationKey = cp2.ConversationKey
+                    WHERE cp1.UserKey = @MemberKey AND cp2.UserKey = m.MemberKey AND c.ConversationType = 'Private') AS ConversationKey
             FROM EDU_Member m
             WHERE m.MemberName LIKE '%' + @Query + '%'
             AND m.MemberKey != @MemberKey";
 
-                // Tìm kiếm trong SYS_Users và HRM_Employee (loại bỏ bản thân)
                 var userQuery = @"
-            SELECT u.UserKey, u.UserName AS Name, e.PhotoPath AS Avatar, 'Admin' AS UserType
+            SELECT u.UserKey, u.UserName AS Name, e.PhotoPath AS Avatar, 'Admin' AS UserType,
+                   (SELECT TOP 1 c.ConversationKey 
+                    FROM Conversations c
+                    JOIN ConversationParticipants cp1 ON c.ConversationKey = cp1.ConversationKey
+                    JOIN ConversationParticipants cp2 ON c.ConversationKey = cp2.ConversationKey
+                    WHERE cp1.UserKey = @MemberKey AND cp2.UserKey = u.UserKey AND c.ConversationType = 'Private') AS ConversationKey
             FROM SYS_Users u
             JOIN HRM_Employee e ON u.EmployeeKey = e.EmployeeKey
             WHERE u.UserName LIKE '%' + @Query + '%'
@@ -157,8 +165,8 @@ namespace TNS_TOEICAdmin.Models
                 var queries = new[]
                 {
             (query: groupQuery, hasConversationKey: true, hasUserKey: false),
-            (query: memberQuery, hasConversationKey: false, hasUserKey: true),
-            (query: userQuery, hasConversationKey: false, hasUserKey: true)
+            (query: memberQuery, hasConversationKey: true, hasUserKey: true),
+            (query: userQuery, hasConversationKey: true, hasUserKey: true)
         };
                 foreach (var (q, hasConversationKey, hasUserKey) in queries)
                 {
@@ -197,7 +205,6 @@ namespace TNS_TOEICAdmin.Models
             return results;
         }
 
-
         public static async Task<List<Dictionary<string, object>>> GetMessagesAsync(string conversationKey, int skip = 0)
         {
             var messages = new List<Dictionary<string, object>>();
@@ -206,15 +213,36 @@ namespace TNS_TOEICAdmin.Models
                 await connection.OpenAsync();
 
                 var query = @"
+                    -- Lấy 100 tin nhắn gần nhất
                     SELECT m.MessageKey, m.ConversationKey, m.SenderKey, m.SenderType, m.ReceiverKey, 
-                        m.ReceiverType, m.MessageType, m.Content, m.ParentMessageKey, m.CreatedOn, 
-                        m.Status, m.IsPinned,
-                        ma.AttachmentKey, ma.Type AS AttachmentType, ma.Url, ma.FileSize, ma.FileName, ma.MimeType
+                           m.ReceiverType, m.MessageType, m.Content, m.ParentMessageKey, m.CreatedOn, 
+                           m.Status, m.IsPinned,
+                           ma.AttachmentKey, ma.Type AS AttachmentType, ma.Url, ma.FileSize, ma.FileName, ma.MimeType
                     FROM Messages m
                     LEFT JOIN MessageAttachments ma ON m.MessageKey = ma.MessageKey
                     WHERE m.ConversationKey = @ConversationKey
+                    AND m.Status IN (0, 1, 2)
                     ORDER BY m.CreatedOn DESC
-                    OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
+                    OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY
+
+                    UNION
+
+                    -- Lấy các tin nhắn cha nếu ParentMessageKey nằm ngoài phạm vi
+                    SELECT m.MessageKey, m.ConversationKey, m.SenderKey, m.SenderType, m.ReceiverKey, 
+                           m.ReceiverType, m.MessageType, m.Content, m.ParentMessageKey, m.CreatedOn, 
+                           m.Status, m.IsPinned,
+                           ma.AttachmentKey, ma.Type AS AttachmentType, ma.Url, ma.FileSize, ma.FileName, ma.MimeType
+                    FROM Messages m
+                    LEFT JOIN MessageAttachments ma ON m.MessageKey = ma.MessageKey
+                    WHERE m.ConversationKey = @ConversationKey
+                    AND m.Status IN (0, 1, 2)
+                    AND m.MessageKey IN (
+                        SELECT ParentMessageKey 
+                        FROM Messages 
+                        WHERE ConversationKey = @ConversationKey 
+                        AND ParentMessageKey IS NOT NULL
+                        AND CreatedOn <= (SELECT MAX(CreatedOn) FROM Messages WHERE ConversationKey = @ConversationKey AND Status IN (0, 1, 2) OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY)
+                    )";
 
                 using (var command = new SqlCommand(query, connection))
                 {
@@ -223,31 +251,37 @@ namespace TNS_TOEICAdmin.Models
 
                     using (var reader = await command.ExecuteReaderAsync())
                     {
+                        var messageDict = new Dictionary<string, Dictionary<string, object>>(); // Tránh trùng lặp
                         while (await reader.ReadAsync())
                         {
-                            var message = new Dictionary<string, object>
+                            var messageKey = reader["MessageKey"].ToString();
+                            if (!messageDict.ContainsKey(messageKey))
                             {
-                                { "MessageKey", reader["MessageKey"] },
-                                { "ConversationKey", reader["ConversationKey"] },
-                                { "SenderKey", reader["SenderKey"] },
-                                { "SenderType", reader["SenderType"] },
-                                { "ReceiverKey", reader["ReceiverKey"] ?? (object)DBNull.Value },
-                                { "ReceiverType", reader["ReceiverType"] ?? (object)DBNull.Value },
-                                { "MessageType", reader["MessageType"] },
-                                { "Content", reader["Content"] ?? (object)DBNull.Value },
-                                { "ParentMessageKey", reader["ParentMessageKey"] ?? (object)DBNull.Value },
-                                { "CreatedOn", reader["CreatedOn"] },
-                                { "Status", reader["Status"] },
-                                { "IsPinned", reader["IsPinned"] },
-                                { "AttachmentKey", reader["AttachmentKey"] ?? (object)DBNull.Value },
-                                { "AttachmentType", reader["AttachmentType"] ?? (object)DBNull.Value },
-                                { "Url", reader["Url"] ?? (object)DBNull.Value },
-                                { "FileSize", reader["FileSize"] ?? (object)DBNull.Value },
-                                { "FileName", reader["FileName"] ?? (object)DBNull.Value },
-                                { "MimeType", reader["MimeType"] ?? (object)DBNull.Value }
-                            };
-                            messages.Add(message);
+                                var message = new Dictionary<string, object>
+                                {
+                                    { "MessageKey", reader["MessageKey"] },
+                                    { "ConversationKey", reader["ConversationKey"] },
+                                    { "SenderKey", reader["SenderKey"] },
+                                    { "SenderType", reader["SenderType"] },
+                                    { "ReceiverKey", reader["ReceiverKey"] ?? (object)DBNull.Value },
+                                    { "ReceiverType", reader["ReceiverType"] ?? (object)DBNull.Value },
+                                    { "MessageType", reader["MessageType"] },
+                                    { "Content", reader["Content"] ?? (object)DBNull.Value },
+                                    { "ParentMessageKey", reader["ParentMessageKey"] ?? (object)DBNull.Value },
+                                    { "CreatedOn", reader["CreatedOn"] },
+                                    { "Status", reader["Status"] },
+                                    { "IsPinned", reader["IsPinned"] },
+                                    { "AttachmentKey", reader["AttachmentKey"] ?? (object)DBNull.Value },
+                                    { "AttachmentType", reader["AttachmentType"] ?? (object)DBNull.Value },
+                                    { "Url", reader["Url"] ?? (object)DBNull.Value },
+                                    { "FileSize", reader["FileSize"] ?? (object)DBNull.Value },
+                                    { "FileName", reader["FileName"] ?? (object)DBNull.Value },
+                                    { "MimeType", reader["MimeType"] ?? (object)DBNull.Value }
+                                };
+                                messageDict[messageKey] = message;
+                            }
                         }
+                        messages.AddRange(messageDict.Values.OrderByDescending(m => Convert.ToDateTime(m["CreatedOn"])));
                     }
                 }
             }
