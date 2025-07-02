@@ -225,7 +225,6 @@ namespace TNS_TOEICAdmin.Models
             }
             return results;
         }
-
         public static async Task<List<Dictionary<string, object>>> GetMessagesAsync(string conversationKey, int skip = 0)
         {
             var messages = new List<Dictionary<string, object>>();
@@ -234,36 +233,50 @@ namespace TNS_TOEICAdmin.Models
                 await connection.OpenAsync();
 
                 var query = @"
-                    -- Lấy 100 tin nhắn gần nhất
-                    SELECT m.MessageKey, m.ConversationKey, m.SenderKey, m.SenderType, m.ReceiverKey, 
-                           m.ReceiverType, m.MessageType, m.Content, m.ParentMessageKey, m.CreatedOn, 
-                           m.Status, m.IsPinned,
-                           ma.AttachmentKey, ma.Type AS AttachmentType, ma.Url, ma.FileSize, ma.FileName, ma.MimeType
-                    FROM Messages m
-                    LEFT JOIN MessageAttachments ma ON m.MessageKey = ma.MessageKey
-                    WHERE m.ConversationKey = @ConversationKey
-                    AND m.Status IN (0, 1, 2)
-                    ORDER BY m.CreatedOn DESC
-                    OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY
+    -- Lấy 100 tin nhắn gần nhất (bao gồm tin nhắn chính và tin nhắn cha nếu cần)
+    SELECT m.MessageKey, m.ConversationKey, m.SenderKey, m.SenderType, m.ReceiverKey, 
+           m.ReceiverType, m.MessageType, m.Content, m.ParentMessageKey, m.CreatedOn, 
+           m.Status, m.IsPinned,
+           ma.AttachmentKey, ma.Type AS AttachmentType, ma.Url, ma.FileSize, ma.FileName, ma.MimeType,
+           pm.Content AS ParentContent
+    FROM Messages m
+    LEFT JOIN (
+        SELECT *,
+            ROW_NUMBER() OVER (PARTITION BY MessageKey ORDER BY CreatedOn DESC) AS rn
+        FROM MessageAttachments
+    ) ma ON m.MessageKey = ma.MessageKey AND ma.rn = 1
+    LEFT JOIN Messages pm ON m.ParentMessageKey = pm.MessageKey
+    WHERE m.ConversationKey = @ConversationKey
+    AND m.Status IN (0, 1, 2)
 
-                    UNION
+    UNION
 
-                    -- Lấy các tin nhắn cha nếu ParentMessageKey nằm ngoài phạm vi
-                    SELECT m.MessageKey, m.ConversationKey, m.SenderKey, m.SenderType, m.ReceiverKey, 
-                           m.ReceiverType, m.MessageType, m.Content, m.ParentMessageKey, m.CreatedOn, 
-                           m.Status, m.IsPinned,
-                           ma.AttachmentKey, ma.Type AS AttachmentType, ma.Url, ma.FileSize, ma.FileName, ma.MimeType
-                    FROM Messages m
-                    LEFT JOIN MessageAttachments ma ON m.MessageKey = ma.MessageKey
-                    WHERE m.ConversationKey = @ConversationKey
-                    AND m.Status IN (0, 1, 2)
-                    AND m.MessageKey IN (
-                        SELECT ParentMessageKey 
-                        FROM Messages 
-                        WHERE ConversationKey = @ConversationKey 
-                        AND ParentMessageKey IS NOT NULL
-                        AND CreatedOn <= (SELECT MAX(CreatedOn) FROM Messages WHERE ConversationKey = @ConversationKey AND Status IN (0, 1, 2) OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY)
-                    )";
+    -- Lấy các tin nhắn cha nằm ngoài phạm vi 100 tin nhắn gần nhất
+    SELECT m.MessageKey, m.ConversationKey, m.SenderKey, m.SenderType, m.ReceiverKey, 
+           m.ReceiverType, m.MessageType, m.Content, m.ParentMessageKey, m.CreatedOn, 
+           m.Status, m.IsPinned,
+           ma.AttachmentKey, ma.Type AS AttachmentType, ma.Url, ma.FileSize, ma.FileName, ma.MimeType,
+           pm.Content AS ParentContent
+    FROM Messages m
+    LEFT JOIN (
+        SELECT *,
+            ROW_NUMBER() OVER (PARTITION BY MessageKey ORDER BY CreatedOn DESC) AS rn
+        FROM MessageAttachments
+    ) ma ON m.MessageKey = ma.MessageKey AND ma.rn = 1
+    LEFT JOIN Messages pm ON m.ParentMessageKey = pm.MessageKey
+    WHERE m.ConversationKey = @ConversationKey
+    AND m.Status IN (0, 1, 2)
+    AND m.MessageKey IN (
+        SELECT ParentMessageKey 
+        FROM Messages 
+        WHERE ConversationKey = @ConversationKey 
+        AND ParentMessageKey IS NOT NULL
+        AND CreatedOn <= (SELECT MAX(CreatedOn) FROM Messages WHERE ConversationKey = @ConversationKey AND Status IN (0, 1, 2))
+    )
+
+    -- Áp dụng ORDER BY và OFFSET...FETCH cho toàn bộ kết quả
+    ORDER BY CreatedOn DESC
+    OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
 
                 using (var command = new SqlCommand(query, connection))
                 {
@@ -272,33 +285,46 @@ namespace TNS_TOEICAdmin.Models
 
                     using (var reader = await command.ExecuteReaderAsync())
                     {
-                        var messageDict = new Dictionary<string, Dictionary<string, object>>(); // Tránh trùng lặp
+                        var messageDict = new Dictionary<string, Dictionary<string, object>>();
                         while (await reader.ReadAsync())
                         {
                             var messageKey = reader["MessageKey"].ToString();
                             if (!messageDict.ContainsKey(messageKey))
                             {
                                 var message = new Dictionary<string, object>
+                        {
+                            { "MessageKey", reader["MessageKey"] },
+                            { "ConversationKey", reader["ConversationKey"] },
+                            { "SenderKey", reader["SenderKey"] },
+                            { "SenderType", reader["SenderType"] },
+                            { "ReceiverKey", reader["ReceiverKey"] ?? (object)DBNull.Value },
+                            { "ReceiverType", reader["ReceiverType"] ?? (object)DBNull.Value },
+                            { "MessageType", reader["MessageType"] },
+                            { "Content", reader["Content"] ?? (object)DBNull.Value },
+                            { "ParentMessageKey", reader["ParentMessageKey"] ?? (object)DBNull.Value },
+                            { "CreatedOn", reader["CreatedOn"] },
+                            { "Status", reader["Status"] },
+                            { "IsPinned", reader["IsPinned"] },
+                            { "AttachmentKey", reader["AttachmentKey"] ?? (object)DBNull.Value },
+                            { "AttachmentType", reader["AttachmentType"] ?? (object)DBNull.Value },
+                            { "Url", reader["Url"] ?? (object)DBNull.Value },
+                            { "FileSize", reader["FileSize"] ?? (object)DBNull.Value },
+                            { "FileName", reader["FileName"] ?? (object)DBNull.Value },
+                            { "MimeType", reader["MimeType"] ?? (object)DBNull.Value },
+                            { "ParentContent", reader["ParentContent"] ?? (object)DBNull.Value }
+                        };
+                                // Chỉ giữ FileSize và FileName cho Audio, Image, Video
+                                var messageType = reader["MessageType"]?.ToString();
+                                if (messageType != "Text")
                                 {
-                                    { "MessageKey", reader["MessageKey"] },
-                                    { "ConversationKey", reader["ConversationKey"] },
-                                    { "SenderKey", reader["SenderKey"] },
-                                    { "SenderType", reader["SenderType"] },
-                                    { "ReceiverKey", reader["ReceiverKey"] ?? (object)DBNull.Value },
-                                    { "ReceiverType", reader["ReceiverType"] ?? (object)DBNull.Value },
-                                    { "MessageType", reader["MessageType"] },
-                                    { "Content", reader["Content"] ?? (object)DBNull.Value },
-                                    { "ParentMessageKey", reader["ParentMessageKey"] ?? (object)DBNull.Value },
-                                    { "CreatedOn", reader["CreatedOn"] },
-                                    { "Status", reader["Status"] },
-                                    { "IsPinned", reader["IsPinned"] },
-                                    { "AttachmentKey", reader["AttachmentKey"] ?? (object)DBNull.Value },
-                                    { "AttachmentType", reader["AttachmentType"] ?? (object)DBNull.Value },
-                                    { "Url", reader["Url"] ?? (object)DBNull.Value },
-                                    { "FileSize", reader["FileSize"] ?? (object)DBNull.Value },
-                                    { "FileName", reader["FileName"] ?? (object)DBNull.Value },
-                                    { "MimeType", reader["MimeType"] ?? (object)DBNull.Value }
-                                };
+                                    message["FileSize"] = reader["FileSize"] ?? (object)DBNull.Value;
+                                    message["FileName"] = reader["FileName"] ?? (object)DBNull.Value;
+                                }
+                                else
+                                {
+                                    message["FileSize"] = DBNull.Value;
+                                    message["FileName"] = DBNull.Value;
+                                }
                                 messageDict[messageKey] = message;
                             }
                         }

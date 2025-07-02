@@ -51,24 +51,24 @@ namespace TNS_TOEICTest.Controllers
             return Ok(results);
         }
 
-        //[HttpGet("messages/{conversationKey}")]
-        //public async Task<IActionResult> GetMessages(string conversationKey, [FromQuery] int skip = 0)
-        //{
-        //    var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
-        //    var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
-        //    var memberKey = memberLogin.MemberKey;
+        [HttpGet("messages/{conversationKey}")]
+        public async Task<IActionResult> GetMessages(string conversationKey, [FromQuery] int skip = 0)
+        {
+            var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
+            var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
+            var memberKey = memberLogin.MemberKey;
 
-        //    if (string.IsNullOrEmpty(memberKey))
-        //        return Unauthorized(new { success = false, message = "MemberKey not found" });
+            if (string.IsNullOrEmpty(memberKey))
+                return Unauthorized(new { success = false, message = "MemberKey not found" });
 
-        //    var result = await ChatAccessData.GetConversationsAsync(null, memberKey);
-        //    var conversations = result["conversations"] as List<Dictionary<string, object>>;
-        //    if (conversations == null || !conversations.Exists(c => c["ConversationKey"].ToString() == conversationKey))
-        //        return Unauthorized(new { success = false, message = "Access denied to this conversation" });
+            var result = await ChatAccessData.GetConversationsAsync(null, memberKey);
+            var conversations = result["conversations"] as List<Dictionary<string, object>>;
+            if (conversations == null || !conversations.Exists(c => c["ConversationKey"].ToString() == conversationKey))
+                return Unauthorized(new { success = false, message = "Access denied to this conversation" });
 
-        //    var messages = await ChatAccessData.GetMessagesAsync(conversationKey, skip);
-        //    return Ok(messages);
-        //}
+            var messages = await ChatAccessData.GetMessagesAsync(conversationKey, skip);
+            return Ok(messages);
+        }
 
         [HttpPost("messages")]
         public async Task<IActionResult> SendMessage()
