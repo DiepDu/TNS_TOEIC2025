@@ -237,8 +237,21 @@ namespace TNS_TOEICAdmin.Models
     SELECT m.MessageKey, m.ConversationKey, m.SenderKey, m.SenderType, m.ReceiverKey, 
            m.ReceiverType, m.MessageType, m.Content, m.ParentMessageKey, m.CreatedOn, 
            m.Status, m.IsPinned,
-           ma.AttachmentKey, ma.Type AS AttachmentType, ma.Url, ma.FileSize, ma.FileName, ma.MimeType,
-           pm.Content AS ParentContent
+           ma.AttachmentKey, ma.Type AS AttachmentType, 
+           CASE 
+               WHEN m.SenderType = 'Admin' AND ma.Url IS NOT NULL THEN CONCAT('https://localhost:7078/', ma.Url)
+               ELSE ma.Url 
+           END AS Url, 
+           ma.FileSize, ma.FileName, ma.MimeType,
+           pm.Content AS ParentContent,
+           CASE 
+               WHEN m.SenderType = 'Member' THEN em.MemberName
+               WHEN m.SenderType = 'Admin' THEN su.UserName
+           END AS SenderName,
+           CASE 
+               WHEN m.SenderType = 'Member' THEN em.Avatar
+               WHEN m.SenderType = 'Admin' THEN CONCAT('https://localhost:7078/', he.PhotoPath)
+           END AS SenderAvatar
     FROM Messages m
     LEFT JOIN (
         SELECT *,
@@ -246,6 +259,9 @@ namespace TNS_TOEICAdmin.Models
         FROM MessageAttachments
     ) ma ON m.MessageKey = ma.MessageKey AND ma.rn = 1
     LEFT JOIN Messages pm ON m.ParentMessageKey = pm.MessageKey
+    LEFT JOIN [EDU_Member] em ON m.SenderType = 'Member' AND m.SenderKey = em.MemberKey
+    LEFT JOIN [SYS_Users] su ON m.SenderType = 'Admin' AND m.SenderKey = su.UserKey
+    LEFT JOIN [HRM_Employee] he ON m.SenderType = 'Admin' AND su.EmployeeKey = he.EmployeeKey
     WHERE m.ConversationKey = @ConversationKey
     AND m.Status IN (0, 1, 2)
 
@@ -255,8 +271,21 @@ namespace TNS_TOEICAdmin.Models
     SELECT m.MessageKey, m.ConversationKey, m.SenderKey, m.SenderType, m.ReceiverKey, 
            m.ReceiverType, m.MessageType, m.Content, m.ParentMessageKey, m.CreatedOn, 
            m.Status, m.IsPinned,
-           ma.AttachmentKey, ma.Type AS AttachmentType, ma.Url, ma.FileSize, ma.FileName, ma.MimeType,
-           pm.Content AS ParentContent
+           ma.AttachmentKey, ma.Type AS AttachmentType, 
+           CASE 
+               WHEN m.SenderType = 'Admin' AND ma.Url IS NOT NULL THEN CONCAT('https://localhost:7078/', ma.Url)
+               ELSE ma.Url 
+           END AS Url, 
+           ma.FileSize, ma.FileName, ma.MimeType,
+           pm.Content AS ParentContent,
+           CASE 
+               WHEN m.SenderType = 'Member' THEN em.MemberName
+               WHEN m.SenderType = 'Admin' THEN su.UserName
+           END AS SenderName,
+           CASE 
+               WHEN m.SenderType = 'Member' THEN em.Avatar
+               WHEN m.SenderType = 'Admin' THEN CONCAT('https://localhost:7078/', he.PhotoPath)
+           END AS SenderAvatar
     FROM Messages m
     LEFT JOIN (
         SELECT *,
@@ -264,6 +293,9 @@ namespace TNS_TOEICAdmin.Models
         FROM MessageAttachments
     ) ma ON m.MessageKey = ma.MessageKey AND ma.rn = 1
     LEFT JOIN Messages pm ON m.ParentMessageKey = pm.MessageKey
+    LEFT JOIN [EDU_Member] em ON m.SenderType = 'Member' AND m.SenderKey = em.MemberKey
+    LEFT JOIN [SYS_Users] su ON m.SenderType = 'Admin' AND m.SenderKey = su.UserKey
+    LEFT JOIN [HRM_Employee] he ON m.SenderType = 'Admin' AND su.EmployeeKey = he.EmployeeKey
     WHERE m.ConversationKey = @ConversationKey
     AND m.Status IN (0, 1, 2)
     AND m.MessageKey IN (
@@ -311,7 +343,9 @@ namespace TNS_TOEICAdmin.Models
                             { "FileSize", reader["FileSize"] ?? (object)DBNull.Value },
                             { "FileName", reader["FileName"] ?? (object)DBNull.Value },
                             { "MimeType", reader["MimeType"] ?? (object)DBNull.Value },
-                            { "ParentContent", reader["ParentContent"] ?? (object)DBNull.Value }
+                            { "ParentContent", reader["ParentContent"] ?? (object)DBNull.Value },
+                            { "SenderName", reader["SenderName"] ?? (object)DBNull.Value },
+                            { "SenderAvatar", reader["SenderAvatar"] ?? (object)DBNull.Value }
                         };
                                 // Chỉ giữ FileSize và FileName cho Audio, Image, Video
                                 var messageType = reader["MessageType"]?.ToString();

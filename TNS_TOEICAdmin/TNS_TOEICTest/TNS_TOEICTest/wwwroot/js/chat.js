@@ -95,10 +95,10 @@
                 li.className = "p-2 border-bottom border-white border-opacity-25";
                 li.innerHTML = `
                     <a href="#" class="d-flex justify-content-between text-white conversation-item" 
-                       data-conversation-key="${conv.ConversationKey}" 
-                       data-user-key="${conv.ConversationType !== 'Group' ? (conv.PartnerUserKey || '') : ''}" 
-                       data-user-type="${conv.ConversationType !== 'Group' ? (conv.PartnerUserType || '') : ''}"
-                       data-conversation-type="${conv.ConversationType || ''}">
+                        data-conversation-key="${conv.ConversationKey}" 
+                        data-user-key="${conv.ConversationType !== 'Group' ? (conv.PartnerUserKey || '') : ''}" 
+                        data-user-type="${conv.ConversationType !== 'Group' ? (conv.PartnerUserType || '') : ''}"
+                        data-conversation-type="${conv.ConversationType || ''}">
                         <div class="d-flex">
                             <img src="${conv.Avatar || '/images/avatar/default-avatar.jpg'}" alt="avatar" class="rounded-circle me-3" style="width: 48px; height: 48px;">
                             <div><p class="fw-bold mb-0">${conv.DisplayName || "Unknown"}</p><p class="small mb-0">${conv.LastMessage || "No messages"}</p></div>
@@ -124,7 +124,6 @@
             const response = await fetch(`/api/conversations/search?query=${encodeURIComponent(query)}&memberKey=${encodeURIComponent(memberKey)}`);
             if (!response.ok) throw new Error(`Search failed: ${await response.text()} (Status: ${response.status})`);
             const results = await response.json();
-            console.log("Search results:", results);
             searchResults.innerHTML = results.length === 0 ? `<div class="no-results">Not Found</div>` : results.map(result => `
                 <div class="search-result-item" data-contact='${JSON.stringify(result).replace(/'/g, "\\'")}' onmousedown="event.preventDefault()">
                     <img src="${result.Avatar || '/images/avatar/default-avatar.jpg'}" alt="${result.Name}" class="rounded-circle">
@@ -136,7 +135,6 @@
                 item.addEventListener("click", () => {
                     const contact = JSON.parse(item.getAttribute("data-contact"));
                     selectContact(contact);
-                    console.log("Selected contact:", contact); // Thêm log để kiểm tra dữ liệu khi click
                 });
             });
         } catch (err) {
@@ -158,15 +156,10 @@
         searchInput.value = "";
         searchResults.classList.remove("show");
         conversationListContainer.classList.remove("focused");
+        pinnedSection.style.display = "none";
         skip = 0;
         allMessages = [];
         if (currentConversationKey) loadMessages(currentConversationKey);
-        console.log("Current values after selectContact:", {
-            currentConversationKey,
-            currentUserKey,
-            currentUserType,
-            currentConversationType
-        }); // Thêm log để kiểm tra giá trị sau khi chọn
     }
 
     function addConversationClickListeners() {
@@ -194,12 +187,6 @@
                 skip = 0;
                 allMessages = [];
                 loadMessages(currentConversationKey);
-                console.log("Current values after conversation click:", {
-                    currentConversationKey,
-                    currentUserKey,
-                    currentUserType,
-                    currentConversationType
-                }); // Thêm log để kiểm tra giá trị sau khi click
             });
         });
     }
@@ -213,18 +200,30 @@
             const newMessages = await response.json();
             if (newMessages.length === 0) return;
 
-            allMessages = append ? [...newMessages, ...allMessages] : newMessages;
+            newMessages.reverse();
+
+            if (append) {
+                allMessages = [...newMessages, ...allMessages];
+                const fragment = document.createDocumentFragment();
+                newMessages.forEach(m => {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = addMessage(m);
+                    fragment.appendChild(tempDiv.firstChild);
+                });
+                const prevScrollHeight = messageList.scrollHeight;
+                messageList.prepend(fragment);
+                messageList.scrollTop = messageList.scrollHeight - prevScrollHeight;
+            } else {
+                allMessages = [...newMessages];
+                messageList.innerHTML = allMessages.map(m => addMessage(m)).join("");
+                messageList.scrollTop = messageList.scrollHeight;
+            }
+
             skip += newMessages.length;
 
             const pinnedMessages = allMessages.filter(m => m.IsPinned);
             pinnedSection.innerHTML = `<p>${pinnedMessages[0]?.Content || "No pinned messages"} (${pinnedMessages.length}/3 pinned)</p>`;
             pinnedSection.style.display = pinnedMessages.length > 0 ? "block" : "none";
-
-            if (append) newMessages.forEach(m => messageList.insertAdjacentHTML("afterbegin", addMessage(m)));
-            else {
-                messageList.innerHTML = allMessages.map(m => addMessage(m)).join("");
-                messageList.scrollTop = messageList.scrollHeight;
-            }
         } catch (err) {
             console.error("Load messages failed:", err);
         }
@@ -236,58 +235,74 @@
             return;
         }
         const pinnedMessages = allMessages.filter(m => m.IsPinned);
-        pinnedContent.innerHTML = pinnedMessages.map(m => `<div>${m.Content} - ${formatTime(m.CreatedOn)} - ${headerName.textContent}</div>`).join("") || "<div>No pinned messages</div>";
+        pinnedContent.innerHTML = pinnedMessages.map(m => {
+            const isOwn = m.SenderKey === memberKey;
+            return `
+                <div class="pinned-message ${isOwn ? 'right' : ''}">
+                    <div class="message-box">${m.Content}</div>
+                    <span class="pinned-unpin-btn" data-message-key="${m.MessageKey}">Unpin</span>
+                </div>
+            `;
+        }).join("") || "<div>No pinned messages</div>";
         pinnedPopup.style.display = "block";
-        pinnedPopup.addEventListener("click", (e) => e.target === pinnedPopup && (pinnedPopup.style.display = "none"));
+        document.addEventListener("click", function hidePopup(e) {
+            if (!pinnedPopup.contains(e.target) && e.target !== pinnedSection) {
+                pinnedPopup.style.display = "none";
+                document.removeEventListener("click", hidePopup);
+            }
+        });
+        pinnedPopup.addEventListener("click", (e) => {
+            if (e.target.classList.contains("pinned-unpin-btn")) {
+                const messageKey = e.target.getAttribute("data-message-key");
+                allMessages = allMessages.map(m => m.MessageKey === messageKey ? { ...m, IsPinned: false } : m);
+                pinnedSection.innerHTML = `<p>${allMessages.find(m => m.IsPinned)?.Content || "No pinned messages"} (${allMessages.filter(m => m.IsPinned).length}/3 pinned)</p>`;
+                pinnedSection.style.display = allMessages.some(m => m.IsPinned) ? "block" : "none";
+                showPinnedPopup();
+            }
+        });
     }
 
     function addMessage(message) {
         const isOwn = message.SenderKey === memberKey;
         const isRecalled = message.Status === 2;
-        const senderName = isOwn ? "You" : headerName.textContent;
-        const avatar = isOwn ? "" : `<img src="${headerAvatar.src}" class="avatar">`;
+        const senderName = isOwn ? "You" : (message.SenderName || "Unknown");
+        const senderAvatar = isOwn ? "" : (message.SenderAvatar ? `<img src="${message.SenderAvatar || '/images/avatar/default-avatar.jpg'}" class="avatar">` : `<img src="/images/avatar/default-avatar.jpg" class="avatar">`);
+        const time = formatTime(message.CreatedOn);
+        const status = isOwn ? (message.Status === 0 ? '✔' : '✔✔') : '';
+
         let html = `
-            <li class="message ${isOwn ? 'right' : 'left'}" data-message-key="${message.MessageKey}">
-                ${avatar}
+            <li class="message ${isOwn ? 'right' : 'left'} ${message.MessageType ? 'with-attachment' : ''}" data-message-key="${message.MessageKey}">
+                ${senderAvatar}
                 <div class="message-box ${isRecalled ? 'recalled' : ''}">
                     ${!isOwn ? `<p class="name">${senderName}</p><hr>` : ''}
                     <p class="content">${isRecalled ? 'Message recalled' : (allMessages.find(c => c.ConversationKey === currentConversationKey)?.IsBanned ? 'Đã bị chặn' : message.Content)}</p>
-                    <p class="time">${formatTime(message.CreatedOn)}</p>
-                    ${isOwn ? `<span class="status">${message.Status === 0 ? '✔' : '✔✔'}</span>` : ''}
                 </div>
-                <div class="menu-btn">⋮</div>
         `;
 
-        if (message.ParentMessageKey) {
-            const parent = allMessages.find(m => m.MessageKey === message.ParentMessageKey);
-            html = `
-                <div class="reply-box" onclick="scrollToMessage('${message.ParentMessageKey}')">
-                    <p class="reply-content">Re: ${parent?.Content || (allMessages.find(c => c.ConversationKey === currentConversationKey)?.IsBanned ? 'Đã bị chặn' : 'Original message')}</p>
-                </div>
-                ${html}
-            `;
-        }
-
-        if (message.MessageType && (message.MessageType.startsWith("audio/") || message.MessageType.startsWith("video/"))) {
+        if (message.MessageType && (message.MessageType === "Image" || message.MessageType === "Audio" || message.MessageType === "Video")) {
             html += `
                 <div class="attachment">
-                    ${message.MessageType.startsWith("audio/") ? `<audio controls><source src="${message.Url}" type="${message.MimeType}"></audio>` : `<video controls><source src="${message.Url}" type="${message.MimeType}"></video>`}
-                    <a href="${message.Url}" download="${message.FileName}" class="btn btn-sm btn-primary">Download ${message.FileName}</a>
+                    ${message.MessageType === "Image" ? `<img src="${message.Url}" class="attachment-media" alt="${message.FileName}">` :
+                    message.MessageType === "Audio" ? `<audio controls><source src="${message.Url}" type="${message.MimeType}"></audio>` :
+                        `<video controls><source src="${message.Url}" type="${message.MimeType}"></video>`}
                 </div>
             `;
         }
 
-        html += "</li>";
+        html += `
+                <div class="message-timestamp">
+                    <span class="time">${time}</span>
+                    ${isOwn ? `<span class="status">${status}</span>` : ''}
+                </div>
+            </li>
+        `;
         return html;
     }
 
-    function scrollToMessage(messageKey) {
-        const element = document.querySelector(`[data-message-key="${messageKey}"]`);
-        element?.scrollIntoView({ behavior: "smooth" });
-    }
-
     messageList.addEventListener("scroll", debounce(() => {
-        if (messageList.scrollTop === 0 && currentConversationKey) loadMessages(currentConversationKey, true);
+        if (messageList.scrollTop === 0 && currentConversationKey) {
+            loadMessages(currentConversationKey, true);
+        }
     }, 300));
 
     async function startConnection() {
@@ -358,7 +373,6 @@
                 if (!response.ok) throw new Error("Send failed");
                 chatInput.value = "";
                 resetFileInput();
-                messageList.scrollTop = messageList.scrollHeight;
                 skip = 0;
                 allMessages = [];
                 await loadMessages(currentConversationKey);
@@ -366,12 +380,6 @@
                 console.error("Send message failed:", err);
             }
         }
-        console.log("Current values after send:", {
-            currentConversationKey,
-            currentUserKey,
-            currentUserType,
-            currentConversationType
-        }); // Thêm log để kiểm tra giá trị sau khi gửi
     });
     if (openChat) openChat.addEventListener("click", () => {
         if (chatModal) {
@@ -390,15 +398,11 @@
             messageList.scrollTop = messageList.scrollHeight;
             unreadCount++;
             updateUnreadCount(unreadCount);
-            pinnedSection.innerHTML = `<p>${allMessages.find(m => m.IsPinned)?.Content || "No pinned messages"} (${allMessages.filter(m => m.IsPinned).length}/3 pinned)</p>`;
-            pinnedSection.style.display = allMessages.some(m => m.IsPinned) ? "block" : "none";
+
+            const pinnedMessages = allMessages.filter(m => m.IsPinned);
+            pinnedSection.innerHTML = `<p>${pinnedMessages[0]?.Content || "No pinned messages"} (${pinnedMessages.length}/3 pinned)</p>`;
+            pinnedSection.style.display = pinnedMessages.length > 0 ? "block" : "none";
         }
-        console.log("Current values after receive:", {
-            currentConversationKey,
-            currentUserKey,
-            currentUserType,
-            currentConversationType
-        }); // Thêm log để kiểm tra giá trị khi nhận tin nhắn
     });
 
     if (searchInput) {
@@ -430,11 +434,7 @@
     if (chatHeader) chatHeader.addEventListener("click", (e) => {
         if (e.target.closest(".call-icons") || e.target.closest(".btn-close")) return;
         showPinnedPopup();
-        console.log("Current values on header click:", {
-            currentConversationKey,
-            currentUserKey,
-            currentUserType,
-            currentConversationType
-        }); // Thêm log để kiểm tra giá trị khi click header
     });
+
+    if (pinnedSection) pinnedSection.addEventListener("click", showPinnedPopup);
 });

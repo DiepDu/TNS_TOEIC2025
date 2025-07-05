@@ -1,17 +1,17 @@
 ﻿<style>
+    /* Các style hiện tại giữ nguyên */
     .gradient-custom {
-        background: linear-gradient(to bottom right, rgba(252, 203, 144, 1), rgba(213, 126, 235, 1));
+        background: linear-gradient(to bottom right, rgba(20, 60, 80, 0.5), rgba(40, 80, 60, 0.5));
         border-radius: 1rem;
         height: 100%;
     }
 
     .mask-custom {
-        background: rgba(24, 24, 16, 0.2);
+        background: rgba(20, 60, 80, 0.4);
         border-radius: 1rem;
-        backdrop-filter: blur(15px);
-        border: 2px solid rgba(255, 255, 255, 0.05);
-        background-clip: padding-box;
-        box-shadow: 10px 10px 10px rgba(46, 54, 54, 0.03);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(40, 80, 60, 0.5);
+        box-shadow: 3px 3px 3px rgba(0, 0, 0, 0.3);
         padding: 10px;
     }
 
@@ -29,8 +29,8 @@
     }
 
     .file-preview {
-        max-width: 100px;
-        max-height: 100px;
+        max-width: 200px;
+        max-height: 200px;
         margin-top: 10px;
         border-radius: 8px;
     }
@@ -52,6 +52,9 @@
         border-radius: 20px;
         height: 30px;
         line-height: 1.2;
+        color: #c0e0ff;
+        background: rgba(40, 80, 60, 0.5);
+        border: 1px solid rgba(20, 60, 80, 0.6);
     }
 
     .input-container .icon-left {
@@ -59,9 +62,7 @@
         left: 10px;
         cursor: pointer;
         font-size: 1.2rem;
-        background: linear-gradient(to bottom, rgba(252, 203, 144, 1), rgba(213, 126, 235, 1));
-        -webkit-background-clip: text;
-        color: transparent;
+        color: #90b0c0;
         top: 50%;
         transform: translateY(-50%);
     }
@@ -71,23 +72,13 @@
         right: 10px;
         cursor: pointer;
         font-size: 1.2rem;
-        background: linear-gradient(to bottom, rgba(252, 203, 144, 1), rgba(213, 126, 235, 1));
-        -webkit-background-clip: text;
-        color: transparent;
+        color: #90b0c0;
         top: 50%;
         transform: translateY(-50%);
     }
 
     .chat-divider {
-        border-right: 2px solid rgba(255, 255, 255, 0.5);
-    }
-
-    .message-header {
-        padding: 0.5rem 1rem !important;
-    }
-
-    .message-content {
-        padding: 0.5rem 1rem !important;
+        border-right: 1px solid rgba(40, 80, 60, 0.4);
     }
 
     .row {
@@ -127,6 +118,12 @@
         padding-right: 0.5rem;
         margin-bottom: 1rem;
         position: relative;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .message-list-container > ul > li:first-child {
+        margin-top: 10px; /* Khoảng cách 10px từ header/pinnedSection */
     }
 
     .input-container-sticky {
@@ -144,20 +141,20 @@
 
     .conversation-list::-webkit-scrollbar-track,
     .message-list-container::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(40, 80, 60, 0.4);
         border-radius: 10px;
     }
 
     .conversation-list::-webkit-scrollbar-thumb,
     .message-list-container::-webkit-scrollbar-thumb {
-        background: linear-gradient(to bottom, rgba(252, 203, 144, 1), rgba(213, 126, 235, 1));
+        background: rgba(20, 60, 80, 0.7);
         border-radius: 10px;
         transition: background 0.3s ease;
     }
 
     .conversation-list::-webkit-scrollbar-thumb:hover,
     .message-list-container::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(to bottom, rgba(252, 203, 144, 0.8), rgba(213, 126, 235, 0.8));
+        background: rgba(20, 60, 80, 0.5);
     }
 
     .message-list-container::before {
@@ -167,22 +164,13 @@
         left: 0;
         right: 0;
         height: 50px;
-        background: linear-gradient(to bottom, rgba(252, 203, 144, 1), transparent);
+        background: linear-gradient(to bottom, rgba(20, 60, 80, 0.4), transparent);
         pointer-events: none;
         z-index: 5;
     }
 
-    .message-list .d-flex .mask-custom {
-        display: inline-block;
-        max-width: fit-content;
-    }
-
-    .message-list .justify-content-end .message-content {
-        text-align: right;
-    }
-
     .conversation-list li.active {
-        background-color: rgba(252, 203, 144, 0.3);
+        background-color: rgba(40, 80, 60, 0.5);
         border-radius: 0.5rem;
         font-weight: bold;
     }
@@ -196,14 +184,14 @@
         width: 100%;
         padding: 0.5rem 2rem 0.5rem 1rem;
         border-radius: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        background: rgba(255, 255, 255, 0.1);
-        color: white;
+        border: 1px solid rgba(20, 60, 80, 0.6);
+        background: rgba(40, 80, 60, 0.5);
+        color: #c0e0ff;
         outline: none;
     }
 
     .search-input::placeholder {
-        color: rgba(255, 255, 255, 0.5);
+        color: rgba(144, 176, 192, 0.5);
     }
 
     .search-icon {
@@ -212,7 +200,7 @@
         top: 50%;
         transform: translateY(-50%);
         font-size: 1.2rem;
-        color: rgba(255, 255, 255, 0.7);
+        color: #90b0c0;
         cursor: pointer;
     }
 
@@ -247,7 +235,7 @@
     .search-result-item p {
         margin: 0;
         font-size: 0.9rem;
-        color: white;
+        color: #c0e0ff;
         text-align: center;
         max-width: 100px;
         white-space: nowrap;
@@ -256,7 +244,7 @@
     }
 
     .no-results {
-        color: rgba(255, 255, 255, 0.7);
+        color: rgba(144, 176, 192, 0.5);
         text-align: center;
         padding: 0.5rem;
     }
@@ -266,8 +254,8 @@
         justify-content: space-between;
         align-items: center;
         padding: 0.5rem 1rem;
-        background: rgba(255, 255, 255, 0.1);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(40, 80, 60, 0.5);
+        border-bottom: 1px solid rgba(20, 60, 80, 0.6);
     }
 
     .chat-header .avatar {
@@ -279,7 +267,7 @@
 
     .chat-header .name {
         font-size: 1rem;
-        color: white;
+        color: #c0e0ff;
         margin: 0;
         cursor: pointer;
     }
@@ -291,10 +279,7 @@
 
     .chat-header .call-icons i {
         font-size: 1.5rem;
-        color: white;
-        background: linear-gradient(to bottom, rgba(252, 203, 144, 1), rgba(213, 126, 235, 1));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: #90b0c0;
         cursor: pointer;
         border-radius: 50%;
         padding: 0.25rem;
@@ -302,84 +287,212 @@
 
     .pinned-section {
         padding: 0.5rem 1rem;
-        background: rgba(255, 255, 255, 0.1);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(40, 80, 60, 0.5);
+        border-bottom: 1px solid rgba(20, 60, 80, 0.6);
         cursor: pointer;
     }
 
-    .pinned-section p { margin: 0; color: white; }
+    .pinned-section p {
+        margin: 0;
+        color: #c0e0ff;
+    }
 
     .pinned-popup {
         position: fixed;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        background: #fff;
+        background: rgba(20, 60, 80, 0.9);
         padding: 10px;
         border-radius: 5px;
         z-index: 1000;
         max-height: 80vh;
         overflow-y: auto;
-        color: #000;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        color: #c0e0ff;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
         display: none;
     }
 
     .pinned-popup div {
         padding: 5px;
-        border-bottom: 1px solid #eee;
+        border-bottom: 1px solid rgba(40, 80, 60, 0.5);
     }
 
-    .message {
+    .pinned-message {
         display: flex;
-        align-items: flex-start;
-        margin-bottom: 10px;
-    }
-
-    .message.left { margin-right: 20%; }
-    .message.right { flex-direction: row-reverse; margin-left: 20%; }
-
-    .avatar { width: 32px; height: 32px; border-radius: 50%; margin: 0 5px; }
-
-    .message-box {
-        background: #e0e0e0;
-        padding: 5px 10px;
-        border-radius: 10px;
-        max-width: 60%;
-    }
-
-    .message.right .message-box { background: #dcf8c6; }
-
-    .recalled { opacity: 0.5; }
-
-    .name { margin: 0; font-weight: bold; }
-
-    .content { margin: 0; word-break: break-word; }
-
-    .time { font-size: 0.7rem; color: #888; }
-
-    .status { font-size: 0.7rem; }
-
-    .menu-btn { display: none; cursor: pointer; margin-left: 5px; }
-
-    .message:hover .menu-btn { display: block; }
-
-    .reply-box {
-        background: rgba(0,0,0,0.1);
-        padding: 5px;
-        border-radius: 5px;
+        justify-content: flex-start;
         margin-bottom: 5px;
     }
 
-    .reply-content { margin: 0; color: #666; }
+    .pinned-message.right {
+        justify-content: flex-end;
+    }
 
-    .attachment { margin-top: 5px; }
+    .pinned-message .message-box {
+        background: rgba(0, 0, 0, 0.8);
+        padding: 5px 10px;
+        border-radius: 10px;
+        max-width: 60%;
+        color: #c0e0ff;
+    }
 
-    .attachment a { margin-left: 5px; }
+    .pinned-message.right .message-box {
+        background: rgba(0, 80, 60, 0.8);
+    }
+
+    .pinned-unpin-btn {
+        margin-left: 5px;
+        cursor: pointer;
+        color: #ef9a9a;
+    }
+
+    .message {
+        display: block;
+        align-items: flex-start;
+        margin-bottom: 20px;
+        position: relative;
+    }
+
+    .message.left {
+        margin-right: 20%;
+    }
+
+    .message.right {
+        text-align: right;
+        margin-left: 20%;
+    }
+
+    .avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        margin: 0 5px;
+        display: inline-block;
+    }
+
+    .message-box {
+        background: rgba(0, 0, 0, 0.8);
+        padding: 5px 10px;
+        border-radius: 10px;
+        max-width: 60%;
+        color: #c0e0ff;
+        display: inline-block;
+        vertical-align: top;
+        margin-bottom: 0;
+    }
+
+    .message.right .message-box {
+        background: rgba(0, 80, 60, 0.8);
+    }
+
+    .recalled {
+        opacity: 0.5;
+    }
+
+    .name {
+        margin: 0;
+        font-weight: bold;
+        color: #c0e0ff;
+        padding-bottom: 2px;
+    }
+
+    hr {
+        margin: 2px 0;
+        border-color: rgba(40, 80, 60, 0.5);
+    }
+
+    .content {
+        margin: 0;
+        word-break: break-word;
+        color: #c0e0ff;
+        padding: 5px 0;
+    }
+
+    .message-timestamp {
+        display: block;
+        width: auto;
+        padding: 2px 10px;
+        margin-top: 2px;
+        color: #c0e0ff;
+        font-size: 0.7rem;
+        text-align: left;
+    }
+
+    .message.left .message-timestamp {
+        margin-left: 37px;
+    }
+
+    .message.right .message-timestamp {
+        text-align: right;
+        border-radius: 0 0 10px 10px;
+    }
+
+    .time {
+        display: inline;
+        margin-right: 5px;
+    }
+
+    .status {
+        display: inline;
+    }
+
+    .attachment {
+        margin-top: 5px;
+        display: block;
+        position: relative;
+    }
+
+    .message.left .attachment {
+        margin-left: 37px;
+    }
+
+    .attachment-media {
+        width: 200px;
+        height: 200px;
+        object-fit: cover;
+        border-radius: 5px;
+    }
+
+    .attachment audio {
+        width: 300px;
+        height: 40px;
+        position: relative;
+    }
+
+    .attachment video {
+        width: 300px;
+        height: 200px;
+        position: relative;
+    }
+
+    .message.with-attachment .message-timestamp {
+        margin-top: 5px;
+    }
 
     @@media (max-width: 768px) {
-        .message-box { max-width: 80%; }
-        .avatar { width: 24px; height: 24px; }
+        .message-box {
+            max-width: 80%;
+        }
+
+        .avatar {
+            width: 24px;
+            height: 24px;
+        }
+
+        .attachment-media {
+            width: 150px;
+            height: 150px;
+        }
+
+        .attachment audio {
+            width: 225px;
+            height: 30px;
+        }
+
+        .attachment video {
+            width: 225px;
+            height: 150px;
+        }
     }
 </style>
 
@@ -411,8 +524,8 @@
                             </div>
                         </div>
                         <div class="pinned-section" id="pinnedSection" style="display: none;"></div>
-                        <div class="message-list-container">
-                            <ul id="messageList" class="list-unstyled text-white"></ul>
+                        <div class="message-list-container" id="messageListContainer">
+                            <ul id="messageList" class="list-unstyled"></ul>
                         </div>
                         <div class="input-container-sticky">
                             <div class="file-preview-container" id="filePreviewContainer">
@@ -438,3 +551,4 @@
         <div id="pinnedContent"></div>
     </div>
 </div>
+
