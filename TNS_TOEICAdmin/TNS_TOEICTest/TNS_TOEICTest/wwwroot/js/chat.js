@@ -271,20 +271,31 @@
         const status = isOwn ? (message.Status === 0 ? '✔' : '✔✔') : '';
 
         let html = `
-            <li class="message ${isOwn ? 'right' : 'left'} ${message.MessageType ? 'with-attachment' : ''}" data-message-key="${message.MessageKey}">
+            <li class="message ${isOwn ? 'right' : 'left'} ${message.MessageType ? 'with-attachment' : ''} ${isRecalled ? 'recalled' : ''}" data-message-key="${message.MessageKey}">
                 ${senderAvatar}
-                <div class="message-box ${isRecalled ? 'recalled' : ''}">
-                    ${!isOwn ? `<p class="name">${senderName}</p><hr>` : ''}
-                    <p class="content">${isRecalled ? 'Message recalled' : (allMessages.find(c => c.ConversationKey === currentConversationKey)?.IsBanned ? 'Đã bị chặn' : message.Content)}</p>
-                </div>
         `;
 
-        if (message.MessageType && (message.MessageType === "Image" || message.MessageType === "Audio" || message.MessageType === "Video")) {
+        if (!isRecalled) {
             html += `
-                <div class="attachment">
-                    ${message.MessageType === "Image" ? `<img src="${message.Url}" class="attachment-media" alt="${message.FileName}">` :
-                    message.MessageType === "Audio" ? `<audio controls><source src="${message.Url}" type="${message.MimeType}"></audio>` :
-                        `<video controls><source src="${message.Url}" type="${message.MimeType}"></video>`}
+                <div class="message-box">
+                    <div class="message-options"><i class="fas fa-ellipsis-h"></i></div>
+                    ${!isOwn && currentConversationType === 'Group' ? `<p class="name">${senderName}</p><hr>` : ''}
+                    <p class="content">${allMessages.find(c => c.ConversationKey === currentConversationKey)?.IsBanned ? 'Đã bị chặn' : message.Content}</p>
+                </div>
+            `;
+            if (message.MessageType && (message.MessageType === "Image" || message.MessageType === "Audio" || message.MessageType === "Video")) {
+                html += `
+                    <div class="attachment">
+                        ${message.MessageType === "Image" ? `<img src="${message.Url}" class="attachment-media" alt="${message.FileName}">` :
+                        message.MessageType === "Audio" ? `<audio controls><source src="${message.Url}" type="${message.MimeType}"></audio>` :
+                            `<video controls><source src="${message.Url}" type="${message.MimeType}"></video>`}
+                    </div>
+                `;
+            }
+        } else {
+            html += `
+                <div class="message-box recalled">
+                    <p class="content">Message recalled</p>
                 </div>
             `;
         }
@@ -356,9 +367,14 @@
                 if (selectedFile) formData.append("File", selectedFile);
 
                 if (!currentConversationKey && currentUserKey) {
+                    const formDataInit = new FormData();
+                    formDataInit.append("UserKey", currentUserKey);
+                    formDataInit.append("UserType", currentUserType);
+                    formDataInit.append("MemberKey", memberKey);
+
                     const initResponse = await fetch("/api/conversations/init", {
                         method: "POST",
-                        body: new FormData().append("UserKey", currentUserKey).append("UserType", currentUserType).append("MemberKey", memberKey)
+                        body: formDataInit
                     });
                     if (!initResponse.ok) throw new Error("Init conversation failed");
                     const initData = await initResponse.json();
@@ -437,4 +453,67 @@
     });
 
     if (pinnedSection) pinnedSection.addEventListener("click", showPinnedPopup);
+
+    messageList.addEventListener('click', (e) => {
+        const optionsButton = e.target.closest('.message-options');
+        if (optionsButton) {
+            const messageElement = optionsButton.closest('.message');
+            const messageKey = messageElement.dataset.messageKey;
+            handleMessageOptionsClick(messageKey, optionsButton);
+        }
+    });
+
+    function handleMessageOptionsClick(messageKey, optionsButtonElement) {
+        const existingMenu = document.querySelector('.message-context-menu');
+        if (existingMenu) existingMenu.remove();
+
+        const menu = document.createElement('div');
+        menu.className = 'message-context-menu';
+        menu.innerHTML = `
+            <div data-action="pin">Pin</div>
+            <div data-action="recall">Recall</div>
+        `;
+        document.body.appendChild(menu);
+
+        const rect = optionsButtonElement.getBoundingClientRect();
+        menu.style.top = `${rect.bottom + window.scrollY}px`;
+        menu.style.left = `${rect.left + window.scrollX}px`;
+
+        menu.addEventListener('click', (e) => {
+            if (e.target.dataset.action) {
+                console.log(`Action ${e.target.dataset.action} for message ${messageKey}`);
+                menu.remove();
+                if (e.target.dataset.action === 'pin') pinMessage(messageKey);
+                if (e.target.dataset.action === 'recall') recallMessage(messageKey);
+            }
+        });
+
+        document.addEventListener('click', function hideMenu(e) {
+            if (!menu.contains(e.target)) {
+                menu.remove();
+                document.removeEventListener('click', hideMenu);
+            }
+        });
+    }
+
+    function pinMessage(messageKey) {
+        const message = allMessages.find(m => m.MessageKey === messageKey);
+        if (message && !message.IsPinned && allMessages.filter(m => m.IsPinned).length < 3) {
+            message.IsPinned = true;
+            messageList.innerHTML = allMessages.map(m => addMessage(m)).join("");
+            messageList.scrollTop = messageList.scrollHeight;
+            const pinnedMessages = allMessages.filter(m => m.IsPinned);
+            pinnedSection.innerHTML = `<p>${pinnedMessages[0]?.Content || "No pinned messages"} (${pinnedMessages.length}/3 pinned)</p>`;
+            pinnedSection.style.display = "block";
+        }
+    }
+
+    function recallMessage(messageKey) {
+        const message = allMessages.find(m => m.MessageKey === messageKey);
+        if (message && message.SenderKey === memberKey && !message.IsRecalled) {
+            message.Status = 2;
+            messageList.innerHTML = allMessages.map(m => addMessage(m)).join("");
+            messageList.scrollTop = messageList.scrollHeight;
+        }
+    }
 });

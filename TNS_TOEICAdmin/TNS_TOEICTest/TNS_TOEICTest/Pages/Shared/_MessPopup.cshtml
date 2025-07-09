@@ -1,554 +1,525 @@
-﻿<style>
-    /* Các style hiện tại giữ nguyên */
-    .gradient-custom {
-        background: linear-gradient(to bottom right, rgba(20, 60, 80, 0.5), rgba(40, 80, 60, 0.5));
-        border-radius: 1rem;
-        height: 100%;
-    }
-
-    .mask-custom {
-        background: rgba(20, 60, 80, 0.4);
-        border-radius: 1rem;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(40, 80, 60, 0.5);
-        box-shadow: 3px 3px 3px rgba(0, 0, 0, 0.3);
-        padding: 10px;
-    }
-
-    .modal-dialog {
-        border-radius: 1rem;
-        overflow: hidden;
-        max-width: 80vw;
-        margin: 1rem auto;
-    }
-
-    .modal-content {
-        border-radius: 1rem !important;
-        overflow: hidden;
-        height: calc(100vh - 2rem);
-    }
-
-    .file-preview {
-        max-width: 200px;
-        max-height: 200px;
-        margin-top: 10px;
-        border-radius: 8px;
-    }
-
-    .file-preview-container {
-        display: none;
-        margin-bottom: 10px;
-    }
-
-    .input-container {
-        position: relative;
-        display: flex;
-        align-items: center;
-    }
-
-    .input-container textarea {
-        padding-left: 40px;
-        padding-right: 40px;
-        border-radius: 20px;
-        height: 30px;
-        line-height: 1.2;
-        color: #c0e0ff;
-        background: rgba(40, 80, 60, 0.5);
-        border: 1px solid rgba(20, 60, 80, 0.6);
-    }
-
-    .input-container .icon-left {
-        position: absolute;
-        left: 10px;
-        cursor: pointer;
-        font-size: 1.2rem;
-        color: #90b0c0;
-        top: 50%;
-        transform: translateY(-50%);
-    }
-
-    .input-container .icon-right {
-        position: absolute;
-        right: 10px;
-        cursor: pointer;
-        font-size: 1.2rem;
-        color: #90b0c0;
-        top: 50%;
-        transform: translateY(-50%);
-    }
-
-    .chat-divider {
-        border-right: 1px solid rgba(40, 80, 60, 0.4);
-    }
-
-    .row {
-        display: flex;
-        height: 100%;
-    }
-
-    .col-md-5 {
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .conversation-list {
-        flex-grow: 1;
-        overflow-y: auto;
-        padding: 1rem 0.5rem;
-        position: relative;
-        transition: height 0.6s ease, margin-top 0.6s ease;
-        margin-top: 1rem;
-    }
-
-    .conversation-list.focused {
-        height: calc(100% - 110px);
-        margin-top: 0;
-    }
-
-    .chat-content {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-    }
-
-    .message-list-container {
-        flex-grow: 1;
-        overflow-y: auto;
-        padding-right: 0.5rem;
-        margin-bottom: 1rem;
-        position: relative;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .message-list-container > ul > li:first-child {
-        margin-top: 10px; /* Khoảng cách 10px từ header/pinnedSection */
-    }
-
-    .input-container-sticky {
-        position: sticky;
-        bottom: 0;
-        background: transparent;
-        padding-top: 0.5rem;
-        z-index: 10;
-    }
-
-    .conversation-list::-webkit-scrollbar,
-    .message-list-container::-webkit-scrollbar {
-        width: 8px;
-    }
-
-    .conversation-list::-webkit-scrollbar-track,
-    .message-list-container::-webkit-scrollbar-track {
-        background: rgba(40, 80, 60, 0.4);
-        border-radius: 10px;
-    }
-
-    .conversation-list::-webkit-scrollbar-thumb,
-    .message-list-container::-webkit-scrollbar-thumb {
-        background: rgba(20, 60, 80, 0.7);
-        border-radius: 10px;
-        transition: background 0.3s ease;
-    }
-
-    .conversation-list::-webkit-scrollbar-thumb:hover,
-    .message-list-container::-webkit-scrollbar-thumb:hover {
-        background: rgba(20, 60, 80, 0.5);
-    }
-
-    .message-list-container::before {
-        content: '';
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 50px;
-        background: linear-gradient(to bottom, rgba(20, 60, 80, 0.4), transparent);
-        pointer-events: none;
-        z-index: 5;
-    }
-
-    .conversation-list li.active {
-        background-color: rgba(40, 80, 60, 0.5);
-        border-radius: 0.5rem;
-        font-weight: bold;
-    }
-
-    .search-container {
-        position: relative;
-        margin-bottom: 0.5rem;
-    }
-
-    .search-input {
-        width: 100%;
-        padding: 0.5rem 2rem 0.5rem 1rem;
-        border-radius: 20px;
-        border: 1px solid rgba(20, 60, 80, 0.6);
-        background: rgba(40, 80, 60, 0.5);
-        color: #c0e0ff;
-        outline: none;
-    }
-
-    .search-input::placeholder {
-        color: rgba(144, 176, 192, 0.5);
-    }
-
-    .search-icon {
-        position: absolute;
-        right: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        font-size: 1.2rem;
-        color: #90b0c0;
-        cursor: pointer;
-    }
-
-    .search-results {
-        display: none;
-        flex-wrap: nowrap;
-        gap: 10px;
-        padding: 0.5rem 0;
-        max-width: 100%;
-        overflow-x: auto;
-        min-height: 60px;
-    }
-
-    .search-results.show {
-        display: flex;
-    }
-
-    .search-result-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        cursor: pointer;
-    }
-
-    .search-result-item img {
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        margin-bottom: 0.25rem;
-    }
-
-    .search-result-item p {
-        margin: 0;
-        font-size: 0.9rem;
-        color: #c0e0ff;
-        text-align: center;
-        max-width: 100px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .no-results {
-        color: rgba(144, 176, 192, 0.5);
-        text-align: center;
-        padding: 0.5rem;
-    }
-
-    .chat-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.5rem 1rem;
-        background: rgba(40, 80, 60, 0.5);
-        border-bottom: 1px solid rgba(20, 60, 80, 0.6);
-    }
-
-    .chat-header .avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        margin-right: 0.5rem;
-    }
-
-    .chat-header .name {
-        font-size: 1rem;
-        color: #c0e0ff;
-        margin: 0;
-        cursor: pointer;
-    }
-
-    .chat-header .call-icons {
-        display: flex;
-        gap: 0.5rem;
-    }
-
-    .chat-header .call-icons i {
-        font-size: 1.5rem;
-        color: #90b0c0;
-        cursor: pointer;
-        border-radius: 50%;
-        padding: 0.25rem;
-    }
-
-    .pinned-section {
-        padding: 0.5rem 1rem;
-        background: rgba(40, 80, 60, 0.5);
-        border-bottom: 1px solid rgba(20, 60, 80, 0.6);
-        cursor: pointer;
-    }
-
-    .pinned-section p {
-        margin: 0;
-        color: #c0e0ff;
-    }
-
-    .pinned-popup {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: rgba(20, 60, 80, 0.9);
-        padding: 10px;
-        border-radius: 5px;
-        z-index: 1000;
-        max-height: 80vh;
-        overflow-y: auto;
-        color: #c0e0ff;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-        display: none;
-    }
-
-    .pinned-popup div {
-        padding: 5px;
-        border-bottom: 1px solid rgba(40, 80, 60, 0.5);
-    }
-
-    .pinned-message {
-        display: flex;
-        justify-content: flex-start;
-        margin-bottom: 5px;
-    }
-
-    .pinned-message.right {
-        justify-content: flex-end;
-    }
-
-    .pinned-message .message-box {
-        background: rgba(0, 0, 0, 0.8);
-        padding: 5px 10px;
-        border-radius: 10px;
-        max-width: 60%;
-        color: #c0e0ff;
-    }
-
-    .pinned-message.right .message-box {
-        background: rgba(0, 80, 60, 0.8);
-    }
-
-    .pinned-unpin-btn {
-        margin-left: 5px;
-        cursor: pointer;
-        color: #ef9a9a;
-    }
-
-    .message {
-        display: block;
-        align-items: flex-start;
-        margin-bottom: 20px;
-        position: relative;
-    }
-
-    .message.left {
-        margin-right: 20%;
-    }
-
-    .message.right {
-        text-align: right;
-        margin-left: 20%;
-    }
-
-    .avatar {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        margin: 0 5px;
-        display: inline-block;
-    }
-
-    .message-box {
-        background: rgba(0, 0, 0, 0.8);
-        padding: 5px 10px;
-        border-radius: 10px;
-        max-width: 60%;
-        color: #c0e0ff;
-        display: inline-block;
-        vertical-align: top;
-        margin-bottom: 0;
-    }
-
-    .message.right .message-box {
-        background: rgba(0, 80, 60, 0.8);
-    }
-
-    .recalled {
-        opacity: 0.5;
-    }
-
-    .name {
-        margin: 0;
-        font-weight: bold;
-        color: #c0e0ff;
-        padding-bottom: 2px;
-    }
-
-    hr {
-        margin: 2px 0;
-        border-color: rgba(40, 80, 60, 0.5);
-    }
-
-    .content {
-        margin: 0;
-        word-break: break-word;
-        color: #c0e0ff;
-        padding: 5px 0;
-    }
-
-    .message-timestamp {
-        display: block;
-        width: auto;
-        padding: 2px 10px;
-        margin-top: 2px;
-        color: #c0e0ff;
-        font-size: 0.7rem;
-        text-align: left;
-    }
-
-    .message.left .message-timestamp {
-        margin-left: 37px;
-    }
-
-    .message.right .message-timestamp {
-        text-align: right;
-        border-radius: 0 0 10px 10px;
-    }
-
-    .time {
-        display: inline;
-        margin-right: 5px;
-    }
-
-    .status {
-        display: inline;
-    }
-
-    .attachment {
-        margin-top: 5px;
-        display: block;
-        position: relative;
-    }
-
-    .message.left .attachment {
-        margin-left: 37px;
-    }
-
-    .attachment-media {
-        width: 200px;
-        height: 200px;
-        object-fit: cover;
-        border-radius: 5px;
-    }
-
-    .attachment audio {
-        width: 300px;
-        height: 40px;
-        position: relative;
-    }
-
-    .attachment video {
-        width: 300px;
-        height: 200px;
-        position: relative;
-    }
-
-    .message.with-attachment .message-timestamp {
-        margin-top: 5px;
-    }
-
-    @@media (max-width: 768px) {
-        .message-box {
-            max-width: 80%;
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <style>
+        .gradient-custom {
+            background: linear-gradient(to bottom right, rgba(20, 60, 80, 0.5), rgba(40, 80, 60, 0.5));
+            border-radius: 1rem;
+            height: 100%;
         }
-
-        .avatar {
-            width: 24px;
-            height: 24px;
+        .mask-custom {
+            background: rgba(20, 60, 80, 0.4);
+            border-radius: 1rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(40, 80, 60, 0.5);
+            box-shadow: 3px 3px 3px rgba(0, 0, 0, 0.3);
+            padding: 10px;
         }
-
-        .attachment-media {
-            width: 150px;
-            height: 150px;
+        .modal-dialog {
+            border-radius: 1rem;
+            overflow: hidden;
+            max-width: 80vw;
+            margin: 1rem auto;
         }
-
-        .attachment audio {
-            width: 225px;
+        .modal-content {
+            border-radius: 1rem !important;
+            overflow: hidden;
+            height: calc(100vh - 2rem);
+        }
+        .file-preview {
+            max-width: 200px;
+            max-height: 200px;
+            margin-top: 10px;
+            border-radius: 8px;
+        }
+        .file-preview-container {
+            display: none;
+            margin-bottom: 10px;
+        }
+        .input-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .input-container textarea {
+            padding-left: 40px;
+            padding-right: 40px;
+            border-radius: 20px;
             height: 30px;
+            line-height: 1.2;
+            color: #c0e0ff;
+            background: rgba(40, 80, 60, 0.5);
+            border: 1px solid rgba(20, 60, 80, 0.6);
         }
-
+        .input-container .icon-left {
+            position: absolute;
+            left: 10px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: #90b0c0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .input-container .icon-right {
+            position: absolute;
+            right: 10px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: #90b0c0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .chat-divider {
+            border-right: 1px solid rgba(40, 80, 60, 0.4);
+        }
+        .row {
+            display: flex;
+            height: 100%;
+        }
+        .col-md-5 {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .conversation-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 1rem 0.5rem;
+            position: relative;
+            transition: height 0.6s ease, margin-top 0.6s ease;
+            margin-top: 1rem;
+        }
+        .conversation-list.focused {
+            height: calc(100% - 110px);
+            margin-top: 0;
+        }
+        .chat-content {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        .message-list-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+            margin-bottom: 1rem;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        .message-list-container > ul > li:first-child {
+            margin-top: 10px;
+        }
+        .input-container-sticky {
+            position: sticky;
+            bottom: 0;
+            background: transparent;
+            padding-top: 0.5rem;
+            z-index: 10;
+        }
+        .conversation-list::-webkit-scrollbar,
+        .message-list-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        .conversation-list::-webkit-scrollbar-track,
+        .message-list-container::-webkit-scrollbar-track {
+            background: rgba(40, 80, 60, 0.4);
+            border-radius: 10px;
+        }
+        .conversation-list::-webkit-scrollbar-thumb,
+        .message-list-container::-webkit-scrollbar-thumb {
+            background: rgba(20, 60, 80, 0.7);
+            border-radius: 10px;
+            transition: background 0.3s ease;
+        }
+        .conversation-list::-webkit-scrollbar-thumb:hover,
+        .message-list-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(20, 60, 80, 0.5);
+        }
+        .message-list-container::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50px;
+            background: linear-gradient(to bottom, rgba(20, 60, 80, 0.4), transparent);
+            pointer-events: none;
+            z-index: 5;
+        }
+        .conversation-list li.active {
+            background-color: rgba(40, 80, 60, 0.5);
+            border-radius: 0.5rem;
+            font-weight: bold;
+        }
+        .search-container {
+            position: relative;
+            margin-bottom: 0.5rem;
+        }
+        .search-input {
+            width: 100%;
+            padding: 0.5rem 2rem 0.5rem 1rem;
+            border-radius: 20px;
+            border: 1px solid rgba(20, 60, 80, 0.6);
+            background: rgba(40, 80, 60, 0.5);
+            color: #c0e0ff;
+            outline: none;
+        }
+        .search-input::placeholder {
+            color: rgba(144, 176, 192, 0.5);
+        }
+        .search-icon {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.2rem;
+            color: #90b0c0;
+            cursor: pointer;
+        }
+        .search-results {
+            display: none;
+            flex-wrap: nowrap;
+            gap: 10px;
+            padding: 0.5rem 0;
+            max-width: 100%;
+            overflow-x: auto;
+            min-height: 60px;
+        }
+        .search-results.show {
+            display: flex;
+        }
+        .search-result-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+        }
+        .search-result-item img {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            margin-bottom: 0.25rem;
+        }
+        .search-result-item p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: #c0e0ff;
+            text-align: center;
+            max-width: 100px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .no-results {
+            color: rgba(144, 176, 192, 0.5);
+            text-align: center;
+            padding: 0.5rem;
+        }
+        .chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            background: rgba(40, 80, 60, 0.5);
+            border-bottom: 1px solid rgba(20, 60, 80, 0.6);
+        }
+        .chat-header .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+        .chat-header .name {
+            font-size: 1rem;
+            color: #c0e0ff;
+            margin: 0;
+            cursor: pointer;
+        }
+        .chat-header .call-icons {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .chat-header .call-icons i {
+            font-size: 1.5rem;
+            color: #90b0c0;
+            cursor: pointer;
+            border-radius: 50%;
+            padding: 0.25rem;
+        }
+        .pinned-section {
+            padding: 0.5rem 1rem;
+            background: rgba(40, 80, 60, 0.5);
+            border-bottom: 1px solid rgba(20, 60, 80, 0.6);
+            cursor: pointer;
+        }
+        .pinned-section p {
+            margin: 0;
+            color: #c0e0ff;
+        }
+        .pinned-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(20, 60, 80, 0.9);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 1000;
+            max-height: 80vh;
+            overflow-y: auto;
+            color: #c0e0ff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            display: none;
+        }
+        .pinned-popup div {
+            padding: 5px;
+            border-bottom: 1px solid rgba(40, 80, 60, 0.5);
+        }
+        .pinned-message {
+            display: flex;
+            justify-content: flex-start;
+            margin-bottom: 5px;
+        }
+        .pinned-message.right {
+            justify-content: flex-end;
+        }
+        .pinned-message .message-box {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 5px 10px;
+            border-radius: 10px;
+            max-width: 60%;
+            color: #c0e0ff;
+        }
+        .pinned-message.right .message-box {
+            background: rgba(0, 80, 60, 0.8);
+        }
+        .pinned-unpin-btn {
+            margin-left: 5px;
+            cursor: pointer;
+            color: #ef9a9a;
+        }
+        .message {
+            position: relative;
+            display: block;
+            margin-bottom: 20px;
+        }
+        .message.left {
+            margin-right: 20%;
+        }
+        .message.right {
+            text-align: right;
+            margin-left: 20%;
+        }
+        .message-options {
+            position: absolute;
+            font-size: 1.2rem;
+            color: #fff;
+            cursor: pointer;
+            display: none;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 5px;
+            padding: 2px 5px;
+            line-height: 1;
+            transition: background 0.2s ease;
+            opacity: 0.7;
+        }
+        .message-options:hover {
+            background: rgba(0, 0, 0, 0.7);
+            opacity: 1;
+        }
+        .message-box {
+            position: relative;
+        }
+        .message.left .message-box .message-options {
+            right: -30px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .message.right .message-box .message-options {
+            left: -30px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .attachment {
+            position: relative;
+            margin-top: 5px;
+            display: block;
+        }
+        .message.left .attachment .message-options {
+            display: none;
+        }
+        .message.right .attachment .message-options {
+            display: none;
+        }
+        .message:hover .message-box .message-options {
+            display: block;
+        }
+        .message.recalled .message-options {
+            display: none !important;
+        }
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            margin: 0 5px;
+            display: inline-block;
+            vertical-align: top;
+        }
+        .message-box {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 5px 10px;
+            border-radius: 10px;
+            max-width: 60%;
+            color: #c0e0ff;
+            display: inline-block;
+            vertical-align: top;
+            margin-bottom: 0;
+        }
+        .message.right .message-box {
+            background: rgba(0, 80, 60, 0.8);
+        }
+        .recalled {
+            opacity: 0.5;
+        }
+        .name {
+            margin: 0;
+            font-weight: bold;
+            color: #c0e0ff;
+            padding-bottom: 2px;
+        }
+        hr {
+            margin: 2px 0;
+            border-color: rgba(40, 80, 60, 0.5);
+        }
+        .content {
+            margin: 0;
+            word-break: break-word;
+            color: #c0e0ff;
+            padding: 5px 0;
+        }
+        .message-timestamp {
+            display: block;
+            width: auto;
+            padding: 2px 10px;
+            margin-top: 2px;
+            color: #c0e0ff;
+            font-size: 0.7rem;
+            text-align: left;
+        }
+        .message.left .message-timestamp {
+            margin-left: 37px;
+        }
+        .message.right .message-timestamp {
+            text-align: right;
+            border-radius: 0 0 10px 10px;
+        }
+        .time {
+            display: inline;
+            margin-right: 5px;
+        }
+        .status {
+            display: inline;
+        }
+        .message.left .attachment {
+            margin-left: 37px;
+        }
+        .attachment-media {
+            width: 200px;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+        .attachment audio {
+            width: 300px;
+            height: 40px;
+        }
         .attachment video {
-            width: 225px;
-            height: 150px;
+            width: 300px;
+            height: 200px;
         }
-    }
-</style>
-
-<div id="chatModal" class="modal fade" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <button id="closeChat" type="button" class="btn-close position-absolute top-0 end-0 m-2" aria-label="Close"></button>
-            <div class="gradient-custom p-4">
-                <div class="row">
-                    <div class="col-md-5 mb-4 mb-md-0 chat-divider">
-                        <div class="search-container">
-                            <input type="text" id="searchInput" class="search-input" placeholder="Search...">
-                            <i class="fas fa-search search-icon"></i>
-                        </div>
-                        <div class="search-results" id="searchResults"></div>
-                        <div class="mask-custom p-4 rounded conversation-list" id="conversationListContainer">
-                            <ul class="list-unstyled" id="conversationList"></ul>
-                        </div>
-                    </div>
-                    <div class="col-md-7 chat-content">
-                        <div class="chat-header" id="chatHeader" style="display: none;">
-                            <div class="d-flex align-items-center">
-                                <img id="headerAvatar" class="avatar" src="" alt="Avatar">
-                                <p id="headerName" class="name"></p>
+        .message.with-attachment .message-timestamp {
+            margin-top: 5px;
+        }
+        @@media (max-width: 768px) {
+            .message-box {
+                max-width: 80%;
+            }
+            .avatar {
+                width: 24px;
+                height: 24px;
+            }
+            .attachment-media {
+                width: 150px;
+                height: 150px;
+            }
+            .attachment audio {
+                width: 225px;
+                height: 30px;
+            }
+            .attachment video {
+                width: 225px;
+                height: 150px;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div id="chatModal" class="modal fade" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <button id="closeChat" type="button" class="btn-close position-absolute top-0 end-0 m-2" aria-label="Close"></button>
+                <div class="gradient-custom p-4">
+                    <div class="row">
+                        <div class="col-md-5 mb-4 mb-md-0 chat-divider">
+                            <div class="search-container">
+                                <input type="text" id="searchInput" class="search-input" placeholder="Search...">
+                                <i class="fas fa-search search-icon"></i>
                             </div>
-                            <div class="call-icons">
-                                <i class="fas fa-phone"></i>
-                                <i class="fas fa-video"></i>
+                            <div class="search-results" id="searchResults"></div>
+                            <div class="mask-custom p-4 rounded conversation-list" id="conversationListContainer">
+                                <ul class="list-unstyled" id="conversationList"></ul>
                             </div>
                         </div>
-                        <div class="pinned-section" id="pinnedSection" style="display: none;"></div>
-                        <div class="message-list-container" id="messageListContainer">
-                            <ul id="messageList" class="list-unstyled"></ul>
-                        </div>
-                        <div class="input-container-sticky">
-                            <div class="file-preview-container" id="filePreviewContainer">
-                                <img id="filePreview" class="file-preview d-none" alt="Preview">
-                                <video id="videoPreview" class="file-preview d-none" controls></video>
-                                <audio id="audioPreview" class="file-preview d-none" controls></audio>
-                                <button id="clearFile" class="btn btn-sm btn-danger ms-2">Clear</button>
+                        <div class="col-md-7 chat-content">
+                            <div class="chat-header" id="chatHeader" style="display: none;">
+                                <div class="d-flex align-items-center">
+                                    <img id="headerAvatar" class="avatar" src="" alt="Avatar">
+                                    <p id="headerName" class="name"></p>
+                                </div>
+                                <div class="call-icons">
+                                    <i class="fas fa-phone"></i>
+                                    <i class="fas fa-video"></i>
+                                </div>
                             </div>
-                            <div class="input-container">
-                                <i id="fileIcon" class="fas fa-paperclip icon-left"></i>
-                                <textarea id="chatInput" class="form-control" rows="1" placeholder="Message"></textarea>
-                                <i id="sendIcon" class="fas fa-arrow-right icon-right"></i>
+                            <div class="pinned-section" id="pinnedSection" style="display: none;"></div>
+                            <div class="message-list-container" id="messageListContainer">
+                                <ul id="messageList" class="list-unstyled"></ul>
                             </div>
-                            <input type="file" id="fileInput" accept="image/*,video/*,audio/mpeg" class="d-none">
+                            <div class="input-container-sticky">
+                                <div class="file-preview-container" id="filePreviewContainer">
+                                    <img id="filePreview" class="file-preview d-none" alt="Preview">
+                                    <video id="videoPreview" class="file-preview d-none" controls></video>
+                                    <audio id="audioPreview" class="file-preview d-none" controls></audio>
+                                    <button id="clearFile" class="btn btn-sm btn-danger ms-2">Clear</button>
+                                </div>
+                                <div class="input-container">
+                                    <i id="fileIcon" class="fas fa-paperclip icon-left"></i>
+                                    <textarea id="chatInput" class="form-control" rows="1" placeholder="Message"></textarea>
+                                    <i id="sendIcon" class="fas fa-arrow-right icon-right"></i>
+                                </div>
+                                <input type="file" id="fileInput" accept="image/*,video/*,audio/mpeg" class="d-none">
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+        <div id="pinnedPopup" class="pinned-popup">
+            <div id="pinnedContent"></div>
+        </div>
     </div>
-
-    <div id="pinnedPopup" class="pinned-popup">
-        <div id="pinnedContent"></div>
-    </div>
-</div>
-
+</body>
+</html>
