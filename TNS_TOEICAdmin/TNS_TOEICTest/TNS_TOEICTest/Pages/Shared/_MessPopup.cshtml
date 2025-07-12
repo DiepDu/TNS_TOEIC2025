@@ -115,6 +115,8 @@
             flex-direction: column;
             height: 100%;
             background: #34495e;
+            border-radius: 1rem;
+            overflow: hidden;
         }
 
         .message-list-container {
@@ -138,6 +140,7 @@
             background: transparent;
             padding-top: 0.5rem;
             z-index: 10;
+            margin-bottom: 6px;
         }
 
         .conversation-list::-webkit-scrollbar,
@@ -347,9 +350,10 @@
                 display: flex;
                 align-items: center;
                 margin-bottom: 10px;
-                flex-direction: row; /* sửa từ column -> row */
-                gap: 10px; /* thêm khoảng cách nếu cần */
+                flex-direction: row;
+                gap: 10px;
             }
+
         .pinned-message {
             display: flex;
             justify-content: flex-start;
@@ -591,8 +595,41 @@
         .chat-header-info > *:not(.chat-header-clickable) {
             pointer-events: none;
         }
+
+        .reply-box {
+            background: rgba(255, 255, 255, 0.05);
+            border-left: 3px solid #3498db;
+            padding: 5px 10px;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+            color: #bdc3c7;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+        }
+
+            .reply-box .reply-text {
+                overflow: hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+                max-width: 200px;
+            }
+
+        .highlight-parent {
+            outline: 2px solid #f39c12;
+            border-radius: 8px;
+            transition: outline 0.5s ease;
+        }
+
+        .parent-message {
+            background: rgba(189, 195, 199, 0.1);
+            border-left: 4px solid rgba(52, 152, 219, 0.6);
+            padding: 6px 10px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
     </style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <div id="chatModal" class="modal fade" tabindex="-1" aria-hidden="true">

@@ -219,7 +219,10 @@
             } else {
                 allMessages = [...newMessages];
                 messageList.innerHTML = allMessages.map(m => addMessage(m)).join("");
-                messageList.scrollTop = messageList.scrollHeight;
+                setTimeout(() => {
+                    const container = document.getElementById("messageListContainer");
+                    container.scrollTop = container.scrollHeight;
+                }, 0);
             }
 
             skip += newMessages.length;
@@ -292,9 +295,13 @@
             }
         });
 
-        pinnedPopup.addEventListener("click", (e) => {
+        pinnedPopup.addEventListener("click", async (e) => {
             if (e.target.classList.contains("pinned-unpin-btn")) {
                 const messageKey = e.target.getAttribute("data-message-key");
+                await fetch(`/api/conversations/unpin/${messageKey}`, {
+                    method: "PUT"
+                });
+
                 allMessages = allMessages.map(m => m.MessageKey === messageKey ? { ...m, IsPinned: false } : m);
 
                 const newPinnedMessages = allMessages.filter(m => m.IsPinned);
@@ -304,7 +311,6 @@
                     newHeaderText = firstNewPinned.Content || `Pinned ${firstNewPinned.MessageType || 'Item'}`;
                 }
                 pinnedSection.innerHTML = `<p>${newHeaderText} (${newPinnedMessages.length}/3 pinned)</p>`;
-
                 pinnedSection.style.display = allMessages.some(m => m.IsPinned) ? "block" : "none";
                 showPinnedPopup();
             } else if (e.target.classList.contains("content")) {
@@ -327,49 +333,69 @@
         const isOwn = message.SenderKey === memberKey;
         const isRecalled = message.Status === 2;
         const senderName = isOwn ? "You" : (message.SenderName || "Unknown");
-        const senderAvatar = isOwn ? "" : (message.SenderAvatar ? `<img src="${message.SenderAvatar || '/images/avatar/default-avatar.jpg'}" class="avatar">` : `<img src="/images/avatar/default-avatar.jpg" class="avatar">`);
+        const senderAvatar = isOwn ? "" : `<img src="${message.SenderAvatar || '/images/avatar/default-avatar.jpg'}" class="avatar">`;
         const time = formatTime(message.CreatedOn);
         const status = isOwn ? (message.Status === 0 ? '✔' : '✔✔') : '';
 
-        let html = `
-            <li class="message ${isOwn ? 'right' : 'left'} ${message.MessageType ? 'with-attachment' : ''} ${isRecalled ? 'recalled' : ''}" data-message-key="${message.MessageKey}">
-                ${senderAvatar}
-        `;
+        let html = `<li class="message ${isOwn ? 'right' : 'left'} ${message.MessageType ? 'with-attachment' : ''} ${isRecalled ? 'recalled' : ''}" data-message-key="${message.MessageKey}">`;
+        html += senderAvatar;
 
-        if (!isRecalled) {
+        html += `<div class="message-box">`;
+
+        // Chỉ hiển thị ParentMessage nếu không trống và không phải "[object Object]"
+        if (message.ParentMessageKey && message.ParentContent && typeof message.ParentContent === 'string' && message.ParentContent !== "[object Object]" && message.ParentContent.trim() !== "") {
+            // Kiểm tra Status của ParentMessage
+            const displayParent = message.ParentStatus === 2 ? "Message recalled" : (message.ParentContent === "Message recalled" ? "Message recalled" : message.ParentContent);
             html += `
-                <div class="message-box">
-                    <div class="message-options"><i class="fas fa-ellipsis-h"></i></div>
-                    ${!isOwn && currentConversationType === 'Group' ? `<p class="name">${senderName}</p><hr>` : ''}
-                    <p class="content">${allMessages.find(c => c.ConversationKey === currentConversationKey)?.IsBanned ? 'Đã bị chặn' : message.Content}</p>
-                </div>
-            `;
-            if (message.MessageType && (message.MessageType === "Image" || message.MessageType === "Audio" || message.MessageType === "Video")) {
-                html += `
-                    <div class="attachment">
-                        ${message.MessageType === "Image" ? `<img src="${message.Url}" class="attachment-media" alt="${message.FileName}">` :
-                        message.MessageType === "Audio" ? `<audio controls><source src="${message.Url}" type="${message.MimeType}"></audio>` :
-                            `<video controls><source src="${message.Url}" type="${message.MimeType}"></video>`}
-                    </div>
-                `;
-            }
-        } else {
-            html += `
-                <div class="message-box recalled">
-                    <p class="content">Message recalled</p>
+                <div class="parent-message" data-parent-key="${message.ParentMessageKey}">
+                    <p class="content">${displayParent}</p>
                 </div>
             `;
         }
 
+        html += `<div class="message-options"><i class="fas fa-ellipsis-h"></i></div>`;
+
+        if (!isOwn && currentConversationType === 'Group') {
+            html += `<p class="name">${senderName}</p><hr>`;
+        }
+
+        html += `<p class="content">${isRecalled ? "Message recalled" : (message.Content || "")}</p>`;
+
+        html += `</div>`; // end message-box
+
+        if (!isRecalled && message.MessageType && message.Url) {
+            html += `<div class="attachment">`;
+            if (message.MessageType === "Image") {
+                html += `<img src="${message.Url}" class="attachment-media" alt="${message.FileName}">`;
+            } else if (message.MessageType === "Audio") {
+                html += `<audio controls><source src="${message.Url}" type="${message.MimeType}"></audio>`;
+            } else if (message.MessageType === "Video") {
+                html += `<video controls><source src="${message.Url}" type="${message.MimeType}"></video>`;
+            }
+            html += `</div>`;
+        }
+
         html += `
-                <div class="message-timestamp">
-                    <span class="time">${time}</span>
-                    ${isOwn ? `<span class="status">${status}</span>` : ''}
-                </div>
-            </li>
-        `;
+            <div class="message-timestamp">
+                <span class="time">${time}</span>
+                ${isOwn ? `<span class="status">${status}</span>` : ''}
+            </div>
+        </li>`;
         return html;
     }
+
+    document.addEventListener("click", function (e) {
+        const parentEl = e.target.closest(".parent-message");
+        if (parentEl) {
+            const parentKey = parentEl.getAttribute("data-parent-key");
+            const targetEl = document.querySelector(`[data-message-key="${parentKey}"]`);
+            if (targetEl) {
+                targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
+            } else {
+                loadMessageUntilFound(parentKey);
+            }
+        }
+    });
 
     messageList.addEventListener("scroll", debounce(() => {
         if (messageList.scrollTop === 0 && currentConversationKey) {

@@ -244,6 +244,7 @@ namespace TNS_TOEICAdmin.Models
            END AS Url, 
            ma.FileSize, ma.FileName, ma.MimeType,
            pm.Content AS ParentContent,
+           pm.Status AS ParentStatus,
            CASE 
                WHEN m.SenderType = 'Member' THEN em.MemberName
                WHEN m.SenderType = 'Admin' THEN su.UserName
@@ -278,6 +279,7 @@ namespace TNS_TOEICAdmin.Models
            END AS Url, 
            ma.FileSize, ma.FileName, ma.MimeType,
            pm.Content AS ParentContent,
+           pm.Status AS ParentStatus,
            CASE 
                WHEN m.SenderType = 'Member' THEN em.MemberName
                WHEN m.SenderType = 'Admin' THEN su.UserName
@@ -344,6 +346,7 @@ namespace TNS_TOEICAdmin.Models
                             { "FileName", reader["FileName"] ?? (object)DBNull.Value },
                             { "MimeType", reader["MimeType"] ?? (object)DBNull.Value },
                             { "ParentContent", reader["ParentContent"] ?? (object)DBNull.Value },
+                            { "ParentStatus", reader["ParentStatus"] ?? (object)DBNull.Value },
                             { "SenderName", reader["SenderName"] ?? (object)DBNull.Value },
                             { "SenderAvatar", reader["SenderAvatar"] ?? (object)DBNull.Value }
                         };
@@ -368,5 +371,25 @@ namespace TNS_TOEICAdmin.Models
             }
             return messages;
         }
+        public static async Task<bool> UnpinMessageAsync(string messageKey, string memberKey)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                var query = @"
+            UPDATE Messages
+            SET IsPinned = 0
+            WHERE MessageKey = @MessageKey";
+
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@MessageKey", messageKey);
+                    var rowsAffected = await command.ExecuteNonQueryAsync();
+                    return rowsAffected > 0;
+                }
+            }
+        }
+
     }
 }

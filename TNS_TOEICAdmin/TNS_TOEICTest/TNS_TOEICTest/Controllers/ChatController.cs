@@ -103,5 +103,22 @@ namespace TNS_TOEICTest.Controllers
             }
             return Ok(memberKey);
         }
+        [HttpPut("unpin/{messageKey}")]
+        public async Task<IActionResult> UnpinMessage(string messageKey)
+        {
+            var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
+            var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
+            var memberKey = memberLogin.MemberKey;
+
+            if (string.IsNullOrEmpty(memberKey))
+                return Unauthorized(new { success = false, message = "MemberKey not found" });
+
+            var success = await ChatAccessData.UnpinMessageAsync(messageKey, memberKey);
+            if (!success)
+                return BadRequest(new { success = false, message = "Update failed" });
+
+            return Ok(new { success = true, message = "Unpinned" });
+        }
+
     }
 }
