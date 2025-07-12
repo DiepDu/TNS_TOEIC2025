@@ -48,7 +48,8 @@
     const conversationList = document.getElementById("conversationList");
     const searchInput = document.getElementById("searchInput");
     const searchResults = document.getElementById("searchResults");
-    const chatHeader = document.getElementById("chatHeader");
+    const chatHeaderInfo = document.getElementById("chatHeaderInfo");
+    const chatHeaderContent = document.getElementById("chatHeaderContent");
     const headerAvatar = document.getElementById("headerAvatar");
     const headerName = document.getElementById("headerName");
     const pinnedSection = document.getElementById("pinnedSection");
@@ -151,7 +152,8 @@
         currentConversationType = contact.ConversationType || null;
         headerAvatar.src = contact.Avatar || '/images/avatar/default-avatar.jpg';
         headerName.textContent = contact.Name || "Unknown";
-        chatHeader.style.display = "flex";
+        chatHeaderInfo.style.display = "flex";
+        chatHeaderContent.style.display = "block";
         messageList.innerHTML = "";
         searchInput.value = "";
         searchResults.classList.remove("show");
@@ -179,7 +181,8 @@
                 const conv = item.closest("li").querySelector(".conversation-item");
                 headerAvatar.src = conv.querySelector("img").src;
                 headerName.textContent = conv.querySelector("p.fw-bold").textContent;
-                chatHeader.style.display = "flex";
+                chatHeaderInfo.style.display = "flex";
+                chatHeaderContent.style.display = "block";
                 document.querySelectorAll(".conversation-item").forEach(i => i.parentElement.classList.remove("active"));
                 item.parentElement.classList.add("active");
                 messageList.innerHTML = "";
@@ -222,10 +225,35 @@
             skip += newMessages.length;
 
             const pinnedMessages = allMessages.filter(m => m.IsPinned);
-            pinnedSection.innerHTML = `<p>${pinnedMessages[0]?.Content || "No pinned messages"} (${pinnedMessages.length}/3 pinned)</p>`;
+            const firstPinned = pinnedMessages[0];
+            const headerText = firstPinned ? (firstPinned.Content || `Pinned ${firstPinned.MessageType}`) : "No pinned messages";
+            pinnedSection.innerHTML = `<p>${headerText} (${pinnedMessages.length}/3 pinned)</p>`;
             pinnedSection.style.display = pinnedMessages.length > 0 ? "block" : "none";
         } catch (err) {
             console.error("Load messages failed:", err);
+        }
+    }
+
+    async function loadMessageUntilFound(messageKey) {
+        let currentSkip = skip;
+        while (true) {
+            const url = `/api/conversations/messages/${currentConversationKey}?skip=${currentSkip}&memberKey=${encodeURIComponent(memberKey)}`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`Load messages failed: ${await response.text()}`);
+            const newMessages = await response.json();
+            if (newMessages.length === 0) break;
+            newMessages.reverse();
+            allMessages = [...newMessages, ...allMessages];
+            messageList.innerHTML = allMessages.map(m => addMessage(m)).join("");
+            const foundMessage = allMessages.find(m => m.MessageKey === messageKey);
+            if (foundMessage) {
+                const messageElement = document.querySelector(`[data-message-key="${messageKey}"]`);
+                if (messageElement) {
+                    messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                break;
+            }
+            currentSkip += 100;
         }
     }
 
@@ -234,30 +262,63 @@
             pinnedPopup.style.display = "none";
             return;
         }
+
         const pinnedMessages = allMessages.filter(m => m.IsPinned);
+
         pinnedContent.innerHTML = pinnedMessages.map(m => {
             const isOwn = m.SenderKey === memberKey;
+            const contentHtml = m.Content ? `<p class="content" data-message-key="${m.MessageKey}">${m.Content}</p>` : '<p class="content" data-message-key="${m.MessageKey}">No content</p>';
+
             return `
-                <div class="pinned-message ${isOwn ? 'right' : ''}">
-                    <div class="message-box">${m.Content}</div>
-                    <span class="pinned-unpin-btn" data-message-key="${m.MessageKey}">Unpin</span>
+                <div>
+                    <div class="pinned-message-container">
+                        <div class="pinned-message ${isOwn ? 'right' : ''}">
+                            <div class="message-box">
+                                ${contentHtml}
+                            </div>
+                        </div>
+                        <button class="pinned-unpin-btn" data-message-key="${m.MessageKey}">Unpin</button>
+                    </div>
                 </div>
             `;
         }).join("") || "<div>No pinned messages</div>";
+
         pinnedPopup.style.display = "block";
+
         document.addEventListener("click", function hidePopup(e) {
             if (!pinnedPopup.contains(e.target) && e.target !== pinnedSection) {
                 pinnedPopup.style.display = "none";
                 document.removeEventListener("click", hidePopup);
             }
         });
+
         pinnedPopup.addEventListener("click", (e) => {
             if (e.target.classList.contains("pinned-unpin-btn")) {
                 const messageKey = e.target.getAttribute("data-message-key");
                 allMessages = allMessages.map(m => m.MessageKey === messageKey ? { ...m, IsPinned: false } : m);
-                pinnedSection.innerHTML = `<p>${allMessages.find(m => m.IsPinned)?.Content || "No pinned messages"} (${allMessages.filter(m => m.IsPinned).length}/3 pinned)</p>`;
+
+                const newPinnedMessages = allMessages.filter(m => m.IsPinned);
+                let newHeaderText = "No pinned messages";
+                if (newPinnedMessages.length > 0) {
+                    const firstNewPinned = newPinnedMessages[0];
+                    newHeaderText = firstNewPinned.Content || `Pinned ${firstNewPinned.MessageType || 'Item'}`;
+                }
+                pinnedSection.innerHTML = `<p>${newHeaderText} (${newPinnedMessages.length}/3 pinned)</p>`;
+
                 pinnedSection.style.display = allMessages.some(m => m.IsPinned) ? "block" : "none";
                 showPinnedPopup();
+            } else if (e.target.classList.contains("content")) {
+                const messageKey = e.target.getAttribute("data-message-key");
+                pinnedPopup.style.display = "none";
+                const existingMessage = allMessages.find(m => m.MessageKey === messageKey);
+                if (existingMessage) {
+                    const messageElement = document.querySelector(`[data-message-key="${messageKey}"]`);
+                    if (messageElement) {
+                        messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                } else {
+                    loadMessageUntilFound(messageKey);
+                }
             }
         });
     }
@@ -416,7 +477,9 @@
             updateUnreadCount(unreadCount);
 
             const pinnedMessages = allMessages.filter(m => m.IsPinned);
-            pinnedSection.innerHTML = `<p>${pinnedMessages[0]?.Content || "No pinned messages"} (${pinnedMessages.length}/3 pinned)</p>`;
+            const firstPinned = pinnedMessages[0];
+            const headerText = firstPinned ? (firstPinned.Content || `Pinned ${firstPinned.MessageType}`) : "No pinned messages";
+            pinnedSection.innerHTML = `<p>${headerText} (${pinnedMessages.length}/3 pinned)</p>`;
             pinnedSection.style.display = pinnedMessages.length > 0 ? "block" : "none";
         }
     });
@@ -447,10 +510,9 @@
         }
     }
 
-    if (chatHeader) chatHeader.addEventListener("click", (e) => {
-        if (e.target.closest(".call-icons") || e.target.closest(".btn-close")) return;
-        showPinnedPopup();
-    });
+    if (chatHeaderContent) {
+        chatHeaderContent.addEventListener("click", showPinnedPopup);
+    }
 
     if (pinnedSection) pinnedSection.addEventListener("click", showPinnedPopup);
 
@@ -503,7 +565,9 @@
             messageList.innerHTML = allMessages.map(m => addMessage(m)).join("");
             messageList.scrollTop = messageList.scrollHeight;
             const pinnedMessages = allMessages.filter(m => m.IsPinned);
-            pinnedSection.innerHTML = `<p>${pinnedMessages[0]?.Content || "No pinned messages"} (${pinnedMessages.length}/3 pinned)</p>`;
+            const firstPinned = pinnedMessages[0];
+            const headerText = firstPinned ? (firstPinned.Content || `Pinned ${firstPinned.MessageType}`) : "No pinned messages";
+            pinnedSection.innerHTML = `<p>${headerText} (${pinnedMessages.length}/3 pinned)</p>`;
             pinnedSection.style.display = "block";
         }
     }
