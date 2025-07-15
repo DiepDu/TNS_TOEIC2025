@@ -267,6 +267,8 @@
             border-bottom: 1px solid rgba(44, 62, 80, 0.6);
             border-radius: 10px 10px 0 0;
             width: 100%;
+            z-index: 10;
+            pointer-events: auto;
         }
 
             .chat-header-info .avatar {
@@ -285,15 +287,42 @@
             .chat-header-info .call-icons {
                 display: flex;
                 gap: 0.5rem;
+                align-items: center;
+                z-index: 15;
             }
 
-                .chat-header-info .call-icons i {
+                .chat-header-info .call-icons i,
+                .chat-header-info .call-icons span {
                     font-size: 1.5rem;
                     color: #bdc3c7;
                     cursor: pointer;
                     border-radius: 50%;
                     padding: 0.25rem;
+                    pointer-events: auto;
+                    line-height: 1;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 32px;
+                    height: 32px;
                 }
+
+        .custom-block-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border: 2px solid #bdc3c7;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            font-weight: bold;
+            line-height: 1;
+            text-align: center;
+            color: #bdc3c7;
+            margin: 0;
+            padding: 0;
+        }
 
         .chat-header-content {
             padding: 0.5rem 1rem;
@@ -315,6 +344,10 @@
             border-bottom: 1px solid rgba(44, 62, 80, 0.6);
             cursor: pointer;
             border-radius: 0;
+            position: relative; /* Thêm dòng này */
+            z-index: 6; /* Thêm dòng này */
+            pointer-events: auto !important;
+            cursor: pointer;
         }
 
             .pinned-section p {
@@ -590,10 +623,8 @@
             }
         }
 
-        .pinned-section > *,
-        .chat-header-content > *,
-        .chat-header-info > *:not(.chat-header-clickable) {
-            pointer-events: none;
+        .chat-header-info {
+            pointer-events: auto;
         }
 
         .reply-box {
@@ -629,6 +660,12 @@
             border-radius: 5px;
             cursor: pointer;
         }
+
+        .icon-hover:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            transition: 0.2s;
+        }
     </style>
 </head>
 <body>
@@ -640,7 +677,7 @@
                     <div class="row">
                         <div class="col-md-5 mb-4 mb-md-0 chat-divider">
                             <div class="search-container">
-                                <input type="text" id="searchInput" class="search-input" placeholder="Search...">
+                                <input type="text" id="searchInput" class="search-input" placeholder="Tìm kiếm...">
                                 <i class="fas fa-search search-icon"></i>
                             </div>
                             <div class="search-results" id="searchResults"></div>
@@ -655,8 +692,10 @@
                                     <p id="headerName" class="name"></p>
                                 </div>
                                 <div class="call-icons">
-                                    <i class="fas fa-phone"></i>
-                                    <i class="fas fa-video"></i>
+                                    <i id="iconCall" class="fas fa-phone icon-hover" title="Gọi"></i>
+                                    <i id="iconVideo" class="fas fa-video icon-hover" title="Video"></i>
+                                    <span id="iconBlock" class="custom-block-icon icon-hover" style="display: none;" title="Chặn">−</span>
+                                    <i id="iconSetting" class="fas fa-cog icon-hover" style="display: none;" title="Cài đặt"></i>
                                 </div>
                             </div>
                             <div class="chat-header-content" id="chatHeaderContent" style="display: none;"></div>
@@ -666,14 +705,14 @@
                             </div>
                             <div class="input-container-sticky">
                                 <div class="file-preview-container" id="filePreviewContainer">
-                                    <img id="filePreview" class="file-preview d-none" alt="Preview">
+                                    <img id="filePreview" class="file-preview d-none" alt="Xem trước">
                                     <video id="videoPreview" class="file-preview d-none" controls></video>
                                     <audio id="audioPreview" class="file-preview d-none" controls></audio>
-                                    <button id="clearFile" class="btn btn-sm btn-danger ms-2">Clear</button>
+                                    <button id="clearFile" class="btn btn-sm btn-danger ms-2">Xóa</button>
                                 </div>
                                 <div class="input-container">
                                     <i id="fileIcon" class="fas fa-paperclip icon-left"></i>
-                                    <textarea id="chatInput" class="form-control" rows="1" placeholder="Message"></textarea>
+                                    <textarea id="chatInput" class="form-control" rows="1" placeholder="Tin nhắn"></textarea>
                                     <i id="sendIcon" class="fas fa-arrow-right icon-right"></i>
                                 </div>
                                 <input type="file" id="fileInput" accept="image/*,video/*,audio/mpeg" class="d-none">

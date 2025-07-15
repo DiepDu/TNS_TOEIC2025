@@ -1,4 +1,9 @@
 ﻿document.addEventListener("DOMContentLoaded", async () => {
+    if (!window.signalR) {
+        console.error("[DOMContentLoaded] SignalR không được tải!");
+        return;
+    }
+
     const connection = new signalR.HubConnectionBuilder()
         .withUrl("https://localhost:7003/chatHub")
         .withAutomaticReconnect()
@@ -20,14 +25,14 @@
             credentials: 'include'
         });
         if (response.ok) memberKey = await response.text();
-        else console.warn("Failed to fetch MemberKey:", await response.text());
+        else console.warn("[DOMContentLoaded] Không lấy được MemberKey:", await response.text());
     } catch (error) {
-        console.error("Error fetching MemberKey:", error);
+        console.error("[DOMContentLoaded] Lỗi khi lấy MemberKey:", error);
     }
 
     if (!memberKey) {
-        console.warn("MemberKey not found. Chat disabled.");
-        document.getElementById("openChat")?.addEventListener("click", () => alert("Please log in."));
+        console.warn("[DOMContentLoaded] Không tìm thấy MemberKey. Tắt chat.");
+        document.getElementById("openChat")?.addEventListener("click", () => alert("Vui lòng đăng nhập."));
         return;
     }
 
@@ -56,12 +61,169 @@
     const pinnedPopup = document.getElementById("pinnedPopup");
     const pinnedContent = document.getElementById("pinnedContent");
 
+    let blockPopup = null;
+
     function debounce(func, wait) {
         let timeout;
         return (...args) => {
             clearTimeout(timeout);
             timeout = setTimeout(() => func.apply(this, args), wait);
         };
+    }
+
+    function attachIconListeners() {
+        const blockIcon = document.getElementById("iconBlock");
+        if (!blockIcon) {
+            console.warn("[attachIconListeners] Không tìm thấy iconBlock");
+            return;
+        }
+
+        console.log("[attachIconListeners] Gắn sự kiện cho iconBlock");
+        blockIcon.replaceWith(blockIcon.cloneNode(true));
+        const newBlockIcon = document.getElementById("iconBlock");
+        newBlockIcon.classList.add("icon-hover");
+        newBlockIcon.style.cursor = "pointer";
+
+        newBlockIcon.addEventListener("mouseenter", () => {
+            console.log(`[IconHover] Hover vào iconBlock lúc:`, new Date().toISOString());
+        });
+        newBlockIcon.addEventListener("mouseleave", () => {
+            console.log(`[IconHover] Rời chuột khỏi iconBlock lúc:`, new Date().toISOString());
+        });
+
+        newBlockIcon.addEventListener("click", debounce((e) => {
+            console.log("[iconBlock] Nhấn icon block lúc:", new Date().toISOString());
+            if (blockPopup) {
+                console.log("[iconBlock] Xóa popup hiện có");
+                blockPopup.remove();
+                blockPopup = null;
+                return;
+            }
+
+            blockPopup = document.createElement("div");
+            blockPopup.id = "blockPopup";
+            blockPopup.innerHTML = `
+                <div class="popup-dialog">
+                    <p class="popup-title">Bạn muốn làm gì?</p>
+                    <button class="btn btn-danger w-100 mb-2" id="btnDeleteConversation">Xóa cuộc trò chuyện</button>
+                    <button class="btn btn-warning w-100 mb-2" id="btnBlockUser">Chặn</button>
+                    <button class="btn btn-secondary w-100" id="btnCancelBlock">Hủy</button>
+                </div>
+            `;
+            Object.assign(blockPopup.style, {
+                position: "absolute",
+                top: "60px",
+                right: "20px",
+                zIndex: "1050",
+                background: "#222",
+                padding: "16px",
+                borderRadius: "12px",
+                boxShadow: "0 4px 8px rgba(0,0,0,0.2)",
+                minWidth: "200px",
+                color: "white",
+                pointerEvents: "auto"
+            });
+            chatModal.appendChild(blockPopup);
+            console.log("[iconBlock] Popup được tạo và thêm vào DOM");
+
+            document.getElementById("btnDeleteConversation").addEventListener("click", async () => {
+                console.log("[blockPopup] Nhấn Xóa cuộc trò chuyện");
+                try {
+                    await fetch(`/api/ChatController/DeleteConversation/${currentConversationKey}`, {
+                        method: 'POST',
+                        credentials: 'include'
+                    });
+                    console.log("[blockPopup] Đã xóa cuộc trò chuyện");
+                    resetChatInterface();
+                    loadConversations();
+                } catch (err) {
+                    console.error("[blockPopup] Lỗi xóa cuộc trò chuyện:", err);
+                }
+                blockPopup.remove();
+                blockPopup = null;
+            });
+
+            document.getElementById("btnBlockUser").addEventListener("click", async () => {
+                console.log("[blockPopup] Nhấn Chặn người dùng");
+                try {
+                    await fetch(`/api/ChatController/BlockUser/${currentConversationKey}`, {
+                        method: 'POST',
+                        credentials: 'include'
+                    });
+                    console.log("[blockPopup] Đã chặn người dùng");
+                    resetChatInterface();
+                    loadConversations();
+                } catch (err) {
+                    console.error("[blockPopup] Lỗi chặn người dùng:", err);
+                }
+                blockPopup.remove();
+                blockPopup = null;
+            });
+
+            document.getElementById("btnCancelBlock").addEventListener("click", () => {
+                console.log("[blockPopup] Nhấn Hủy");
+                blockPopup.remove();
+                blockPopup = null;
+            });
+
+            const outsideClickHandler = (event) => {
+                if (blockPopup && !blockPopup.contains(event.target) && event.target !== newBlockIcon && !newBlockIcon.contains(event.target)) {
+                    console.log("[blockPopup] Nhấn ngoài, xóa popup");
+                    blockPopup.remove();
+                    blockPopup = null;
+                    document.removeEventListener("click", outsideClickHandler);
+                }
+            };
+            setTimeout(() => {
+                document.addEventListener("click", outsideClickHandler);
+            }, 100);
+        }, 100));
+
+        const iconIds = ["iconCall", "iconVideo", "iconSetting"];
+        iconIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.classList.add("icon-hover");
+                el.style.cursor = "pointer";
+                console.log(`[attachIconListeners] Đã thêm class icon-hover và cursor cho ${id}`);
+                el.addEventListener("click", (e) => {
+                    console.log(`[IconClick] Nhấn vào ${id} lúc:`, new Date().toISOString());
+                });
+                el.addEventListener("mouseenter", () => {
+                    console.log(`[IconHover] Hover vào ${id} lúc:`, new Date().toISOString());
+                });
+                el.addEventListener("mouseleave", () => {
+                    console.log(`[IconHover] Rời chuột khỏi ${id} lúc:`, new Date().toISOString());
+                });
+            } else {
+                console.warn(`[attachIconListeners] Không tìm thấy phần tử với ID ${id}`);
+            }
+        });
+    }
+
+    function updateIconsVisibility() {
+        const blockIcon = document.getElementById("iconBlock");
+        const settingIcon = document.getElementById("iconSetting");
+        console.log("[updateIconsVisibility] Loại cuộc trò chuyện:", currentConversationType);
+        console.log("[updateIconsVisibility] Icon block tồn tại:", !!blockIcon, "Icon setting tồn tại:", !!settingIcon);
+        if (blockIcon && settingIcon) {
+            if (currentConversationType === "Private") {
+                blockIcon.style.display = "inline-block";
+                settingIcon.style.display = "none";
+                console.log("[updateIconsVisibility] Hiển thị icon block cho chat riêng");
+            } else if (currentConversationType === "Group") {
+                blockIcon.style.display = "none";
+                settingIcon.style.display = "inline-block";
+                console.log("[updateIconsVisibility] Hiển thị icon setting cho chat nhóm");
+            } else {
+                blockIcon.style.display = "none";
+                settingIcon.style.display = "none";
+                console.log("[updateIconsVisibility] Ẩn cả hai icon do không xác định loại cuộc trò chuyện");
+            }
+            attachIconListeners();
+        } else {
+            console.error("[updateIconsVisibility] Không tìm thấy iconBlock hoặc iconSetting");
+        }
     }
 
     function resetFileInput() {
@@ -72,6 +234,31 @@
         videoPreview.classList.add("d-none");
         audioPreview.classList.add("d-none");
         fileInput.disabled = false;
+    }
+
+    function resetChatInterface() {
+        console.log("[resetChatInterface] Làm mới giao diện chat");
+        currentConversationKey = null;
+        currentUserKey = null;
+        currentUserType = null;
+        currentConversationType = null;
+        skip = 0;
+        allMessages = [];
+        messageList.innerHTML = "";
+        chatHeaderInfo.style.display = "none";
+        chatHeaderContent.style.display = "none";
+        pinnedSection.style.display = "none";
+        document.querySelectorAll(".conversation-item").forEach(i => i.parentElement.classList.remove("active"));
+        updateIconsVisibility();
+    }
+
+    function updatePinnedSection() {
+        console.log("[updatePinnedSection] Cập nhật header tin nhắn ghim");
+        const pinnedMessages = allMessages.filter(m => m.IsPinned);
+        const firstPinned = pinnedMessages[0];
+        const headerText = firstPinned ? (firstPinned.Content || `Ghim ${firstPinned.MessageType || 'Mục'}`) : "Chưa có tin nhắn ghim";
+        pinnedSection.innerHTML = `<p>${headerText} (${pinnedMessages.length}/3 ghim)</p>`;
+        pinnedSection.style.display = pinnedMessages.length > 0 ? "block" : "none";
     }
 
     function formatTime(createdOn) {
@@ -88,7 +275,7 @@
     async function loadConversations() {
         try {
             const response = await fetch(`/api/conversations?memberKey=${encodeURIComponent(memberKey)}`);
-            if (!response.ok) throw new Error(`API failed: ${await response.text()} (Status: ${response.status})`);
+            if (!response.ok) throw new Error(`[loadConversations] API thất bại: ${await response.text()} (Status: ${response.status})`);
             const { conversations } = await response.json();
             conversationList.innerHTML = "";
             conversations.forEach(conv => {
@@ -102,7 +289,7 @@
                         data-conversation-type="${conv.ConversationType || ''}">
                         <div class="d-flex">
                             <img src="${conv.Avatar || '/images/avatar/default-avatar.jpg'}" alt="avatar" class="rounded-circle me-3" style="width: 48px; height: 48px;">
-                            <div><p class="fw-bold mb-0">${conv.DisplayName || "Unknown"}</p><p class="small mb-0">${conv.LastMessage || "No messages"}</p></div>
+                            <div><p class="fw-bold mb-0">${conv.DisplayName || "Không xác định"}</p><p class="small mb-0">${conv.LastMessage || "Chưa có tin nhắn"}</p></div>
                         </div>
                         <div class="text-end"><p class="small mb-1">${conv.LastMessageTime ? formatTime(conv.LastMessageTime) : ""}</p>${conv.UnreadCount > 0 ? `<span class="badge bg-danger rounded-pill px-2">${conv.UnreadCount}</span>` : ''}</div>
                     </a>
@@ -111,7 +298,7 @@
             });
             addConversationClickListeners();
         } catch (err) {
-            console.error("Load conversations failed:", err);
+            console.error("[loadConversations] Lỗi tải danh sách cuộc trò chuyện:", err);
         }
     }
 
@@ -123,9 +310,9 @@
         }
         try {
             const response = await fetch(`/api/conversations/search?query=${encodeURIComponent(query)}&memberKey=${encodeURIComponent(memberKey)}`);
-            if (!response.ok) throw new Error(`Search failed: ${await response.text()} (Status: ${response.status})`);
+            if (!response.ok) throw new Error(`[searchContacts] Tìm kiếm thất bại: ${await response.text()} (Status: ${response.status})`);
             const results = await response.json();
-            searchResults.innerHTML = results.length === 0 ? `<div class="no-results">Not Found</div>` : results.map(result => `
+            searchResults.innerHTML = results.length === 0 ? `<div class="no-results">Không tìm thấy</div>` : results.map(result => `
                 <div class="search-result-item" data-contact='${JSON.stringify(result).replace(/'/g, "\\'")}' onmousedown="event.preventDefault()">
                     <img src="${result.Avatar || '/images/avatar/default-avatar.jpg'}" alt="${result.Name}" class="rounded-circle">
                     <p>${result.Name}</p>
@@ -139,35 +326,48 @@
                 });
             });
         } catch (err) {
-            console.error("Search error:", err);
-            searchResults.innerHTML = `<div class="no-results">Not Found</div>`;
+            console.error("[searchContacts] Lỗi tìm kiếm:", err);
+            searchResults.innerHTML = `<div class="no-results">Không tìm thấy</div>`;
             searchResults.classList.add("show");
         }
     }
 
     function selectContact(contact) {
+        console.log("[selectContact] Chọn liên hệ:", contact);
         currentConversationKey = contact.ConversationKey || null;
         currentUserKey = contact.UserKey || null;
         currentUserType = contact.UserType || null;
         currentConversationType = contact.ConversationType || null;
         headerAvatar.src = contact.Avatar || '/images/avatar/default-avatar.jpg';
-        headerName.textContent = contact.Name || "Unknown";
+        headerName.textContent = contact.Name || "Không xác định";
         chatHeaderInfo.style.display = "flex";
         chatHeaderContent.style.display = "block";
         messageList.innerHTML = "";
         searchInput.value = "";
         searchResults.classList.remove("show");
         conversationListContainer.classList.remove("focused");
-        pinnedSection.style.display = "none";
         skip = 0;
         allMessages = [];
+
+        // Chỉ highlight nếu liên hệ có ConversationKey khớp với danh sách
+        document.querySelectorAll(".conversation-item").forEach(i => i.parentElement.classList.remove("active"));
+        if (currentConversationKey) {
+            const matchingConv = document.querySelector(`.conversation-item[data-conversation-key="${currentConversationKey}"]`);
+            if (matchingConv) {
+                matchingConv.parentElement.classList.add("active");
+            }
+        }
+
+        updatePinnedSection();
         if (currentConversationKey) loadMessages(currentConversationKey);
+        updateIconsVisibility();
     }
 
     function addConversationClickListeners() {
         document.querySelectorAll(".conversation-item").forEach(item => {
             item.addEventListener("click", (e) => {
                 e.preventDefault();
+                console.log("[addConversationClickListeners] Nhấn vào cuộc trò chuyện:", item);
                 const conversationKey = item.getAttribute("data-conversation-key");
                 const userKey = item.getAttribute("data-user-key") || null;
                 const userType = item.getAttribute("data-user-type") || null;
@@ -177,6 +377,7 @@
                 currentUserKey = userKey;
                 currentUserType = userType;
                 currentConversationType = conversationType;
+                console.log("[addConversationClickListeners] Cuộc trò chuyện được chọn - Key:", conversationKey, "Loại:", conversationType);
 
                 const conv = item.closest("li").querySelector(".conversation-item");
                 headerAvatar.src = conv.querySelector("img").src;
@@ -186,10 +387,12 @@
                 document.querySelectorAll(".conversation-item").forEach(i => i.parentElement.classList.remove("active"));
                 item.parentElement.classList.add("active");
                 messageList.innerHTML = "";
-                pinnedSection.style.display = "block";
                 skip = 0;
                 allMessages = [];
+
+                updatePinnedSection();
                 loadMessages(currentConversationKey);
+                updateIconsVisibility();
             });
         });
     }
@@ -199,7 +402,7 @@
         const url = `/api/conversations/messages/${conversationKey}?skip=${skip}&memberKey=${encodeURIComponent(memberKey)}`;
         try {
             const response = await fetch(url);
-            if (!response.ok) throw new Error(`Load messages failed: ${await response.text()}`);
+            if (!response.ok) throw new Error(`[loadMessages] Tải tin nhắn thất bại: ${await response.text()}`);
             const newMessages = await response.json();
             if (newMessages.length === 0) return;
 
@@ -226,14 +429,9 @@
             }
 
             skip += newMessages.length;
-
-            const pinnedMessages = allMessages.filter(m => m.IsPinned);
-            const firstPinned = pinnedMessages[0];
-            const headerText = firstPinned ? (firstPinned.Content || `Pinned ${firstPinned.MessageType}`) : "No pinned messages";
-            pinnedSection.innerHTML = `<p>${headerText} (${pinnedMessages.length}/3 pinned)</p>`;
-            pinnedSection.style.display = pinnedMessages.length > 0 ? "block" : "none";
+            updatePinnedSection();
         } catch (err) {
-            console.error("Load messages failed:", err);
+            console.error("[loadMessages] Lỗi tải tin nhắn:", err);
         }
     }
 
@@ -242,7 +440,7 @@
         while (true) {
             const url = `/api/conversations/messages/${currentConversationKey}?skip=${currentSkip}&memberKey=${encodeURIComponent(memberKey)}`;
             const response = await fetch(url);
-            if (!response.ok) throw new Error(`Load messages failed: ${await response.text()}`);
+            if (!response.ok) throw new Error(`[loadMessageUntilFound] Tải tin nhắn thất bại: ${await response.text()}`);
             const newMessages = await response.json();
             if (newMessages.length === 0) break;
             newMessages.reverse();
@@ -267,10 +465,9 @@
         }
 
         const pinnedMessages = allMessages.filter(m => m.IsPinned);
-
         pinnedContent.innerHTML = pinnedMessages.map(m => {
             const isOwn = m.SenderKey === memberKey;
-            const contentHtml = m.Content ? `<p class="content" data-message-key="${m.MessageKey}">${m.Content}</p>` : '<p class="content" data-message-key="${m.MessageKey}">No content</p>';
+            const contentHtml = m.Content ? `<p class="content" data-message-key="${m.MessageKey}">${m.Content}</p>` : '<p class="content" data-message-key="${m.MessageKey}">Không có nội dung</p>';
 
             return `
                 <div>
@@ -280,11 +477,11 @@
                                 ${contentHtml}
                             </div>
                         </div>
-                        <button class="pinned-unpin-btn" data-message-key="${m.MessageKey}">Unpin</button>
+                        <button class="pinned-unpin-btn" data-message-key="${m.MessageKey}">Bỏ ghim</button>
                     </div>
                 </div>
             `;
-        }).join("") || "<div>No pinned messages</div>";
+        }).join("") || "<div>Chưa có tin nhắn ghim</div>";
 
         pinnedPopup.style.display = "block";
 
@@ -303,15 +500,7 @@
                 });
 
                 allMessages = allMessages.map(m => m.MessageKey === messageKey ? { ...m, IsPinned: false } : m);
-
-                const newPinnedMessages = allMessages.filter(m => m.IsPinned);
-                let newHeaderText = "No pinned messages";
-                if (newPinnedMessages.length > 0) {
-                    const firstNewPinned = newPinnedMessages[0];
-                    newHeaderText = firstNewPinned.Content || `Pinned ${firstNewPinned.MessageType || 'Item'}`;
-                }
-                pinnedSection.innerHTML = `<p>${newHeaderText} (${newPinnedMessages.length}/3 pinned)</p>`;
-                pinnedSection.style.display = allMessages.some(m => m.IsPinned) ? "block" : "none";
+                updatePinnedSection();
                 showPinnedPopup();
             } else if (e.target.classList.contains("content")) {
                 const messageKey = e.target.getAttribute("data-message-key");
@@ -332,7 +521,7 @@
     function addMessage(message) {
         const isOwn = message.SenderKey === memberKey;
         const isRecalled = message.Status === 2;
-        const senderName = isOwn ? "You" : (message.SenderName || "Unknown");
+        const senderName = isOwn ? "Bạn" : (message.SenderName || "Không xác định");
         const senderAvatar = isOwn ? "" : `<img src="${message.SenderAvatar || '/images/avatar/default-avatar.jpg'}" class="avatar">`;
         const time = formatTime(message.CreatedOn);
         const status = isOwn ? (message.Status === 0 ? '✔' : '✔✔') : '';
@@ -342,10 +531,8 @@
 
         html += `<div class="message-box">`;
 
-        // Chỉ hiển thị ParentMessage nếu không trống và không phải "[object Object]"
         if (message.ParentMessageKey && message.ParentContent && typeof message.ParentContent === 'string' && message.ParentContent !== "[object Object]" && message.ParentContent.trim() !== "") {
-            // Kiểm tra Status của ParentMessage
-            const displayParent = message.ParentStatus === 2 ? "Message recalled" : (message.ParentContent === "Message recalled" ? "Message recalled" : message.ParentContent);
+            const displayParent = message.ParentStatus === 2 ? "Tin nhắn đã thu hồi" : (message.ParentContent === "Tin nhắn đã thu hồi" ? "Tin nhắn đã thu hồi" : message.ParentContent);
             html += `
                 <div class="parent-message" data-parent-key="${message.ParentMessageKey}">
                     <p class="content">${displayParent}</p>
@@ -359,9 +546,9 @@
             html += `<p class="name">${senderName}</p><hr>`;
         }
 
-        html += `<p class="content">${isRecalled ? "Message recalled" : (message.Content || "")}</p>`;
+        html += `<p class="content">${isRecalled ? "Tin nhắn đã thu hồi" : (message.Content || "")}</p>`;
 
-        html += `</div>`; // end message-box
+        html += `</div>`;
 
         if (!isRecalled && message.MessageType && message.Url) {
             html += `<div class="attachment">`;
@@ -406,10 +593,10 @@
     async function startConnection() {
         try {
             await connection.start();
-            console.log("Connected to ChatHub");
+            console.log("[startConnection] Kết nối với ChatHub thành công");
             loadConversations();
         } catch (err) {
-            console.error("Connection failed:", err);
+            console.error("[startConnection] Kết nối thất bại:", err);
             setTimeout(startConnection, 5000);
         }
     }
@@ -463,36 +650,51 @@
                         method: "POST",
                         body: formDataInit
                     });
-                    if (!initResponse.ok) throw new Error("Init conversation failed");
+                    if (!initResponse.ok) throw new Error("[sendIcon] Khởi tạo cuộc trò chuyện thất bại");
                     const initData = await initResponse.json();
                     currentConversationKey = initData.ConversationKey;
                     currentConversationType = initData.ConversationType || "Private";
+                    updateIconsVisibility();
                 }
 
                 const response = await fetch("/api/conversations/messages", {
                     method: "POST",
                     body: formData
                 });
-                if (!response.ok) throw new Error("Send failed");
+                if (!response.ok) throw new Error("[sendIcon] Gửi tin nhắn thất bại");
                 chatInput.value = "";
                 resetFileInput();
                 skip = 0;
                 allMessages = [];
                 await loadMessages(currentConversationKey);
             } catch (err) {
-                console.error("Send message failed:", err);
+                console.error("[sendIcon] Lỗi gửi tin nhắn:", err);
             }
         }
     });
     if (openChat) openChat.addEventListener("click", () => {
-        if (chatModal) {
-            $(chatModal).modal("show");
-            unreadCount = 0;
-            updateUnreadCount(unreadCount);
-            loadConversations();
-        }
+        console.log("[openChat] Mở modal chat");
+        $(chatModal).modal("show");
+        unreadCount = 0;
+        updateUnreadCount(unreadCount);
+        loadConversations();
+        updateIconsVisibility();
     });
-    if (closeChat) closeChat.addEventListener("click", () => chatModal && $(chatModal).modal("hide"));
+    if (closeChat) closeChat.addEventListener("click", () => {
+        console.log("[closeChat] Đóng modal chat");
+        resetChatInterface();
+        $(chatModal).modal("hide");
+    });
+    if (chatModal) {
+        $(chatModal).on('hidden.bs.modal', () => {
+            console.log("[chatModal] Modal đã đóng, làm mới giao diện");
+            resetChatInterface();
+        });
+        $(chatModal).on('shown.bs.modal', () => {
+            console.log("[chatModal] Modal hiển thị, cập nhật icon");
+            updateIconsVisibility();
+        });
+    }
 
     connection.on("ReceiveMessage", (message) => {
         if ((currentConversationKey && message.ConversationKey === currentConversationKey) || (currentUserKey && message.SenderKey === currentUserKey)) {
@@ -501,12 +703,7 @@
             messageList.scrollTop = messageList.scrollHeight;
             unreadCount++;
             updateUnreadCount(unreadCount);
-
-            const pinnedMessages = allMessages.filter(m => m.IsPinned);
-            const firstPinned = pinnedMessages[0];
-            const headerText = firstPinned ? (firstPinned.Content || `Pinned ${firstPinned.MessageType}`) : "No pinned messages";
-            pinnedSection.innerHTML = `<p>${headerText} (${pinnedMessages.length}/3 pinned)</p>`;
-            pinnedSection.style.display = pinnedMessages.length > 0 ? "block" : "none";
+            updatePinnedSection();
         }
     });
 
@@ -536,11 +733,35 @@
         }
     }
 
-    if (chatHeaderContent) {
-        chatHeaderContent.addEventListener("click", showPinnedPopup);
-    }
+    //if (chatHeaderContent) chatHeaderContent.addEventListener("click", showPinnedPopup);
+    //if (pinnedSection) pinnedSection.addEventListener("click", showPinnedPopup);
+    document.addEventListener("click", (e) => {
+        const pinnedSection = document.getElementById("pinnedSection");
+        const chatHeaderContent = document.getElementById("chatHeaderContent");
 
-    if (pinnedSection) pinnedSection.addEventListener("click", showPinnedPopup);
+        if (
+            pinnedSection &&
+            pinnedSection.style.display !== "none" &&
+            pinnedSection.contains(e.target)
+        ) {
+            console.log("Click vào bất kỳ đâu trong pinnedSection");
+            showPinnedPopup();
+            return;
+        }
+
+        if (
+            chatHeaderContent &&
+            chatHeaderContent.style.display !== "none" &&
+            chatHeaderContent.contains(e.target)
+        ) {
+            console.log("Click vào bất kỳ đâu trong chatHeaderContent");
+            showPinnedPopup();
+        }
+    });
+
+
+
+
 
     messageList.addEventListener('click', (e) => {
         const optionsButton = e.target.closest('.message-options');
@@ -558,8 +779,8 @@
         const menu = document.createElement('div');
         menu.className = 'message-context-menu';
         menu.innerHTML = `
-            <div data-action="pin">Pin</div>
-            <div data-action="recall">Recall</div>
+            <div data-action="pin">Ghim</div>
+            <div data-action="recall">Thu hồi</div>
         `;
         document.body.appendChild(menu);
 
@@ -569,7 +790,7 @@
 
         menu.addEventListener('click', (e) => {
             if (e.target.dataset.action) {
-                console.log(`Action ${e.target.dataset.action} for message ${messageKey}`);
+                console.log(`[handleMessageOptionsClick] Hành động ${e.target.dataset.action} cho tin nhắn ${messageKey}`);
                 menu.remove();
                 if (e.target.dataset.action === 'pin') pinMessage(messageKey);
                 if (e.target.dataset.action === 'recall') recallMessage(messageKey);
@@ -590,11 +811,7 @@
             message.IsPinned = true;
             messageList.innerHTML = allMessages.map(m => addMessage(m)).join("");
             messageList.scrollTop = messageList.scrollHeight;
-            const pinnedMessages = allMessages.filter(m => m.IsPinned);
-            const firstPinned = pinnedMessages[0];
-            const headerText = firstPinned ? (firstPinned.Content || `Pinned ${firstPinned.MessageType}`) : "No pinned messages";
-            pinnedSection.innerHTML = `<p>${headerText} (${pinnedMessages.length}/3 pinned)</p>`;
-            pinnedSection.style.display = "block";
+            updatePinnedSection();
         }
     }
 
