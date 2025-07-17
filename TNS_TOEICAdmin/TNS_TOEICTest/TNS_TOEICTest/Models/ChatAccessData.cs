@@ -8,7 +8,7 @@ namespace TNS_TOEICAdmin.Models
     public class ChatAccessData
     {
         private static readonly string _connectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
-
+        private static readonly string _mediaRootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "messages");
         public static async Task<Dictionary<string, object>> GetConversationsAsync(string userKey = null, string memberKey = null, string currentMemberKey = null)
         {
             var conversations = new List<Dictionary<string, object>>();
@@ -390,6 +390,90 @@ namespace TNS_TOEICAdmin.Models
                 }
             }
         }
+        public static async Task<bool> PinMessageAsync(string messageKey, string memberKey)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
 
+                var query = @"
+            UPDATE Messages
+            SET IsPinned = 1
+            WHERE MessageKey = @MessageKey";
+
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@MessageKey", messageKey);
+                    var rowsAffected = await command.ExecuteNonQueryAsync();
+                    return rowsAffected > 0;
+                }
+            }
+        }
+        public static async Task<bool> RecallMessageAsync(string messageKey, string memberKey)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                var query = @"
+                    UPDATE Messages
+                    SET Status = 2
+                    WHERE MessageKey = @MessageKey AND SenderKey = @MemberKey";
+
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@MessageKey", messageKey);
+                    command.Parameters.AddWithValue("@MemberKey", memberKey);
+                    var rowsAffected = await command.ExecuteNonQueryAsync();
+                    if (rowsAffected > 0)
+                    {
+                        // Lấy URL của media từ MessageAttachments
+                        var mediaQuery = @"
+                            SELECT Url 
+                            FROM MessageAttachments 
+                            WHERE MessageKey = @MessageKey";
+                        string filePath = null;
+                        using (var mediaCommand = new SqlCommand(mediaQuery, connection))
+                        {
+                            mediaCommand.Parameters.AddWithValue("@MessageKey", messageKey);
+                            using (var reader = await mediaCommand.ExecuteReaderAsync())
+                            {
+                                if (await reader.ReadAsync() && reader["Url"] != DBNull.Value)
+                                {
+                                    filePath = Path.Combine(_mediaRootPath, Path.GetFileName(reader["Url"].ToString()));
+                                }
+                            }
+                        }
+
+                        // Xóa file media nếu tồn tại
+                        if (!string.IsNullOrEmpty(filePath) && File.Exists(filePath))
+                        {
+                            try
+                            {
+                                File.Delete(filePath);
+                                Console.WriteLine($"[RecallMessage] Đã xóa file media: {filePath}");
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"[RecallMessage] Lỗi xóa file media: {ex.Message}");
+                            }
+                        }
+
+                        // Xóa bản ghi trong MessageAttachments
+                        var deleteQuery = @"
+                            DELETE FROM MessageAttachments
+                            WHERE MessageKey = @MessageKey";
+                        using (var deleteCommand = new SqlCommand(deleteQuery, connection))
+                        {
+                            deleteCommand.Parameters.AddWithValue("@MessageKey", messageKey);
+                            await deleteCommand.ExecuteNonQueryAsync();
+                        }
+
+                        return true;
+                    }
+                    return false;
+                }
+            }
+        }
     }
 }

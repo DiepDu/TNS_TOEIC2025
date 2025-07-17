@@ -119,6 +119,37 @@ namespace TNS_TOEICTest.Controllers
 
             return Ok(new { success = true, message = "Unpinned" });
         }
+        [HttpPut("pin/{messageKey}")]
+        public async Task<IActionResult> PinMessage(string messageKey)
+        {
+            var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
+            var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
+            var memberKey = memberLogin.MemberKey;
 
+            if (string.IsNullOrEmpty(memberKey))
+                return Unauthorized(new { success = false, message = "MemberKey not found" });
+
+            var success = await ChatAccessData.PinMessageAsync(messageKey, memberKey);
+            if (!success)
+                return BadRequest(new { success = false, message = "Pinning failed" });
+
+            return Ok(new { success = true, message = "Pinned" });
+        }
+        [HttpPut("recall/{messageKey}")]
+        public async Task<IActionResult> RecallMessage(string messageKey)
+        {
+            var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
+            var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
+            var memberKey = memberLogin.MemberKey;
+
+            if (string.IsNullOrEmpty(memberKey))
+                return Unauthorized(new { success = false, message = "MemberKey not found" });
+
+            var success = await ChatAccessData.RecallMessageAsync(messageKey, memberKey);
+            if (!success)
+                return BadRequest(new { success = false, message = "Recall failed" });
+
+            return Ok(new { success = true, message = "Recalled" });
+        }
     }
 }

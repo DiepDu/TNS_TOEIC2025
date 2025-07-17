@@ -254,7 +254,7 @@
 
     function updatePinnedSection() {
         console.log("[updatePinnedSection] Cập nhật header tin nhắn ghim");
-        const pinnedMessages = allMessages.filter(m => m.IsPinned);
+        const pinnedMessages = allMessages.filter(m => m.IsPinned).sort((a, b) => new Date(b.CreatedOn) - new Date(a.CreatedOn));
         const firstPinned = pinnedMessages[0];
         const headerText = firstPinned ? (firstPinned.Content || `Ghim ${firstPinned.MessageType || 'Mục'}`) : "Chưa có tin nhắn ghim";
         pinnedSection.innerHTML = `<p>${headerText} (${pinnedMessages.length}/3 ghim)</p>`;
@@ -349,7 +349,6 @@
         skip = 0;
         allMessages = [];
 
-        // Chỉ highlight nếu liên hệ có ConversationKey khớp với danh sách
         document.querySelectorAll(".conversation-item").forEach(i => i.parentElement.classList.remove("active"));
         if (currentConversationKey) {
             const matchingConv = document.querySelector(`.conversation-item[data-conversation-key="${currentConversationKey}"]`);
@@ -526,7 +525,7 @@
         const time = formatTime(message.CreatedOn);
         const status = isOwn ? (message.Status === 0 ? '✔' : '✔✔') : '';
 
-        let html = `<li class="message ${isOwn ? 'right' : 'left'} ${message.MessageType ? 'with-attachment' : ''} ${isRecalled ? 'recalled' : ''}" data-message-key="${message.MessageKey}">`;
+        let html = `<li class="message ${isOwn ? 'right' : 'left'} ${message.MessageType ? 'with-attachment' : ''} ${isRecalled ? 'recalled' : ''}" data-message-key="${message.MessageKey}" data-sender-key="${message.SenderKey}">`;
         html += senderAvatar;
 
         html += `<div class="message-box">`;
@@ -546,7 +545,7 @@
             html += `<p class="name">${senderName}</p><hr>`;
         }
 
-        html += `<p class="content">${isRecalled ? "Tin nhắn đã thu hồi" : (message.Content || "")}</p>`;
+        html += `<p class="content">${isRecalled ? "Tin nhắn đã bị thu hồi" : (message.Content || "")}</p>`;
 
         html += `</div>`;
 
@@ -733,8 +732,6 @@
         }
     }
 
-    //if (chatHeaderContent) chatHeaderContent.addEventListener("click", showPinnedPopup);
-    //if (pinnedSection) pinnedSection.addEventListener("click", showPinnedPopup);
     document.addEventListener("click", (e) => {
         const pinnedSection = document.getElementById("pinnedSection");
         const chatHeaderContent = document.getElementById("chatHeaderContent");
@@ -759,68 +756,174 @@
         }
     });
 
-
-
-
-
     messageList.addEventListener('click', (e) => {
         const optionsButton = e.target.closest('.message-options');
         if (optionsButton) {
+            console.log("[messageList] Nhấn vào .message-options");
             const messageElement = optionsButton.closest('.message');
             const messageKey = messageElement.dataset.messageKey;
-            handleMessageOptionsClick(messageKey, optionsButton);
+            const senderKey = messageElement.dataset.senderKey;
+            showMessageOptions(optionsButton, messageKey, senderKey);
         }
     });
 
-    function handleMessageOptionsClick(messageKey, optionsButtonElement) {
-        const existingMenu = document.querySelector('.message-context-menu');
+    function showMessageOptions(targetIcon, messageKey, senderKey) {
+        console.log("[showMessageOptions] Kích hoạt cho messageKey:", messageKey, "senderKey:", senderKey);
+        const existingMenu = document.getElementById("messageOptionsMenu");
         if (existingMenu) existingMenu.remove();
 
-        const menu = document.createElement('div');
-        menu.className = 'message-context-menu';
+        const isMyMessage = senderKey === memberKey;
+        const message = allMessages.find(m => m.MessageKey === messageKey);
+        const isPinned = message ? message.IsPinned : false;
+
+        const menu = document.createElement("div");
+        menu.id = "messageOptionsMenu";
+        menu.className = "message-options-menu";
         menu.innerHTML = `
-            <div data-action="pin">Ghim</div>
-            <div data-action="recall">Thu hồi</div>
+            <div class="menu-item" data-action="${isPinned ? 'unpin' : 'pin'}">${isPinned ? '📌 Bỏ ghim' : '📌 Ghim'}</div>
+            ${isMyMessage ? '<div class="menu-item" data-action="recall">↩️ Thu hồi</div>' : ""}
+            <div class="menu-item" data-action="reply">💬 Trả lời</div>
         `;
-        document.body.appendChild(menu);
 
-        const rect = optionsButtonElement.getBoundingClientRect();
-        menu.style.top = `${rect.bottom + window.scrollY}px`;
-        menu.style.left = `${rect.left + window.scrollX}px`;
+        const modalContent = document.querySelector('#chatModal .modal-content');
+        if (!modalContent) {
+            console.error("[showMessageOptions] Không tìm thấy modal content");
+            return;
+        }
+        modalContent.appendChild(menu);
 
-        menu.addEventListener('click', (e) => {
-            if (e.target.dataset.action) {
-                console.log(`[handleMessageOptionsClick] Hành động ${e.target.dataset.action} cho tin nhắn ${messageKey}`);
-                menu.remove();
-                if (e.target.dataset.action === 'pin') pinMessage(messageKey);
-                if (e.target.dataset.action === 'recall') recallMessage(messageKey);
-            }
+        const iconRect = targetIcon.getBoundingClientRect();
+        const modalRect = modalContent.getBoundingClientRect();
+        let top = iconRect.top - modalRect.top + targetIcon.offsetHeight;
+        let left = iconRect.left - modalRect.left;
+
+        const menuHeight = menu.offsetHeight || 90;
+        const menuWidth = menu.offsetWidth || 120;
+
+        if (left + menuWidth > modalRect.width) left = modalRect.width - menuWidth - 10;
+        if (top + menuHeight > modalRect.height) top = iconRect.top - modalRect.top - menuHeight;
+
+        Object.assign(menu.style, {
+            position: "absolute",
+            top: `${top}px`,
+            left: `${left}px`,
+            zIndex: 1051,
+            display: "block",
+            background: "linear-gradient(90deg, #6a11cb 0%, #2575fc 100%)",
+            color: "#fff",
+            borderRadius: "4px",
+            boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
+            padding: "5px 0"
         });
 
-        document.addEventListener('click', function hideMenu(e) {
-            if (!menu.contains(e.target)) {
+        menu.querySelectorAll(".menu-item").forEach(item => {
+            item.style.padding = "5px 15px";
+            item.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const action = item.dataset.action;
+                console.log(`[showMessageOptions] Hành động ${action} cho tin nhắn ${messageKey}`);
                 menu.remove();
-                document.removeEventListener('click', hideMenu);
-            }
+                if (action === "pin") pinMessage(messageKey);
+                if (action === "unpin") unpinMessage(messageKey);
+                if (action === "recall" && isMyMessage) recallMessage(messageKey);
+                if (action === "reply") replyToMessage(messageKey, messageElement);
+            });
         });
+
+        const hideMenu = (e) => {
+            if (!menu.contains(e.target) && !targetIcon.contains(e.target)) {
+                menu.remove();
+                document.removeEventListener("click", hideMenu);
+                document.removeEventListener("scroll", hideMenu, true);
+            }
+        };
+        document.addEventListener("click", hideMenu);
+        document.addEventListener("scroll", hideMenu, true);
     }
 
     function pinMessage(messageKey) {
         const message = allMessages.find(m => m.MessageKey === messageKey);
-        if (message && !message.IsPinned && allMessages.filter(m => m.IsPinned).length < 3) {
-            message.IsPinned = true;
-            messageList.innerHTML = allMessages.map(m => addMessage(m)).join("");
-            messageList.scrollTop = messageList.scrollHeight;
-            updatePinnedSection();
+        if (!message) return;
+
+        const pinnedMessages = allMessages.filter(m => m.IsPinned);
+        if (pinnedMessages.length >= 3) {
+            alert("Reached the limit of pinned messages (3/3)");
+            return;
         }
+
+        const isLatest = !pinnedMessages.some(m => new Date(m.CreatedOn) > new Date(message.CreatedOn));
+        fetch(`/api/conversations/pin/${messageKey}`, {
+            method: "PUT",
+            credentials: "include"
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    message.IsPinned = true;
+                    messageList.innerHTML = allMessages.map(m => addMessage(m)).join("");
+                    messageList.scrollTop = messageList.scrollHeight;
+                    updatePinnedSection();
+
+                    if (isLatest && pinnedMessages.length < 2) {
+                        updatePinnedSection();
+                    }
+                }
+            })
+            .catch(err => console.error("[pinMessage] Lỗi ghim tin nhắn:", err));
+    }
+
+    function unpinMessage(messageKey) {
+        fetch(`/api/conversations/unpin/${messageKey}`, {
+            method: "PUT"
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const message = allMessages.find(m => m.MessageKey === messageKey);
+                    if (message) {
+                        message.IsPinned = false;
+                        messageList.innerHTML = allMessages.map(m => addMessage(m)).join("");
+                        messageList.scrollTop = messageList.scrollHeight;
+                        updatePinnedSection();
+                    }
+                }
+            })
+            .catch(err => console.error("[unpinMessage] Lỗi bỏ ghim tin nhắn:", err));
     }
 
     function recallMessage(messageKey) {
         const message = allMessages.find(m => m.MessageKey === messageKey);
-        if (message && message.SenderKey === memberKey && !message.IsRecalled) {
-            message.Status = 2;
-            messageList.innerHTML = allMessages.map(m => addMessage(m)).join("");
-            messageList.scrollTop = messageList.scrollHeight;
+        if (!message || message.SenderKey !== memberKey || message.Status === 2) return;
+
+        fetch(`/api/conversations/recall/${messageKey}`, {
+            method: "PUT",
+            credentials: "include"
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    message.Status = 2;
+                    message.Content = "Tin nhắn đã bị thu hồi";
+                    if (message.Url) {
+                        fetch(message.Url, { method: "DELETE" }).catch(err => console.error("[recallMessage] Lỗi xóa media:", err));
+                        delete message.Url;
+                        delete message.MessageType;
+                        delete message.MimeType;
+                    }
+                    messageList.innerHTML = allMessages.map(m => addMessage(m)).join("");
+                    messageList.querySelector(`[data-message-key="${messageKey}"]`).classList.add("recalled");
+                }
+            })
+            .catch(err => console.error("[recallMessage] Lỗi thu hồi tin nhắn:", err));
+    }
+
+    function replyToMessage(messageKey, messageElement) {
+        console.log("[replyToMessage] Trả lời tin nhắn:", messageKey);
+        const message = allMessages.find(m => m.MessageKey === messageKey);
+        if (message) {
+            chatInput.value = `${message.Content ? `Trả lời ${message.SenderName || "ai đó"}: ${message.Content}` : "Trả lời tin nhắn"}`;
+            chatInput.focus();
+            messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
     }
 });
