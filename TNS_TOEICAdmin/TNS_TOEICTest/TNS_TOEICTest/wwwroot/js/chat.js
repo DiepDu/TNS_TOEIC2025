@@ -278,22 +278,28 @@
             if (!response.ok) throw new Error(`[loadConversations] API thất bại: ${await response.text()} (Status: ${response.status})`);
             const { conversations } = await response.json();
             conversationList.innerHTML = "";
+            // Sắp xếp theo LastMessageTime giảm dần, xử lý trường hợp null
+            conversations.sort((a, b) => {
+                const timeA = a.LastMessageTime ? new Date(a.LastMessageTime) : new Date(0);
+                const timeB = b.LastMessageTime ? new Date(b.LastMessageTime) : new Date(0);
+                return timeB - timeA;
+            });
             conversations.forEach(conv => {
                 const li = document.createElement("li");
                 li.className = "p-2 border-bottom border-white border-opacity-25";
                 li.innerHTML = `
-                    <a href="#" class="d-flex justify-content-between text-white conversation-item" 
-                        data-conversation-key="${conv.ConversationKey}" 
-                        data-user-key="${conv.ConversationType !== 'Group' ? (conv.PartnerUserKey || '') : ''}" 
-                        data-user-type="${conv.ConversationType !== 'Group' ? (conv.PartnerUserType || '') : ''}"
-                        data-conversation-type="${conv.ConversationType || ''}">
-                        <div class="d-flex">
-                            <img src="${conv.Avatar || '/images/avatar/default-avatar.jpg'}" alt="avatar" class="rounded-circle me-3" style="width: 48px; height: 48px;">
-                            <div><p class="fw-bold mb-0">${conv.DisplayName || "Không xác định"}</p><p class="small mb-0">${conv.LastMessage || "Chưa có tin nhắn"}</p></div>
-                        </div>
-                        <div class="text-end"><p class="small mb-1">${conv.LastMessageTime ? formatTime(conv.LastMessageTime) : ""}</p>${conv.UnreadCount > 0 ? `<span class="badge bg-danger rounded-pill px-2">${conv.UnreadCount}</span>` : ''}</div>
-                    </a>
-                `;
+                <a href="#" class="d-flex justify-content-between text-white conversation-item" 
+                    data-conversation-key="${conv.ConversationKey}" 
+                    data-user-key="${conv.ConversationType !== 'Group' ? (conv.PartnerUserKey || '') : ''}" 
+                    data-user-type="${conv.ConversationType !== 'Group' ? (conv.PartnerUserType || '') : ''}"
+                    data-conversation-type="${conv.ConversationType || ''}">
+                    <div class="d-flex">
+                        <img src="${conv.Avatar || '/images/avatar/default-avatar.jpg'}" alt="avatar" class="rounded-circle me-3" style="width: 48px; height: 48px;">
+                        <div><p class="fw-bold mb-0">${conv.DisplayName || "Không xác định"}</p><p class="small mb-0">${conv.LastMessage || "Chưa có tin nhắn"}</p></div>
+                    </div>
+                    <div class="text-end"><p class="small mb-1">${conv.LastMessageTime ? formatTime(conv.LastMessageTime) : ""}</p>${conv.UnreadCount > 0 ? `<span class="badge bg-danger rounded-pill px-2">${conv.UnreadCount}</span>` : ''}</div>
+                </a>
+            `;
                 conversationList.appendChild(li);
             });
             addConversationClickListeners();
