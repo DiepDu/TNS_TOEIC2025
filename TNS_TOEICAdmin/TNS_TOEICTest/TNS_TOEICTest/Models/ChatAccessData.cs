@@ -371,6 +371,37 @@ namespace TNS_TOEICAdmin.Models
             }
             return messages;
         }
+        public static async Task<List<string>> GetConversationMembersAsync(string conversationKey)
+        {
+            var memberKeys = new List<string>();
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                var query = @"
+                    SELECT UserKey
+                    FROM [TNS_Toeic].[dbo].[ConversationParticipants]
+                    WHERE ConversationKey = @ConversationKey
+                    AND IsApproved = 1";
+
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@ConversationKey", conversationKey);
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            if (reader["UserKey"] != DBNull.Value)
+                            {
+                                memberKeys.Add(reader["UserKey"].ToString());
+                            }
+                        }
+                    }
+                }
+            }
+            return memberKeys;
+        }
         public static async Task<bool> UnpinMessageAsync(string messageKey, string memberKey)
         {
             using (var connection = new SqlConnection(_connectionString))
@@ -474,6 +505,64 @@ namespace TNS_TOEICAdmin.Models
                     return false;
                 }
             }
+        }
+        public static async Task<List<string>> GetConversationKeysAsync(string participantKey)
+        {
+            var conversationKeys = new List<string>();
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                var query = @"
+            SELECT DISTINCT c.ConversationKey
+            FROM ConversationParticipants cp
+            JOIN Conversations c ON cp.ConversationKey = c.ConversationKey
+            WHERE cp.UserKey = @ParticipantKey
+            AND cp.IsApproved = 1
+            AND c.IsActive = 1";
+
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@ParticipantKey", participantKey ?? (object)DBNull.Value);
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            conversationKeys.Add(reader["ConversationKey"].ToString());
+                        }
+                    }
+                }
+            }
+            return conversationKeys;
+        }
+        public static async Task<int> GetTotalUnreadCountAsync(string memberKey)
+        {
+            int totalUnreadCount = 0;
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                var query = @"
+            SELECT SUM(cp.UnreadCount) as TotalUnread
+            FROM ConversationParticipants cp
+            JOIN Conversations c ON cp.ConversationKey = c.ConversationKey
+            WHERE cp.UserKey = @MemberKey
+            AND cp.IsApproved = 1
+            AND c.IsActive = 1";
+
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@MemberKey", memberKey ?? (object)DBNull.Value);
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            totalUnreadCount = Convert.ToInt32(reader["TotalUnread"] ?? 0);
+                        }
+                    }
+                }
+            }
+            return totalUnreadCount;
         }
     }
 }

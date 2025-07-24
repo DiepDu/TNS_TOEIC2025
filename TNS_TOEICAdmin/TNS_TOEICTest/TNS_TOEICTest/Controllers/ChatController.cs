@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TNS.Member;
 using TNS_TOEICAdmin.Models;
+using Microsoft.AspNetCore.SignalR;
+using TNS_TOEICTest.Hubs;
 
 namespace TNS_TOEICTest.Controllers
 {
@@ -11,10 +13,12 @@ namespace TNS_TOEICTest.Controllers
     public class ChatController : ControllerBase
     {
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IHubContext<ChatHub> _hubContext;
 
-        public ChatController(IHttpContextAccessor httpContextAccessor)
+        public ChatController(IHttpContextAccessor httpContextAccessor, IHubContext<ChatHub> hubContext)
         {
             _httpContextAccessor = httpContextAccessor;
+            _hubContext = hubContext;
         }
 
         [HttpGet]
@@ -70,27 +74,6 @@ namespace TNS_TOEICTest.Controllers
             return Ok(messages);
         }
 
-        [HttpPost("messages")]
-        public async Task<IActionResult> SendMessage()
-        {
-            var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
-            var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
-            var memberKey = memberLogin.MemberKey;
-
-            if (string.IsNullOrEmpty(memberKey))
-                return Unauthorized(new { success = false, message = "MemberKey not found" });
-
-            var formData = Request.Form;
-            var conversationKey = formData["ConversationKey"];
-            var userType = formData["UserType"];
-            var content = formData["Content"];
-            var file = formData.Files["File"];
-
-            // Giả định logic lưu tin nhắn (cần triển khai trong DB)
-            // Đây là placeholder, cần thêm ChatAccessData.SendMessageAsync
-            return Ok(new { success = true, message = "Message sent" });
-        }
-
         [HttpGet("GetMemberKey")]
         public IActionResult GetMemberKey()
         {
@@ -103,24 +86,9 @@ namespace TNS_TOEICTest.Controllers
             }
             return Ok(memberKey);
         }
-        [HttpPut("unpin/{messageKey}")]
-        public async Task<IActionResult> UnpinMessage(string messageKey)
-        {
-            var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
-            var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
-            var memberKey = memberLogin.MemberKey;
 
-            if (string.IsNullOrEmpty(memberKey))
-                return Unauthorized(new { success = false, message = "MemberKey not found" });
-
-            var success = await ChatAccessData.UnpinMessageAsync(messageKey, memberKey);
-            if (!success)
-                return BadRequest(new { success = false, message = "Update failed" });
-
-            return Ok(new { success = true, message = "Unpinned" });
-        }
         [HttpPut("pin/{messageKey}")]
-        public async Task<IActionResult> PinMessage(string messageKey)
+        public async Task<IActionResult> PinMessage(string messageKey, [FromQuery] string conversationKey)
         {
             var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
             var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
@@ -128,15 +96,21 @@ namespace TNS_TOEICTest.Controllers
 
             if (string.IsNullOrEmpty(memberKey))
                 return Unauthorized(new { success = false, message = "MemberKey not found" });
+
+            if (string.IsNullOrEmpty(conversationKey))
+                return BadRequest(new { success = false, message = "Conversation key is required" });
 
             var success = await ChatAccessData.PinMessageAsync(messageKey, memberKey);
-            if (!success)
-                return BadRequest(new { success = false, message = "Pinning failed" });
-
-            return Ok(new { success = true, message = "Pinned" });
+            if (success)
+            {
+                await _hubContext.Clients.Group(conversationKey).SendAsync("ReceivePinUpdate", messageKey, true);
+                return Ok(new { success = true, message = "Pinned" });
+            }
+            return BadRequest(new { success = false, message = "Pinning failed" });
         }
-        [HttpPut("recall/{messageKey}")]
-        public async Task<IActionResult> RecallMessage(string messageKey)
+
+        [HttpPut("unpin/{messageKey}")]
+        public async Task<IActionResult> UnpinMessage(string messageKey, [FromQuery] string conversationKey)
         {
             var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
             var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
@@ -145,11 +119,54 @@ namespace TNS_TOEICTest.Controllers
             if (string.IsNullOrEmpty(memberKey))
                 return Unauthorized(new { success = false, message = "MemberKey not found" });
 
-            var success = await ChatAccessData.RecallMessageAsync(messageKey, memberKey);
-            if (!success)
-                return BadRequest(new { success = false, message = "Recall failed" });
+            if (string.IsNullOrEmpty(conversationKey))
+                return BadRequest(new { success = false, message = "Conversation key is required" });
 
-            return Ok(new { success = true, message = "Recalled" });
+            var success = await ChatAccessData.UnpinMessageAsync(messageKey, memberKey);
+            if (success)
+            {
+                await _hubContext.Clients.Group(conversationKey).SendAsync("ReceiveUnpinUpdate", messageKey);
+                return Ok(new { success = true, message = "Unpinned" });
+            }
+            return BadRequest(new { success = false, message = "Unpin failed" });
+        }
+
+        [HttpPut("recall/{messageKey}")]
+        public async Task<IActionResult> RecallMessage(string messageKey, [FromQuery] string conversationKey)
+        {
+            var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
+            var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
+            var memberKey = memberLogin.MemberKey;
+
+            if (string.IsNullOrEmpty(memberKey))
+                return Unauthorized(new { success = false, message = "MemberKey not found" });
+
+            if (string.IsNullOrEmpty(conversationKey))
+                return BadRequest(new { success = false, message = "Conversation key is required" });
+
+            var success = await ChatAccessData.RecallMessageAsync(messageKey, memberKey);
+            if (success)
+            {
+                await _hubContext.Clients.Group(conversationKey).SendAsync("ReceiveRecallUpdate", messageKey);
+                return Ok(new { success = true, message = "Recalled" });
+            }
+            return BadRequest(new { success = false, message = "Recall failed" });
+        }
+        [HttpGet("GetUnthread")]
+        public async Task<IActionResult> GetUnthread([FromQuery] string userKey = null, [FromQuery] string memberKey = null)
+      {
+            var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
+            var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
+            var currentMemberKey = memberLogin.MemberKey;
+
+            if (string.IsNullOrEmpty(currentMemberKey) && string.IsNullOrEmpty(userKey) && string.IsNullOrEmpty(memberKey))
+                return Unauthorized(new { success = false, message = "UserKey or MemberKey is required" });
+
+            if (string.IsNullOrEmpty(userKey) && string.IsNullOrEmpty(memberKey))
+                memberKey = currentMemberKey;
+
+            var result = await ChatAccessData.GetTotalUnreadCountAsync(memberKey ?? currentMemberKey);
+            return Ok(new { totalUnreadCount = result });
         }
     }
 }
