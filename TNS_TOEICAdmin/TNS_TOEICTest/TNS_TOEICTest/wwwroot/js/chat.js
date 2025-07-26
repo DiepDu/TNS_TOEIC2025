@@ -1,13 +1,41 @@
-﻿document.addEventListener("DOMContentLoaded", async () => {
+﻿// Định nghĩa hàm global với tham số connection và memberKey
+async function startConnection(connection, memberKey) {
+    try {
+        console.log("Checking connection:", connection.state); // Debug trạng thái
+        if (connection.state !== signalR.HubConnectionState.Disconnected) {
+            await connection.stop();
+        }
+        await connection.start();
+        console.log("[startConnection] Connected to ChatHub successfully");
+        await connection.invoke("InitializeConnection", null, memberKey); // Đảm bảo khởi tạo lại
+        connection.on('ReceiveMessage', updateUnreadCount);
+        connection.on('Disconnected', () => {
+            console.log("[Disconnected] Connection lost, attempting reconnect");
+            setTimeout(() => startConnection(connection, memberKey), 2000); // Thử reconnect sau 2 giây
+        });
+    } catch (err) {
+        console.error("[startConnection] Connection failed:", err);
+        setTimeout(() => startConnection(connection, memberKey), 5000);
+    }
+}
+
+// Hàm updateUnreadCount cần được định nghĩa trước khi sử dụng
+function updateUnreadCount(count) {
+    const badge = document.getElementById("unreadCount");
+    if (badge) {
+        badge.textContent = count;
+        badge.classList.toggle("d-none", count === 0);
+    }
+}
+
+// Biến toàn cục
+let unreadInterval;
+
+document.addEventListener("DOMContentLoaded", async () => {
     if (!window.signalR) {
         console.error("[DOMContentLoaded] SignalR not loaded!");
         return;
     }
-
-    const connection = new signalR.HubConnectionBuilder()
-        .withUrl("https://localhost:7003/chatHub")
-        .withAutomaticReconnect()
-        .build();
 
     let unreadCount = 0;
     let selectedFile = null;
@@ -17,8 +45,8 @@
     let currentConversationType = null;
     let skip = 0;
     let allMessages = [];
-
     let memberKey = null;
+
     try {
         const response = await fetch('/api/conversations/GetMemberKey', {
             method: 'GET',
@@ -35,6 +63,11 @@
         document.getElementById("openChat")?.addEventListener("click", () => alert("Please log in."));
         return;
     }
+
+    const connection = new signalR.HubConnectionBuilder()
+        .withUrl("https://localhost:7003/chatHub")
+        .withAutomaticReconnect()
+        .build();
 
     const openChat = document.getElementById("openChat");
     const closeChat = document.getElementById("closeChat");
@@ -63,6 +96,27 @@
 
     let blockPopup = null;
 
+    // Polling unread count
+    async function updateUnreadCountInitial() {
+        try {
+            const response = await fetch('/api/conversations/GetUnthread');
+            if (!response.ok) {
+                if (response.status === 401) return;
+                throw new Error('API failed');
+            }
+            const data = await response.json();
+            unreadCount = data.totalUnreadCount || 0;
+            updateUnreadCount(unreadCount);
+        } catch (err) {
+            console.debug('Update unread count skipped:', err);
+        }
+    }
+
+    if (window.isAuthenticated) {
+        unreadInterval = setInterval(updateUnreadCountInitial, 60000); // 1 phút
+        updateUnreadCountInitial(); // Gọi lần đầu
+    }
+
     function debounce(func, wait) {
         let timeout;
         return (...args) => {
@@ -78,23 +132,16 @@
             return;
         }
 
-        console.log("[attachIconListeners] Attaching events to iconBlock");
         blockIcon.replaceWith(blockIcon.cloneNode(true));
         const newBlockIcon = document.getElementById("iconBlock");
         newBlockIcon.classList.add("icon-hover");
         newBlockIcon.style.cursor = "pointer";
 
-        newBlockIcon.addEventListener("mouseenter", () => {
-            console.log(`[IconHover] Hover on iconBlock at:`, new Date().toISOString());
-        });
-        newBlockIcon.addEventListener("mouseleave", () => {
-            console.log(`[IconHover] Mouse left iconBlock at:`, new Date().toISOString());
-        });
+        newBlockIcon.addEventListener("mouseenter", () => console.log(`[IconHover] Hover on iconBlock at:`, new Date().toISOString()));
+        newBlockIcon.addEventListener("mouseleave", () => console.log(`[IconHover] Mouse left iconBlock at:`, new Date().toISOString()));
 
         newBlockIcon.addEventListener("click", debounce((e) => {
-            console.log("[iconBlock] Clicked icon block at:", new Date().toISOString());
             if (blockPopup) {
-                console.log("[iconBlock] Removing existing popup");
                 blockPopup.remove();
                 blockPopup = null;
                 return;
@@ -124,16 +171,10 @@
                 pointerEvents: "auto"
             });
             chatModal.appendChild(blockPopup);
-            console.log("[iconBlock] Popup created and added to DOM");
 
             document.getElementById("btnDeleteConversation").addEventListener("click", async () => {
-                console.log("[blockPopup] Clicked Delete Conversation");
                 try {
-                    await fetch(`/api/ChatController/DeleteConversation/${currentConversationKey}`, {
-                        method: 'POST',
-                        credentials: 'include'
-                    });
-                    console.log("[blockPopup] Conversation deleted");
+                    await fetch(`/api/ChatController/DeleteConversation/${currentConversationKey}`, { method: 'POST', credentials: 'include' });
                     resetChatInterface();
                     loadConversations();
                 } catch (err) {
@@ -144,13 +185,8 @@
             });
 
             document.getElementById("btnBlockUser").addEventListener("click", async () => {
-                console.log("[blockPopup] Clicked Block User");
                 try {
-                    await fetch(`/api/ChatController/BlockUser/${currentConversationKey}`, {
-                        method: 'POST',
-                        credentials: 'include'
-                    });
-                    console.log("[blockPopup] User blocked");
+                    await fetch(`/api/ChatController/BlockUser/${currentConversationKey}`, { method: 'POST', credentials: 'include' });
                     resetChatInterface();
                     loadConversations();
                 } catch (err) {
@@ -161,22 +197,18 @@
             });
 
             document.getElementById("btnCancelBlock").addEventListener("click", () => {
-                console.log("[blockPopup] Clicked Cancel");
                 blockPopup.remove();
                 blockPopup = null;
             });
 
             const outsideClickHandler = (event) => {
                 if (blockPopup && !blockPopup.contains(event.target) && event.target !== newBlockIcon && !newBlockIcon.contains(event.target)) {
-                    console.log("[blockPopup] Clicked outside, removing popup");
                     blockPopup.remove();
                     blockPopup = null;
                     document.removeEventListener("click", outsideClickHandler);
                 }
             };
-            setTimeout(() => {
-                document.addEventListener("click", outsideClickHandler);
-            }, 100);
+            setTimeout(() => document.addEventListener("click", outsideClickHandler), 100);
         }, 100));
 
         const iconIds = ["iconCall", "iconVideo", "iconSetting"];
@@ -185,16 +217,9 @@
             if (el) {
                 el.classList.add("icon-hover");
                 el.style.cursor = "pointer";
-                console.log(`[attachIconListeners] Added icon-hover and cursor to ${id}`);
-                el.addEventListener("click", (e) => {
-                    console.log(`[IconClick] Clicked ${id} at:`, new Date().toISOString());
-                });
-                el.addEventListener("mouseenter", () => {
-                    console.log(`[IconHover] Hover on ${id} at:`, new Date().toISOString());
-                });
-                el.addEventListener("mouseleave", () => {
-                    console.log(`[IconHover] Mouse left ${id} at:`, new Date().toISOString());
-                });
+                el.addEventListener("click", (e) => console.log(`[IconClick] Clicked ${id} at:`, new Date().toISOString()));
+                el.addEventListener("mouseenter", () => console.log(`[IconHover] Hover on ${id} at:`, new Date().toISOString()));
+                el.addEventListener("mouseleave", () => console.log(`[IconHover] Mouse left ${id} at:`, new Date().toISOString()));
             } else {
                 console.warn(`[attachIconListeners] Element with ID ${id} not found`);
             }
@@ -204,21 +229,16 @@
     function updateIconsVisibility() {
         const blockIcon = document.getElementById("iconBlock");
         const settingIcon = document.getElementById("iconSetting");
-        console.log("[updateIconsVisibility] Conversation type:", currentConversationType);
-        console.log("[updateIconsVisibility] Icon block exists:", !!blockIcon, "Icon setting exists:", !!settingIcon);
         if (blockIcon && settingIcon) {
             if (currentConversationType === "Private") {
                 blockIcon.style.display = "inline-block";
                 settingIcon.style.display = "none";
-                console.log("[updateIconsVisibility] Showing block icon for private chat");
             } else if (currentConversationType === "Group") {
                 blockIcon.style.display = "none";
                 settingIcon.style.display = "inline-block";
-                console.log("[updateIconsVisibility] Showing setting icon for group chat");
             } else {
                 blockIcon.style.display = "none";
                 settingIcon.style.display = "none";
-                console.log("[updateIconsVisibility] Hiding both icons due to undefined conversation type");
             }
             attachIconListeners();
         } else {
@@ -237,7 +257,6 @@
     }
 
     function resetChatInterface() {
-        console.log("[resetChatInterface] Resetting chat interface");
         currentConversationKey = null;
         currentUserKey = null;
         currentUserType = null;
@@ -253,7 +272,6 @@
     }
 
     function updatePinnedSection() {
-        console.log("[updatePinnedSection] Updating pinned messages header");
         const pinnedMessages = allMessages.filter(m => m.IsPinned).sort((a, b) => new Date(b.CreatedOn) - new Date(a.CreatedOn));
         const firstPinned = pinnedMessages[0];
         const headerText = firstPinned ? (firstPinned.Content || `Pinned ${firstPinned.MessageType || 'Item'}`) : "No pinned messages";
@@ -325,10 +343,7 @@
             `).join("");
             searchResults.classList.add("show");
             document.querySelectorAll(".search-result-item").forEach(item => {
-                item.addEventListener("click", () => {
-                    const contact = JSON.parse(item.getAttribute("data-contact"));
-                    selectContact(contact);
-                });
+                item.addEventListener("click", () => selectContact(JSON.parse(item.getAttribute("data-contact"))));
             });
         } catch (err) {
             console.error("[searchContacts] Error searching:", err);
@@ -338,7 +353,6 @@
     }
 
     function selectContact(contact) {
-        console.log("[selectContact] Selected contact:", contact);
         currentConversationKey = contact.ConversationKey || null;
         currentUserKey = contact.UserKey || null;
         currentUserType = contact.UserType || null;
@@ -357,9 +371,7 @@
         document.querySelectorAll(".conversation-item").forEach(i => i.parentElement.classList.remove("active"));
         if (currentConversationKey) {
             const matchingConv = document.querySelector(`.conversation-item[data-conversation-key="${currentConversationKey}"]`);
-            if (matchingConv) {
-                matchingConv.parentElement.classList.add("active");
-            }
+            if (matchingConv) matchingConv.parentElement.classList.add("active");
             loadMessages(currentConversationKey, false, skip);
         }
 
@@ -371,7 +383,6 @@
         document.querySelectorAll(".conversation-item").forEach(item => {
             item.addEventListener("click", (e) => {
                 e.preventDefault();
-                console.log("[addConversationClickListeners] Clicked conversation:", item);
                 const conversationKey = item.getAttribute("data-conversation-key");
                 const userKey = item.getAttribute("data-user-key") || null;
                 const userType = item.getAttribute("data-user-type") || null;
@@ -381,7 +392,6 @@
                 currentUserKey = userKey;
                 currentUserType = userType;
                 currentConversationType = conversationType;
-                console.log("[addConversationClickListeners] Selected conversation - Key:", conversationKey, "Type:", conversationType);
 
                 const conv = item.closest("li").querySelector(".conversation-item");
                 headerAvatar.src = conv.querySelector("img").src;
@@ -453,9 +463,7 @@
             const foundMessage = allMessages.find(m => m.MessageKey === messageKey);
             if (foundMessage) {
                 const messageElement = document.querySelector(`[data-message-key="${messageKey}"]`);
-                if (messageElement) {
-                    messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
+                if (messageElement) messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 break;
             }
             currentSkip += 100;
@@ -510,9 +518,7 @@
                 const existingMessage = allMessages.find(m => m.MessageKey === messageKey);
                 if (existingMessage) {
                     const messageElement = document.querySelector(`[data-message-key="${messageKey}"]`);
-                    if (messageElement) {
-                        messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
+                    if (messageElement) messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 } else {
                     loadMessageUntilFound(messageKey, skip);
                 }
@@ -535,11 +541,7 @@
 
         if (message.ParentMessageKey && message.ParentContent && typeof message.ParentContent === 'string' && message.ParentContent !== "[object Object]" && message.ParentContent.trim() !== "") {
             const displayParent = message.ParentStatus === 2 ? "Message recalled" : (message.ParentContent === "Message recalled" ? "Message recalled" : message.ParentContent);
-            html += `
-                <div class="parent-message" data-parent-key="${message.ParentMessageKey}">
-                    <p class="content">${displayParent}</p>
-                </div>
-            `;
+            html += `<div class="parent-message" data-parent-key="${message.ParentMessageKey}"><p class="content">${displayParent}</p></div>`;
         }
 
         html += `<div class="message-options"><i class="fas fa-ellipsis-h"></i></div>`;
@@ -578,11 +580,8 @@
         if (parentEl) {
             const parentKey = parentEl.getAttribute("data-parent-key");
             const targetEl = document.querySelector(`[data-message-key="${parentKey}"]`);
-            if (targetEl) {
-                targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
-            } else {
-                loadMessageUntilFound(parentKey, skip);
-            }
+            if (targetEl) targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
+            else loadMessageUntilFound(parentKey, skip);
         }
     });
 
@@ -591,368 +590,6 @@
             loadMessages(currentConversationKey, true, skip);
         }
     }, 300));
-
-    async function startConnection() {
-        try {
-            await connection.start();
-            console.log("[startConnection] Connected to ChatHub successfully");
-            loadConversations();
-        } catch (err) {
-            console.error("[startConnection] Connection failed:", err);
-            setTimeout(startConnection, 5000);
-        }
-    }
-
-    startConnection();
-
-    if (fileIcon) fileIcon.addEventListener("click", () => fileInput.click());
-    if (fileInput) fileInput.addEventListener("change", (e) => {
-        selectedFile = e.target.files[0];
-        if (selectedFile) {
-            filePreviewContainer.style.display = "block";
-            fileInput.disabled = true;
-            const fileType = selectedFile.type;
-            if (fileType.startsWith("image/")) {
-                filePreview.src = URL.createObjectURL(selectedFile);
-                filePreview.classList.remove("d-none");
-                videoPreview.classList.add("d-none");
-                audioPreview.classList.add("d-none");
-            } else if (fileType.startsWith("video/")) {
-                videoPreview.src = URL.createObjectURL(selectedFile);
-                videoPreview.classList.remove("d-none");
-                filePreview.classList.add("d-none");
-                audioPreview.classList.add("d-none");
-            } else if (fileType.startsWith("audio/")) {
-                audioPreview.src = URL.createObjectURL(selectedFile);
-                audioPreview.classList.remove("d-none");
-                filePreview.classList.add("d-none");
-                videoPreview.classList.add("d-none");
-            }
-        }
-    });
-    if (clearFile) clearFile.addEventListener("click", resetFileInput);
-    if (sendIcon) sendIcon.addEventListener("click", async () => {
-        const messageText = chatInput.value.trim();
-        if ((messageText || selectedFile) && (currentConversationKey || currentUserKey)) {
-            try {
-                const formData = new FormData();
-                formData.append("ConversationKey", currentConversationKey || "");
-                formData.append("UserKey", memberKey);
-                formData.append("UserType", currentUserType || "");
-                formData.append("Content", messageText);
-                if (selectedFile) formData.append("File", selectedFile);
-
-                if (!currentConversationKey && currentUserKey) {
-                    const formDataInit = new FormData();
-                    formDataInit.append("UserKey", currentUserKey);
-                    formDataInit.append("UserType", currentUserType);
-                    formDataInit.append("MemberKey", memberKey);
-
-                    const initResponse = await fetch("/api/conversations/init", {
-                        method: "POST",
-                        body: formDataInit
-                    });
-                    if (!initResponse.ok) throw new Error("[sendIcon] Failed to initialize conversation");
-                    const initData = await initResponse.json();
-                    currentConversationKey = initData.ConversationKey;
-                    currentConversationType = initData.ConversationType || "Private";
-                    updateIconsVisibility();
-                }
-
-                const response = await fetch("/api/conversations/messages", {
-                    method: "POST",
-                    body: formData
-                });
-                if (!response.ok) throw new Error("[sendIcon] Failed to send message");
-                chatInput.value = "";
-                resetFileInput();
-                skip = 0;
-                allMessages = [];
-                await loadMessages(currentConversationKey, false, skip);
-            } catch (err) {
-                console.error("[sendIcon] Error sending message:", err);
-            }
-        }
-    });
-    if (openChat) openChat.addEventListener("click", () => {
-        console.log("[openChat] Opening chat modal");
-        $(chatModal).modal("show");
-        unreadCount = 0;
-        updateUnreadCount(unreadCount);
-        loadConversations();
-        updateIconsVisibility();
-    });
-    if (closeChat) closeChat.addEventListener("click", () => {
-        console.log("[closeChat] Closing chat modal");
-        resetChatInterface();
-        $(chatModal).modal("hide");
-    });
-    if (chatModal) {
-        $(chatModal).on('hidden.bs.modal', () => {
-            console.log("[chatModal] Modal hidden, resetting interface");
-            resetChatInterface();
-        });
-        $(chatModal).on('shown.bs.modal', () => {
-            console.log("[chatModal] Modal shown, updating icons");
-            updateIconsVisibility();
-        });
-    }
-
-    if (searchInput) {
-        let isSearching = false;
-        searchInput.addEventListener("focus", () => {
-            conversationListContainer.classList.add("focused");
-            searchResults.classList.add("show");
-        });
-        searchInput.addEventListener("blur", () => {
-            conversationListContainer.classList.remove("focused");
-            searchResults.classList.remove("show");
-        });
-        searchInput.addEventListener("input", debounce(async (e) => {
-            if (isSearching) return;
-            isSearching = true;
-            await searchContacts(e.target.value.trim());
-            isSearching = false;
-        }, 500));
-    }
-
-    function updateUnreadCount(count) {
-        const badge = document.getElementById("unreadCount");
-        if (badge) {
-            badge.textContent = count;
-            badge.classList.toggle("d-none", count === 0);
-        }
-    }
-
-    document.addEventListener("click", (e) => {
-        const pinnedSection = document.getElementById("pinnedSection");
-        const chatHeaderContent = document.getElementById("chatHeaderContent");
-
-        if (
-            pinnedSection &&
-            pinnedSection.style.display !== "none" &&
-            pinnedSection.contains(e.target)
-        ) {
-            console.log("Click anywhere in pinnedSection");
-            showPinnedPopup();
-            return;
-        }
-
-        if (
-            chatHeaderContent &&
-            chatHeaderContent.style.display !== "none" &&
-            chatHeaderContent.contains(e.target)
-        ) {
-            console.log("Click anywhere in chatHeaderContent");
-            showPinnedPopup();
-        }
-    });
-
-    messageList.addEventListener('click', (e) => {
-        const optionsButton = e.target.closest('.message-options');
-        if (optionsButton) {
-            console.log("[messageList] Clicked .message-options");
-            const messageElement = optionsButton.closest('.message');
-            const messageKey = messageElement.dataset.messageKey;
-            const senderKey = messageElement.dataset.senderKey;
-            showMessageOptions(optionsButton, messageKey, senderKey);
-        }
-    });
-
-    function showMessageOptions(targetIcon, messageKey, senderKey) {
-        console.log("[showMessageOptions] Triggered for messageKey:", messageKey, "senderKey:", senderKey);
-        const existingMenu = document.getElementById("messageOptionsMenu");
-        if (existingMenu) existingMenu.remove();
-
-        const isMyMessage = senderKey === memberKey;
-        const message = allMessages.find(m => m.MessageKey === messageKey);
-        const isPinned = message ? message.IsPinned : false;
-
-        const menu = document.createElement("div");
-        menu.id = "messageOptionsMenu";
-        menu.className = "message-options-menu";
-        menu.innerHTML = `
-            <div class="menu-item" data-action="${isPinned ? 'unpin' : 'pin'}">${isPinned ? '📌 Unpin' : '📌 Pin'}</div>
-            ${isMyMessage ? '<div class="menu-item" data-action="recall">↩️ Recall</div>' : ""}
-            <div class="menu-item" data-action="reply">💬 Reply</div>
-        `;
-
-        const modalContent = document.querySelector('#chatModal .modal-content');
-        if (!modalContent) {
-            console.error("[showMessageOptions] Modal content not found");
-            return;
-        }
-        modalContent.appendChild(menu);
-
-        const iconRect = targetIcon.getBoundingClientRect();
-        const modalRect = modalContent.getBoundingClientRect();
-        let top = iconRect.top - modalRect.top + targetIcon.offsetHeight;
-        let left = iconRect.left - modalRect.left;
-
-        const menuHeight = menu.offsetHeight || 90;
-        const menuWidth = menu.offsetWidth || 120;
-
-        if (left + menuWidth > modalRect.width) left = modalRect.width - menuWidth - 10;
-        if (top + menuHeight > modalRect.height) top = iconRect.top - modalRect.top - menuHeight;
-
-        Object.assign(menu.style, {
-            position: "absolute",
-            top: `${top}px`,
-            left: `${left}px`,
-            zIndex: 1051,
-            display: "block",
-            background: "linear-gradient(90deg, #6a11cb 0%, #2575fc 100%)",
-            color: "#fff",
-            borderRadius: "4px",
-            boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
-            padding: "5px 0"
-        });
-
-        menu.querySelectorAll(".menu-item").forEach(item => {
-            item.style.padding = "5px 15px";
-            item.addEventListener("click", (e) => {
-                e.stopPropagation();
-                const action = item.dataset.action;
-                console.log(`[showMessageOptions] Action ${action} for message ${messageKey}`);
-                menu.remove();
-                if (action === "pin") pinMessage(messageKey);
-                if (action === "unpin") unpinMessage(messageKey);
-                if (action === "recall" && isMyMessage) recallMessage(messageKey);
-                if (action === "reply") replyToMessage(messageKey, messageElement);
-            });
-        });
-
-        const hideMenu = (e) => {
-            if (!menu.contains(e.target) && !targetIcon.contains(e.target)) {
-                menu.remove();
-                document.removeEventListener("click", hideMenu);
-                document.removeEventListener("scroll", hideMenu, true);
-            }
-        };
-        document.addEventListener("click", hideMenu);
-        document.addEventListener("scroll", hideMenu, true);
-    }
-
-    async function pinMessage(messageKey) {
-        const message = allMessages.find(m => m.MessageKey === messageKey);
-        if (!message) return;
-
-        const pinnedMessages = allMessages.filter(m => m.IsPinned);
-        if (pinnedMessages.length >= 3) {
-            alert("Reached the limit of pinned messages (3/3)");
-            return;
-        }
-
-        let conversationKey = currentConversationKey;
-        if (!conversationKey) {
-            const activeConv = document.querySelector(".conversation-item.active");
-            conversationKey = activeConv ? activeConv.getAttribute("data-conversation-key") : null;
-            if (!conversationKey) {
-                console.error("[pinMessage] No conversationKey found. Please select a conversation first.");
-                alert("Please select a conversation before pinning.");
-                return;
-            }
-        }
-        console.log("[pinMessage] Pinning message:", messageKey, "with conversationKey:", conversationKey);
-
-        try {
-            const result = await connection.invoke("UpdatePinStatus", conversationKey, messageKey, true);
-            if (result && result.success) {
-                message.IsPinned = true;
-                messageList.innerHTML = allMessages.map(m => addMessage(m)).join("");
-                messageList.scrollTop = messageList.scrollHeight;
-                updatePinnedSection();
-            } else {
-                console.error("[pinMessage] Pinning failed:", result?.message);
-                alert("Pinning failed. Try again.");
-            }
-        } catch (err) {
-            console.error("[pinMessage] Error pinning message:", err);
-            alert("Error pinning message. Check console for details.");
-        }
-    }
-
-    async function unpinMessage(messageKey) {
-        let conversationKey = currentConversationKey;
-        if (!conversationKey) {
-            const activeConv = document.querySelector(".conversation-item.active");
-            conversationKey = activeConv ? activeConv.getAttribute("data-conversation-key") : null;
-            if (!conversationKey) {
-                console.error("[unpinMessage] No conversationKey found. Please select a conversation first.");
-                alert("Please select a conversation before unpinning.");
-                return;
-            }
-        }
-        console.log("[unpinMessage] Unpinning message:", messageKey, "with conversationKey:", conversationKey);
-
-        try {
-            const result = await connection.invoke("UpdateUnpinStatus", conversationKey, messageKey);
-            if (result && result.success) {
-                const message = allMessages.find(m => m.MessageKey === messageKey);
-                if (message) {
-                    message.IsPinned = false;
-                    messageList.innerHTML = allMessages.map(m => addMessage(m)).join("");
-                    messageList.scrollTop = messageList.scrollHeight;
-                    updatePinnedSection();
-                }
-            } else {
-                console.error("[unpinMessage] Unpinning failed:", result?.message);
-                alert("Unpinning failed. Try again.");
-            }
-        } catch (err) {
-            console.error("[unpinMessage] Error unpinning message:", err);
-            alert("Error unpinning message. Check console for details.");
-        }
-    }
-
-    async function recallMessage(messageKey) {
-        const message = allMessages.find(m => m.MessageKey === messageKey);
-        if (!message || message.SenderKey !== memberKey || message.Status === 2) return;
-
-        let conversationKey = currentConversationKey;
-        if (!conversationKey) {
-            const activeConv = document.querySelector(".conversation-item.active");
-            conversationKey = activeConv ? activeConv.getAttribute("data-conversation-key") : null;
-            if (!conversationKey) {
-                console.error("[recallMessage] No conversationKey found. Please select a conversation first.");
-                alert("Please select a conversation before recalling.");
-                return;
-            }
-        }
-        console.log("[recallMessage] Recalling message:", messageKey, "with conversationKey:", conversationKey);
-
-        try {
-            const result = await connection.invoke("UpdateRecallStatus", conversationKey, messageKey);
-            if (result && result.success) {
-                message.Status = 2;
-                message.Content = "Message recalled";
-                if (message.Url) {
-                    fetch(message.Url, { method: "DELETE" }).catch(err => console.error("[recallMessage] Error deleting media:", err));
-                    delete message.Url;
-                    delete message.MessageType;
-                    delete message.MimeType;
-                }
-                messageList.innerHTML = allMessages.map(m => addMessage(m)).join("");
-                messageList.querySelector(`[data-message-key="${messageKey}"]`).classList.add("recalled");
-            } else {
-                console.error("[recallMessage] Recalling failed:", result?.message);
-                alert("Recalling failed. Try again.");
-            }
-        } catch (err) {
-            console.error("[recallMessage] Error recalling message:", err);
-            alert("Error recalling message. Check console for details.");
-        }
-    }
-
-    function replyToMessage(messageKey, messageElement) {
-        console.log("[replyToMessage] Replying to message:", messageKey);
-        const message = allMessages.find(m => m.MessageKey === messageKey);
-        if (message) {
-            chatInput.value = `${message.Content ? `Replying to ${message.SenderName || "someone"}: ${message.Content}` : "Replying to message"}`;
-            chatInput.focus();
-            messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-    }
 
     connection.on("ReceiveMessage", (message) => {
         allMessages.push(message);
@@ -1027,6 +664,331 @@
         } else {
             console.error("[RecallResponse] Failed:", message);
             alert(message || "Recalling failed.");
+        }
+    });
+
+    if (fileIcon) fileIcon.addEventListener("click", () => fileInput.click());
+    if (fileInput) fileInput.addEventListener("change", (e) => {
+        selectedFile = e.target.files[0];
+        if (selectedFile) {
+            filePreviewContainer.style.display = "block";
+            fileInput.disabled = true;
+            const fileType = selectedFile.type;
+            if (fileType.startsWith("image/")) {
+                filePreview.src = URL.createObjectURL(selectedFile);
+                filePreview.classList.remove("d-none");
+                videoPreview.classList.add("d-none");
+                audioPreview.classList.add("d-none");
+            } else if (fileType.startsWith("video/")) {
+                videoPreview.src = URL.createObjectURL(selectedFile);
+                videoPreview.classList.remove("d-none");
+                filePreview.classList.add("d-none");
+                audioPreview.classList.add("d-none");
+            } else if (fileType.startsWith("audio/")) {
+                audioPreview.src = URL.createObjectURL(selectedFile);
+                audioPreview.classList.remove("d-none");
+                filePreview.classList.add("d-none");
+                videoPreview.classList.add("d-none");
+            }
+        }
+    });
+    if (clearFile) clearFile.addEventListener("click", resetFileInput);
+    if (sendIcon) sendIcon.addEventListener("click", async () => {
+        const messageText = chatInput.value.trim();
+        if ((messageText || selectedFile) && (currentConversationKey || currentUserKey)) {
+            try {
+                const formData = new FormData();
+                formData.append("ConversationKey", currentConversationKey || "");
+                formData.append("UserKey", memberKey);
+                formData.append("UserType", currentUserType || "");
+                formData.append("Content", messageText);
+                if (selectedFile) formData.append("File", selectedFile);
+
+                if (!currentConversationKey && currentUserKey) {
+                    const formDataInit = new FormData();
+                    formDataInit.append("UserKey", currentUserKey);
+                    formDataInit.append("UserType", currentUserType);
+                    formDataInit.append("MemberKey", memberKey);
+
+                    const initResponse = await fetch("/api/conversations/init", { method: "POST", body: formDataInit });
+                    if (!initResponse.ok) throw new Error("[sendIcon] Failed to initialize conversation");
+                    const initData = await initResponse.json();
+                    currentConversationKey = initData.ConversationKey;
+                    currentConversationType = initData.ConversationType || "Private";
+                    updateIconsVisibility();
+                }
+
+                const response = await fetch("/api/conversations/messages", { method: "POST", body: formData });
+                if (!response.ok) throw new Error("[sendIcon] Failed to send message");
+                chatInput.value = "";
+                resetFileInput();
+                skip = 0;
+                allMessages = [];
+                await loadMessages(currentConversationKey, false, skip);
+            } catch (err) {
+                console.error("[sendIcon] Error sending message:", err);
+            }
+        }
+    });
+    if (openChat) openChat.addEventListener("click", async () => {
+        const chatLoading = document.getElementById('chatLoading');
+        if (chatLoading) chatLoading.classList.remove('d-none');
+        try {
+            await startConnection(connection, memberKey); // Truyền connection và memberKey
+            $('#chatModal').modal('show'); // Sử dụng ID đúng là chatModal
+            loadConversations();
+        } catch (err) {
+            console.error('SignalR connection failed:', err);
+        } finally {
+            if (chatLoading) chatLoading.classList.add('d-none');
+        }
+    });
+    if (closeChat) closeChat.addEventListener("click", () => {
+        resetChatInterface();
+        $(chatModal).modal("hide");
+    });
+    if (chatModal) {
+        $(chatModal).on('shown.bs.modal', () => {
+            clearInterval(unreadInterval); // Dừng polling khi modal mở
+            updateIconsVisibility();
+        });
+        $(chatModal).on('hidden.bs.modal', () => {
+            resetChatInterface();
+            if (window.isAuthenticated) {
+                unreadInterval = setInterval(updateUnreadCountInitial, 60000); // Khởi động lại polling khi modal đóng
+                updateUnreadCountInitial(); // Cập nhật ngay khi đóng
+            }
+        });
+    }
+
+    if (searchInput) {
+        let isSearching = false;
+        searchInput.addEventListener("focus", () => {
+            conversationListContainer.classList.add("focused");
+            searchResults.classList.add("show");
+        });
+        searchInput.addEventListener("blur", () => {
+            conversationListContainer.classList.remove("focused");
+            searchResults.classList.remove("show");
+        });
+        searchInput.addEventListener("input", debounce(async (e) => {
+            if (isSearching) return;
+            isSearching = true;
+            await searchContacts(e.target.value.trim());
+            isSearching = false;
+        }, 500));
+    }
+
+    document.addEventListener("click", (e) => {
+        const pinnedSection = document.getElementById("pinnedSection");
+        const chatHeaderContent = document.getElementById("chatHeaderContent");
+
+        if (pinnedSection && pinnedSection.style.display !== "none" && pinnedSection.contains(e.target)) {
+            showPinnedPopup();
+            return;
+        }
+
+        if (chatHeaderContent && chatHeaderContent.style.display !== "none" && chatHeaderContent.contains(e.target)) {
+            showPinnedPopup();
+        }
+    });
+
+    messageList.addEventListener('click', (e) => {
+        const optionsButton = e.target.closest('.message-options');
+        if (optionsButton) {
+            const messageElement = optionsButton.closest('.message');
+            const messageKey = messageElement.dataset.messageKey;
+            const senderKey = messageElement.dataset.senderKey;
+            showMessageOptions(optionsButton, messageKey, senderKey);
+        }
+    });
+
+    function showMessageOptions(targetIcon, messageKey, senderKey) {
+        const existingMenu = document.getElementById("messageOptionsMenu");
+        if (existingMenu) existingMenu.remove();
+
+        const isMyMessage = senderKey === memberKey;
+        const message = allMessages.find(m => m.MessageKey === messageKey);
+        const isPinned = message ? message.IsPinned : false;
+
+        const menu = document.createElement("div");
+        menu.id = "messageOptionsMenu";
+        menu.className = "message-options-menu";
+        menu.innerHTML = `
+            <div class="menu-item" data-action="${isPinned ? 'unpin' : 'pin'}">${isPinned ? '📌 Unpin' : '📌 Pin'}</div>
+            ${isMyMessage ? '<div class="menu-item" data-action="recall">↩️ Recall</div>' : ""}
+            <div class="menu-item" data-action="reply">💬 Reply</div>
+        `;
+
+        const modalContent = document.querySelector('#chatModal .modal-content');
+        if (!modalContent) return;
+        modalContent.appendChild(menu);
+
+        const iconRect = targetIcon.getBoundingClientRect();
+        const modalRect = modalContent.getBoundingClientRect();
+        let top = iconRect.top - modalRect.top + targetIcon.offsetHeight;
+        let left = iconRect.left - modalRect.left;
+
+        const menuHeight = menu.offsetHeight || 90;
+        const menuWidth = menu.offsetWidth || 120;
+
+        if (left + menuWidth > modalRect.width) left = modalRect.width - menuWidth - 10;
+        if (top + menuHeight > modalRect.height) top = iconRect.top - modalRect.top - menuHeight;
+
+        Object.assign(menu.style, {
+            position: "absolute",
+            top: `${top}px`,
+            left: `${left}px`,
+            zIndex: 1051,
+            display: "block",
+            background: "linear-gradient(90deg, #6a11cb 0%, #2575fc 100%)",
+            color: "#fff",
+            borderRadius: "4px",
+            boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
+            padding: "5px 0"
+        });
+
+        menu.querySelectorAll(".menu-item").forEach(item => {
+            item.style.padding = "5px 15px";
+            item.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const action = item.dataset.action;
+                menu.remove();
+                if (action === "pin") pinMessage(messageKey);
+                if (action === "unpin") unpinMessage(messageKey);
+                if (action === "recall" && isMyMessage) recallMessage(messageKey);
+                if (action === "reply") replyToMessage(messageKey, messageElement);
+            });
+        });
+
+        const hideMenu = (e) => {
+            if (!menu.contains(e.target) && !targetIcon.contains(e.target)) {
+                menu.remove();
+                document.removeEventListener("click", hideMenu);
+                document.removeEventListener("scroll", hideMenu, true);
+            }
+        };
+        document.addEventListener("click", hideMenu);
+        document.addEventListener("scroll", hideMenu, true);
+    }
+
+    async function pinMessage(messageKey) {
+        const message = allMessages.find(m => m.MessageKey === messageKey);
+        if (!message) return;
+
+        const pinnedMessages = allMessages.filter(m => m.IsPinned);
+        if (pinnedMessages.length >= 3) {
+            alert("Reached the limit of pinned messages (3/3)");
+            return;
+        }
+
+        let conversationKey = currentConversationKey;
+        if (!conversationKey) {
+            const activeConv = document.querySelector(".conversation-item.active");
+            conversationKey = activeConv ? activeConv.getAttribute("data-conversation-key") : null;
+            if (!conversationKey) {
+                console.error("[pinMessage] No conversationKey found.");
+                alert("Please select a conversation before pinning.");
+                return;
+            }
+        }
+
+        try {
+            await connection.invoke("UpdatePinStatus", conversationKey, messageKey, true);
+            message.IsPinned = true;
+            messageList.innerHTML = allMessages.map(m => addMessage(m)).join("");
+            messageList.scrollTop = messageList.scrollHeight;
+            updatePinnedSection();
+        } catch (err) {
+            console.error("[pinMessage] Error pinning message:", err);
+            alert("Error pinning message. Check console for details.");
+        }
+    }
+
+    async function unpinMessage(messageKey) {
+        let conversationKey = currentConversationKey;
+        if (!conversationKey) {
+            const activeConv = document.querySelector(".conversation-item.active");
+            conversationKey = activeConv ? activeConv.getAttribute("data-conversation-key") : null;
+            if (!conversationKey) {
+                console.error("[unpinMessage] No conversationKey found.");
+                alert("Please select a conversation before unpinning.");
+                return;
+            }
+        }
+
+        try {
+            await connection.invoke("UpdateUnpinStatus", conversationKey, messageKey);
+            const message = allMessages.find(m => m.MessageKey === messageKey);
+            if (message) {
+                message.IsPinned = false;
+                messageList.innerHTML = allMessages.map(m => addMessage(m)).join("");
+                messageList.scrollTop = messageList.scrollHeight;
+                updatePinnedSection();
+            }
+        } catch (err) {
+            console.error("[unpinMessage] Error unpinning message:", err);
+            alert("Error unpinning message. Check console for details.");
+        }
+    }
+
+    async function recallMessage(messageKey) {
+        const message = allMessages.find(m => m.MessageKey === messageKey);
+        if (!message || message.SenderKey !== memberKey || message.Status === 2) return;
+
+        let conversationKey = currentConversationKey;
+        if (!conversationKey) {
+            const activeConv = document.querySelector(".conversation-item.active");
+            conversationKey = activeConv ? activeConv.getAttribute("data-conversation-key") : null;
+            if (!conversationKey) {
+                console.error("[recallMessage] No conversationKey found.");
+                alert("Please select a conversation before recalling.");
+                return;
+            }
+        }
+
+        try {
+            await connection.invoke("UpdateRecallStatus", conversationKey, messageKey);
+            message.Status = 2;
+            message.Content = "Message recalled";
+            if (message.Url) {
+                delete message.Url;
+                delete message.MessageType;
+                delete msg.MimeType;
+            }
+            messageList.innerHTML = allMessages.map(m => addMessage(m)).join("");
+            const msgElement = messageList.querySelector(`[data-message-key="${messageKey}"]`);
+            if (msgElement) msgElement.classList.add("recalled");
+            messageList.scrollTop = messageList.scrollHeight;
+            updatePinnedSection();
+        } catch (err) {
+            console.error("[recallMessage] Error recalling message:", err);
+            alert("Error recalling message. Check console for details.");
+        }
+    }
+
+    function replyToMessage(messageKey, messageElement) {
+        const message = allMessages.find(m => m.MessageKey === messageKey);
+        if (message) {
+            chatInput.value = `${message.Content ? `Replying to ${message.SenderName || "someone"}: ${message.Content}` : "Replying to message"}`;
+            chatInput.focus();
+            messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+
+    // Hàm xử lý menu hamburger và dropdown từ layout
+    const hamburgerBtn = document.querySelector('.hamburger-btn');
+    const navMenu = document.querySelector('.nav-menu');
+    if (hamburgerBtn && navMenu) {
+        hamburgerBtn.addEventListener('click', () => navMenu.classList.toggle('show'));
+    }
+    const dropdownElements = Array.prototype.slice.call(document.querySelectorAll('[data-bs-toggle="dropdown"]'));
+    dropdownElements.forEach(dropdownToggleEl => new bootstrap.Dropdown(dropdownToggleEl));
+
+    // Ngắt kết nối khi logout hoặc thoát trang
+    window.addEventListener('beforeunload', () => {
+        if (connection.state === signalR.HubConnectionState.Connected) {
+            connection.stop();
         }
     });
 });
