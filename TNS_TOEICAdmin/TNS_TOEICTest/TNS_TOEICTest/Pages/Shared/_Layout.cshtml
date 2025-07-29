@@ -78,6 +78,7 @@
         window.isAuthenticated = @Html.Raw(Json.Serialize(ViewData["IsAuthenticated"]));
     </script>
     <script src="/js/chat.js"></script>
+    <script src="/js/groupPopup.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

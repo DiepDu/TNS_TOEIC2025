@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿// ChatHub.cs
+using Microsoft.AspNetCore.SignalR;
 using System.Collections.Concurrent;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -12,56 +13,37 @@ namespace TNS_TOEICTest.Hubs
 
         public override async Task OnConnectedAsync()
         {
-            // Chỉ khởi tạo kết nối cơ bản, không gọi GetConversationKeysAsync
             await base.OnConnectedAsync();
         }
 
         public async Task InitializeConnection(string userKey = null, string memberKey = null)
         {
-            var participantKey = !string.IsNullOrEmpty(userKey) ? userKey :
-                               (!string.IsNullOrEmpty(memberKey) ? memberKey : GetParticipantKey());
+            var participantKey = !string.IsNullOrEmpty(userKey) ? userKey : (!string.IsNullOrEmpty(memberKey) ? memberKey : GetParticipantKey());
             if (string.IsNullOrEmpty(participantKey))
                 return;
 
-            try
-            {
-                // Xóa kết nối cũ nếu tồn tại
-                if (_connectionMapping.ContainsKey(Context.ConnectionId))
-                {
-                    _connectionMapping.TryRemove(Context.ConnectionId, out _);
-                }
-                _connectionMapping.AddOrUpdate(Context.ConnectionId, participantKey, (key, oldValue) => participantKey);
+            if (_connectionMapping.ContainsKey(Context.ConnectionId))
+                _connectionMapping.TryRemove(Context.ConnectionId, out _);
+            _connectionMapping.AddOrUpdate(Context.ConnectionId, participantKey, (key, oldValue) => participantKey);
 
-                var conversationKeys = await ChatAccessData.GetConversationKeysAsync(participantKey);
-                foreach (var key in conversationKeys)
-                {
-                    await Groups.AddToGroupAsync(Context.ConnectionId, key);
-                }
-                await Clients.Caller.SendAsync("ConnectionEstablished", participantKey);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[InitializeConnection] Error: {ex.Message}");
-                await Clients.Caller.SendAsync("ConnectionEstablished", null);
-            }
+            var conversationKeys = await ChatAccessData.GetConversationKeysAsync(participantKey);
+            foreach (var key in conversationKeys)
+                await Groups.AddToGroupAsync(Context.ConnectionId, key);
+            await Clients.Caller.SendAsync("ConnectionEstablished", participantKey);
         }
 
         public async Task JoinConversation(string conversationKey)
         {
             var participantKey = _connectionMapping.GetValueOrDefault(Context.ConnectionId);
             if (!string.IsNullOrEmpty(participantKey))
-            {
                 await Groups.AddToGroupAsync(Context.ConnectionId, conversationKey);
-            }
         }
 
         public async Task LeaveConversation(string conversationKey)
         {
             var participantKey = _connectionMapping.GetValueOrDefault(Context.ConnectionId);
             if (!string.IsNullOrEmpty(participantKey))
-            {
                 await Groups.RemoveFromGroupAsync(Context.ConnectionId, conversationKey);
-            }
         }
 
         public async Task UpdatePinStatus(string conversationKey, string messageKey, bool isPinned)
@@ -70,8 +52,14 @@ namespace TNS_TOEICTest.Hubs
             if (string.IsNullOrEmpty(participantKey))
                 return;
 
-            await Clients.Caller.SendAsync("PinResponse", conversationKey, messageKey, isPinned, true, null);
-            await SendPinUpdate(conversationKey, messageKey, isPinned);
+            var success = await ChatAccessData.PinMessageAsync(messageKey, participantKey);
+            if (success)
+            {
+                await Clients.Group(conversationKey).SendAsync("PinResponse", conversationKey, messageKey, isPinned, true, null);
+                await SendPinUpdate(conversationKey, messageKey, isPinned);
+            }
+            else
+                await Clients.Caller.SendAsync("PinResponse", conversationKey, messageKey, isPinned, false, "Database update failed");
         }
 
         public async Task UpdateUnpinStatus(string conversationKey, string messageKey)
@@ -80,8 +68,14 @@ namespace TNS_TOEICTest.Hubs
             if (string.IsNullOrEmpty(participantKey))
                 return;
 
-            await Clients.Caller.SendAsync("UnpinResponse", conversationKey, messageKey, true, null);
-            await SendUnpinUpdate(conversationKey, messageKey);
+            var success = await ChatAccessData.UnpinMessageAsync(messageKey, participantKey);
+            if (success)
+            {
+                await Clients.Group(conversationKey).SendAsync("UnpinResponse", conversationKey, messageKey, true, null);
+                await SendUnpinUpdate(conversationKey, messageKey);
+            }
+            else
+                await Clients.Caller.SendAsync("UnpinResponse", conversationKey, messageKey, false, "Database update failed");
         }
 
         public async Task UpdateRecallStatus(string conversationKey, string messageKey)
@@ -90,47 +84,39 @@ namespace TNS_TOEICTest.Hubs
             if (string.IsNullOrEmpty(participantKey))
                 return;
 
-            await Clients.Caller.SendAsync("RecallResponse", conversationKey, messageKey, true, null);
-            await SendRecallUpdate(conversationKey, messageKey);
+            var success = await ChatAccessData.RecallMessageAsync(messageKey, participantKey);
+            if (success)
+            {
+                await Clients.Group(conversationKey).SendAsync("RecallResponse", conversationKey, messageKey, true, null);
+            }
+            else
+            {
+                await Clients.Caller.SendAsync("RecallResponse", conversationKey, messageKey, false, "Database update failed");
+            }
         }
 
         public async Task SendPinUpdate(string conversationKey, string messageKey, bool isPinned)
         {
-            var participantKey = _connectionMapping.GetValueOrDefault(Context.ConnectionId);
-            if (!string.IsNullOrEmpty(participantKey))
-            {
-                await Clients.Group(conversationKey).SendAsync("ReceivePinUpdate", messageKey, isPinned);
-            }
+            await Clients.GroupExcept(conversationKey, new[] { Context.ConnectionId }).SendAsync("ReceivePinUpdate", messageKey, isPinned);
         }
 
         public async Task SendUnpinUpdate(string conversationKey, string messageKey)
         {
-            var participantKey = _connectionMapping.GetValueOrDefault(Context.ConnectionId);
-            if (!string.IsNullOrEmpty(participantKey))
-            {
-                await Clients.Group(conversationKey).SendAsync("ReceiveUnpinUpdate", messageKey);
-            }
+            await Clients.GroupExcept(conversationKey, new[] { Context.ConnectionId }).SendAsync("ReceiveUnpinUpdate", messageKey);
         }
 
         public async Task SendRecallUpdate(string conversationKey, string messageKey)
         {
-            var participantKey = _connectionMapping.GetValueOrDefault(Context.ConnectionId);
-            if (!string.IsNullOrEmpty(participantKey))
-            {
-                await Clients.Group(conversationKey).SendAsync("ReceiveRecallUpdate", messageKey);
-            }
+            await Clients.GroupExcept(conversationKey, new[] { Context.ConnectionId }).SendAsync("ReceiveRecallUpdate", messageKey);
         }
 
         public override async Task OnDisconnectedAsync(Exception exception)
         {
             if (_connectionMapping.TryRemove(Context.ConnectionId, out var participantKey) && !string.IsNullOrEmpty(participantKey))
             {
-                Console.WriteLine($"[OnDisconnectedAsync] Disconnecting participant: {participantKey}");
                 var conversationKeys = await ChatAccessData.GetConversationKeysAsync(participantKey);
                 foreach (var key in conversationKeys)
-                {
                     await Groups.RemoveFromGroupAsync(Context.ConnectionId, key);
-                }
             }
             await base.OnDisconnectedAsync(exception);
         }
@@ -141,9 +127,7 @@ namespace TNS_TOEICTest.Hubs
             {
                 var conversationKeys = await ChatAccessData.GetConversationKeysAsync(participantKey);
                 foreach (var key in conversationKeys)
-                {
                     await Groups.RemoveFromGroupAsync(Context.ConnectionId, key);
-                }
                 await Clients.Caller.SendAsync("Disconnected");
             }
         }
@@ -151,11 +135,7 @@ namespace TNS_TOEICTest.Hubs
         private string GetParticipantKey()
         {
             var claimsPrincipal = Context.User as ClaimsPrincipal;
-            if (claimsPrincipal == null)
-                return null;
-
-            var nameIdentifier = claimsPrincipal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            return nameIdentifier;
+            return claimsPrincipal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         }
     }
 }

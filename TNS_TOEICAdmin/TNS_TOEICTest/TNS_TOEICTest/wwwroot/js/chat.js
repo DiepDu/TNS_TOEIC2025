@@ -644,16 +644,22 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    connection.on("RecallResponse", (conversationKey, messageKey, success, message) => {
+    connection.on("RecallResponse", async (conversationKey, messageKey, success, message) => {
         if (success) {
-            const msg = allMessages.find(m => m.MessageKey === messageKey);
-            if (msg && msg.SenderKey === memberKey) {
-                msg.Status = 2;
-                msg.Content = "Message recalled";
-                if (msg.Url) {
-                    delete msg.Url;
-                    delete msg.MessageType;
-                    delete msg.MimeType;
+            let msg = allMessages.find(m => m.MessageKey === messageKey);
+            if (!msg) {
+                await loadMessageUntilFound(messageKey, skip);
+                msg = allMessages.find(m => m.MessageKey === messageKey);
+            }
+            if (msg) {
+                if (msg.SenderKey !== memberKey) {
+                    msg.Status = 2;
+                    msg.Content = "Message recalled";
+                    if (msg.Url) {
+                        delete msg.Url;
+                        delete msg.MessageType;
+                        delete msg.MimeType;
+                    }
                 }
                 messageList.innerHTML = allMessages.map(m => addMessage(m)).join("");
                 const msgElement = messageList.querySelector(`[data-message-key="${messageKey}"]`);
@@ -872,6 +878,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         document.addEventListener("scroll", hideMenu, true);
     }
 
+    // chat.js (partial update for pin, unpin, recall functions)
     async function pinMessage(messageKey) {
         const message = allMessages.find(m => m.MessageKey === messageKey);
         if (!message) return;
@@ -894,11 +901,19 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         try {
-            await connection.invoke("UpdatePinStatus", conversationKey, messageKey, true);
-            message.IsPinned = true;
-            messageList.innerHTML = allMessages.map(m => addMessage(m)).join("");
-            messageList.scrollTop = messageList.scrollHeight;
-            updatePinnedSection();
+            const response = await fetch(`/api/conversations/pin/${messageKey}?conversationKey=${conversationKey}`, {
+                method: 'PUT',
+                credentials: 'include'
+            });
+            const result = await response.json();
+            if (result.success) {
+                message.IsPinned = true;
+                messageList.innerHTML = allMessages.map(m => addMessage(m)).join("");
+                messageList.scrollTop = messageList.scrollHeight;
+                updatePinnedSection();
+            } else {
+                alert(result.message || "Pinning failed.");
+            }
         } catch (err) {
             console.error("[pinMessage] Error pinning message:", err);
             alert("Error pinning message. Check console for details.");
@@ -918,13 +933,21 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         try {
-            await connection.invoke("UpdateUnpinStatus", conversationKey, messageKey);
-            const message = allMessages.find(m => m.MessageKey === messageKey);
-            if (message) {
-                message.IsPinned = false;
-                messageList.innerHTML = allMessages.map(m => addMessage(m)).join("");
-                messageList.scrollTop = messageList.scrollHeight;
-                updatePinnedSection();
+            const response = await fetch(`/api/conversations/unpin/${messageKey}?conversationKey=${conversationKey}`, {
+                method: 'PUT',
+                credentials: 'include'
+            });
+            const result = await response.json();
+            if (result.success) {
+                const message = allMessages.find(m => m.MessageKey === messageKey);
+                if (message) {
+                    message.IsPinned = false;
+                    messageList.innerHTML = allMessages.map(m => addMessage(m)).join("");
+                    messageList.scrollTop = messageList.scrollHeight;
+                    updatePinnedSection();
+                }
+            } else {
+                alert(result.message || "Unpinning failed.");
             }
         } catch (err) {
             console.error("[unpinMessage] Error unpinning message:", err);
@@ -948,19 +971,27 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         try {
-            await connection.invoke("UpdateRecallStatus", conversationKey, messageKey);
-            message.Status = 2;
-            message.Content = "Message recalled";
-            if (message.Url) {
-                delete message.Url;
-                delete message.MessageType;
-                delete msg.MimeType;
+            const response = await fetch(`/api/conversations/recall/${messageKey}?conversationKey=${conversationKey}`, {
+                method: 'PUT',
+                credentials: 'include'
+            });
+            const result = await response.json();
+            if (result.success) {
+                message.Status = 2;
+                message.Content = "Message recalled";
+                if (message.Url) {
+                    delete message.Url;
+                    delete message.MessageType;
+                    delete message.MimeType;
+                }
+                messageList.innerHTML = allMessages.map(m => addMessage(m)).join("");
+                const msgElement = messageList.querySelector(`[data-message-key="${messageKey}"]`);
+                if (msgElement) msgElement.classList.add("recalled");
+                messageList.scrollTop = messageList.scrollHeight;
+                updatePinnedSection();
+            } else {
+                alert(result.message || "Recalling failed.");
             }
-            messageList.innerHTML = allMessages.map(m => addMessage(m)).join("");
-            const msgElement = messageList.querySelector(`[data-message-key="${messageKey}"]`);
-            if (msgElement) msgElement.classList.add("recalled");
-            messageList.scrollTop = messageList.scrollHeight;
-            updatePinnedSection();
         } catch (err) {
             console.error("[recallMessage] Error recalling message:", err);
             alert("Error recalling message. Check console for details.");

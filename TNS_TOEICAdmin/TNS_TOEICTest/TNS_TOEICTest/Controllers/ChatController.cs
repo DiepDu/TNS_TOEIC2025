@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿// ChatController.cs
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TNS.Member;
@@ -81,9 +82,7 @@ namespace TNS_TOEICTest.Controllers
             var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
             var memberKey = memberLogin.MemberKey;
             if (string.IsNullOrEmpty(memberKey))
-            {
                 return NotFound("MemberKey not found in cookie. Please ensure user is logged in.");
-            }
             return Ok(memberKey);
         }
 
@@ -103,7 +102,7 @@ namespace TNS_TOEICTest.Controllers
             var success = await ChatAccessData.PinMessageAsync(messageKey, memberKey);
             if (success)
             {
-                await _hubContext.Clients.Group(conversationKey).SendAsync("ReceivePinUpdate", messageKey, true);
+                await _hubContext.Clients.Group(conversationKey).SendAsync("PinResponse", conversationKey, messageKey, true, true, null);
                 return Ok(new { success = true, message = "Pinned" });
             }
             return BadRequest(new { success = false, message = "Pinning failed" });
@@ -125,7 +124,7 @@ namespace TNS_TOEICTest.Controllers
             var success = await ChatAccessData.UnpinMessageAsync(messageKey, memberKey);
             if (success)
             {
-                await _hubContext.Clients.Group(conversationKey).SendAsync("ReceiveUnpinUpdate", messageKey);
+                await _hubContext.Clients.Group(conversationKey).SendAsync("UnpinResponse", conversationKey, messageKey, true, null);
                 return Ok(new { success = true, message = "Unpinned" });
             }
             return BadRequest(new { success = false, message = "Unpin failed" });
@@ -147,14 +146,15 @@ namespace TNS_TOEICTest.Controllers
             var success = await ChatAccessData.RecallMessageAsync(messageKey, memberKey);
             if (success)
             {
-                await _hubContext.Clients.Group(conversationKey).SendAsync("ReceiveRecallUpdate", messageKey);
+                await _hubContext.Clients.Group(conversationKey).SendAsync("RecallResponse", conversationKey, messageKey, true, null);
                 return Ok(new { success = true, message = "Recalled" });
             }
             return BadRequest(new { success = false, message = "Recall failed" });
         }
+
         [HttpGet("GetUnthread")]
         public async Task<IActionResult> GetUnthread([FromQuery] string userKey = null, [FromQuery] string memberKey = null)
-      {
+        {
             var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
             var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
             var currentMemberKey = memberLogin.MemberKey;

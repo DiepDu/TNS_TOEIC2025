@@ -1,6 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=group_add" />
     <style>
         .gradient-custom {
             background: linear-gradient(to bottom right, #2c3e50, #3498db);
@@ -144,26 +145,34 @@
         }
 
         .conversation-list::-webkit-scrollbar,
-        .message-list-container::-webkit-scrollbar {
-            width: 8px;
+        .message-list-container::-webkit-scrollbar,
+        .user-list::-webkit-scrollbar,
+        .selected-users::-webkit-scrollbar {
+            width: 6px;
         }
 
         .conversation-list::-webkit-scrollbar-track,
-        .message-list-container::-webkit-scrollbar-track {
-            background: rgba(52, 152, 219, 0.4);
+        .message-list-container::-webkit-scrollbar-track,
+        .user-list::-webkit-scrollbar-track,
+        .selected-users::-webkit-scrollbar-track {
+            background: #1a252f;
             border-radius: 10px;
         }
 
         .conversation-list::-webkit-scrollbar-thumb,
-        .message-list-container::-webkit-scrollbar-thumb {
-            background: rgba(44, 62, 80, 0.7);
+        .message-list-container::-webkit-scrollbar-thumb,
+        .user-list::-webkit-scrollbar-thumb,
+        .selected-users::-webkit-scrollbar-thumb {
+            background: #34495e;
             border-radius: 10px;
             transition: background 0.3s ease;
         }
 
             .conversation-list::-webkit-scrollbar-thumb:hover,
-            .message-list-container::-webkit-scrollbar-thumb:hover {
-                background: rgba(44, 62, 80, 0.5);
+            .message-list-container::-webkit-scrollbar-thumb:hover,
+            .user-list::-webkit-scrollbar-thumb:hover,
+            .selected-users::-webkit-scrollbar-thumb:hover {
+                background: #2c3e50;
             }
 
         .message-list-container::before {
@@ -190,8 +199,8 @@
         }
 
         .search-input {
-            width: 100%;
-            padding: 0.5rem 2rem 0.5rem 1rem;
+            width: 90%;
+            padding: 0.5px 40px 0.5px 30px;
             border-radius: 20px;
             border: 1px solid rgba(44, 62, 80, 0.6);
             background: rgba(52, 152, 219, 0.3);
@@ -201,16 +210,39 @@
 
             .search-input::placeholder {
                 color: rgba(189, 195, 199, 0.5);
+                text-align: left;
             }
 
         .search-icon {
             position: absolute;
-            right: 10px;
+            left: 10px;
             top: 50%;
             transform: translateY(-50%);
             font-size: 1.2rem;
             color: #bdc3c7;
             cursor: pointer;
+        }
+
+        .add-group-icon {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.5rem;
+            color: #bdc3c7;
+            cursor: pointer;
+            background: rgba(52, 152, 219, 0.5);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .add-group-icon span {
+            font-family: 'Material Symbols Outlined';
+            font-size: 24px;
+            content: "group_add";
         }
 
         .search-results {
@@ -344,8 +376,8 @@
             border-bottom: 1px solid rgba(44, 62, 80, 0.6);
             cursor: pointer;
             border-radius: 0;
-            position: relative; /* Thêm dòng này */
-            z-index: 6; /* Thêm dòng này */
+            position: relative;
+            z-index: 6;
             pointer-events: auto !important;
             cursor: pointer;
         }
@@ -421,6 +453,97 @@
             text-align: center;
             height: 100%;
             flex-shrink: 0;
+        }
+
+        .create-group-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #1a252f;
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 1100;
+            max-height: 80vh;
+            overflow-y: auto;
+            color: #ecf0f1;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            display: none;
+            min-width: 400px;
+            width: 800px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .avatar-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: #34495e;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 20px;
+        }
+
+        .avatar-preview {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .group-name-input {
+            width: 300px;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #34495e;
+            background: #2c3e50;
+            color: #ecf0f1;
+            text-align: center;
+        }
+
+        .user-list, .selected-users {
+            max-height: 40vh;
+            overflow-y: auto;
+            border: 1px solid #34495e;
+            background: #2c3e50;
+            padding: 10px;
+            margin-top: 10px;
+            width: 350px;
+        }
+
+        .user-item, .selected-user-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            cursor: pointer;
+        }
+
+            .user-item img, .selected-user-item img {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                margin-right: 10px;
+            }
+
+        .selected-user-item .remove-btn {
+            margin-left: auto;
+            cursor: pointer;
+            color: #e74c3c;
+        }
+
+        .create-btn {
+            margin-top: 5px !important;
+            padding: 10px 20px;
+            border-radius: 5px;
+            background: #2ecc71;
+            color: #ecf0f1;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
         }
 
         .message {
@@ -673,7 +796,7 @@
             border: 1px solid rgba(255,255,255,0.2);
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-            z-index: 99999; /* Cao hơn z-index của modal (1000) */
+            z-index: 99999;
             color: #ecf0f1;
             font-size: 0.9rem;
             width: 120px;
@@ -688,7 +811,6 @@
             .menu-item:hover {
                 background: #3498db;
             }
-
     </style>
 </head>
 <body>
@@ -700,8 +822,9 @@
                     <div class="row">
                         <div class="col-md-5 mb-4 mb-md-0 chat-divider">
                             <div class="search-container">
-                                <input type="text" id="searchInput" class="search-input" placeholder="Tìm kiếm...">
+                                <input type="text" id="searchInput" class="search-input" placeholder="Search...">
                                 <i class="fas fa-search search-icon"></i>
+                                <span id="addGroupIcon" class="add-group-icon"><span class="material-symbols-outlined">group_add</span></span>
                             </div>
                             <div class="search-results" id="searchResults"></div>
                             <div class="mask-custom p-4 rounded conversation-list" id="conversationListContainer">
@@ -715,10 +838,10 @@
                                     <p id="headerName" class="name"></p>
                                 </div>
                                 <div class="call-icons">
-                                    <i id="iconCall" class="fas fa-phone icon-hover" title="Gọi"></i>
+                                    <i id="iconCall" class="fas fa-phone icon-hover" title="Call"></i>
                                     <i id="iconVideo" class="fas fa-video icon-hover" title="Video"></i>
-                                    <span id="iconBlock" class="custom-block-icon icon-hover" style="display: none;" title="Chặn">−</span>
-                                    <i id="iconSetting" class="fas fa-cog icon-hover" style="display: none;" title="Cài đặt"></i>
+                                    <span id="iconBlock" class="custom-block-icon icon-hover" style="display: none;" title="Block">−</span>
+                                    <i id="iconSetting" class="fas fa-cog icon-hover" style="display: none;" title="Settings"></i>
                                 </div>
                             </div>
                             <div class="chat-header-content" id="chatHeaderContent" style="display: none;"></div>
@@ -728,14 +851,14 @@
                             </div>
                             <div class="input-container-sticky">
                                 <div class="file-preview-container" id="filePreviewContainer">
-                                    <img id="filePreview" class="file-preview d-none" alt="Xem trước">
+                                    <img id="filePreview" class="file-preview d-none" alt="Preview">
                                     <video id="videoPreview" class="file-preview d-none" controls></video>
                                     <audio id="audioPreview" class="file-preview d-none" controls></audio>
-                                    <button id="clearFile" class="btn btn-sm btn-danger ms-2">Xóa</button>
+                                    <button id="clearFile" class="btn btn-sm btn-danger ms-2">Clear</button>
                                 </div>
                                 <div class="input-container">
                                     <i id="fileIcon" class="fas fa-paperclip icon-left"></i>
-                                    <textarea id="chatInput" class="form-control" rows="1" placeholder="Tin nhắn"></textarea>
+                                    <textarea id="chatInput" class="form-control" rows="1" placeholder="Message"></textarea>
                                     <i id="sendIcon" class="fas fa-arrow-right icon-right"></i>
                                 </div>
                                 <input type="file" id="fileInput" accept="image/*,video/*,audio/mpeg" class="d-none">
@@ -747,6 +870,48 @@
         </div>
         <div id="pinnedPopup" class="pinned-popup">
             <div id="pinnedContent"></div>
+        </div>
+<div id="createGroupPopup" class="create-group-popup" style="display: none;">
+            <button id="closeCreateGroup" type="button" class="btn-close position-absolute top-0 end-0 m-2" aria-label="Close"></button>
+            <div class="d-flex align-items-center justify-content-center mb-3">
+                <div class="avatar-circle" id="avatarCircle">
+                    <img id="avatarPreview" class="avatar-preview d-none" alt="Avatar Preview">
+                </div>
+                <input type="text" id="groupNameInput" class="group-name-input" placeholder="Enter group name">
+            </div>
+            <div class="search-container text-center mb-2">
+                <input type="text" id="groupSearchInput" class="search-input" placeholder="Search members..." style="width: 600px;">
+            </div>
+    <div class="row mt-0">
+                <div class="col-6">
+                    <div class="user-list" id="userList">
+                        <div class="user-item">
+                            <img src="/images/avatar/default-avatar.jpg" alt="User">
+                            <span>User 1</span>
+                        </div>
+                        <div class="user-item">
+                            <img src="/images/avatar/default-avatar.jpg" alt="User">
+                            <span>User 2</span>
+                        </div>
+                        <div class="user-item">
+                            <img src="/images/avatar/default-avatar.jpg" alt="User">
+                            <span>User 3</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="selected-users" id="selectedUsers">
+                        <div class="selected-user-item">
+                            <img src="/images/avatar/default-avatar.jpg" alt="Selected User">
+                            <span>Selected User 1</span>
+                            <span class="remove-btn">x</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center mt-0">
+                <button id="createGroupBtn" class="create-btn">Create Group</button>
+            </div>
         </div>
     </div>
 </body>
