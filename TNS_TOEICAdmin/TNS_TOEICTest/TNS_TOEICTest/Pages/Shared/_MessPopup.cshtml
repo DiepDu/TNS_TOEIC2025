@@ -239,11 +239,12 @@
             align-items: center;
             justify-content: center;
         }
-        .add-group-icon span {
-            font-family: 'Material Symbols Outlined';
-            font-size: 24px;
-            content: "group_add";
-        }
+
+            .add-group-icon span {
+                font-family: 'Material Symbols Outlined';
+                font-size: 24px;
+                content: "group_add";
+            }
 
         .search-results {
             display: none;
@@ -529,11 +530,11 @@
                 margin-right: 10px;
             }
 
-        .selected-user-item .remove-btn {
-            margin-left: auto;
-            cursor: pointer;
-            color: #e74c3c;
-        }
+            .selected-user-item .remove-btn {
+                margin-left: auto;
+                cursor: pointer;
+                color: #e74c3c;
+            }
 
         .create-btn {
             margin-top: 5px !important;
@@ -871,7 +872,7 @@
         <div id="pinnedPopup" class="pinned-popup">
             <div id="pinnedContent"></div>
         </div>
-<div id="createGroupPopup" class="create-group-popup" style="display: none;">
+        <div id="createGroupPopup" class="create-group-popup" style="display: none;">
             <button id="closeCreateGroup" type="button" class="btn-close position-absolute top-0 end-0 m-2" aria-label="Close"></button>
             <div class="d-flex align-items-center justify-content-center mb-3">
                 <div class="avatar-circle" id="avatarCircle">
@@ -882,31 +883,12 @@
             <div class="search-container text-center mb-2">
                 <input type="text" id="groupSearchInput" class="search-input" placeholder="Search members..." style="width: 600px;">
             </div>
-    <div class="row mt-0">
+            <div class="row mt-0">
                 <div class="col-6">
-                    <div class="user-list" id="userList">
-                        <div class="user-item">
-                            <img src="/images/avatar/default-avatar.jpg" alt="User">
-                            <span>User 1</span>
-                        </div>
-                        <div class="user-item">
-                            <img src="/images/avatar/default-avatar.jpg" alt="User">
-                            <span>User 2</span>
-                        </div>
-                        <div class="user-item">
-                            <img src="/images/avatar/default-avatar.jpg" alt="User">
-                            <span>User 3</span>
-                        </div>
-                    </div>
+                    <div class="user-list" id="userList"></div>
                 </div>
                 <div class="col-6">
-                    <div class="selected-users" id="selectedUsers">
-                        <div class="selected-user-item">
-                            <img src="/images/avatar/default-avatar.jpg" alt="Selected User">
-                            <span>Selected User 1</span>
-                            <span class="remove-btn">x</span>
-                        </div>
-                    </div>
+                    <div class="selected-users" id="selectedUsers"></div>
                 </div>
             </div>
             <div class="text-center mt-0">

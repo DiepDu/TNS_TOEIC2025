@@ -10,17 +10,23 @@
     const selectedUsers = document.getElementById("selectedUsers");
     const createGroupBtn = document.getElementById("createGroupBtn");
     let selectedAvatar = null;
+    let memberKey = null;
+    let initialUsers = [];
 
-    if (addGroupIcon) {
-        addGroupIcon.addEventListener("click", () => {
-            createGroupPopup.style.display = "block";
-            avatarPreview.classList.add("d-none");
-            selectedAvatar = null;
-            groupNameInput.value = "";
-            selectedUsers.innerHTML = "";
-            loadInitialUsers();
-        });
-    }
+    // Lắng nghe event từ chat.js
+    window.addEventListener('openGroupPopup', (e) => {
+        memberKey = e.detail.memberKey;
+        if (addGroupIcon) {
+            addGroupIcon.addEventListener("click", () => {
+                createGroupPopup.style.display = "block";
+                avatarPreview.classList.add("d-none");
+                selectedAvatar = null;
+                groupNameInput.value = "";
+                selectedUsers.innerHTML = "";
+                loadInitialUsers();
+            });
+        }
+    });
 
     if (closeCreateGroup) {
         closeCreateGroup.addEventListener("click", () => {
@@ -35,48 +41,39 @@
             fileInput.accept = "image/*";
             fileInput.addEventListener("change", (e) => {
                 selectedAvatar = e.target.files[0];
-                if (selectedAvatar) {
+                if (selectedAvatar && /\.(jpe?g|png)$/i.test(selectedAvatar.name)) {
                     avatarPreview.src = URL.createObjectURL(selectedAvatar);
                     avatarPreview.classList.remove("d-none");
+                } else {
+                    alert("Please select a valid image file (.jpg or .png)!");
+                    selectedAvatar = null;
+                    avatarPreview.classList.add("d-none");
                 }
             });
             fileInput.click();
         });
     }
 
-    function loadInitialUsers() {
-        userList.innerHTML = `
-            <div class="user-item" data-user-key="user1">
-                <img src="/images/avatar/default-avatar.jpg" alt="User">
-                <span>User 1</span>
-            </div>
-            <div class="user-item" data-user-key="user2">
-                <img src="/images/avatar/default-avatar.jpg" alt="User">
-                <span>User 2</span>
-            </div>
-            <div class="user-item" data-user-key="user3">
-                <img src="/images/avatar/default-avatar.jpg" alt="User">
-                <span>User 3</span>
-            </div>
-        `;
-        document.querySelectorAll(".user-item").forEach(item => {
-            item.addEventListener("click", () => {
-                const userKey = item.getAttribute("data-user-key");
-                const userName = item.querySelector("span").textContent;
-                const userAvatar = item.querySelector("img").src;
-                if (!selectedUsers.querySelector(`[data-user-key="${userKey}"]`)) {
-                    selectedUsers.innerHTML += `
-                        <div class="selected-user-item" data-user-key="${userKey}">
-                            <img src="${userAvatar}" alt="Selected User">
-                            <span>${userName}</span>
-                            <span class="remove-btn">x</span>
-                        </div>
-                    `;
-                    item.remove();
-                }
-                attachRemoveListeners();
-            });
-        });
+    async function loadInitialUsers() {
+        if (!memberKey) {
+            console.warn("MemberKey not available");
+            return;
+        }
+        try {
+            const response = await fetch(`/api/conversations/GetGroupMembers?memberKey=${encodeURIComponent(memberKey)}`);
+            const users = await response.json();
+            initialUsers = users;
+            userList.innerHTML = users.map(user => `
+                <div class="user-item" data-user-key="${user.UserKey}" data-user-type="${user.UserType}">
+                    <img src="${user.Avatar || '/images/avatar/default-avatar.jpg'}" alt="User">
+                    <span>${user.Name}</span>
+                </div>
+            `).join("");
+            attachUserClickListeners();
+        } catch (error) {
+            console.error("Error loading users:", error);
+            userList.innerHTML = "<div>Error loading users</div>";
+        }
     }
 
     function attachRemoveListeners() {
@@ -84,10 +81,11 @@
             btn.addEventListener("click", (e) => {
                 const userItem = e.target.parentElement;
                 const userKey = userItem.getAttribute("data-user-key");
+                const userType = userItem.getAttribute("data-user-type");
                 const userName = userItem.querySelector("span").textContent;
                 const userAvatar = userItem.querySelector("img").src;
                 userList.innerHTML += `
-                    <div class="user-item" data-user-key="${userKey}">
+                    <div class="user-item" data-user-key="${userKey}" data-user-type="${userType}">
                         <img src="${userAvatar}" alt="User">
                         <span>${userName}</span>
                     </div>
@@ -102,14 +100,15 @@
         document.querySelectorAll(".user-item").forEach(item => {
             item.addEventListener("click", () => {
                 const userKey = item.getAttribute("data-user-key");
+                const userType = item.getAttribute("data-user-type");
                 const userName = item.querySelector("span").textContent;
                 const userAvatar = item.querySelector("img").src;
                 if (!selectedUsers.querySelector(`[data-user-key="${userKey}"]`)) {
                     selectedUsers.innerHTML += `
-                        <div class="selected-user-item" data-user-key="${userKey}">
+                        <div class="selected-user-item" data-user-key="${userKey}" data-user-type="${userType}">
                             <img src="${userAvatar}" alt="Selected User">
                             <span>${userName}</span>
-                            <span class="remove-btn">x</span>
+                            <span class="remove-btn" style="font-size: 24px; font-weight: bold; cursor: pointer;">X</span>
                         </div>
                     `;
                     item.remove();
@@ -121,39 +120,80 @@
 
     if (groupSearchInput) {
         groupSearchInput.addEventListener("input", debounce((e) => {
-            const query = e.target.value.trim();
-            if (query) {
-                const filtered = Array.from(userList.querySelectorAll(".user-item")).filter(item =>
-                    item.querySelector("span").textContent.toLowerCase().includes(query.toLowerCase())
-                );
-                userList.innerHTML = filtered.map(item => item.outerHTML).join("");
+            const query = e.target.value.trim().toLowerCase();
+            if (initialUsers.length > 0) {
+                let filteredUsers = [...initialUsers];
+                if (query) {
+                    filteredUsers.sort((a, b) => {
+                        const aMatch = a.Name.toLowerCase().includes(query) ? a.Name.toLowerCase().indexOf(query) : Infinity;
+                        const bMatch = b.Name.toLowerCase().includes(query) ? b.Name.toLowerCase().indexOf(query) : Infinity;
+                        return aMatch - bMatch;
+                    });
+                }
+                userList.innerHTML = filteredUsers.map(user => `
+                    <div class="user-item" data-user-key="${user.UserKey}" data-user-type="${user.UserType}">
+                        <img src="${user.Avatar || '/images/avatar/default-avatar.jpg'}" alt="User">
+                        <span>${user.Name}</span>
+                    </div>
+                `).join("");
                 attachUserClickListeners();
-            } else {
-                loadInitialUsers();
             }
         }, 300));
     }
 
     if (createGroupBtn) {
-        createGroupBtn.addEventListener("click", () => {
+        createGroupBtn.addEventListener("click", async () => {
             const groupName = groupNameInput.value.trim();
             const selectedUsersData = Array.from(selectedUsers.querySelectorAll(".selected-user-item")).map(item => ({
                 userKey: item.getAttribute("data-user-key"),
+                userType: item.getAttribute("data-user-type"),
                 userName: item.querySelector("span").textContent,
                 userAvatar: item.querySelector("img").src
             }));
-            if (groupName && selectedUsersData.length > 0) {
-                console.log("Group Name:", groupName);
-                console.log("Selected Users:", selectedUsersData);
-                console.log("Avatar:", selectedAvatar);
-                createGroupPopup.style.display = "none";
-            } else {
-                alert("Vui lòng nhập tên nhóm và chọn ít nhất một thành viên.");
+            console.log("Selected Users Data:", selectedUsersData); // Log dữ liệu
+
+            if (!groupName || !groupName.replace(/\s/g, '').length) {
+                alert("Group name cannot be empty or contain only whitespace!");
+                return;
+            }
+            if (!selectedAvatar || !/\.(jpe?g|png)$/i.test(selectedAvatar.name)) {
+                alert("Please select a valid image file (.jpg or .png)!");
+                return;
+            }
+            if (selectedUsersData.length === 0) {
+                alert("Please select at least one member!");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("groupName", groupName);
+            formData.append("selectedAvatar", selectedAvatar);
+            formData.append("users", JSON.stringify(selectedUsersData)); // Gửi JSON
+
+            try {
+                const response = await fetch('/api/conversations/createGroup', {
+                    method: 'POST',
+                    body: formData
+                });
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error("Server response:", errorText);
+                    throw new Error("Network response was not ok");
+                }
+                const result = await response.json();
+                if (result.success) {
+                    createGroupPopup.style.display = "none";
+                    alert("Group created successfully!");
+                } else {
+                    alert(`Failed to create group: ${result.message}`);
+                }
+            } catch (error) {
+                console.error("Error creating group:", error);
+                alert("An error occurred while creating the group!");
             }
         });
     }
 
-    // Hàm debounce để tối ưu hóa tìm kiếm
     function debounce(func, wait) {
         let timeout;
         return function (...args) {

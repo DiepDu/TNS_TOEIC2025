@@ -743,6 +743,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             await startConnection(connection, memberKey); // Truyền connection và memberKey
             $('#chatModal').modal('show'); // Sử dụng ID đúng là chatModal
             loadConversations();
+            // Truyền memberKey khi mở popup
+            window.dispatchEvent(new CustomEvent('openGroupPopup', { detail: { memberKey } }));
         } catch (err) {
             console.error('SignalR connection failed:', err);
         } finally {

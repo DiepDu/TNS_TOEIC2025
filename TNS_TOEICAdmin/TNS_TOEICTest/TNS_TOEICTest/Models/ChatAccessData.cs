@@ -564,5 +564,223 @@ namespace TNS_TOEICAdmin.Models
             }
             return totalUnreadCount;
         }
+        public static async Task<List<Dictionary<string, object>>> GetGroupMembersAsync(string memberKey)
+        {
+            var results = new List<Dictionary<string, object>>();
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                var memberQuery = @"
+            SELECT m.MemberKey AS UserKey, m.MemberName AS Name, m.Avatar AS Avatar, 'Member' AS UserType
+            FROM EDU_Member m
+            WHERE m.MemberKey != @MemberKey";
+
+                var userQuery = @"
+            SELECT u.UserKey, u.UserName AS Name, e.PhotoPath AS Avatar, 'Admin' AS UserType
+            FROM SYS_Users u
+            JOIN HRM_Employee e ON u.EmployeeKey = e.EmployeeKey
+            WHERE u.UserKey != @MemberKey";
+
+                var queries = new[]
+                {
+            (query: memberQuery, hasUserKey: true),
+            (query: userQuery, hasUserKey: true)
+        };
+                foreach (var (q, hasUserKey) in queries)
+                {
+                    using (var command = new SqlCommand(q, connection))
+                    {
+                        command.Parameters.AddWithValue("@MemberKey", memberKey);
+                        using (var reader = await command.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                var result = new Dictionary<string, object>
+                        {
+                            { "Name", reader["Name"] },
+                            { "Avatar", reader["Avatar"] ?? "/images/avatar/default-avatar.jpg" },
+                            { "UserType", reader["UserType"] }
+                        };
+                                if (hasUserKey && reader["UserKey"] != DBNull.Value)
+                                    result["UserKey"] = reader["UserKey"];
+                                else
+                                    result["UserKey"] = DBNull.Value;
+
+                                if (result["UserType"].ToString() == "Admin" && !string.IsNullOrEmpty(result["Avatar"].ToString()))
+                                    result["Avatar"] = $"https://localhost:7078/{result["Avatar"]}";
+                                results.Add(result);
+                            }
+                        }
+                    }
+                }
+            }
+            return results;
+        }
+        public static async Task<Dictionary<string, object>> CreateGroupAsync(string groupName, IFormFile selectedAvatar, List<UserData> users, string currentMemberKey, string currentMemberName)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var transaction = connection.BeginTransaction())
+                {
+                    try
+                    {
+                        var conversationKey = Guid.NewGuid().ToString();
+                        var createdOn = DateTime.Now;
+
+                        // Insert vào Conversations
+                        var conversationQuery = @"
+                    INSERT INTO [TNS_Toeic].[dbo].[Conversations] 
+                    ([ConversationKey], [ConversationType], [CreatedOn], [LastMessageKey], [LastMessageTime], [ConversationMode], [Name], [GroupAvatar], [CreatorKey], [IsActive])
+                    VALUES (@ConversationKey, 'Group', @CreatedOn, NULL, NULL, 'Public', @Name, NULL, @CreatorKey, 1)";
+                        using (var command = new SqlCommand(conversationQuery, connection, transaction))
+                        {
+                            command.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            command.Parameters.AddWithValue("@CreatedOn", createdOn);
+                            command.Parameters.AddWithValue("@Name", groupName);
+                            command.Parameters.AddWithValue("@CreatorKey", currentMemberKey);
+                            await command.ExecuteNonQueryAsync();
+                        }
+
+                        // Insert vào ConversationParticipants
+                        var participantQuery = @"
+                    INSERT INTO [TNS_Toeic].[dbo].[ConversationParticipants] 
+                    ([ParticipantKey], [ConversationKey], [UserKey], [UserType], [Role], [JoinedOn], [UnreadCount], [LastReadMessageKey], [IsBanned], [IsApproved])
+                    VALUES (@ParticipantKey, @ConversationKey, @UserKey, @UserType, @Role, @JoinedOn, 0, NULL, 0, 1)";
+                        foreach (var user in users)
+                        {
+                            var participantKey = Guid.NewGuid().ToString();
+                            using (var command = new SqlCommand(participantQuery, connection, transaction))
+                            {
+                                command.Parameters.AddWithValue("@ParticipantKey", participantKey);
+                                command.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                                command.Parameters.AddWithValue("@UserKey", user.userKey);
+                                command.Parameters.AddWithValue("@UserType", user.userType);
+                                command.Parameters.AddWithValue("@Role", user.userKey == currentMemberKey ? "Admin" : "Member");
+                                command.Parameters.AddWithValue("@JoinedOn", createdOn);
+                                await command.ExecuteNonQueryAsync();
+                            }
+                        }
+                        var creatorParticipantKey = Guid.NewGuid().ToString();
+                        using (var command = new SqlCommand(participantQuery, connection, transaction))
+                        {
+                            command.Parameters.AddWithValue("@ParticipantKey", creatorParticipantKey);
+                            command.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            command.Parameters.AddWithValue("@UserKey", currentMemberKey);
+                            command.Parameters.AddWithValue("@UserType", "Member");
+                            command.Parameters.AddWithValue("@Role", "Admin");
+                            command.Parameters.AddWithValue("@JoinedOn", createdOn);
+                            await command.ExecuteNonQueryAsync();
+                        }
+
+                        // Insert vào Messages
+                        var messageQuery = @"
+                    INSERT INTO [TNS_Toeic].[dbo].[Messages] 
+                    ([MessageKey], [ConversationKey], [SenderKey], [SenderType], [ReceiverKey], [ReceiverType], [MessageType], [Content], [ParentMessageKey], [CreatedOn], [Status], [IsPinned], [IsSystemMessage])
+                    VALUES (@MessageKey, @ConversationKey, NULL, NULL, NULL, NULL, @MessageType, @Content, NULL, @CreatedOn, NULL, 0, 1)";
+                        var messageKeys = new List<string>();
+                        var lastMessageKey = Guid.NewGuid().ToString();
+                        using (var command = new SqlCommand(messageQuery, connection, transaction))
+                        {
+                            command.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            command.Parameters.AddWithValue("@CreatedOn", createdOn);
+                            command.Parameters.AddWithValue("@MessageType", "Text");
+                            command.Parameters.AddWithValue("@Content", $"Group {groupName} created by {currentMemberName}");
+                            command.Parameters.AddWithValue("@MessageKey", lastMessageKey);
+                            await command.ExecuteNonQueryAsync();
+                            messageKeys.Add(lastMessageKey);
+                        }
+                        foreach (var user in users)
+                        {
+                            var messageKey = Guid.NewGuid().ToString();
+                            using (var command = new SqlCommand(messageQuery, connection, transaction))
+                            {
+                                command.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                                command.Parameters.AddWithValue("@CreatedOn", createdOn);
+                                command.Parameters.AddWithValue("@MessageType", "Text");
+                                command.Parameters.AddWithValue("@Content", $"{user.userName} added to group by {currentMemberName}");
+                                command.Parameters.AddWithValue("@MessageKey", messageKey);
+                                await command.ExecuteNonQueryAsync();
+                                messageKeys.Add(messageKey);
+                            }
+                        }
+
+                        // Cập nhật UnreadCount
+                        var updateUnreadCountQuery = @"
+                    UPDATE [TNS_Toeic].[dbo].[ConversationParticipants]
+                    SET UnreadCount = @UnreadCount
+                    WHERE ConversationKey = @ConversationKey";
+                        using (var command = new SqlCommand(updateUnreadCountQuery, connection, transaction))
+                        {
+                            command.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            command.Parameters.AddWithValue("@UnreadCount", messageKeys.Count);
+                            await command.ExecuteNonQueryAsync();
+                        }
+
+                        // Cập nhật LastMessageKey và LastMessageTime
+                        var updateLastMessageQuery = @"
+                    UPDATE [TNS_Toeic].[dbo].[Conversations]
+                    SET LastMessageKey = @LastMessageKey, LastMessageTime = @LastMessageTime
+                    WHERE ConversationKey = @ConversationKey";
+                        using (var command = new SqlCommand(updateLastMessageQuery, connection, transaction))
+                        {
+                            command.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            command.Parameters.AddWithValue("@LastMessageKey", lastMessageKey);
+                            command.Parameters.AddWithValue("@LastMessageTime", createdOn);
+                            await command.ExecuteNonQueryAsync();
+                        }
+
+                        // Lưu ảnh sau khi insert thành công
+                        string groupAvatar = null;
+                        if (selectedAvatar != null)
+                        {
+                            var fileName = $"{conversationKey}{Path.GetExtension(selectedAvatar.FileName)}";
+                            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "avatar", "group", fileName);
+                            using (var stream = new FileStream(filePath, FileMode.Create))
+                            {
+                                await selectedAvatar.CopyToAsync(stream);
+                            }
+                            groupAvatar = $"/images/avatar/group/{fileName}";
+                            var updateAvatarQuery = @"
+                        UPDATE [TNS_Toeic].[dbo].[Conversations]
+                        SET GroupAvatar = @GroupAvatar
+                        WHERE ConversationKey = @ConversationKey";
+                            using (var command = new SqlCommand(updateAvatarQuery, connection, transaction))
+                            {
+                                command.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                                command.Parameters.AddWithValue("@GroupAvatar", groupAvatar);
+                                await command.ExecuteNonQueryAsync();
+                            }
+                        }
+
+                        transaction.Commit();
+                        return new Dictionary<string, object>
+                {
+                    { "success", true },
+                    { "message", "Group created successfully" },
+                    { "conversationKey", conversationKey },
+                    { "groupAvatar", groupAvatar }
+                };
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        return new Dictionary<string, object>
+                {
+                    { "success", false },
+                    { "message", $"Error creating group: {ex.Message}" }
+                };
+                    }
+                }
+            }
+        }
+        public class UserData
+        {
+            public string userKey { get; set; }
+            public string userType { get; set; }
+            public string userName { get; set; }
+            public string userAvatar { get; set; }
+        }
     }
 }
