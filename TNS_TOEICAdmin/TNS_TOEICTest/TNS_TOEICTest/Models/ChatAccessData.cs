@@ -233,84 +233,84 @@ namespace TNS_TOEICAdmin.Models
                 await connection.OpenAsync();
 
                 var query = @"
-    -- Lấy 100 tin nhắn gần nhất (bao gồm tin nhắn chính và tin nhắn cha nếu cần)
-    SELECT m.MessageKey, m.ConversationKey, m.SenderKey, m.SenderType, m.ReceiverKey, 
-           m.ReceiverType, m.MessageType, m.Content, m.ParentMessageKey, m.CreatedOn, 
-           m.Status, m.IsPinned,
-           ma.AttachmentKey, ma.Type AS AttachmentType, 
-           CASE 
-               WHEN m.SenderType = 'Admin' AND ma.Url IS NOT NULL THEN CONCAT('https://localhost:7078/', ma.Url)
-               ELSE ma.Url 
-           END AS Url, 
-           ma.FileSize, ma.FileName, ma.MimeType,
-           pm.Content AS ParentContent,
-           pm.Status AS ParentStatus,
-           CASE 
-               WHEN m.SenderType = 'Member' THEN em.MemberName
-               WHEN m.SenderType = 'Admin' THEN su.UserName
-           END AS SenderName,
-           CASE 
-               WHEN m.SenderType = 'Member' THEN em.Avatar
-               WHEN m.SenderType = 'Admin' THEN CONCAT('https://localhost:7078/', he.PhotoPath)
-           END AS SenderAvatar
-    FROM Messages m
-    LEFT JOIN (
-        SELECT *,
-            ROW_NUMBER() OVER (PARTITION BY MessageKey ORDER BY CreatedOn DESC) AS rn
-        FROM MessageAttachments
-    ) ma ON m.MessageKey = ma.MessageKey AND ma.rn = 1
-    LEFT JOIN Messages pm ON m.ParentMessageKey = pm.MessageKey
-    LEFT JOIN [EDU_Member] em ON m.SenderType = 'Member' AND m.SenderKey = em.MemberKey
-    LEFT JOIN [SYS_Users] su ON m.SenderType = 'Admin' AND m.SenderKey = su.UserKey
-    LEFT JOIN [HRM_Employee] he ON m.SenderType = 'Admin' AND su.EmployeeKey = he.EmployeeKey
-    WHERE m.ConversationKey = @ConversationKey
-    AND m.Status IN (0, 1, 2)
+-- Lấy 100 tin nhắn gần nhất (bao gồm tin nhắn chính và tin nhắn cha nếu cần)
+SELECT m.MessageKey, m.ConversationKey, m.SenderKey, m.SenderType, m.ReceiverKey, 
+       m.ReceiverType, m.MessageType, m.Content, m.ParentMessageKey, m.CreatedOn, 
+       m.Status, m.IsPinned, m.IsSystemMessage, -- Thêm IsSystemMessage
+       ma.AttachmentKey, ma.Type AS AttachmentType, 
+       CASE 
+           WHEN m.SenderType = 'Admin' AND ma.Url IS NOT NULL THEN CONCAT('https://localhost:7078/', ma.Url)
+           ELSE ma.Url 
+       END AS Url, 
+       ma.FileSize, ma.FileName, ma.MimeType,
+       pm.Content AS ParentContent,
+       pm.Status AS ParentStatus,
+       CASE 
+           WHEN m.SenderType = 'Member' THEN em.MemberName
+           WHEN m.SenderType = 'Admin' THEN su.UserName
+       END AS SenderName,
+       CASE 
+           WHEN m.SenderType = 'Member' THEN em.Avatar
+           WHEN m.SenderType = 'Admin' THEN CONCAT('https://localhost:7078/', he.PhotoPath)
+       END AS SenderAvatar
+FROM Messages m
+LEFT JOIN (
+    SELECT *,
+        ROW_NUMBER() OVER (PARTITION BY MessageKey ORDER BY CreatedOn DESC) AS rn
+    FROM MessageAttachments
+) ma ON m.MessageKey = ma.MessageKey AND ma.rn = 1
+LEFT JOIN Messages pm ON m.ParentMessageKey = pm.MessageKey
+LEFT JOIN [EDU_Member] em ON m.SenderType = 'Member' AND m.SenderKey = em.MemberKey
+LEFT JOIN [SYS_Users] su ON m.SenderType = 'Admin' AND m.SenderKey = su.UserKey
+LEFT JOIN [HRM_Employee] he ON m.SenderType = 'Admin' AND su.EmployeeKey = he.EmployeeKey
+WHERE m.ConversationKey = @ConversationKey
+AND m.Status IN (0, 1, 2)
 
-    UNION
+UNION
 
-    -- Lấy các tin nhắn cha nằm ngoài phạm vi 100 tin nhắn gần nhất
-    SELECT m.MessageKey, m.ConversationKey, m.SenderKey, m.SenderType, m.ReceiverKey, 
-           m.ReceiverType, m.MessageType, m.Content, m.ParentMessageKey, m.CreatedOn, 
-           m.Status, m.IsPinned,
-           ma.AttachmentKey, ma.Type AS AttachmentType, 
-           CASE 
-               WHEN m.SenderType = 'Admin' AND ma.Url IS NOT NULL THEN CONCAT('https://localhost:7078/', ma.Url)
-               ELSE ma.Url 
-           END AS Url, 
-           ma.FileSize, ma.FileName, ma.MimeType,
-           pm.Content AS ParentContent,
-           pm.Status AS ParentStatus,
-           CASE 
-               WHEN m.SenderType = 'Member' THEN em.MemberName
-               WHEN m.SenderType = 'Admin' THEN su.UserName
-           END AS SenderName,
-           CASE 
-               WHEN m.SenderType = 'Member' THEN em.Avatar
-               WHEN m.SenderType = 'Admin' THEN CONCAT('https://localhost:7078/', he.PhotoPath)
-           END AS SenderAvatar
-    FROM Messages m
-    LEFT JOIN (
-        SELECT *,
-            ROW_NUMBER() OVER (PARTITION BY MessageKey ORDER BY CreatedOn DESC) AS rn
-        FROM MessageAttachments
-    ) ma ON m.MessageKey = ma.MessageKey AND ma.rn = 1
-    LEFT JOIN Messages pm ON m.ParentMessageKey = pm.MessageKey
-    LEFT JOIN [EDU_Member] em ON m.SenderType = 'Member' AND m.SenderKey = em.MemberKey
-    LEFT JOIN [SYS_Users] su ON m.SenderType = 'Admin' AND m.SenderKey = su.UserKey
-    LEFT JOIN [HRM_Employee] he ON m.SenderType = 'Admin' AND su.EmployeeKey = he.EmployeeKey
-    WHERE m.ConversationKey = @ConversationKey
-    AND m.Status IN (0, 1, 2)
-    AND m.MessageKey IN (
-        SELECT ParentMessageKey 
-        FROM Messages 
-        WHERE ConversationKey = @ConversationKey 
-        AND ParentMessageKey IS NOT NULL
-        AND CreatedOn <= (SELECT MAX(CreatedOn) FROM Messages WHERE ConversationKey = @ConversationKey AND Status IN (0, 1, 2))
-    )
+-- Lấy các tin nhắn cha nằm ngoài phạm vi 100 tin nhắn gần nhất
+SELECT m.MessageKey, m.ConversationKey, m.SenderKey, m.SenderType, m.ReceiverKey, 
+       m.ReceiverType, m.MessageType, m.Content, m.ParentMessageKey, m.CreatedOn, 
+       m.Status, m.IsPinned, m.IsSystemMessage, -- Thêm IsSystemMessage
+       ma.AttachmentKey, ma.Type AS AttachmentType, 
+       CASE 
+           WHEN m.SenderType = 'Admin' AND ma.Url IS NOT NULL THEN CONCAT('https://localhost:7078/', ma.Url)
+           ELSE ma.Url 
+       END AS Url, 
+       ma.FileSize, ma.FileName, ma.MimeType,
+       pm.Content AS ParentContent,
+       pm.Status AS ParentStatus,
+       CASE 
+           WHEN m.SenderType = 'Member' THEN em.MemberName
+           WHEN m.SenderType = 'Admin' THEN su.UserName
+       END AS SenderName,
+       CASE 
+           WHEN m.SenderType = 'Member' THEN em.Avatar
+           WHEN m.SenderType = 'Admin' THEN CONCAT('https://localhost:7078/', he.PhotoPath)
+       END AS SenderAvatar
+FROM Messages m
+LEFT JOIN (
+    SELECT *,
+        ROW_NUMBER() OVER (PARTITION BY MessageKey ORDER BY CreatedOn DESC) AS rn
+    FROM MessageAttachments
+) ma ON m.MessageKey = ma.MessageKey AND ma.rn = 1
+LEFT JOIN Messages pm ON m.ParentMessageKey = pm.MessageKey
+LEFT JOIN [EDU_Member] em ON m.SenderType = 'Member' AND m.SenderKey = em.MemberKey
+LEFT JOIN [SYS_Users] su ON m.SenderType = 'Admin' AND m.SenderKey = su.UserKey
+LEFT JOIN [HRM_Employee] he ON m.SenderType = 'Admin' AND su.EmployeeKey = he.EmployeeKey
+WHERE m.ConversationKey = @ConversationKey
+AND m.Status IN (0, 1, 2)
+AND m.MessageKey IN (
+    SELECT ParentMessageKey 
+    FROM Messages 
+    WHERE ConversationKey = @ConversationKey 
+    AND ParentMessageKey IS NOT NULL
+    AND CreatedOn <= (SELECT MAX(CreatedOn) FROM Messages WHERE ConversationKey = @ConversationKey AND Status IN (0, 1, 2))
+)
 
-    -- Áp dụng ORDER BY và OFFSET...FETCH cho toàn bộ kết quả
-    ORDER BY CreatedOn DESC
-    OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
+-- Áp dụng ORDER BY và OFFSET...FETCH cho toàn bộ kết quả
+ORDER BY CreatedOn DESC
+OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
 
                 using (var command = new SqlCommand(query, connection))
                 {
@@ -339,6 +339,7 @@ namespace TNS_TOEICAdmin.Models
                             { "CreatedOn", reader["CreatedOn"] },
                             { "Status", reader["Status"] },
                             { "IsPinned", reader["IsPinned"] },
+                            { "IsSystemMessage", reader["IsSystemMessage"] ?? false }, // Thêm IsSystemMessage
                             { "AttachmentKey", reader["AttachmentKey"] ?? (object)DBNull.Value },
                             { "AttachmentType", reader["AttachmentType"] ?? (object)DBNull.Value },
                             { "Url", reader["Url"] ?? (object)DBNull.Value },
@@ -350,7 +351,6 @@ namespace TNS_TOEICAdmin.Models
                             { "SenderName", reader["SenderName"] ?? (object)DBNull.Value },
                             { "SenderAvatar", reader["SenderAvatar"] ?? (object)DBNull.Value }
                         };
-                                // Chỉ giữ FileSize và FileName cho Audio, Image, Video
                                 var messageType = reader["MessageType"]?.ToString();
                                 if (messageType != "Text")
                                 {
@@ -631,9 +631,9 @@ namespace TNS_TOEICAdmin.Models
 
                         // Insert vào Conversations
                         var conversationQuery = @"
-                    INSERT INTO [TNS_Toeic].[dbo].[Conversations] 
-                    ([ConversationKey], [ConversationType], [CreatedOn], [LastMessageKey], [LastMessageTime], [ConversationMode], [Name], [GroupAvatar], [CreatorKey], [IsActive])
-                    VALUES (@ConversationKey, 'Group', @CreatedOn, NULL, NULL, 'Public', @Name, NULL, @CreatorKey, 1)";
+            INSERT INTO [TNS_Toeic].[dbo].[Conversations] 
+            ([ConversationKey], [ConversationType], [CreatedOn], [LastMessageKey], [LastMessageTime], [ConversationMode], [Name], [GroupAvatar], [CreatorKey], [IsActive])
+            VALUES (@ConversationKey, 'Group', @CreatedOn, NULL, NULL, 'Public', @Name, NULL, @CreatorKey, 1)";
                         using (var command = new SqlCommand(conversationQuery, connection, transaction))
                         {
                             command.Parameters.AddWithValue("@ConversationKey", conversationKey);
@@ -645,9 +645,9 @@ namespace TNS_TOEICAdmin.Models
 
                         // Insert vào ConversationParticipants
                         var participantQuery = @"
-                    INSERT INTO [TNS_Toeic].[dbo].[ConversationParticipants] 
-                    ([ParticipantKey], [ConversationKey], [UserKey], [UserType], [Role], [JoinedOn], [UnreadCount], [LastReadMessageKey], [IsBanned], [IsApproved])
-                    VALUES (@ParticipantKey, @ConversationKey, @UserKey, @UserType, @Role, @JoinedOn, 0, NULL, 0, 1)";
+            INSERT INTO [TNS_Toeic].[dbo].[ConversationParticipants] 
+            ([ParticipantKey], [ConversationKey], [UserKey], [UserType], [Role], [JoinedOn], [UnreadCount], [LastReadMessageKey], [IsBanned], [IsApproved])
+            VALUES (@ParticipantKey, @ConversationKey, @UserKey, @UserType, @Role, @JoinedOn, 0, NULL, 0, 1)";
                         foreach (var user in users)
                         {
                             var participantKey = Guid.NewGuid().ToString();
@@ -676,9 +676,9 @@ namespace TNS_TOEICAdmin.Models
 
                         // Insert vào Messages
                         var messageQuery = @"
-                    INSERT INTO [TNS_Toeic].[dbo].[Messages] 
-                    ([MessageKey], [ConversationKey], [SenderKey], [SenderType], [ReceiverKey], [ReceiverType], [MessageType], [Content], [ParentMessageKey], [CreatedOn], [Status], [IsPinned], [IsSystemMessage])
-                    VALUES (@MessageKey, @ConversationKey, NULL, NULL, NULL, NULL, @MessageType, @Content, NULL, @CreatedOn, NULL, 0, 1)";
+            INSERT INTO [TNS_Toeic].[dbo].[Messages] 
+            ([MessageKey], [ConversationKey], [SenderKey], [SenderType], [ReceiverKey], [ReceiverType], [MessageType], [Content], [ParentMessageKey], [CreatedOn], [Status], [IsPinned], [IsSystemMessage])
+            VALUES (@MessageKey, @ConversationKey, NULL, NULL, NULL, NULL, @MessageType, @Content, NULL, @CreatedOn, @Status, 0, 1)";
                         var messageKeys = new List<string>();
                         var lastMessageKey = Guid.NewGuid().ToString();
                         using (var command = new SqlCommand(messageQuery, connection, transaction))
@@ -688,6 +688,7 @@ namespace TNS_TOEICAdmin.Models
                             command.Parameters.AddWithValue("@MessageType", "Text");
                             command.Parameters.AddWithValue("@Content", $"Group {groupName} created by {currentMemberName}");
                             command.Parameters.AddWithValue("@MessageKey", lastMessageKey);
+                            command.Parameters.AddWithValue("@Status", 1); // Đặt Status là 1
                             await command.ExecuteNonQueryAsync();
                             messageKeys.Add(lastMessageKey);
                         }
@@ -701,6 +702,7 @@ namespace TNS_TOEICAdmin.Models
                                 command.Parameters.AddWithValue("@MessageType", "Text");
                                 command.Parameters.AddWithValue("@Content", $"{user.userName} added to group by {currentMemberName}");
                                 command.Parameters.AddWithValue("@MessageKey", messageKey);
+                                command.Parameters.AddWithValue("@Status", 1); // Đặt Status là 1
                                 await command.ExecuteNonQueryAsync();
                                 messageKeys.Add(messageKey);
                             }
@@ -708,9 +710,9 @@ namespace TNS_TOEICAdmin.Models
 
                         // Cập nhật UnreadCount
                         var updateUnreadCountQuery = @"
-                    UPDATE [TNS_Toeic].[dbo].[ConversationParticipants]
-                    SET UnreadCount = @UnreadCount
-                    WHERE ConversationKey = @ConversationKey";
+            UPDATE [TNS_Toeic].[dbo].[ConversationParticipants]
+            SET UnreadCount = @UnreadCount
+            WHERE ConversationKey = @ConversationKey";
                         using (var command = new SqlCommand(updateUnreadCountQuery, connection, transaction))
                         {
                             command.Parameters.AddWithValue("@ConversationKey", conversationKey);
@@ -720,9 +722,9 @@ namespace TNS_TOEICAdmin.Models
 
                         // Cập nhật LastMessageKey và LastMessageTime
                         var updateLastMessageQuery = @"
-                    UPDATE [TNS_Toeic].[dbo].[Conversations]
-                    SET LastMessageKey = @LastMessageKey, LastMessageTime = @LastMessageTime
-                    WHERE ConversationKey = @ConversationKey";
+            UPDATE [TNS_Toeic].[dbo].[Conversations]
+            SET LastMessageKey = @LastMessageKey, LastMessageTime = @LastMessageTime
+            WHERE ConversationKey = @ConversationKey";
                         using (var command = new SqlCommand(updateLastMessageQuery, connection, transaction))
                         {
                             command.Parameters.AddWithValue("@ConversationKey", conversationKey);
@@ -743,9 +745,9 @@ namespace TNS_TOEICAdmin.Models
                             }
                             groupAvatar = $"/images/avatar/group/{fileName}";
                             var updateAvatarQuery = @"
-                        UPDATE [TNS_Toeic].[dbo].[Conversations]
-                        SET GroupAvatar = @GroupAvatar
-                        WHERE ConversationKey = @ConversationKey";
+                UPDATE [TNS_Toeic].[dbo].[Conversations]
+                SET GroupAvatar = @GroupAvatar
+                WHERE ConversationKey = @ConversationKey";
                             using (var command = new SqlCommand(updateAvatarQuery, connection, transaction))
                             {
                                 command.Parameters.AddWithValue("@ConversationKey", conversationKey);

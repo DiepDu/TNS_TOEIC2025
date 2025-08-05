@@ -178,32 +178,50 @@ namespace TNS_TOEICTest.Controllers
             return Ok(members);
         }
 
-[HttpPost("createGroup")]
-    public async Task<IActionResult> CreateGroup([FromForm] string groupName, [FromForm] IFormFile selectedAvatar, [FromForm] string users)
-    {
-        var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
-        var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
-        var currentMemberKey = memberLogin.MemberKey;
-        var currentMemberName = memberLogin.MemberName;
+        [HttpPost("createGroup")]
+        public async Task<IActionResult> CreateGroup([FromForm] string groupName, [FromForm] IFormFile selectedAvatar, [FromForm] string users)
+        {
+            var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
+            var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
+            var currentMemberKey = memberLogin.MemberKey;
+            var currentMemberName = memberLogin.MemberName;
 
-        if (string.IsNullOrEmpty(currentMemberKey))
-            return Unauthorized(new { success = false, message = "MemberKey not found" });
+            if (string.IsNullOrEmpty(currentMemberKey))
+                return Unauthorized(new { success = false, message = "MemberKey not found", conversationKey = (string)null });
 
-        if (string.IsNullOrWhiteSpace(groupName))
-            return BadRequest(new { success = false, message = "Group name cannot be empty or contain only whitespace" });
+            if (string.IsNullOrWhiteSpace(groupName))
+                return BadRequest(new { success = false, message = "Group name cannot be empty or contain only whitespace", conversationKey = (string)null });
 
-        if (selectedAvatar == null || !new[] { ".jpg", ".jpeg", ".png" }.Contains(Path.GetExtension(selectedAvatar.FileName).ToLower()))
-            return BadRequest(new { success = false, message = "Please select a valid image file (.jpg or .png)" });
+            if (selectedAvatar == null || !new[] { ".jpg", ".jpeg", ".png" }.Contains(Path.GetExtension(selectedAvatar.FileName).ToLower()))
+                return BadRequest(new { success = false, message = "Please select a valid image file (.jpg or .png)", conversationKey = (string)null });
 
             var usersList = JsonConvert.DeserializeObject<List<UserData>>(users ?? "[]");
             Console.WriteLine($"Deserialized Users Count: {usersList.Count}");
 
-        if (usersList.Count == 0)
-            return BadRequest(new { success = false, message = "Please select at least one member" });
+            if (usersList.Count == 0)
+                return BadRequest(new { success = false, message = "Please select at least one member", conversationKey = (string)null });
 
-        var result = await ChatAccessData.CreateGroupAsync(groupName, selectedAvatar, usersList, currentMemberKey, currentMemberName);
-        return Ok(result);
+            var result = await ChatAccessData.CreateGroupAsync(groupName, selectedAvatar, usersList, currentMemberKey, currentMemberName);
+            // Giả định result là một Dictionary hoặc object chứa success, message, và conversationKey
+            if (result != null && result.ContainsKey("success") && (bool)result["success"])
+            {
+                return Ok(new
+                {
+                    success = true,
+                    message = "Group created successfully",
+                    conversationKey = result.ContainsKey("conversationKey") ? result["conversationKey"] : null
+                });
+            }
+            else
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = result.ContainsKey("message") ? result["message"] : "Failed to create group",
+                    conversationKey = result.ContainsKey("conversationKey") ? result["conversationKey"] : null
+                });
+            }
+        }
+
     }
-
-}
 }

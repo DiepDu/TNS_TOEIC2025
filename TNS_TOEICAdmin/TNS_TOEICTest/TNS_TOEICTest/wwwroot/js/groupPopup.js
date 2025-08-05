@@ -69,7 +69,7 @@
                     <span>${user.Name}</span>
                 </div>
             `).join("");
-            attachUserClickListeners();
+            attachUserClickListeners(); // Sửa lỗi typo từ attachUserClick thành attachUserClickListeners
         } catch (error) {
             console.error("Error loading users:", error);
             userList.innerHTML = "<div>Error loading users</div>";
@@ -150,7 +150,7 @@
                 userName: item.querySelector("span").textContent,
                 userAvatar: item.querySelector("img").src
             }));
-            console.log("Selected Users Data:", selectedUsersData); // Log dữ liệu
+            console.log("Selected Users Data:", selectedUsersData);
 
             if (!groupName || !groupName.replace(/\s/g, '').length) {
                 alert("Group name cannot be empty or contain only whitespace!");
@@ -168,7 +168,7 @@
             const formData = new FormData();
             formData.append("groupName", groupName);
             formData.append("selectedAvatar", selectedAvatar);
-            formData.append("users", JSON.stringify(selectedUsersData)); // Gửi JSON
+            formData.append("users", JSON.stringify(selectedUsersData));
 
             try {
                 const response = await fetch('/api/conversations/createGroup', {
@@ -184,6 +184,12 @@
                 if (result.success) {
                     createGroupPopup.style.display = "none";
                     alert("Group created successfully!");
+                    if (window.loadConversations && typeof window.loadConversations === 'function') {
+                        await window.loadConversations();
+                    }
+                    if (window.connection && window.connection.state === signalR.HubConnectionState.Connected) {
+                        await window.connection.invoke("NotifyGroupCreated", result.conversationKey, selectedUsersData.map(u => u.userKey));
+                    }
                 } else {
                     alert(`Failed to create group: ${result.message}`);
                 }

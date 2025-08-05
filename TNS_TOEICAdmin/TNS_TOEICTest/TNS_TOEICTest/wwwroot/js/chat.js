@@ -1,17 +1,26 @@
 ﻿// Định nghĩa hàm global với tham số connection và memberKey
 async function startConnection(connection, memberKey) {
     try {
-        console.log("Checking connection:", connection.state); // Debug trạng thái
+        console.log("Checking connection:", connection.state);
         if (connection.state !== signalR.HubConnectionState.Disconnected) {
             await connection.stop();
         }
         await connection.start();
         console.log("[startConnection] Connected to ChatHub successfully");
-        await connection.invoke("InitializeConnection", null, memberKey); // Đảm bảo khởi tạo lại
+        await connection.invoke("InitializeConnection", null, memberKey);
         connection.on('ReceiveMessage', updateUnreadCount);
         connection.on('Disconnected', () => {
             console.log("[Disconnected] Connection lost, attempting reconnect");
-            setTimeout(() => startConnection(connection, memberKey), 2000); // Thử reconnect sau 2 giây
+            setTimeout(() => startConnection(connection, memberKey), 2000);
+        });
+        connection.on("ReloadConversations", async (conversationKey) => {
+            console.log(`Received ReloadConversations for conversation: ${conversationKey}`);
+            if (typeof loadConversations === 'function') {
+                await loadConversations();
+            }
+            if (currentConversationKey === conversationKey && typeof loadMessages === 'function') {
+                await loadMessages(conversationKey, false, 0);
+            }
         });
     } catch (err) {
         console.error("[startConnection] Connection failed:", err);
@@ -64,10 +73,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    const connection = new signalR.HubConnectionBuilder()
+    // Định nghĩa toàn cục
+    window.connection = new signalR.HubConnectionBuilder()
         .withUrl("https://localhost:7003/chatHub")
         .withAutomaticReconnect()
         .build();
+    window.loadConversations = loadConversations;
 
     const openChat = document.getElementById("openChat");
     const closeChat = document.getElementById("closeChat");
@@ -113,8 +124,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     if (window.isAuthenticated) {
-        unreadInterval = setInterval(updateUnreadCountInitial, 60000); // 1 phút
-        updateUnreadCountInitial(); // Gọi lần đầu
+        unreadInterval = setInterval(updateUnreadCountInitial, 60000);
+        updateUnreadCountInitial();
     }
 
     function debounce(func, wait) {
@@ -304,6 +315,13 @@ document.addEventListener("DOMContentLoaded", async () => {
             conversations.forEach(conv => {
                 const li = document.createElement("li");
                 li.className = "p-2 border-bottom border-white border-opacity-25";
+                let lastMessage = conv.LastMessage || "No messages";
+                if (conv.ConversationType === "Group" && conv.LastMessage && allMessages.length > 0) {
+                    const lastMsgObj = allMessages.find(m => m.ConversationKey === conv.ConversationKey && new Date(m.CreatedOn) >= new Date(conv.LastMessageTime));
+                    if (lastMsgObj && lastMsgObj.IsSystemMessage === true) {
+                        lastMessage = "No messages";
+                    }
+                }
                 li.innerHTML = `
                     <a href="#" class="d-flex justify-content-between text-white conversation-item" 
                         data-conversation-key="${conv.ConversationKey}" 
@@ -312,7 +330,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                         data-conversation-type="${conv.ConversationType || ''}">
                         <div class="d-flex">
                             <img src="${conv.Avatar || '/images/avatar/default-avatar.jpg'}" alt="avatar" class="rounded-circle me-3" style="width: 48px; height: 48px;">
-                            <div><p class="fw-bold mb-0">${conv.DisplayName || "Unknown"}</p><p class="small mb-0">${conv.LastMessage || "No messages"}</p></div>
+                            <div><p class="fw-bold mb-0">${conv.DisplayName || "Unknown"}</p><p class="small mb-0">${lastMessage}</p></div>
                         </div>
                         <div class="text-end"><p class="small mb-1">${conv.LastMessageTime ? formatTime(conv.LastMessageTime) : ""}</p>${conv.UnreadCount > 0 ? `<span class="badge bg-danger rounded-pill px-2">${conv.UnreadCount}</span>` : ''}</div>
                     </a>
@@ -507,7 +525,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         pinnedPopup.addEventListener("click", async (e) => {
             if (e.target.classList.contains("pinned-unpin-btn")) {
                 const messageKey = e.target.getAttribute("data-message-key");
-                await connection.invoke("UpdateUnpinStatus", currentConversationKey, messageKey);
+                await window.connection.invoke("UpdateUnpinStatus", currentConversationKey, messageKey);
 
                 allMessages = allMessages.map(m => m.MessageKey === messageKey ? { ...m, IsPinned: false } : m);
                 updatePinnedSection();
@@ -529,49 +547,57 @@ document.addEventListener("DOMContentLoaded", async () => {
     function addMessage(message) {
         const isOwn = message.SenderKey === memberKey;
         const isRecalled = message.Status === 2;
+        const isSystem = message.IsSystemMessage === true;
+        console.log("Message:", message.MessageKey, "IsSystemMessage:", isSystem);
         const senderName = isOwn ? "You" : (message.SenderName || "Unknown");
         const senderAvatar = isOwn ? "" : `<img src="${message.SenderAvatar || '/images/avatar/default-avatar.jpg'}" class="avatar">`;
         const time = formatTime(message.CreatedOn);
         const status = isOwn ? (message.Status === 0 ? '✔' : '✔✔') : '';
 
-        let html = `<li class="message ${isOwn ? 'right' : 'left'} ${message.MessageType ? 'with-attachment' : ''} ${isRecalled ? 'recalled' : ''}" data-message-key="${message.MessageKey}" data-sender-key="${message.SenderKey}">`;
-        html += senderAvatar;
+        let html = `<li class="message ${isOwn ? 'right' : 'left'} ${message.MessageType ? 'with-attachment' : ''} ${isRecalled ? 'recalled' : ''} ${isSystem ? 'system-message' : ''}" data-message-key="${message.MessageKey}" data-sender-key="${message.SenderKey}">`;
 
-        html += `<div class="message-box">`;
-
-        if (message.ParentMessageKey && message.ParentContent && typeof message.ParentContent === 'string' && message.ParentContent !== "[object Object]" && message.ParentContent.trim() !== "") {
-            const displayParent = message.ParentStatus === 2 ? "Message recalled" : (message.ParentContent === "Message recalled" ? "Message recalled" : message.ParentContent);
-            html += `<div class="parent-message" data-parent-key="${message.ParentMessageKey}"><p class="content">${displayParent}</p></div>`;
-        }
-
-        html += `<div class="message-options"><i class="fas fa-ellipsis-h"></i></div>`;
-
-        if (!isOwn && currentConversationType === 'Group') {
-            html += `<p class="name">${senderName}</p><hr>`;
-        }
-
-        html += `<p class="content">${isRecalled ? "Message recalled" : (message.Content || "")}</p>`;
-
-        html += `</div>`;
-
-        if (!isRecalled && message.MessageType && message.Url) {
-            html += `<div class="attachment">`;
-            if (message.MessageType === "Image") {
-                html += `<img src="${message.Url}" class="attachment-media" alt="${message.FileName}">`;
-            } else if (message.MessageType === "Audio") {
-                html += `<audio controls><source src="${message.Url}" type="${message.MimeType}"></audio>`;
-            } else if (message.MessageType === "Video") {
-                html += `<video controls><source src="${message.Url}" type="${message.MimeType}"></video>`;
+        if (isSystem) {
+            html += `
+                <div class="message-box system-box" id="system-message-box">
+                    <p class="content">${isRecalled ? "Message recalled" : (message.Content || "")}</p>
+                </div>
+                <div class="message-timestamp">
+                    <span class="time">${time}</span>
+                </div>
+            `;
+        } else {
+            html += senderAvatar;
+            html += `<div class="message-box">`;
+            if (message.ParentMessageKey && message.ParentContent && typeof message.ParentContent === 'string' && message.ParentContent !== "[object Object]" && message.ParentContent.trim() !== "") {
+                const displayParent = message.ParentStatus === 2 ? "Message recalled" : (message.ParentContent === "Message recalled" ? "Message recalled" : message.ParentContent);
+                html += `<div class="parent-message" data-parent-key="${message.ParentMessageKey}"><p class="content">${displayParent}</p></div>`;
             }
+            html += `<div class="message-options"><i class="fas fa-ellipsis-h"></i></div>`;
+            if (!isOwn && currentConversationType === 'Group') {
+                html += `<p class="name">${senderName}</p><hr>`;
+            }
+            html += `<p class="content">${isRecalled ? "Message recalled" : (message.Content || "")}</p>`;
             html += `</div>`;
+            if (!isRecalled && message.MessageType && message.Url) {
+                html += `<div class="attachment">`;
+                if (message.MessageType === "Image") {
+                    html += `<img src="${message.Url}" class="attachment-media" alt="${message.FileName}">`;
+                } else if (message.MessageType === "Audio") {
+                    html += `<audio controls><source src="${message.Url}" type="${message.MimeType}"></audio>`;
+                } else if (message.MessageType === "Video") {
+                    html += `<video controls><source src="${message.Url}" type="${message.MimeType}"></video>`;
+                }
+                html += `</div>`;
+            }
+            html += `
+                <div class="message-timestamp">
+                    <span class="time">${time}</span>
+                    ${isOwn ? `<span class="status">${status}</span>` : ''}
+                </div>
+            `;
         }
 
-        html += `
-            <div class="message-timestamp">
-                <span class="time">${time}</span>
-                ${isOwn ? `<span class="status">${status}</span>` : ''}
-            </div>
-        </li>`;
+        html += `</li>`;
         return html;
     }
 
@@ -591,7 +617,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }, 300));
 
-    connection.on("ReceiveMessage", (message) => {
+    window.connection.on("ReceiveMessage", (message) => {
         allMessages.push(message);
         if (currentConversationKey && message.ConversationKey === currentConversationKey) {
             messageList.insertAdjacentHTML("beforeend", addMessage(message));
@@ -618,7 +644,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         updatePinnedSection();
     });
 
-    connection.on("PinResponse", (conversationKey, messageKey, isPinned, success, message) => {
+    window.connection.on("PinResponse", (conversationKey, messageKey, isPinned, success, message) => {
         if (success) {
             const msg = allMessages.find(m => m.MessageKey === messageKey);
             if (msg) msg.IsPinned = isPinned;
@@ -631,7 +657,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    connection.on("UnpinResponse", (conversationKey, messageKey, success, message) => {
+    window.connection.on("UnpinResponse", (conversationKey, messageKey, success, message) => {
         if (success) {
             const msg = allMessages.find(m => m.MessageKey === messageKey);
             if (msg) msg.IsPinned = false;
@@ -644,7 +670,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    connection.on("RecallResponse", async (conversationKey, messageKey, success, message) => {
+    window.connection.on("RecallResponse", async (conversationKey, messageKey, success, message) => {
         if (success) {
             let msg = allMessages.find(m => m.MessageKey === messageKey);
             if (!msg) {
@@ -740,10 +766,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         const chatLoading = document.getElementById('chatLoading');
         if (chatLoading) chatLoading.classList.remove('d-none');
         try {
-            await startConnection(connection, memberKey); // Truyền connection và memberKey
-            $('#chatModal').modal('show'); // Sử dụng ID đúng là chatModal
+            await startConnection(window.connection, memberKey);
+            $('#chatModal').modal('show');
             loadConversations();
-            // Truyền memberKey khi mở popup
             window.dispatchEvent(new CustomEvent('openGroupPopup', { detail: { memberKey } }));
         } catch (err) {
             console.error('SignalR connection failed:', err);
@@ -757,14 +782,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
     if (chatModal) {
         $(chatModal).on('shown.bs.modal', () => {
-            clearInterval(unreadInterval); // Dừng polling khi modal mở
+            clearInterval(unreadInterval);
             updateIconsVisibility();
         });
         $(chatModal).on('hidden.bs.modal', () => {
             resetChatInterface();
             if (window.isAuthenticated) {
-                unreadInterval = setInterval(updateUnreadCountInitial, 60000); // Khởi động lại polling khi modal đóng
-                updateUnreadCountInitial(); // Cập nhật ngay khi đóng
+                unreadInterval = setInterval(updateUnreadCountInitial, 60000);
+                updateUnreadCountInitial();
             }
         });
     }
@@ -880,7 +905,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         document.addEventListener("scroll", hideMenu, true);
     }
 
-    // chat.js (partial update for pin, unpin, recall functions)
     async function pinMessage(messageKey) {
         const message = allMessages.find(m => m.MessageKey === messageKey);
         if (!message) return;
@@ -1009,7 +1033,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
-    // Hàm xử lý menu hamburger và dropdown từ layout
     const hamburgerBtn = document.querySelector('.hamburger-btn');
     const navMenu = document.querySelector('.nav-menu');
     if (hamburgerBtn && navMenu) {
@@ -1018,10 +1041,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     const dropdownElements = Array.prototype.slice.call(document.querySelectorAll('[data-bs-toggle="dropdown"]'));
     dropdownElements.forEach(dropdownToggleEl => new bootstrap.Dropdown(dropdownToggleEl));
 
-    // Ngắt kết nối khi logout hoặc thoát trang
     window.addEventListener('beforeunload', () => {
-        if (connection.state === signalR.HubConnectionState.Connected) {
-            connection.stop();
+        if (window.connection.state === signalR.HubConnectionState.Connected) {
+            window.connection.stop();
         }
     });
 });

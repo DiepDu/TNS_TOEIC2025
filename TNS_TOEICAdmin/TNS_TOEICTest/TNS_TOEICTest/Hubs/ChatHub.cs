@@ -137,5 +137,20 @@ namespace TNS_TOEICTest.Hubs
             var claimsPrincipal = Context.User as ClaimsPrincipal;
             return claimsPrincipal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         }
+        public async Task NotifyGroupCreated(string conversationKey, string[] userKeys)
+        {
+            foreach (var userKey in userKeys)
+            {
+                // Tìm tất cả connectionId tương ứng với userKey
+                var connectionIds = _connectionMapping.Where(kv => kv.Value == userKey).Select(kv => kv.Key).ToList();
+                foreach (var connectionId in connectionIds)
+                {
+                    // Gửi thông báo để reload danh sách cuộc trò chuyện
+                    await Clients.Client(connectionId).SendAsync("ReloadConversations", conversationKey);
+                    // Thêm user vào group nếu chưa có (tùy chọn, nếu dùng group trong SignalR)
+                    await Groups.AddToGroupAsync(connectionId, conversationKey);
+                }
+            }
+        }
     }
 }
