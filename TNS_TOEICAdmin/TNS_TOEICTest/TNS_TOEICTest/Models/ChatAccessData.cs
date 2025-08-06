@@ -617,7 +617,7 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
             }
             return results;
         }
-        public static async Task<Dictionary<string, object>> CreateGroupAsync(string groupName, IFormFile selectedAvatar, List<UserData> users, string currentMemberKey, string currentMemberName)
+        public static async Task<Dictionary<string, object>> CreateGroupAsync(string groupName, IFormFile selectedAvatar, List<UserData> users, string currentMemberKey, string currentMemberName, HttpContext httpContext)
         {
             using (var connection = new SqlConnection(_connectionString))
             {
@@ -631,9 +631,9 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
 
                         // Insert vào Conversations
                         var conversationQuery = @"
-            INSERT INTO [TNS_Toeic].[dbo].[Conversations] 
-            ([ConversationKey], [ConversationType], [CreatedOn], [LastMessageKey], [LastMessageTime], [ConversationMode], [Name], [GroupAvatar], [CreatorKey], [IsActive])
-            VALUES (@ConversationKey, 'Group', @CreatedOn, NULL, NULL, 'Public', @Name, NULL, @CreatorKey, 1)";
+       INSERT INTO [TNS_Toeic].[dbo].[Conversations] 
+       ([ConversationKey], [ConversationType], [CreatedOn], [LastMessageKey], [LastMessageTime], [ConversationMode], [Name], [GroupAvatar], [CreatorKey], [IsActive])
+       VALUES (@ConversationKey, 'Group', @CreatedOn, NULL, NULL, 'Public', @Name, NULL, @CreatorKey, 1)";
                         using (var command = new SqlCommand(conversationQuery, connection, transaction))
                         {
                             command.Parameters.AddWithValue("@ConversationKey", conversationKey);
@@ -645,9 +645,9 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
 
                         // Insert vào ConversationParticipants
                         var participantQuery = @"
-            INSERT INTO [TNS_Toeic].[dbo].[ConversationParticipants] 
-            ([ParticipantKey], [ConversationKey], [UserKey], [UserType], [Role], [JoinedOn], [UnreadCount], [LastReadMessageKey], [IsBanned], [IsApproved])
-            VALUES (@ParticipantKey, @ConversationKey, @UserKey, @UserType, @Role, @JoinedOn, 0, NULL, 0, 1)";
+       INSERT INTO [TNS_Toeic].[dbo].[ConversationParticipants] 
+       ([ParticipantKey], [ConversationKey], [UserKey], [UserType], [Role], [JoinedOn], [UnreadCount], [LastReadMessageKey], [IsBanned], [IsApproved])
+       VALUES (@ParticipantKey, @ConversationKey, @UserKey, @UserType, @Role, @JoinedOn, 0, NULL, 0, 1)";
                         foreach (var user in users)
                         {
                             var participantKey = Guid.NewGuid().ToString();
@@ -676,9 +676,9 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
 
                         // Insert vào Messages
                         var messageQuery = @"
-            INSERT INTO [TNS_Toeic].[dbo].[Messages] 
-            ([MessageKey], [ConversationKey], [SenderKey], [SenderType], [ReceiverKey], [ReceiverType], [MessageType], [Content], [ParentMessageKey], [CreatedOn], [Status], [IsPinned], [IsSystemMessage])
-            VALUES (@MessageKey, @ConversationKey, NULL, NULL, NULL, NULL, @MessageType, @Content, NULL, @CreatedOn, @Status, 0, 1)";
+       INSERT INTO [TNS_Toeic].[dbo].[Messages] 
+       ([MessageKey], [ConversationKey], [SenderKey], [SenderType], [ReceiverKey], [ReceiverType], [MessageType], [Content], [ParentMessageKey], [CreatedOn], [Status], [IsPinned], [IsSystemMessage])
+       VALUES (@MessageKey, @ConversationKey, NULL, NULL, NULL, NULL, @MessageType, @Content, NULL, @CreatedOn, @Status, 0, 1)";
                         var messageKeys = new List<string>();
                         var lastMessageKey = Guid.NewGuid().ToString();
                         using (var command = new SqlCommand(messageQuery, connection, transaction))
@@ -688,7 +688,7 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
                             command.Parameters.AddWithValue("@MessageType", "Text");
                             command.Parameters.AddWithValue("@Content", $"Group {groupName} created by {currentMemberName}");
                             command.Parameters.AddWithValue("@MessageKey", lastMessageKey);
-                            command.Parameters.AddWithValue("@Status", 1); // Đặt Status là 1
+                            command.Parameters.AddWithValue("@Status", 1);
                             await command.ExecuteNonQueryAsync();
                             messageKeys.Add(lastMessageKey);
                         }
@@ -702,7 +702,7 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
                                 command.Parameters.AddWithValue("@MessageType", "Text");
                                 command.Parameters.AddWithValue("@Content", $"{user.userName} added to group by {currentMemberName}");
                                 command.Parameters.AddWithValue("@MessageKey", messageKey);
-                                command.Parameters.AddWithValue("@Status", 1); // Đặt Status là 1
+                                command.Parameters.AddWithValue("@Status", 1);
                                 await command.ExecuteNonQueryAsync();
                                 messageKeys.Add(messageKey);
                             }
@@ -710,9 +710,9 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
 
                         // Cập nhật UnreadCount
                         var updateUnreadCountQuery = @"
-            UPDATE [TNS_Toeic].[dbo].[ConversationParticipants]
-            SET UnreadCount = @UnreadCount
-            WHERE ConversationKey = @ConversationKey";
+       UPDATE [TNS_Toeic].[dbo].[ConversationParticipants]
+       SET UnreadCount = @UnreadCount
+       WHERE ConversationKey = @ConversationKey";
                         using (var command = new SqlCommand(updateUnreadCountQuery, connection, transaction))
                         {
                             command.Parameters.AddWithValue("@ConversationKey", conversationKey);
@@ -722,9 +722,9 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
 
                         // Cập nhật LastMessageKey và LastMessageTime
                         var updateLastMessageQuery = @"
-            UPDATE [TNS_Toeic].[dbo].[Conversations]
-            SET LastMessageKey = @LastMessageKey, LastMessageTime = @LastMessageTime
-            WHERE ConversationKey = @ConversationKey";
+       UPDATE [TNS_Toeic].[dbo].[Conversations]
+       SET LastMessageKey = @LastMessageKey, LastMessageTime = @LastMessageTime
+       WHERE ConversationKey = @ConversationKey";
                         using (var command = new SqlCommand(updateLastMessageQuery, connection, transaction))
                         {
                             command.Parameters.AddWithValue("@ConversationKey", conversationKey);
@@ -733,7 +733,7 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
                             await command.ExecuteNonQueryAsync();
                         }
 
-                        // Lưu ảnh sau khi insert thành công
+                        // Lưu ảnh và tạo URL tuyệt đối
                         string groupAvatar = null;
                         if (selectedAvatar != null)
                         {
@@ -743,11 +743,13 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
                             {
                                 await selectedAvatar.CopyToAsync(stream);
                             }
-                            groupAvatar = $"/images/avatar/group/{fileName}";
+                            // Tạo URL tuyệt đối sử dụng HttpContext
+                            var baseUrl = $"{httpContext.Request.Scheme}://{httpContext.Request.Host}";
+                            groupAvatar = $"{baseUrl}/images/avatar/group/{fileName}";
                             var updateAvatarQuery = @"
-                UPDATE [TNS_Toeic].[dbo].[Conversations]
-                SET GroupAvatar = @GroupAvatar
-                WHERE ConversationKey = @ConversationKey";
+           UPDATE [TNS_Toeic].[dbo].[Conversations]
+           SET GroupAvatar = @GroupAvatar
+           WHERE ConversationKey = @ConversationKey";
                             using (var command = new SqlCommand(updateAvatarQuery, connection, transaction))
                             {
                                 command.Parameters.AddWithValue("@ConversationKey", conversationKey);

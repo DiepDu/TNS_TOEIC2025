@@ -247,6 +247,19 @@ document.addEventListener("DOMContentLoaded", async () => {
             } else if (currentConversationType === "Group") {
                 blockIcon.style.display = "none";
                 settingIcon.style.display = "inline-block";
+                settingIcon.replaceWith(settingIcon.cloneNode(true));
+                const newSettingIcon = document.getElementById("iconSetting");
+                newSettingIcon.classList.add("icon-hover");
+                newSettingIcon.style.cursor = "pointer";
+                newSettingIcon.addEventListener("click", (event) => {
+                    event.stopPropagation();
+                    console.log("[Click Setting] currentConversationKey:", currentConversationKey, "showGroupDetails:", typeof window.showGroupDetails);
+                    if (typeof window.showGroupDetails === 'function' && currentConversationKey) {
+                        window.showGroupDetails(currentConversationKey);
+                    } else {
+                        console.error("[updateIconsVisibility] showGroupDetails not defined or currentConversationKey is null");
+                    }
+                });
             } else {
                 blockIcon.style.display = "none";
                 settingIcon.style.display = "none";
@@ -1047,3 +1060,29 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 });
+//window.goupDetails_modal = null;
+//window.showGroupDetails = function (conversationKey) {
+//    if (!window.goupDetails_modal) {
+//        window.goupDetails_modal = new bootstrap.Modal(document.getElementById('group_details_modal'), {
+//            keyboard: false
+//        });
+//    }
+
+//    fetch(`/api/conversations/GetGroupDetails/${conversationKey}`)
+//        .then(response => response.text())
+//        .then(html => {
+//            document.getElementById('group_details_modal_content').innerHTML = html;
+//            window.goupDetails_modal.show();
+//        })
+//        .catch(error => console.error('Error loading group details:', error));
+//};
+
+window.goupDetails_modal = null;
+window.showGroupDetails = function (conversationKey) {
+    if (!window.goupDetails_modal) {
+        window.goupDetails_modal = new bootstrap.Modal(document.getElementById('group_details_modal'), {
+            keyboard: false
+        });
+    }
+    window.goupDetails_modal.show();
+};

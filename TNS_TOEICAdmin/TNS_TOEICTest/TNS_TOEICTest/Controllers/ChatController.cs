@@ -201,7 +201,7 @@ namespace TNS_TOEICTest.Controllers
             if (usersList.Count == 0)
                 return BadRequest(new { success = false, message = "Please select at least one member", conversationKey = (string)null });
 
-            var result = await ChatAccessData.CreateGroupAsync(groupName, selectedAvatar, usersList, currentMemberKey, currentMemberName);
+            var result = await ChatAccessData.CreateGroupAsync(groupName, selectedAvatar, usersList, currentMemberKey, currentMemberName, HttpContext);
             // Giả định result là một Dictionary hoặc object chứa success, message, và conversationKey
             if (result != null && result.ContainsKey("success") && (bool)result["success"])
             {

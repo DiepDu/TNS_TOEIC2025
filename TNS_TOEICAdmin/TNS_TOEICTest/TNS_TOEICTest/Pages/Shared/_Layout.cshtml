@@ -80,6 +80,19 @@
     <script src="/js/chat.js"></script>
     <script src="/js/groupPopup.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
+    <div class="modal fade" id="group_details_modal" tabindex="-1" aria-labelledby="groupDetailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="groupDetailsModalLabel">Chi tiết nhóm</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="group_details_modal_content">
+                    @Html.Partial("_GroupDetails")
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
 <style>
