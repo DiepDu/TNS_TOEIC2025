@@ -1,6 +1,8 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using System;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 
 namespace TNS_TOEICAdmin.Models
@@ -779,6 +781,317 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
                 }
             }
         }
+
+        public static async Task<Dictionary<string, object>> GetGroupDetailsAsync(string conversationKey)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            // Lấy thông tin nhóm từ bảng [Conversations]
+            var groupQuery = "SELECT [GroupAvatar], [Name] FROM [TNS_Toeic].[dbo].[Conversations] WHERE [ConversationKey] = @ConversationKey";
+            using var groupCmd = new SqlCommand(groupQuery, connection);
+            groupCmd.Parameters.AddWithValue("@ConversationKey", conversationKey);
+            using var groupReader = await groupCmd.ExecuteReaderAsync();
+
+            if (!groupReader.Read())
+            {
+                return null;
+            }
+
+            var groupAvatar = groupReader["GroupAvatar"]?.ToString() ?? "/images/avatar/default-avatar.jpg";
+            var groupName = groupReader["Name"]?.ToString() ?? "Unnamed Group";
+            groupReader.Close();
+
+            // Lấy danh sách thành viên từ [ConversationParticipants]
+            var participantsQuery = @"
+                SELECT [UserKey], [UserType], [Role]
+                FROM [TNS_Toeic].[dbo].[ConversationParticipants]
+                WHERE [ConversationKey] = @ConversationKey AND [IsBanned] = 0 AND [IsApproved] = 1";
+            using var participantsCmd = new SqlCommand(participantsQuery, connection);
+            participantsCmd.Parameters.AddWithValue("@ConversationKey", conversationKey);
+            using var participantsReader = await participantsCmd.ExecuteReaderAsync();
+
+            var members = new List<object>();
+            while (await participantsReader.ReadAsync())
+            {
+                var userKey = participantsReader["UserKey"].ToString();
+                var userType = participantsReader["UserType"].ToString();
+                var role = participantsReader["Role"].ToString();
+
+                object userInfo = null;
+                if (userType == "Admin")
+                {
+                    var adminQuery = @"
+                        SELECT u.[UserName], e.[PhotoPath] AS Avatar
+                        FROM [TNS_Toeic].[dbo].[SYS_Users] u
+                        LEFT JOIN [TNS_Toeic].[dbo].[HRM_Employee] e ON u.[EmployeeKey] = e.[EmployeeKey]
+                        WHERE u.[UserKey] = @UserKey";
+                    using var adminCmd = new SqlCommand(adminQuery, connection);
+                    adminCmd.Parameters.AddWithValue("@UserKey", userKey);
+                    using var adminReader = await adminCmd.ExecuteReaderAsync();
+                    if (await adminReader.ReadAsync())
+                    {
+                        var userName = adminReader["UserName"].ToString();
+                        var avatar = adminReader["Avatar"]?.ToString();
+                        if (!string.IsNullOrEmpty(avatar))
+                        {
+                            avatar = $"https://localhost:7078/{avatar}";
+                        }
+                        else
+                        {
+                            avatar = "/images/avatar/default-avatar.jpg";
+                        }
+                        userInfo = new { UserKey = userKey, UserName = userName, Avatar = avatar, Role = role };
+                    }
+                    adminReader.Close();
+                }
+                else if (userType == "Member")
+                {
+                    var memberQuery = @"
+                        SELECT [MemberName], [Avatar]
+                        FROM [TNS_Toeic].[dbo].[EDU_Member]
+                        WHERE [MemberKey] = @UserKey";
+                    using var memberCmd = new SqlCommand(memberQuery, connection);
+                    memberCmd.Parameters.AddWithValue("@UserKey", userKey);
+                    using var memberReader = await memberCmd.ExecuteReaderAsync();
+                    if (await memberReader.ReadAsync())
+                    {
+                        var memberName = memberReader["MemberName"].ToString();
+                        var avatar = memberReader["Avatar"]?.ToString() ?? "/images/avatar/default-avatar.jpg";
+                        userInfo = new { UserKey = userKey, UserName = memberName, Avatar = avatar, Role = role };
+                    }
+                    memberReader.Close();
+                }
+
+                if (userInfo != null)
+                {
+                    members.Add(userInfo);
+                }
+            }
+            participantsReader.Close();
+
+            return new Dictionary<string, object>
+            {
+                { "GroupAvatar", groupAvatar },
+                { "GroupName", groupName },
+                { "Members", members }
+            };
+        }
+        public static async Task<Dictionary<string, object>> UpdateGroupAvatarAsync(string conversationKey, string memberKey, IFormFile file, HttpContext httpContext)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var transaction = connection.BeginTransaction())
+                {
+                    try
+                    {
+                        // Kiểm tra role trong bảng ConversationParticipants
+                        var roleQuery = @"
+                    SELECT [Role]
+                    FROM [TNS_Toeic].[dbo].[ConversationParticipants]
+                    WHERE [ConversationKey] = @ConversationKey AND [UserKey] = @MemberKey AND [IsApproved] = 1";
+                        using (var command = new SqlCommand(roleQuery, connection, transaction))
+                        {
+                            command.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            command.Parameters.AddWithValue("@MemberKey", memberKey);
+                            var role = (await command.ExecuteScalarAsync())?.ToString();
+
+                            if (role != "Admin")
+                            {
+                                return new Dictionary<string, object>
+                        {
+                            { "success", false },
+                            { "message", "ACCESS DENIED" }
+                        };
+                            }
+                        }
+
+                        // Lấy URL ảnh cũ từ bảng Conversations
+                        var oldAvatarQuery = @"
+                    SELECT [GroupAvatar]
+                    FROM [TNS_Toeic].[dbo].[Conversations]
+                    WHERE [ConversationKey] = @ConversationKey";
+                        string oldAvatarUrl = null;
+                        using (var command = new SqlCommand(oldAvatarQuery, connection, transaction))
+                        {
+                            command.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            oldAvatarUrl = (await command.ExecuteScalarAsync())?.ToString();
+                        }
+
+                        // Xóa ảnh cũ dựa trên URL
+                        if (!string.IsNullOrEmpty(oldAvatarUrl) && oldAvatarUrl != "/images/avatar/default-avatar.jpg")
+                        {
+                            var fileName = Path.GetFileName(oldAvatarUrl); // Giữ nguyên biến fileName cho ảnh cũ
+                            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "avatar", "group", fileName);
+                            if (System.IO.File.Exists(filePath))
+                            {
+                                System.IO.File.Delete(filePath);
+                                Console.WriteLine($"[UpdateGroupAvatar] Deleted old avatar: {filePath}");
+                            }
+                        }
+
+                        // Lưu ảnh mới
+                        var newFileName = $"{conversationKey}{Path.GetExtension(file.FileName)}"; // Thay đổi tên biến thành newFileName
+                        var newFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "avatar", "group", newFileName);
+                        Directory.CreateDirectory(Path.GetDirectoryName(newFilePath) ?? string.Empty);
+                        using (var stream = new FileStream(newFilePath, FileMode.Create))
+                        {
+                            await file.CopyToAsync(stream);
+                        }
+
+                        // Tạo URL tuyệt đối cho ảnh mới
+                        var baseUrl = $"{httpContext.Request.Scheme}://{httpContext.Request.Host}";
+                        var newAvatarUrl = $"{baseUrl}/images/avatar/group/{newFileName}";
+
+                        // Cập nhật URL mới vào bảng Conversations
+                        var updateQuery = @"
+                    UPDATE [TNS_Toeic].[dbo].[Conversations]
+                    SET [GroupAvatar] = @GroupAvatar
+                    WHERE [ConversationKey] = @ConversationKey";
+                        using (var command = new SqlCommand(updateQuery, connection, transaction))
+                        {
+                            command.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            command.Parameters.AddWithValue("@GroupAvatar", newAvatarUrl);
+                            await command.ExecuteNonQueryAsync();
+                        }
+
+                        transaction.Commit();
+                        return new Dictionary<string, object>
+                {
+                    { "success", true },
+                    { "newAvatarUrl", newAvatarUrl }
+                };
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        return new Dictionary<string, object>
+                {
+                    { "success", false },
+                    { "message", $"Error updating avatar: {ex.Message}" }
+                };
+                    }
+                }
+            }
+        }
+
+        public static async Task<Dictionary<string, object>> UpdateGroupNameAsync(string conversationKey, string memberKey, string memberName, string newGroupName, HttpContext httpContext)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var transaction = connection.BeginTransaction())
+                {
+                    try
+                    {
+                        // Kiểm tra role trong bảng ConversationParticipants
+                        var roleQuery = @"
+                    SELECT [Role]
+                    FROM [TNS_Toeic].[dbo].[ConversationParticipants]
+                    WHERE [ConversationKey] = @ConversationKey AND [UserKey] = @MemberKey AND [IsApproved] = 1";
+                        using (var command = new SqlCommand(roleQuery, connection, transaction))
+                        {
+                            command.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            command.Parameters.AddWithValue("@MemberKey", memberKey);
+                            var role = (await command.ExecuteScalarAsync())?.ToString();
+
+                            if (role != "Admin")
+                            {
+                                return new Dictionary<string, object>
+                        {
+                            { "success", false },
+                            { "message", "ACCESS DENIED" }
+                        };
+                            }
+                        }
+
+                        // Cập nhật tên nhóm trong bảng Conversations
+                        var updateNameQuery = @"
+                    UPDATE [TNS_Toeic].[dbo].[Conversations]
+                    SET [Name] = @NewGroupName
+                    WHERE [ConversationKey] = @ConversationKey";
+                        using (var command = new SqlCommand(updateNameQuery, connection, transaction))
+                        {
+                            command.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            command.Parameters.AddWithValue("@NewGroupName", newGroupName);
+                            await command.ExecuteNonQueryAsync();
+                        }
+
+                        // Tạo tin nhắn hệ thống trong bảng Messages
+                        var messageKey = Guid.NewGuid().ToString();
+                        var systemMessageQuery = @"
+                    INSERT INTO [TNS_Toeic].[dbo].[Messages] (
+                        [MessageKey], [ConversationKey], [SenderKey], [SenderType], [ReceiverKey], [ReceiverType], 
+                        [MessageType], [Content], [ParentMessageKey], [CreatedOn], [Status], [IsPinned], [IsSystemMessage]
+                    )
+                    VALUES (
+                        @MessageKey, @ConversationKey, @SenderKey, @SenderType, @ReceiverKey, @ReceiverType, 
+                        @MessageType, @Content, @ParentMessageKey, @CreatedOn, @Status, @IsPinned, @IsSystemMessage
+                    )";
+                        using (var command = new SqlCommand(systemMessageQuery, connection, transaction))
+                        {
+                            command.Parameters.AddWithValue("@MessageKey", messageKey);
+                            command.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            command.Parameters.AddWithValue("@SenderKey", DBNull.Value);
+                            command.Parameters.AddWithValue("@SenderType", DBNull.Value);
+                            command.Parameters.AddWithValue("@ReceiverKey", DBNull.Value);
+                            command.Parameters.AddWithValue("@ReceiverType", DBNull.Value);
+                            command.Parameters.AddWithValue("@MessageType", "Text");
+                            command.Parameters.AddWithValue("@Content", $"{memberName} has updated the group name");
+                            command.Parameters.AddWithValue("@ParentMessageKey", DBNull.Value);
+                            command.Parameters.AddWithValue("@CreatedOn", DateTime.Now);
+                            command.Parameters.AddWithValue("@Status", 1);
+                            command.Parameters.AddWithValue("@IsPinned", 0);
+                            command.Parameters.AddWithValue("@IsSystemMessage", 1);
+                            await command.ExecuteNonQueryAsync();
+                        }
+
+                        // Cập nhật LastMessageKey và LastMessageTime trong bảng Conversations
+                        var updateLastMessageQuery = @"
+                    UPDATE [TNS_Toeic].[dbo].[Conversations]
+                    SET [LastMessageKey] = @MessageKey, [LastMessageTime] = @CreatedOn
+                    WHERE [ConversationKey] = @ConversationKey";
+                        using (var command = new SqlCommand(updateLastMessageQuery, connection, transaction))
+                        {
+                            command.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            command.Parameters.AddWithValue("@MessageKey", messageKey);
+                            command.Parameters.AddWithValue("@CreatedOn", DateTime.Now);
+                            await command.ExecuteNonQueryAsync();
+                        }
+
+                        // Cập nhật UnreadCount trong bảng ConversationParticipants
+                        var updateUnreadCountQuery = @"
+                    UPDATE [TNS_Toeic].[dbo].[ConversationParticipants]
+                    SET [UnreadCount] = [UnreadCount] + 1
+                    WHERE [ConversationKey] = @ConversationKey";
+                        using (var command = new SqlCommand(updateUnreadCountQuery, connection, transaction))
+                        {
+                            command.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            await command.ExecuteNonQueryAsync();
+                        }
+
+                        transaction.Commit();
+                        return new Dictionary<string, object>
+                {
+                    { "success", true },
+                    { "message", "Group name updated successfully" },
+                    { "newGroupName", newGroupName }
+                };
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        return new Dictionary<string, object>
+                {
+                    { "success", false },
+                    { "message", $"Error updating group name: {ex.Message}" }
+                };
+                    }
+                }
+            }
+        }
+
         public class UserData
         {
             public string userKey { get; set; }

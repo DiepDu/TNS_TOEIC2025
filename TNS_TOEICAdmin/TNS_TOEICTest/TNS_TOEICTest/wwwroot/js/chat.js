@@ -1,4 +1,32 @@
 ﻿// Định nghĩa hàm global với tham số connection và memberKey
+//async function startConnection(connection, memberKey) {
+//    try {
+//        console.log("Checking connection:", connection.state);
+//        if (connection.state !== signalR.HubConnectionState.Disconnected) {
+//            await connection.stop();
+//        }
+//        await connection.start();
+//        console.log("[startConnection] Connected to ChatHub successfully");
+//        await connection.invoke("InitializeConnection", null, memberKey);
+//        connection.on('ReceiveMessage', updateUnreadCount);
+//        connection.on('Disconnected', () => {
+//            console.log("[Disconnected] Connection lost, attempting reconnect");
+//            setTimeout(() => startConnection(connection, memberKey), 2000);
+//        });
+//        connection.on("ReloadConversations", async (conversationKey) => {
+//            console.log(`Received ReloadConversations for conversation: ${conversationKey}`);
+//            if (typeof loadConversations === 'function') {
+//                await loadConversations();
+//            }
+//            if (currentConversationKey === conversationKey && typeof loadMessages === 'function') {
+//                await loadMessages(conversationKey, false, 0);
+//            }
+//        });
+//    } catch (err) {
+//        console.error("[startConnection] Connection failed:", err);
+//        setTimeout(() => startConnection(connection, memberKey), 5000);
+//    }
+//}
 async function startConnection(connection, memberKey) {
     try {
         console.log("Checking connection:", connection.state);
@@ -22,12 +50,44 @@ async function startConnection(connection, memberKey) {
                 await loadMessages(conversationKey, false, 0);
             }
         });
+        connection.on("UpdateGroupAvatar", (conversationKey, newAvatarUrl) => {
+            const updatedUrl = newAvatarUrl + '?v=' + new Date().getTime();
+            updatedGroupAvatars[conversationKey] = updatedUrl;
+
+            console.log(`[SignalR] Avatar updated for ${conversationKey}: ${updatedUrl}`);
+
+            // 1. ListConversation
+            const listAvatar = document.querySelector(`.conversation-item[data-conversation-key="${conversationKey}"] img`);
+            if (listAvatar) {
+                listAvatar.src = updatedUrl;
+                console.log("✅ Updated avatar in conversation list");
+            }
+
+            // 2. GroupDetails modal
+            const modalAvatar = document.getElementById("groupAvatar");
+            if (modalAvatar) {
+                modalAvatar.src = updatedUrl;
+                console.log("✅ Updated avatar in group details modal");
+            }
+
+            // 3. Header trực tiếp luôn, không cần check currentConversationKey
+            const headerAvatar = document.querySelector('#chatHeaderInfo #headerAvatar');
+            if (headerAvatar) {
+                headerAvatar.src = updatedUrl;
+                console.log("✅ Updated avatar in chat header directly");
+            } else {
+                console.warn("❌ Header avatar not found");
+            }
+        });
+
+
+
+
     } catch (err) {
         console.error("[startConnection] Connection failed:", err);
         setTimeout(() => startConnection(connection, memberKey), 5000);
     }
 }
-
 // Hàm updateUnreadCount cần được định nghĩa trước khi sử dụng
 function updateUnreadCount(count) {
     const badge = document.getElementById("unreadCount");
@@ -39,6 +99,8 @@ function updateUnreadCount(count) {
 
 // Biến toàn cục
 let unreadInterval;
+let currentConversationKey = null;
+const updatedGroupAvatars = {};
 
 document.addEventListener("DOMContentLoaded", async () => {
     if (!window.signalR) {
@@ -48,7 +110,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     let unreadCount = 0;
     let selectedFile = null;
-    let currentConversationKey = null;
     let currentUserKey = null;
     let currentUserType = null;
     let currentConversationType = null;
@@ -383,12 +444,45 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
+    //function selectContact(contact) {
+    //    currentConversationKey = contact.ConversationKey || null;
+    //    currentUserKey = contact.UserKey || null;
+    //    currentUserType = contact.UserType || null;
+    //    currentConversationType = contact.ConversationType || null;
+    //    headerAvatar.src = contact.Avatar || '/images/avatar/default-avatar.jpg';
+    //    headerName.textContent = contact.Name || "Unknown";
+    //    chatHeaderInfo.style.display = "flex";
+    //    chatHeaderContent.style.display = "block";
+    //    messageList.innerHTML = "";
+    //    searchInput.value = "";
+    //    searchResults.classList.remove("show");
+    //    conversationListContainer.classList.remove("focused");
+    //    skip = 0;
+    //    allMessages = [];
+
+    //    document.querySelectorAll(".conversation-item").forEach(i => i.parentElement.classList.remove("active"));
+    //    if (currentConversationKey) {
+    //        const matchingConv = document.querySelector(`.conversation-item[data-conversation-key="${currentConversationKey}"]`);
+    //        if (matchingConv) matchingConv.parentElement.classList.add("active");
+    //        loadMessages(currentConversationKey, false, skip);
+    //    }
+
+    //    updatePinnedSection();
+    //    updateIconsVisibility();
+    //}
     function selectContact(contact) {
         currentConversationKey = contact.ConversationKey || null;
         currentUserKey = contact.UserKey || null;
         currentUserType = contact.UserType || null;
         currentConversationType = contact.ConversationType || null;
-        headerAvatar.src = contact.Avatar || '/images/avatar/default-avatar.jpg';
+
+        // ✅ Ưu tiên dùng avatar mới nếu có (đã được cập nhật qua SignalR)
+        if (updatedGroupAvatars[contact.ConversationKey]) {
+            headerAvatar.src = updatedGroupAvatars[contact.ConversationKey];
+        } else {
+            headerAvatar.src = contact.Avatar || '/images/avatar/default-avatar.jpg';
+        }
+
         headerName.textContent = contact.Name || "Unknown";
         chatHeaderInfo.style.display = "flex";
         chatHeaderContent.style.display = "block";
@@ -409,6 +503,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         updatePinnedSection();
         updateIconsVisibility();
     }
+
 
     function addConversationClickListeners() {
         document.querySelectorAll(".conversation-item").forEach(item => {
@@ -1060,22 +1155,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 });
-//window.goupDetails_modal = null;
-//window.showGroupDetails = function (conversationKey) {
-//    if (!window.goupDetails_modal) {
-//        window.goupDetails_modal = new bootstrap.Modal(document.getElementById('group_details_modal'), {
-//            keyboard: false
-//        });
-//    }
-
-//    fetch(`/api/conversations/GetGroupDetails/${conversationKey}`)
-//        .then(response => response.text())
-//        .then(html => {
-//            document.getElementById('group_details_modal_content').innerHTML = html;
-//            window.goupDetails_modal.show();
-//        })
-//        .catch(error => console.error('Error loading group details:', error));
-//};
 
 window.goupDetails_modal = null;
 window.showGroupDetails = function (conversationKey) {
@@ -1084,5 +1163,212 @@ window.showGroupDetails = function (conversationKey) {
             keyboard: false
         });
     }
-    window.goupDetails_modal.show();
+    fetch(`/api/conversations/GetGroupDetails/${currentConversationKey || conversationKey}`)
+        .then(response => response.json())
+        .then(data => {
+            const groupAvatar = document.getElementById('groupAvatar');
+            const groupName = document.getElementById('groupName');
+            const memberList = document.getElementById('memberList');
+
+            if (groupAvatar && groupName && memberList) {
+                groupAvatar.src = data.GroupAvatar || '/images/avatar/default-avatar.jpg';
+                groupName.textContent = data.GroupName || 'Unnamed Group';
+                memberList.innerHTML = data.Members.map(member => `
+                        <div class="member-item">
+                            <img src="${member.Avatar || '/images/avatar/default-avatar.jpg'}" alt="${member.UserName}" class="member-avatar rounded-circle">
+                            <span class="member-name">${member.UserName}</span>
+                            <span class="remove-btn" style="font-size: 18px; font-weight: bold; cursor: pointer;">✖</span>
+                        </div>
+                    `).join('');
+
+                // Thêm input file ẩn cho chọn avatar
+                let fileInput = document.getElementById('groupAvatarInput');
+                if (!fileInput) {
+                    fileInput = document.createElement('input');
+                    fileInput.type = 'file';
+                    fileInput.id = 'groupAvatarInput';
+                    fileInput.accept = 'image/*';
+                    fileInput.style.display = 'none';
+                    document.body.appendChild(fileInput);
+                }
+
+                // Sự kiện click vào avatar
+                groupAvatar.style.cursor = 'pointer';
+                groupAvatar.addEventListener('click', () => fileInput.click());
+
+                // Sự kiện chọn file và gửi lên server
+                fileInput.addEventListener('change', function (e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const formData = new FormData();
+                        formData.append('ConversationKey', currentConversationKey || conversationKey);
+                        formData.append('File', file);
+
+                        fetch('/api/conversations/UpdateGroupAvatar', {
+                            method: 'POST',
+                            body: formData
+                        })
+                            .then(response => response.json())
+                            .then(result => {
+                                if (result.success) {
+                                    groupAvatar.src = result.newAvatarUrl || data.GroupAvatar;
+                                    console.log('Avatar updated successfully');
+                                } else {
+                                    showNotification('ACCESS DENIED', 'error');
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error updating avatar:', error);
+                                showNotification('Error updating avatar', 'error');
+                            });
+                    }
+                });
+
+                // Thêm input để thay đổi tên nhóm
+                const nameContainer = document.createElement('div');
+                nameContainer.style.position = 'relative';
+                nameContainer.innerHTML = `
+                    <span id="displayGroupName" style="cursor: pointer;">${data.GroupName || 'Unnamed Group'}</span>
+                    <input id="editGroupName" type="text" style="display: none; width: 100%; padding: 5px; margin-top: 5px;" placeholder="Enter new group name">
+                    <button id="saveGroupName" style="display: none; margin-top: 5px; padding: 5px 10px;">Save</button>
+                `;
+                groupName.replaceWith(nameContainer);
+
+                const displayName = document.getElementById('displayGroupName');
+                const editInput = document.getElementById('editGroupName');
+                const saveButton = document.getElementById('saveGroupName');
+
+                displayName.addEventListener('click', () => {
+                    displayName.style.display = 'none';
+                    editInput.style.display = 'block';
+                    saveButton.style.display = 'block';
+                    editInput.value = data.GroupName || '';
+                    editInput.focus();
+                });
+
+                saveButton.addEventListener('click', () => {
+                    const newName = editInput.value.trim();
+                    if (newName) {
+                        const formData = new FormData();
+                        formData.append('ConversationKey', currentConversationKey || conversationKey);
+                        formData.append('NewGroupName', newName);
+
+                        fetch('/api/conversations/UpdateGroupName', {
+                            method: 'POST',
+                            body: formData
+                        })
+                            .then(response => response.json())
+                            .then(result => {
+                                if (result.success) {
+                                    displayName.textContent = newName;
+                                    displayName.style.display = 'block';
+                                    editInput.style.display = 'none';
+                                    saveButton.style.display = 'none';
+                                    showNotification('Group name updated successfully', 'success');
+                                } else {
+                                    showNotification(result.message || 'Failed to update group name', 'error');
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error updating group name:', error);
+                                showNotification('Error updating group name', 'error');
+                            });
+                    } else {
+                        showNotification('Group name cannot be empty', 'error');
+                    }
+                });
+
+                // Gắn sự kiện khác
+                const leaveBtn = document.querySelector('.leave-group-btn');
+                const addBtn = document.querySelector('.add-member-btn');
+                if (leaveBtn) leaveBtn.addEventListener('click', () => showLeaveConfirmation(currentConversationKey));
+                if (addBtn) addBtn.addEventListener('click', () => showAddMemberPopup(currentConversationKey));
+                window.goupDetails_modal.show();
+            } else {
+                console.error('DOM elements not found in group details modal');
+            }
+        })
+        .catch(error => console.error('Error loading group details:', error));
 };
+
+// Hàm hiển thị thông báo đẹp mắt
+function showNotification(message, type) {
+    // Xóa thông báo cũ nếu có
+    const old = document.querySelector('.notification');
+    if (old) old.remove();
+
+    // Tạo thẻ container riêng biệt nằm cuối cùng của body
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+
+    // Style siêu cấp
+    Object.assign(notification.style, {
+        position: 'fixed',
+        top: '20px',
+        right: '20px',
+        padding: '10px 20px',
+        borderRadius: '5px',
+        color: 'white',
+        fontSize: '14px',
+        backgroundColor: type === 'error' ? '#dc3545' : '#28a745',
+        zIndex: '2147483647', // MAX z-index trong browser
+        boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
+        opacity: '0',
+        transition: 'opacity 0.3s ease-in-out',
+        pointerEvents: 'none'
+    });
+
+    // Đảm bảo thêm vào cuối body
+    setTimeout(() => {
+        document.body.appendChild(notification);
+        notification.style.opacity = '1';
+    }, 0);
+
+    // Tự động biến mất sau 2 giây
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        setTimeout(() => notification.remove(), 300);
+    }, 2000);
+}
+
+
+
+// Hàm showLeaveConfirmation
+function showLeaveConfirmation(conversationKey) {
+    const modalContent = document.getElementById('group_details_modal_content');
+    modalContent.innerHTML = document.getElementById('leaveConfirmationPopup').innerHTML;
+    const confirmLeave = document.querySelector('.confirm-leave');
+    const cancelLeave = document.querySelector('.cancel-leave');
+    if (confirmLeave) {
+        confirmLeave.addEventListener('click', function () {
+            console.log(`Leave group with conversationKey: ${conversationKey}`);
+            window.goupDetails_modal.hide();
+        });
+    }
+    if (cancelLeave) {
+        cancelLeave.addEventListener('click', function () {
+            window.showGroupDetails(conversationKey);
+        });
+    }
+}
+
+// Hàm showAddMemberPopup
+function showAddMemberPopup(conversationKey) {
+    const modalContent = document.getElementById('group_details_modal_content');
+    modalContent.innerHTML = document.getElementById('addMemberPopup').innerHTML;
+    const okBtn = document.querySelector('.ok-btn');
+    const cancelBtn = document.querySelector('.cancel-btn');
+
+    if (okBtn) {
+        okBtn.addEventListener('click', function () {
+            console.log(`Add members to conversationKey: ${conversationKey}`);
+            window.showGroupDetails(conversationKey);
+        });
+    }
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', function () {
+            window.showGroupDetails(conversationKey);
+        });
+    }
+}

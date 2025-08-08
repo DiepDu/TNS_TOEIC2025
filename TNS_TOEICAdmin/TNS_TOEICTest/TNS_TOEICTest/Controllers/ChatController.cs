@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.SignalR;
 using TNS_TOEICTest.Hubs;
 using Newtonsoft.Json;
 using static TNS_TOEICAdmin.Models.ChatAccessData;
+using Microsoft.AspNetCore.Authorization;
 
 
 namespace TNS_TOEICTest.Controllers
@@ -221,6 +222,102 @@ namespace TNS_TOEICTest.Controllers
                     conversationKey = result.ContainsKey("conversationKey") ? result["conversationKey"] : null
                 });
             }
+        }
+
+
+        [HttpGet("GetGroupDetails/{conversationKey}")]
+        public async Task<IActionResult> GetGroupDetails(string conversationKey)
+        {
+            var groupDetails = await ChatAccessData.GetGroupDetailsAsync(conversationKey);
+            if (groupDetails == null)
+            {
+                return NotFound(new { success = false, message = "Group not found." });
+            }
+            return Ok(groupDetails);
+        }
+
+        //[HttpPost("UpdateGroupAvatar")]
+        //[Authorize] // Yêu cầu xác thực
+        //public async Task<IActionResult> UpdateGroupAvatar([FromForm] IFormCollection formData)
+        //{
+        //    var conversationKey = formData["ConversationKey"];
+        //    var file = formData.Files["File"];
+
+        //    if (string.IsNullOrEmpty(conversationKey) || file == null || file.Length == 0)
+        //        return BadRequest(new { success = false, message = "Invalid input" });
+
+        //    // Lấy MemberKey từ ClaimsPrincipal
+        //    var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
+        //    var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
+        //    var currentMemberKey = memberLogin.MemberKey;
+
+        //    if (string.IsNullOrEmpty(currentMemberKey))
+        //        return Unauthorized(new { success = false, message = "MemberKey not found" });
+
+        //    // Gọi AccessData để kiểm tra role và cập nhật avatar
+        //    var result = await ChatAccessData.UpdateGroupAvatarAsync(conversationKey, currentMemberKey, file, HttpContext);
+        //    if (result["success"].ToString() == "True")
+        //    {
+        //        await _hubContext.Clients.Group(conversationKey).SendAsync("UpdateGroupAvatar", conversationKey, result["newAvatarUrl"].ToString());
+        //    }
+        //    return Ok(result);
+        //}
+        [HttpPost("UpdateGroupAvatar")]
+        [Authorize]
+        public async Task<IActionResult> UpdateGroupAvatar([FromForm] IFormCollection formData)
+        {
+            var conversationKey = formData["ConversationKey"];
+            var file = formData.Files["File"];
+
+            if (string.IsNullOrEmpty(conversationKey) || file == null || file.Length == 0)
+                return BadRequest(new { success = false, message = "Invalid input" });
+
+            var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
+            var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
+            var currentMemberKey = memberLogin.MemberKey;
+
+            if (string.IsNullOrEmpty(currentMemberKey))
+                return Unauthorized(new { success = false, message = "MemberKey not found" });
+
+            var result = await ChatAccessData.UpdateGroupAvatarAsync(conversationKey, currentMemberKey, file, HttpContext);
+            if (result["success"].ToString() == "True")
+            {
+                string newAvatarUrl = result["newAvatarUrl"].ToString();
+
+                // Gửi tín hiệu đến tất cả client trong group (bao gồm cả người thay đổi)
+                await _hubContext.Clients.Group(conversationKey)
+                    .SendAsync("UpdateGroupAvatar", conversationKey, newAvatarUrl);
+            }
+
+            return Ok(result);
+        }
+
+        [HttpPost("UpdateGroupName")]
+        [Authorize]
+        public async Task<IActionResult> UpdateGroupName([FromForm] IFormCollection formData)
+        {
+            var conversationKey = formData["ConversationKey"];
+            var newGroupName = formData["NewGroupName"];
+
+            if (string.IsNullOrEmpty(conversationKey) || string.IsNullOrEmpty(newGroupName))
+                return BadRequest(new { success = false, message = "Invalid input" });
+
+            var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
+            var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
+            var currentMemberKey = memberLogin.MemberKey;
+            var currentMemberName = memberLogin.MemberName;
+
+            if (string.IsNullOrEmpty(currentMemberKey))
+                return Unauthorized(new { success = false, message = "MemberKey not found" });
+
+            var result = await ChatAccessData.UpdateGroupNameAsync(conversationKey, currentMemberKey, currentMemberName, newGroupName, HttpContext);
+            if (result["success"].ToString() == "True")
+            {
+                string newGroupNameValue = result["newGroupName"].ToString();
+                await _hubContext.Clients.Group(conversationKey)
+                    .SendAsync("NotifyGroupNameUpdate", conversationKey, newGroupNameValue, currentMemberName);
+            }
+            return Ok(result);
         }
 
     }

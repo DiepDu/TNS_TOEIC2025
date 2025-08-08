@@ -152,5 +152,16 @@ namespace TNS_TOEICTest.Hubs
                 }
             }
         }
+        public async Task NotifyAvatarUpdate(string conversationKey, string newAvatarUrl)
+        {
+            await Clients.Group(conversationKey)
+                .SendAsync("UpdateGroupAvatar", conversationKey, newAvatarUrl);
+        }
+        public async Task NotifyGroupNameUpdate(string conversationKey, string newGroupName, string memberName)
+        {
+            await Clients.Group(conversationKey)
+                .SendAsync("UpdateGroupName", conversationKey, newGroupName, memberName);
+        }
+
     }
 }

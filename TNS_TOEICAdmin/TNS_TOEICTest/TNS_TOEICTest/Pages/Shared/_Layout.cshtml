@@ -80,14 +80,17 @@
     <script src="/js/chat.js"></script>
     <script src="/js/groupPopup.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
+
+
+    <!-- _MessPopup.cshtml -->
     <div class="modal fade" id="group_details_modal" tabindex="-1" aria-labelledby="groupDetailsModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
-            <div class="modal-content">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 600px;">
+            <div class="modal-content" style="background: rgba(0, 0, 0, 0.5); width: 600px; border-radius: 12px;">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="groupDetailsModalLabel">Chi tiết nhóm</h5>
+                    <h5 class="modal-title" id="groupDetailsModalLabel"></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body" id="group_details_modal_content">
+                <div class="modal-body" id="group_details_modal_content" style="background: transparent; padding: 0;">
                     @Html.Partial("_GroupDetails")
                 </div>
             </div>
