@@ -985,7 +985,7 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
                 {
                     try
                     {
-                        // Kiểm tra role trong bảng ConversationParticipants
+                        // Kiểm tra role
                         var roleQuery = @"
                     SELECT [Role]
                     FROM [TNS_Toeic].[dbo].[ConversationParticipants]
@@ -1006,7 +1006,7 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
                             }
                         }
 
-                        // Cập nhật tên nhóm trong bảng Conversations
+                        // Cập nhật tên nhóm
                         var updateNameQuery = @"
                     UPDATE [TNS_Toeic].[dbo].[Conversations]
                     SET [Name] = @NewGroupName
@@ -1018,8 +1018,11 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
                             await command.ExecuteNonQueryAsync();
                         }
 
-                        // Tạo tin nhắn hệ thống trong bảng Messages
+                        // Tạo tin nhắn hệ thống
                         var messageKey = Guid.NewGuid().ToString();
+                        var createdOn = DateTime.Now;
+                        var systemContent = $"{memberName} has updated the group name";
+
                         var systemMessageQuery = @"
                     INSERT INTO [TNS_Toeic].[dbo].[Messages] (
                         [MessageKey], [ConversationKey], [SenderKey], [SenderType], [ReceiverKey], [ReceiverType], 
@@ -1038,16 +1041,16 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
                             command.Parameters.AddWithValue("@ReceiverKey", DBNull.Value);
                             command.Parameters.AddWithValue("@ReceiverType", DBNull.Value);
                             command.Parameters.AddWithValue("@MessageType", "Text");
-                            command.Parameters.AddWithValue("@Content", $"{memberName} has updated the group name");
+                            command.Parameters.AddWithValue("@Content", systemContent);
                             command.Parameters.AddWithValue("@ParentMessageKey", DBNull.Value);
-                            command.Parameters.AddWithValue("@CreatedOn", DateTime.Now);
+                            command.Parameters.AddWithValue("@CreatedOn", createdOn);
                             command.Parameters.AddWithValue("@Status", 1);
                             command.Parameters.AddWithValue("@IsPinned", 0);
                             command.Parameters.AddWithValue("@IsSystemMessage", 1);
                             await command.ExecuteNonQueryAsync();
                         }
 
-                        // Cập nhật LastMessageKey và LastMessageTime trong bảng Conversations
+                        // Cập nhật LastMessageKey & LastMessageTime
                         var updateLastMessageQuery = @"
                     UPDATE [TNS_Toeic].[dbo].[Conversations]
                     SET [LastMessageKey] = @MessageKey, [LastMessageTime] = @CreatedOn
@@ -1056,11 +1059,11 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
                         {
                             command.Parameters.AddWithValue("@ConversationKey", conversationKey);
                             command.Parameters.AddWithValue("@MessageKey", messageKey);
-                            command.Parameters.AddWithValue("@CreatedOn", DateTime.Now);
+                            command.Parameters.AddWithValue("@CreatedOn", createdOn);
                             await command.ExecuteNonQueryAsync();
                         }
 
-                        // Cập nhật UnreadCount trong bảng ConversationParticipants
+                        // Cập nhật UnreadCount
                         var updateUnreadCountQuery = @"
                     UPDATE [TNS_Toeic].[dbo].[ConversationParticipants]
                     SET [UnreadCount] = [UnreadCount] + 1
@@ -1076,7 +1079,10 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
                 {
                     { "success", true },
                     { "message", "Group name updated successfully" },
-                    { "newGroupName", newGroupName }
+                    { "newGroupName", newGroupName },
+                    { "messageKey", messageKey },
+                    { "systemContent", systemContent },
+                    { "createdOn", createdOn }
                 };
                     }
                     catch (Exception ex)

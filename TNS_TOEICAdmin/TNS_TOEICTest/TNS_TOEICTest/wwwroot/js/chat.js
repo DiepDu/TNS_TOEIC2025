@@ -1,32 +1,4 @@
-﻿// Định nghĩa hàm global với tham số connection và memberKey
-//async function startConnection(connection, memberKey) {
-//    try {
-//        console.log("Checking connection:", connection.state);
-//        if (connection.state !== signalR.HubConnectionState.Disconnected) {
-//            await connection.stop();
-//        }
-//        await connection.start();
-//        console.log("[startConnection] Connected to ChatHub successfully");
-//        await connection.invoke("InitializeConnection", null, memberKey);
-//        connection.on('ReceiveMessage', updateUnreadCount);
-//        connection.on('Disconnected', () => {
-//            console.log("[Disconnected] Connection lost, attempting reconnect");
-//            setTimeout(() => startConnection(connection, memberKey), 2000);
-//        });
-//        connection.on("ReloadConversations", async (conversationKey) => {
-//            console.log(`Received ReloadConversations for conversation: ${conversationKey}`);
-//            if (typeof loadConversations === 'function') {
-//                await loadConversations();
-//            }
-//            if (currentConversationKey === conversationKey && typeof loadMessages === 'function') {
-//                await loadMessages(conversationKey, false, 0);
-//            }
-//        });
-//    } catch (err) {
-//        console.error("[startConnection] Connection failed:", err);
-//        setTimeout(() => startConnection(connection, memberKey), 5000);
-//    }
-//}
+﻿
 async function startConnection(connection, memberKey) {
     try {
         console.log("Checking connection:", connection.state);
@@ -35,8 +7,12 @@ async function startConnection(connection, memberKey) {
         }
         await connection.start();
         console.log("[startConnection] Connected to ChatHub successfully");
+
+        // Gọi InitializeConnection để server biết connection này thuộc memberKey
         await connection.invoke("InitializeConnection", null, memberKey);
-        connection.on('ReceiveMessage', updateUnreadCount);
+
+        //// Các handler hiện có
+        //connection.on('ReceiveMessage', updateUnreadCount);
         connection.on('Disconnected', () => {
             console.log("[Disconnected] Connection lost, attempting reconnect");
             setTimeout(() => startConnection(connection, memberKey), 2000);
@@ -50,33 +26,196 @@ async function startConnection(connection, memberKey) {
                 await loadMessages(conversationKey, false, 0);
             }
         });
+        //connection.on("UpdateGroupAvatar", (conversationKey, newAvatarUrl) => {
+        //    const bustUrl = newAvatarUrl + '?v=' + Date.now();
+
+        //    // update conversation list
+        //    const listAvatar = document.querySelector(`.conversation-item[data-conversation-key="${conversationKey}"] img`);
+        //    if (listAvatar) listAvatar.src = bustUrl;
+
+        //    // update header
+        //    const headerAvatar = document.getElementById('headerAvatar');
+        //    if (headerAvatar && currentConversationKey === conversationKey) {
+        //        headerAvatar.src = bustUrl;
+        //    }
+
+        //    // update group details modal if open
+        //    const groupAvatar = document.getElementById('groupAvatar');
+        //    if (groupAvatar) groupAvatar.src = bustUrl;
+
+        //    updatedGroupAvatars[conversationKey] = bustUrl;
+        //});
         connection.on("UpdateGroupAvatar", (conversationKey, newAvatarUrl) => {
-            const updatedUrl = newAvatarUrl + '?v=' + new Date().getTime();
-            updatedGroupAvatars[conversationKey] = updatedUrl;
+            try {
+                console.log("[UpdateGroupAvatar] received", { conversationKey, newAvatarUrl, currentConversationKey });
 
-            console.log(`[SignalR] Avatar updated for ${conversationKey}: ${updatedUrl}`);
+                if (!conversationKey) return;
+                const bustUrl = (newAvatarUrl || '/images/avatar/default-avatar.jpg') + '?v=' + Date.now();
 
-            // 1. ListConversation
-            const listAvatar = document.querySelector(`.conversation-item[data-conversation-key="${conversationKey}"] img`);
-            if (listAvatar) {
-                listAvatar.src = updatedUrl;
-                console.log("✅ Updated avatar in conversation list");
+                // 1) Update conversation list (if exists)
+                const listItem = document.querySelector(`.conversation-item[data-conversation-key="${conversationKey}"]`);
+                if (listItem) {
+                    const listAvatar = listItem.querySelector("img");
+                    if (listAvatar) {
+                        listAvatar.src = bustUrl;
+                        console.log("[UpdateGroupAvatar] updated list avatar");
+                    }
+                } else {
+                    console.log("[UpdateGroupAvatar] listItem not found");
+                }
+
+                // 2) Update Group Details modal if open
+                const groupAvatar = document.getElementById('groupAvatar');
+                if (groupAvatar) {
+                    groupAvatar.src = bustUrl;
+                    console.log("[UpdateGroupAvatar] updated modal avatar");
+                }
+
+                // cache
+                updatedGroupAvatars[conversationKey] = bustUrl;
+
+                // 3) Only update header when this conversation is currently open in this tab
+                if (String(currentConversationKey) === String(conversationKey)) {
+                    // try to set header now, if header not in DOM yet try again shortly
+                    const applyHeader = () => {
+                        const headerAvatarEl = document.getElementById('headerAvatar');
+                        if (headerAvatarEl) {
+                            headerAvatarEl.src = bustUrl;
+                            console.log("[UpdateGroupAvatar] header updated to", bustUrl);
+                            return true;
+                        }
+                        return false;
+                    };
+
+                    if (!applyHeader()) {
+                        // retry once shortly in case of quick DOM replace
+                        setTimeout(() => {
+                            if (!applyHeader()) {
+                                console.warn("[UpdateGroupAvatar] headerAvatar not found after retry");
+                            }
+                        }, 60);
+                    }
+                }
+            } catch (ex) {
+                console.error("[UpdateGroupAvatar] handler error:", ex);
             }
+        });
 
-            // 2. GroupDetails modal
-            const modalAvatar = document.getElementById("groupAvatar");
-            if (modalAvatar) {
-                modalAvatar.src = updatedUrl;
-                console.log("✅ Updated avatar in group details modal");
-            }
 
-            // 3. Header trực tiếp luôn, không cần check currentConversationKey
-            const headerAvatar = document.querySelector('#chatHeaderInfo #headerAvatar');
-            if (headerAvatar) {
-                headerAvatar.src = updatedUrl;
-                console.log("✅ Updated avatar in chat header directly");
-            } else {
-                console.warn("❌ Header avatar not found");
+        //connection.on("UpdateGroupName", (conversationKey, newGroupName, memberName) => {
+        //    try {
+        //        console.log("[UpdateGroupName] received", { conversationKey, newGroupName, memberName, currentConversationKey });
+
+        //        // 1) Update list conversation
+        //        const listItem = document.querySelector(`.conversation-item[data-conversation-key="${conversationKey}"]`);
+        //        if (listItem) {
+        //            const nameEl = listItem.querySelector('p.fw-bold') || listItem.querySelector('p') || listItem;
+        //            if (nameEl) {
+        //                nameEl.textContent = newGroupName;
+        //                console.log("[UpdateGroupName] updated list name");
+        //            }
+        //        } else {
+        //            console.log("[UpdateGroupName] listItem not found");
+        //        }
+
+        //        // 2) Update Group Details modal if open
+        //        const displayNameEl = document.getElementById('displayGroupName');
+        //        if (displayNameEl) {
+        //            displayNameEl.textContent = newGroupName;
+        //            console.log("[UpdateGroupName] updated modal display name");
+        //        } else {
+        //            const groupNameContainer = document.getElementById('groupName');
+        //            if (groupNameContainer) {
+        //                const p = groupNameContainer.querySelector('#displayGroupName');
+        //                if (p) p.textContent = newGroupName;
+        //                else groupNameContainer.textContent = newGroupName;
+        //                console.log("[UpdateGroupName] updated modal groupNameContainer");
+        //            }
+        //        }
+
+        //        // 3) Only update header if this conversation is currently open in this tab
+        //        if (String(currentConversationKey) === String(conversationKey)) {
+        //            const applyHeaderName = () => {
+        //                const headerName = document.getElementById('headerName');
+        //                if (headerName) {
+        //                    headerName.textContent = newGroupName;
+        //                    console.log("[UpdateGroupName] header name updated to", newGroupName);
+        //                    return true;
+        //                }
+        //                return false;
+        //            };
+
+        //            if (!applyHeaderName()) {
+        //                setTimeout(() => {
+        //                    if (!applyHeaderName()) {
+        //                        console.warn("[UpdateGroupName] headerName not found after retry");
+        //                    }
+        //                }, 60);
+        //            }
+        //        }
+
+
+        //    } catch (ex) {
+        //        console.error("[UpdateGroupName handler] error:", ex);
+        //    }
+        //});
+
+
+        connection.on("UpdateGroupName", (conversationKey, newGroupName, memberName) => {
+            try {
+                console.log("[UpdateGroupName] received", { conversationKey, newGroupName, memberName, currentConversationKey });
+
+                // 1) Update list conversation
+                const listItem = document.querySelector(`.conversation-item[data-conversation-key="${conversationKey}"]`);
+                if (listItem) {
+                    const nameEl = listItem.querySelector('p.fw-bold') || listItem.querySelector('p') || listItem;
+                    if (nameEl) {
+                        nameEl.textContent = newGroupName;
+                        console.log("[UpdateGroupName] updated list name");
+                    }
+                } else {
+                    console.log("[UpdateGroupName] listItem not found");
+                }
+
+                // 2) Update Group Details modal if open
+                const displayNameEl = document.getElementById('displayGroupName');
+                if (displayNameEl) {
+                    displayNameEl.textContent = newGroupName;
+                    console.log("[UpdateGroupName] updated modal display name");
+                } else {
+                    const groupNameContainer = document.getElementById('groupName');
+                    if (groupNameContainer) {
+                        const p = groupNameContainer.querySelector('#displayGroupName');
+                        if (p) p.textContent = newGroupName;
+                        else groupNameContainer.textContent = newGroupName;
+                        console.log("[UpdateGroupName] updated modal groupNameContainer");
+                    }
+                }
+
+                // 3) Only update header if this conversation is currently open in this tab
+                if (String(currentConversationKey) === String(conversationKey)) {
+                    const applyHeaderName = () => {
+                        const headerName = document.getElementById('headerName');
+                        if (headerName) {
+                            headerName.textContent = newGroupName;
+                            console.log("[UpdateGroupName] header name updated to", newGroupName);
+                            return true;
+                        }
+                        return false;
+                    };
+
+                    if (!applyHeaderName()) {
+                        setTimeout(() => {
+                            if (!applyHeaderName()) {
+                                console.warn("[UpdateGroupName] headerName not found after retry");
+                            }
+                        }, 60);
+                    }
+                }
+
+
+            } catch (ex) {
+                console.error("[UpdateGroupName handler] error:", ex);
             }
         });
 
@@ -88,6 +227,7 @@ async function startConnection(connection, memberKey) {
         setTimeout(() => startConnection(connection, memberKey), 5000);
     }
 }
+
 // Hàm updateUnreadCount cần được định nghĩa trước khi sử dụng
 function updateUnreadCount(count) {
     const badge = document.getElementById("unreadCount");
@@ -443,33 +583,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             searchResults.classList.add("show");
         }
     }
-
-    //function selectContact(contact) {
-    //    currentConversationKey = contact.ConversationKey || null;
-    //    currentUserKey = contact.UserKey || null;
-    //    currentUserType = contact.UserType || null;
-    //    currentConversationType = contact.ConversationType || null;
-    //    headerAvatar.src = contact.Avatar || '/images/avatar/default-avatar.jpg';
-    //    headerName.textContent = contact.Name || "Unknown";
-    //    chatHeaderInfo.style.display = "flex";
-    //    chatHeaderContent.style.display = "block";
-    //    messageList.innerHTML = "";
-    //    searchInput.value = "";
-    //    searchResults.classList.remove("show");
-    //    conversationListContainer.classList.remove("focused");
-    //    skip = 0;
-    //    allMessages = [];
-
-    //    document.querySelectorAll(".conversation-item").forEach(i => i.parentElement.classList.remove("active"));
-    //    if (currentConversationKey) {
-    //        const matchingConv = document.querySelector(`.conversation-item[data-conversation-key="${currentConversationKey}"]`);
-    //        if (matchingConv) matchingConv.parentElement.classList.add("active");
-    //        loadMessages(currentConversationKey, false, skip);
-    //    }
-
-    //    updatePinnedSection();
-    //    updateIconsVisibility();
-    //}
     function selectContact(contact) {
         currentConversationKey = contact.ConversationKey || null;
         currentUserKey = contact.UserKey || null;
@@ -725,32 +838,193 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }, 300));
 
+    //window.connection.on("ReceiveMessage", (message) => {
+    //    // Normalize property names from server (case-insensitive)
+    //    message = {
+    //        ...message,
+    //        ConversationKey: message.ConversationKey || message.conversationKey,
+    //        MessageKey: message.MessageKey || message.messageKey,
+    //        SenderKey: message.SenderKey || message.senderKey,
+    //        SenderName: message.SenderName || message.senderName,
+    //        SenderAvatar: message.SenderAvatar || message.senderAvatar,
+    //        MessageType: message.MessageType || message.messageType,
+    //        Content: message.Content || message.content,
+    //        ParentMessageKey: message.ParentMessageKey || message.parentMessageKey,
+    //        CreatedOn: message.CreatedOn || message.createdOn,
+    //        Status: message.Status ?? message.status,
+    //        IsPinned: message.IsPinned ?? message.isPinned,
+    //        IsSystemMessage: message.IsSystemMessage ?? message.isSystemMessage,
+    //        Url: message.Url || message.url
+    //    };
+
+    //    console.log("[ReceiveMessage] Received:", JSON.stringify(message));
+    //    console.log("[ReceiveMessage] Current state:", {
+    //        currentConversationKey,
+    //        messageConversationKey: message.ConversationKey
+    //    });
+
+    //    allMessages.push(message);
+
+    //    const addMessageToUI = (attempt = 1, maxAttempts = 5) => {
+    //        if (!messageList) {
+    //            console.warn(`[ReceiveMessage] messageList not found, attempt ${attempt}/${maxAttempts}`);
+    //            if (attempt < maxAttempts) {
+    //                setTimeout(() => addMessageToUI(attempt + 1, maxAttempts), 100);
+    //            }
+    //            return;
+    //        }
+
+    //        if (!currentConversationKey) {
+    //            console.warn(`[ReceiveMessage] currentConversationKey not set, attempt ${attempt}/${maxAttempts}`);
+    //            if (attempt < maxAttempts) {
+    //                setTimeout(() => addMessageToUI(attempt + 1, maxAttempts), 100);
+    //            }
+    //            return;
+    //        }
+
+    //        // Case 1: Message belongs to the current open conversation
+    //        if (String(message.ConversationKey) === String(currentConversationKey)) {
+    //            console.log("[ReceiveMessage] Adding to UI:", message);
+
+    //            // Nếu là system message -> render style đặc biệt
+    //            if (message.IsSystemMessage) {
+    //                const systemMsgHtml = `
+    //                <li class="message system-message">
+    //                    <div id="system-message-box">${message.Content}</div>
+    //                </li>
+    //            `;
+    //                messageList.insertAdjacentHTML("beforeend", systemMsgHtml);
+    //            } else {
+    //                // Render tin nhắn thường
+    //                messageList.insertAdjacentHTML("beforeend", addMessage(message));
+    //            }
+
+    //            // Cuộn xuống cuối
+    //            setTimeout(() => {
+    //                messageList.scrollTop = messageList.scrollHeight;
+    //                console.log("[ReceiveMessage] Scrolled to bottom");
+    //            }, 0);
+    //        }
+    //        // Case 2: Message belongs to another conversation
+    //        else {
+    //            console.log("[ReceiveMessage] Message for other conversation:", message.ConversationKey);
+    //            const convItem = document.querySelector(`.conversation-item[data-conversation-key="${message.ConversationKey}"]`);
+    //            if (convItem) {
+    //                const lastMessageEl = convItem.querySelector("p.small.mb-0");
+    //                const timeEl = convItem.querySelector("p.small.mb-1");
+    //                lastMessageEl.textContent = message.Content || "New message";
+    //                timeEl.textContent = formatTime(message.CreatedOn);
+    //                const unreadBadge = convItem.querySelector(".badge");
+    //                if (unreadBadge) {
+    //                    unreadBadge.textContent = parseInt(unreadBadge.textContent) + 1 || 1;
+    //                } else {
+    //                    const newBadge = document.createElement("span");
+    //                    newBadge.className = "badge bg-danger rounded-pill px-2";
+    //                    newBadge.textContent = "1";
+    //                    convItem.querySelector(".text-end").appendChild(newBadge);
+    //                }
+    //                unreadCount++;
+    //                updateUnreadCount(unreadCount);
+    //            }
+    //        }
+
+    //        updatePinnedSection();
+    //    };
+
+    //    addMessageToUI();
+    //});
+
     window.connection.on("ReceiveMessage", (message) => {
+        // Normalize property names from server (case-insensitive)
+        message = {
+            ...message,
+            ConversationKey: message.ConversationKey || message.conversationKey,
+            MessageKey: message.MessageKey || message.messageKey,
+            SenderKey: message.SenderKey || message.senderKey,
+            SenderName: message.SenderName || message.senderName,
+            SenderAvatar: message.SenderAvatar || message.senderAvatar,
+            MessageType: message.MessageType || message.messageType,
+            Content: message.Content || message.content,
+            ParentMessageKey: message.ParentMessageKey || message.parentMessageKey,
+            CreatedOn: message.CreatedOn || message.createdOn,
+            Status: message.Status ?? message.status,
+            IsPinned: message.IsPinned ?? message.isPinned,
+            IsSystemMessage: message.IsSystemMessage ?? message.isSystemMessage,
+            Url: message.Url || message.url
+        };
+
+        console.log("[ReceiveMessage] Received:", JSON.stringify(message));
+        console.log("[ReceiveMessage] Current state:", {
+            currentConversationKey,
+            messageConversationKey: message.ConversationKey
+        });
+
         allMessages.push(message);
-        if (currentConversationKey && message.ConversationKey === currentConversationKey) {
-            messageList.insertAdjacentHTML("beforeend", addMessage(message));
-            messageList.scrollTop = messageList.scrollHeight;
-        } else {
-            const convItem = document.querySelector(`.conversation-item[data-conversation-key="${message.ConversationKey}"]`);
-            if (convItem) {
-                const lastMessageEl = convItem.querySelector("p.small.mb-0");
-                const timeEl = convItem.querySelector("p.small.mb-1");
-                lastMessageEl.textContent = message.Content || "New message";
-                timeEl.textContent = formatTime(message.CreatedOn);
-                const unreadBadge = convItem.querySelector(".badge");
-                if (unreadBadge) unreadBadge.textContent = parseInt(unreadBadge.textContent) + 1 || 1;
-                else {
-                    const newBadge = document.createElement("span");
-                    newBadge.className = "badge bg-danger rounded-pill px-2";
-                    newBadge.textContent = "1";
-                    convItem.querySelector(".text-end").appendChild(newBadge);
+
+        const addMessageToUI = (attempt = 1, maxAttempts = 5) => {
+            if (!messageList) {
+                console.warn(`[ReceiveMessage] messageList not found, attempt ${attempt}/${maxAttempts}`);
+                if (attempt < maxAttempts) {
+                    setTimeout(() => addMessageToUI(attempt + 1, maxAttempts), 100);
                 }
-                unreadCount++;
-                updateUnreadCount(unreadCount);
+                return;
             }
-        }
-        updatePinnedSection();
+
+            if (!currentConversationKey) {
+                console.warn(`[ReceiveMessage] currentConversationKey not set, attempt ${attempt}/${maxAttempts}`);
+                if (attempt < maxAttempts) {
+                    setTimeout(() => addMessageToUI(attempt + 1, maxAttempts), 100);
+                }
+                return;
+            }
+
+            // Nếu tin nhắn thuộc cuộc hội thoại đang mở
+            if (String(message.ConversationKey) === String(currentConversationKey)) {
+                console.log("[ReceiveMessage] Adding to UI:", message);
+
+                // ✅ Luôn dùng addMessage() để render đúng CSS
+                messageList.insertAdjacentHTML("beforeend", addMessage(message));
+
+                // Cuộn xuống cuối
+                setTimeout(() => {
+                    messageList.scrollTop = messageList.scrollHeight;
+                    console.log("[ReceiveMessage] Scrolled to bottom");
+                }, 0);
+            }
+            // Nếu tin nhắn thuộc cuộc hội thoại khác
+            else {
+                console.log("[ReceiveMessage] Message for other conversation:", message.ConversationKey);
+                const convItem = document.querySelector(`.conversation-item[data-conversation-key="${message.ConversationKey}"]`);
+                if (convItem) {
+                    const lastMessageEl = convItem.querySelector("p.small.mb-0");
+                    const timeEl = convItem.querySelector("p.small.mb-1");
+                    lastMessageEl.textContent = message.Content || "New message";
+                    timeEl.textContent = formatTime(message.CreatedOn);
+                    const unreadBadge = convItem.querySelector(".badge");
+                    if (unreadBadge) {
+                        unreadBadge.textContent = parseInt(unreadBadge.textContent) + 1 || 1;
+                    } else {
+                        const newBadge = document.createElement("span");
+                        newBadge.className = "badge bg-danger rounded-pill px-2";
+                        newBadge.textContent = "1";
+                        convItem.querySelector(".text-end").appendChild(newBadge);
+                    }
+                    unreadCount++;
+                    updateUnreadCount(unreadCount);
+                }
+            }
+
+            updatePinnedSection();
+        };
+
+        addMessageToUI();
     });
+
+
+
+
+  
+
 
     window.connection.on("PinResponse", (conversationKey, messageKey, isPinned, success, message) => {
         if (success) {
@@ -1157,139 +1431,161 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 window.goupDetails_modal = null;
-window.showGroupDetails = function (conversationKey) {
-    if (!window.goupDetails_modal) {
-        window.goupDetails_modal = new bootstrap.Modal(document.getElementById('group_details_modal'), {
-            keyboard: false
-        });
-    }
-    fetch(`/api/conversations/GetGroupDetails/${currentConversationKey || conversationKey}`)
-        .then(response => response.json())
-        .then(data => {
-            const groupAvatar = document.getElementById('groupAvatar');
-            const groupName = document.getElementById('groupName');
-            const memberList = document.getElementById('memberList');
+// --- Replace the whole showGroupDetails function with this robust version ---
+window.showGroupDetails = async function (conversationKey) {
+    try {
+        const modalRoot = document.getElementById('group_details_modal');
+        if (!modalRoot) {
+            console.error('[showGroupDetails] group_details_modal not found in DOM.');
+            return;
+        }
 
-            if (groupAvatar && groupName && memberList) {
-                groupAvatar.src = data.GroupAvatar || '/images/avatar/default-avatar.jpg';
-                groupName.textContent = data.GroupName || 'Unnamed Group';
-                memberList.innerHTML = data.Members.map(member => `
-                        <div class="member-item">
-                            <img src="${member.Avatar || '/images/avatar/default-avatar.jpg'}" alt="${member.UserName}" class="member-avatar rounded-circle">
-                            <span class="member-name">${member.UserName}</span>
-                            <span class="remove-btn" style="font-size: 18px; font-weight: bold; cursor: pointer;">✖</span>
-                        </div>
-                    `).join('');
+        if (!window.goupDetails_modal) {
+            window.goupDetails_modal = new bootstrap.Modal(modalRoot, { keyboard: false });
+        }
 
-                // Thêm input file ẩn cho chọn avatar
-                let fileInput = document.getElementById('groupAvatarInput');
-                if (!fileInput) {
-                    fileInput = document.createElement('input');
-                    fileInput.type = 'file';
-                    fileInput.id = 'groupAvatarInput';
-                    fileInput.accept = 'image/*';
-                    fileInput.style.display = 'none';
-                    document.body.appendChild(fileInput);
+        const resp = await fetch(`/api/conversations/GetGroupDetails/${encodeURIComponent(conversationKey)}`, { credentials: 'include' });
+        if (!resp.ok) {
+            throw new Error('[showGroupDetails] Failed to load group details: ' + resp.status);
+        }
+        const data = await resp.json();
+
+        const groupAvatar = modalRoot.querySelector('#groupAvatar') || document.getElementById('groupAvatar');
+        const groupNameContainer = modalRoot.querySelector('#groupName') || document.getElementById('groupName');
+        const memberList = modalRoot.querySelector('#memberList') || document.getElementById('memberList');
+
+        if (!groupAvatar || !groupNameContainer || !memberList) {
+            console.error('DOM elements not found in group details modal.');
+            return;
+        }
+
+        function escapeHtml(str) {
+            if (!str && str !== '') return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        // cache-busting avatar
+        groupAvatar.src = (data.GroupAvatar || '/images/avatar/default-avatar.jpg') + '?v=' + Date.now();
+
+        memberList.innerHTML = (data.Members || []).map(member => `
+            <div class="member-item d-flex align-items-center mb-2">
+                <img src="${escapeHtml(member.Avatar || '/images/avatar/default-avatar.jpg')}?v=${Date.now()}" alt="${escapeHtml(member.UserName)}" class="member-avatar rounded-circle me-2" style="width:36px;height:36px;object-fit:cover;">
+                <span class="member-name">${escapeHtml(member.UserName)}</span>
+                <span class="ms-auto remove-btn" style="font-size: 18px; font-weight: bold; cursor: pointer; display: none;">✖</span>
+            </div>
+        `).join('');
+
+        groupNameContainer.innerHTML = `
+            <span id="displayGroupName" style="cursor: pointer; font-weight:600;">${escapeHtml(data.GroupName || 'Unnamed Group')}</span>
+            <input id="editGroupName" type="text" style="display:none; width:100%; margin-top:6px;" placeholder="Enter new group name" />
+            <button id="saveGroupName" style="display:none; margin-top:6px;" class="btn btn-sm btn-primary">Save</button>
+        `;
+
+        let fileInput = document.getElementById('groupAvatarInput');
+        if (!fileInput) {
+            fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.id = 'groupAvatarInput';
+            fileInput.accept = 'image/*';
+            fileInput.style.display = 'none';
+            document.body.appendChild(fileInput);
+        }
+        fileInput.onchange = async function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const fd = new FormData();
+            fd.append('ConversationKey', conversationKey);
+            fd.append('File', file);
+            try {
+                const r = await fetch('/api/conversations/UpdateGroupAvatar', { method: 'POST', body: fd, credentials: 'include' });
+                const json = await r.json();
+                if (json && json.success) {
+                    const bustUrl = (json.newAvatarUrl || '') + '?v=' + Date.now();
+                    groupAvatar.src = bustUrl;
+
+                    const listAvatar = document.querySelector(`.conversation-item[data-conversation-key="${conversationKey}"] img`);
+                    if (listAvatar) listAvatar.src = bustUrl;
+
+                    const headerAvatar = document.getElementById('headerAvatar');
+                    if (headerAvatar && currentConversationKey === conversationKey) headerAvatar.src = bustUrl;
+
+                    updatedGroupAvatars[conversationKey] = bustUrl;
+                } else {
+                    showNotification(json.message || 'ACCESS DENIED', 'error');
                 }
-
-                // Sự kiện click vào avatar
-                groupAvatar.style.cursor = 'pointer';
-                groupAvatar.addEventListener('click', () => fileInput.click());
-
-                // Sự kiện chọn file và gửi lên server
-                fileInput.addEventListener('change', function (e) {
-                    const file = e.target.files[0];
-                    if (file) {
-                        const formData = new FormData();
-                        formData.append('ConversationKey', currentConversationKey || conversationKey);
-                        formData.append('File', file);
-
-                        fetch('/api/conversations/UpdateGroupAvatar', {
-                            method: 'POST',
-                            body: formData
-                        })
-                            .then(response => response.json())
-                            .then(result => {
-                                if (result.success) {
-                                    groupAvatar.src = result.newAvatarUrl || data.GroupAvatar;
-                                    console.log('Avatar updated successfully');
-                                } else {
-                                    showNotification('ACCESS DENIED', 'error');
-                                }
-                            })
-                            .catch(error => {
-                                console.error('Error updating avatar:', error);
-                                showNotification('Error updating avatar', 'error');
-                            });
-                    }
-                });
-
-                // Thêm input để thay đổi tên nhóm
-                const nameContainer = document.createElement('div');
-                nameContainer.style.position = 'relative';
-                nameContainer.innerHTML = `
-                    <span id="displayGroupName" style="cursor: pointer;">${data.GroupName || 'Unnamed Group'}</span>
-                    <input id="editGroupName" type="text" style="display: none; width: 100%; padding: 5px; margin-top: 5px;" placeholder="Enter new group name">
-                    <button id="saveGroupName" style="display: none; margin-top: 5px; padding: 5px 10px;">Save</button>
-                `;
-                groupName.replaceWith(nameContainer);
-
-                const displayName = document.getElementById('displayGroupName');
-                const editInput = document.getElementById('editGroupName');
-                const saveButton = document.getElementById('saveGroupName');
-
-                displayName.addEventListener('click', () => {
-                    displayName.style.display = 'none';
-                    editInput.style.display = 'block';
-                    saveButton.style.display = 'block';
-                    editInput.value = data.GroupName || '';
-                    editInput.focus();
-                });
-
-                saveButton.addEventListener('click', () => {
-                    const newName = editInput.value.trim();
-                    if (newName) {
-                        const formData = new FormData();
-                        formData.append('ConversationKey', currentConversationKey || conversationKey);
-                        formData.append('NewGroupName', newName);
-
-                        fetch('/api/conversations/UpdateGroupName', {
-                            method: 'POST',
-                            body: formData
-                        })
-                            .then(response => response.json())
-                            .then(result => {
-                                if (result.success) {
-                                    displayName.textContent = newName;
-                                    displayName.style.display = 'block';
-                                    editInput.style.display = 'none';
-                                    saveButton.style.display = 'none';
-                                    showNotification('Group name updated successfully', 'success');
-                                } else {
-                                    showNotification(result.message || 'Failed to update group name', 'error');
-                                }
-                            })
-                            .catch(error => {
-                                console.error('Error updating group name:', error);
-                                showNotification('Error updating group name', 'error');
-                            });
-                    } else {
-                        showNotification('Group name cannot be empty', 'error');
-                    }
-                });
-
-                // Gắn sự kiện khác
-                const leaveBtn = document.querySelector('.leave-group-btn');
-                const addBtn = document.querySelector('.add-member-btn');
-                if (leaveBtn) leaveBtn.addEventListener('click', () => showLeaveConfirmation(currentConversationKey));
-                if (addBtn) addBtn.addEventListener('click', () => showAddMemberPopup(currentConversationKey));
-                window.goupDetails_modal.show();
-            } else {
-                console.error('DOM elements not found in group details modal');
+            } catch (err) {
+                console.error('Error updating avatar:', err);
+                showNotification('Error updating avatar', 'error');
+            } finally {
+                fileInput.value = '';
             }
-        })
-        .catch(error => console.error('Error loading group details:', error));
+        };
+
+        groupAvatar.onclick = function () { fileInput.click(); };
+
+        const displayName = groupNameContainer.querySelector('#displayGroupName');
+        const editInput = groupNameContainer.querySelector('#editGroupName');
+        const saveButton = groupNameContainer.querySelector('#saveGroupName');
+
+        if (displayName && editInput && saveButton) {
+            displayName.onclick = function () {
+                displayName.style.display = 'none';
+                editInput.style.display = 'block';
+                saveButton.style.display = 'inline-block';
+                editInput.value = data.GroupName || '';
+                editInput.focus();
+            };
+
+            saveButton.onclick = async function () {
+                const newName = (editInput.value || '').trim();
+                if (!newName) {
+                    showNotification('Group name cannot be empty', 'error');
+                    return;
+                }
+                const fd = new FormData();
+                fd.append('ConversationKey', conversationKey);
+                fd.append('NewGroupName', newName);
+                try {
+                    const r = await fetch('/api/conversations/UpdateGroupName', { method: 'POST', body: fd, credentials: 'include' });
+                    const json = await r.json();
+                    if (json && json.success) {
+                        displayName.textContent = newName;
+                        displayName.style.display = 'inline';
+                        editInput.style.display = 'none';
+                        saveButton.style.display = 'none';
+                        showNotification('Group name updated', 'success');
+
+                        const convItem = document.querySelector(`.conversation-item[data-conversation-key="${conversationKey}"]`);
+                        if (convItem) {
+                            const nameEl = convItem.querySelector('p.fw-bold') || convItem.querySelector('p');
+                            if (nameEl) nameEl.textContent = newName;
+                        }
+
+                        const headerName = document.getElementById('headerName');
+                        if (headerName && currentConversationKey === conversationKey) headerName.textContent = newName;
+                    } else {
+                        showNotification(json.message || 'Failed to update group name', 'error');
+                    }
+                } catch (err) {
+                    console.error('Error updating group name:', err);
+                    showNotification('Error updating group name', 'error');
+                }
+            };
+        }
+
+        const leaveBtn = modalRoot.querySelector('.leave-group-btn');
+        const addBtn = modalRoot.querySelector('.add-member-btn');
+        if (leaveBtn) leaveBtn.onclick = () => showLeaveConfirmation(conversationKey);
+        if (addBtn) addBtn.onclick = () => showAddMemberPopup(conversationKey);
+
+        window.goupDetails_modal.show();
+    } catch (err) {
+        console.error('[showGroupDetails] Error:', err);
+    }
 };
+
+
+
 
 // Hàm hiển thị thông báo đẹp mắt
 function showNotification(message, type) {

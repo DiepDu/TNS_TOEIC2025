@@ -227,7 +227,7 @@ namespace TNS_TOEICTest.Controllers
 
         [HttpGet("GetGroupDetails/{conversationKey}")]
         public async Task<IActionResult> GetGroupDetails(string conversationKey)
-        {
+       {
             var groupDetails = await ChatAccessData.GetGroupDetailsAsync(conversationKey);
             if (groupDetails == null)
             {
@@ -296,12 +296,14 @@ namespace TNS_TOEICTest.Controllers
         [Authorize]
         public async Task<IActionResult> UpdateGroupName([FromForm] IFormCollection formData)
         {
-            var conversationKey = formData["ConversationKey"];
-            var newGroupName = formData["NewGroupName"];
+            // 1. Lấy dữ liệu từ form và loại bỏ khoảng trắng
+            string conversationKey = formData["ConversationKey"].ToString()?.Trim();
+            string newGroupName = formData["NewGroupName"].ToString()?.Trim();
 
             if (string.IsNullOrEmpty(conversationKey) || string.IsNullOrEmpty(newGroupName))
                 return BadRequest(new { success = false, message = "Invalid input" });
 
+            // 2. Lấy thông tin user hiện tại
             var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
             var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
             var currentMemberKey = memberLogin.MemberKey;
@@ -310,15 +312,59 @@ namespace TNS_TOEICTest.Controllers
             if (string.IsNullOrEmpty(currentMemberKey))
                 return Unauthorized(new { success = false, message = "MemberKey not found" });
 
-            var result = await ChatAccessData.UpdateGroupNameAsync(conversationKey, currentMemberKey, currentMemberName, newGroupName, HttpContext);
-            if (result["success"].ToString() == "True")
+            // 3. Cập nhật tên nhóm trong DB
+            var result = await ChatAccessData.UpdateGroupNameAsync(
+                conversationKey,
+                currentMemberKey,
+                currentMemberName,
+                newGroupName,
+                HttpContext
+            );
+
+            if (result != null && result["success"]?.ToString() == "True")
             {
-                string newGroupNameValue = result["newGroupName"].ToString();
+                // 4. Bắn sự kiện cập nhật tên nhóm cho tất cả client trong group
                 await _hubContext.Clients.Group(conversationKey)
-                    .SendAsync("NotifyGroupNameUpdate", conversationKey, newGroupNameValue, currentMemberName);
+                    .SendAsync("UpdateGroupName", conversationKey, result["newGroupName"]?.ToString(), currentMemberName);
+
+                // 5. Nếu có tin nhắn system, gửi realtime đến các client
+                if (result.ContainsKey("messageKey") &&
+                    result.ContainsKey("systemContent") &&
+                    result.ContainsKey("createdOn"))
+                {
+                    DateTime createdOn;
+                    if (!DateTime.TryParse(result["createdOn"]?.ToString(), out createdOn))
+                        createdOn = DateTime.UtcNow;
+
+                    var messageObj = new
+                    {
+                        MessageKey = result["messageKey"]?.ToString(),
+                        ConversationKey = conversationKey,
+                        SenderKey = (string)null,
+                        SenderName = (string)null,
+                        SenderAvatar = (string)null,
+                        MessageType = "Text",
+                        Content = result["systemContent"]?.ToString(),
+                        ParentMessageKey = (string)null,
+                        CreatedOn = createdOn,
+                        Status = 1,
+                        IsPinned = false,
+                        IsSystemMessage = true,
+                        Url = (string)null
+                    };
+
+                    await _hubContext.Clients.Group(conversationKey)
+                        .SendAsync("ReceiveMessage", messageObj);
+                }
+
+                // 6. Trả về kết quả cho client gọi API
+                return Ok(new { success = true, data = result });
             }
-            return Ok(result);
+
+            return Ok(new { success = false, message = "Update failed" });
         }
+
+
 
     }
 }
