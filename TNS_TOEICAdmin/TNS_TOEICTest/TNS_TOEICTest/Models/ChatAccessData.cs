@@ -1097,6 +1097,154 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
                 }
             }
         }
+        public static async Task<Dictionary<string, object>> RemoveMemberAsync(
+            string conversationKey, string memberKey, string memberName,
+            string targetUserKey, string targetUserName, HttpContext httpContext)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var transaction = connection.BeginTransaction())
+                {
+                    try
+                    {
+                        // Kiểm tra targetUserKey tồn tại trong nhóm
+                        var checkUserQuery = @"
+                    SELECT COUNT(*) 
+                    FROM [TNS_Toeic].[dbo].[ConversationParticipants]
+                    WHERE [ConversationKey] = @ConversationKey AND [UserKey] = @TargetUserKey AND [IsApproved] = 1";
+                        using (var cmd = new SqlCommand(checkUserQuery, connection, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            cmd.Parameters.AddWithValue("@TargetUserKey", targetUserKey);
+                            var userCount = (int)await cmd.ExecuteScalarAsync();
+                            if (userCount == 0)
+                            {
+                                return new Dictionary<string, object> {
+                            { "success", false }, { "message", "Target user not found in group" }
+                        };
+                            }
+                        }
+
+                        // Kiểm tra quyền Admin
+                        var roleQuery = @"
+                    SELECT [Role]
+                    FROM [TNS_Toeic].[dbo].[ConversationParticipants]
+                    WHERE [ConversationKey] = @ConversationKey AND [UserKey] = @MemberKey AND [IsApproved] = 1";
+                        using (var cmd = new SqlCommand(roleQuery, connection, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            cmd.Parameters.AddWithValue("@MemberKey", memberKey);
+                            var role = (await cmd.ExecuteScalarAsync())?.ToString();
+                            if (role != "Admin")
+                            {
+                                return new Dictionary<string, object> {
+                            { "success", false }, { "message", "ACCESS DENIED" }
+                        };
+                            }
+                        }
+
+                        // Xóa thành viên
+                        var deleteQuery = @"
+                    DELETE FROM [TNS_Toeic].[dbo].[ConversationParticipants]
+                    WHERE [ConversationKey] = @ConversationKey AND [UserKey] = @TargetUserKey AND [IsApproved] = 1";
+                        using (var cmd = new SqlCommand(deleteQuery, connection, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            cmd.Parameters.AddWithValue("@TargetUserKey", targetUserKey);
+                            await cmd.ExecuteNonQueryAsync();
+                        }
+
+                        // Kiểm tra số lượng thành viên còn lại
+                        var memberCountQuery = @"
+                    SELECT COUNT(*) 
+                    FROM [TNS_Toeic].[dbo].[ConversationParticipants]
+                    WHERE [ConversationKey] = @ConversationKey AND [IsApproved] = 1";
+                        using (var cmd = new SqlCommand(memberCountQuery, connection, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            var memberCount = (int)await cmd.ExecuteScalarAsync();
+                            if (memberCount <= 1)
+                            {
+                                var deactivateGroupQuery = @"
+                            UPDATE [TNS_Toeic].[dbo].[Conversations]
+                            SET [IsActive] = 0
+                            WHERE [ConversationKey] = @ConversationKey";
+                                using (var cmdDeactivate = new SqlCommand(deactivateGroupQuery, connection, transaction))
+                                {
+                                    cmdDeactivate.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                                    await cmdDeactivate.ExecuteNonQueryAsync();
+                                }
+                            }
+                        }
+
+                        // Tạo system message
+                        var messageKey = Guid.NewGuid().ToString();
+                        var createdOn = DateTime.Now;
+                        var systemContent = $"{memberName} removed {targetUserName} from the group";
+
+                        var insertMsgQuery = @"
+                    INSERT INTO [TNS_Toeic].[dbo].[Messages] (
+                        [MessageKey],[ConversationKey],[MessageType],[Content],
+                        [CreatedOn],[Status],[IsPinned],[IsSystemMessage]
+                    ) VALUES (
+                        @MessageKey,@ConversationKey,'Text',@Content,
+                        @CreatedOn,1,0,1
+                    )";
+                        using (var cmd = new SqlCommand(insertMsgQuery, connection, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@MessageKey", messageKey);
+                            cmd.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            cmd.Parameters.AddWithValue("@Content", systemContent);
+                            cmd.Parameters.AddWithValue("@CreatedOn", createdOn);
+                            await cmd.ExecuteNonQueryAsync();
+                        }
+
+                        // Update Conversations
+                        var updateConv = @"
+                    UPDATE [TNS_Toeic].[dbo].[Conversations]
+                    SET [LastMessageKey] = @MessageKey, [LastMessageTime] = @CreatedOn
+                    WHERE [ConversationKey] = @ConversationKey";
+                        using (var cmd = new SqlCommand(updateConv, connection, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            cmd.Parameters.AddWithValue("@MessageKey", messageKey);
+                            cmd.Parameters.AddWithValue("@CreatedOn", createdOn);
+                            await cmd.ExecuteNonQueryAsync();
+                        }
+
+                        // Update UnreadCount
+                        var updateUnread = @"
+                    UPDATE [TNS_Toeic].[dbo].[ConversationParticipants]
+                    SET [UnreadCount] = [UnreadCount] + 1
+                    WHERE [ConversationKey] = @ConversationKey";
+                        using (var cmd = new SqlCommand(updateUnread, connection, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            await cmd.ExecuteNonQueryAsync();
+                        }
+
+                        transaction.Commit();
+                        return new Dictionary<string, object> {
+                    { "success", true },
+                    { "message", "Member removed successfully" },
+                    { "messageKey", messageKey },
+                    { "systemContent", systemContent },
+                    { "createdOn", createdOn }
+                };
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        return new Dictionary<string, object> {
+                    { "success", false },
+                    { "message", $"Error: {ex.Message}" }
+                };
+                    }
+                }
+            }
+        }
+
 
         public class UserData
         {

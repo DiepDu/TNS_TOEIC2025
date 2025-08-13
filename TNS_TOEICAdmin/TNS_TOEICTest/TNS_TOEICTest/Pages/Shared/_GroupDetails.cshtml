@@ -1,16 +1,18 @@
-﻿<!-- _GroupDetails.cshtml hoặc GroupDetails.html -->
-<div id="group_details_modal_content" class="group-details-content">
-    <div class="group-header">
-        <img src="/images/avatar/default-avatar.jpg" alt="Group Avatar" class="group-avatar rounded-circle" id="groupAvatar">
-        <h3 class="group-name" id="groupName">Unnamed Group</h3>
+﻿<div id="group_details_modal_content" class="group-details-content">
+    <div id="group-details-view">
+        <div class="group-header">
+            <img src="/images/avatar/default-avatar.jpg" alt="Group Avatar" class="group-avatar rounded-circle" id="groupAvatar">
+            <h3 class="group-name" id="groupName">Unnamed Group</h3>
+        </div>
+        <div class="member-list" style="overflow-y: auto; max-height: 200px;" id="memberList">
+            <!-- Members will be populated dynamically -->
+        </div>
+        <div class="group-actions">
+            <button class="add-member-btn btn btn-primary">Add Member</button>
+            <button class="leave-group-btn btn btn-danger">Leave Group</button>
+        </div>
     </div>
-    <div class="member-list" style="overflow-y: auto; max-height: 200px;" id="memberList">
-        <!-- Members will be populated dynamically -->
-    </div>
-    <div class="group-actions">
-        <button class="add-member-btn btn btn-primary">Add Member</button>
-        <button class="leave-group-btn btn btn-danger">Leave Group</button>
-    </div>
+    <div id="remove-member-confirmation-view" style="display: none;"></div>
 </div>
 
 <!-- Add Member Popup -->
@@ -32,6 +34,16 @@
     <div class="confirmation-actions">
         <button class="btn btn-danger confirm-leave">Yes</button>
         <button class="btn btn-secondary cancel-leave">No</button>
+    </div>
+</div>
+
+<!-- Remove Member Confirmation Popup -->
+<div id="removeMemberPopup" class="confirmation-content" style="display: none;">
+    <h4 class="confirmation-title">Remove Member</h4>
+    <p id="removeMemberMessage">Are you sure you want to remove this member?</p>
+    <div class="confirmation-actions">
+        <button class="btn btn-secondary cancel-remove">No</button>
+        <button class="btn btn-danger confirm-remove">Yes</button>
     </div>
 </div>
 
@@ -76,22 +88,22 @@
         border-radius: 10px;
     }
 
-        .member-list::-webkit-scrollbar {
-            width: 8px;
-        }
+    .member-list::-webkit-scrollbar {
+        width: 8px;
+    }
 
-        .member-list::-webkit-scrollbar-track {
-            background: #252525;
-        }
+    .member-list::-webkit-scrollbar-track {
+        background: #252525;
+    }
 
-        .member-list::-webkit-scrollbar-thumb {
-            background: #000;
-            border-radius: 4px;
-        }
+    .member-list::-webkit-scrollbar-thumb {
+        background: #000;
+        border-radius: 4px;
+    }
 
-            .member-list::-webkit-scrollbar-thumb:hover {
-                background: #111;
-            }
+    .member-list::-webkit-scrollbar-thumb:hover {
+        background: #111;
+    }
 
     .member-item {
         display: flex;
@@ -101,9 +113,9 @@
         transition: background 0.3s;
     }
 
-        .member-item:hover {
-            background: #2e2e2e;
-        }
+    .member-item:hover {
+        background: #2e2e2e;
+    }
 
     .member-avatar {
         width: 35px;
@@ -117,14 +129,32 @@
         color: #ccc;
     }
 
-    .remove-btn {
-        color: #ff5555;
-        transition: color 0.3s;
+    .remove-member-icon {
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: #3a3a3a;
+        color: #ff6b6b;
+        font-weight: 700;
+        line-height: 1;
+        border: none;
+        cursor: pointer;
+        transition: transform .15s ease, background .15s ease, color .15s ease;
     }
 
-        .remove-btn:hover {
-            color: #ff7777;
-        }
+    .remove-member-icon:hover {
+        background: #ff4d4f;
+        color: #fff;
+        transform: scale(1.06);
+    }
+
+    .remove-member-icon:focus {
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(255, 77, 79, .35);
+    }
 
     .group-actions {
         display: flex;
@@ -143,17 +173,17 @@
         transition: all 0.3s ease;
     }
 
-        .add-member-btn:hover {
-            transform: scale(1.05);
-            background: #0099cc;
-            color: #fff;
-        }
+    .add-member-btn:hover {
+        transform: scale(1.05);
+        background: #0099cc;
+        color: #fff;
+    }
 
-        .leave-group-btn:hover {
-            transform: scale(1.05);
-            background: #cc0000;
-            color: #fff;
-        }
+    .leave-group-btn:hover {
+        transform: scale(1.05);
+        background: #cc0000;
+        color: #fff;
+    }
 
     .add-member-content {
         background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
@@ -167,7 +197,7 @@
 
     .add-member-title {
         font-size: 1.5em;
-        color: #00bcd4;
+        color: #00bcd4 !important;
         margin-bottom: 15px;
         text-align: center;
     }
@@ -187,9 +217,9 @@
         transition: background 0.3s;
     }
 
-        .member-option:hover {
-            background: #2e2e2e;
-        }
+    .member-option:hover {
+        background: #2e2e2e;
+    }
 
     .member-selection::-webkit-scrollbar {
         width: 8px;
@@ -204,9 +234,9 @@
         border-radius: 4px;
     }
 
-        .member-selection::-webkit-scrollbar-thumb:hover {
-            background: #111;
-        }
+    .member-selection::-webkit-scrollbar-thumb:hover {
+        background: #111;
+    }
 
     .member-actions {
         display: flex;
@@ -222,55 +252,64 @@
         transition: all 0.3s ease;
     }
 
-        .ok-btn:hover {
-            background: #28a745;
-            color: #fff;
-        }
-
-        .cancel-btn:hover {
-            background: #555;
-            color: #fff;
-        }
-
-    .confirmation-content {
-        background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
-        padding: 20px;
-        border-radius: 12px;
-        width: 600px;
+    .ok-btn:hover {
+        background: #28a745;
         color: #fff;
-        text-align: center;
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
-        display: none;
     }
+
+    .cancel-btn:hover {
+        background: #555;
+        color: #fff;
+    }
+
+.confirmation-content {
+    background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
+    padding: 20px;
+    border-radius: 12px;
+    width: 400px;
+    max-width: 100%;
+    color: #fff;
+    text-align: center;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+    margin: 0 auto; /* Thêm để căn giữa */
+}
 
     .confirmation-title {
         font-size: 1.5em;
-        color: #ff4444;
+        color: #ff4444 !important;
         margin-bottom: 15px;
+    }
+
+    #removeMemberMessage {
+        font-size: 1.1em;
+        color: #f0f0f0 !important;
+        text-align: center;
+        margin: 20px 0;
     }
 
     .confirmation-actions {
         display: flex;
-        justify-content: center;
+        justify-content: space-between !important;
         gap: 15px;
         margin-top: 20px;
     }
 
-    .confirm-leave, .cancel-leave {
+    .confirm-remove, .cancel-remove, .confirm-leave, .cancel-leave {
         padding: 8px 25px;
         border-radius: 8px;
         font-weight: 600;
         font-size: 1em;
         transition: all 0.3s ease;
+        flex: 1;
     }
 
-        .confirm-leave:hover {
-            background: #cc0000;
-            color: #fff;
-        }
+    .confirm-remove:hover, .confirm-leave:hover {
+        background: #cc0000;
+        color: #fff;
+    }
 
-        .cancel-leave:hover {
-            background: #555;
-            color: #fff;
-        }
+    .cancel-remove:hover, .cancel-leave:hover {
+        background: #555;
+        color: #fff;
+    }
 </style>

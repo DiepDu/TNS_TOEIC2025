@@ -364,7 +364,80 @@ namespace TNS_TOEICTest.Controllers
             return Ok(new { success = false, message = "Update failed" });
         }
 
+        [HttpPost("RemoveMember")]
+        [Authorize]
+        public async Task<IActionResult> RemoveMember([FromBody] RemoveMemberRequest request)
+        {
+            string conversationKey = request.ConversationKey?.Trim();
+            string targetUserKey = request.TargetUserKey?.Trim();
+            string targetUserName = request.TargetUserName?.Trim();
 
+            if (string.IsNullOrEmpty(conversationKey) || string.IsNullOrEmpty(targetUserKey) || string.IsNullOrEmpty(targetUserName))
+                return BadRequest(new { success = false, message = "Invalid input" });
+
+            var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
+            var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
+            var currentMemberKey = memberLogin.MemberKey;
+            var currentMemberName = memberLogin.MemberName;
+
+            if (string.IsNullOrEmpty(currentMemberKey))
+                return Unauthorized(new { success = false, message = "MemberKey not found" });
+
+            var result = await ChatAccessData.RemoveMemberAsync(
+                conversationKey,
+                currentMemberKey,
+                currentMemberName,
+                targetUserKey,
+                targetUserName,
+                HttpContext
+            );
+
+            if (result != null && result["success"]?.ToString() == "True")
+            {
+                await _hubContext.Clients.Group(conversationKey)
+                    .SendAsync("MemberRemoved", conversationKey, targetUserKey, currentMemberName);
+
+                if (result.ContainsKey("messageKey") &&
+                    result.ContainsKey("systemContent") &&
+                    result.ContainsKey("createdOn"))
+                {
+                    DateTime createdOn;
+                    if (!DateTime.TryParse(result["createdOn"]?.ToString(), out createdOn))
+                        createdOn = DateTime.UtcNow;
+
+                    var messageObj = new
+                    {
+                        MessageKey = result["messageKey"]?.ToString(),
+                        ConversationKey = conversationKey,
+                        SenderKey = (string)null,
+                        SenderName = (string)null,
+                        SenderAvatar = (string)null,
+                        MessageType = "Text",
+                        Content = result["systemContent"]?.ToString(),
+                        ParentMessageKey = (string)null,
+                        CreatedOn = createdOn,
+                        Status = 1,
+                        IsPinned = false,
+                        IsSystemMessage = true,
+                        Url = (string)null
+                    };
+
+                    await _hubContext.Clients.Group(conversationKey)
+                        .SendAsync("ReceiveMessage", messageObj);
+                }
+
+                return Ok(new { success = true, data = result });
+            }
+
+            return Ok(new { success = false, message = result["message"]?.ToString() ?? "Remove failed" });
+        }
+
+        public class RemoveMemberRequest
+        {
+            public string ConversationKey { get; set; }
+            public string TargetUserKey { get; set; }
+            public string TargetUserName { get; set; }
+        }
 
     }
 }

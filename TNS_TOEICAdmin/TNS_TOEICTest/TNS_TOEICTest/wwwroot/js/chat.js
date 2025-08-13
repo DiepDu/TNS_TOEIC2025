@@ -26,25 +26,6 @@ async function startConnection(connection, memberKey) {
                 await loadMessages(conversationKey, false, 0);
             }
         });
-        //connection.on("UpdateGroupAvatar", (conversationKey, newAvatarUrl) => {
-        //    const bustUrl = newAvatarUrl + '?v=' + Date.now();
-
-        //    // update conversation list
-        //    const listAvatar = document.querySelector(`.conversation-item[data-conversation-key="${conversationKey}"] img`);
-        //    if (listAvatar) listAvatar.src = bustUrl;
-
-        //    // update header
-        //    const headerAvatar = document.getElementById('headerAvatar');
-        //    if (headerAvatar && currentConversationKey === conversationKey) {
-        //        headerAvatar.src = bustUrl;
-        //    }
-
-        //    // update group details modal if open
-        //    const groupAvatar = document.getElementById('groupAvatar');
-        //    if (groupAvatar) groupAvatar.src = bustUrl;
-
-        //    updatedGroupAvatars[conversationKey] = bustUrl;
-        //});
         connection.on("UpdateGroupAvatar", (conversationKey, newAvatarUrl) => {
             try {
                 console.log("[UpdateGroupAvatar] received", { conversationKey, newAvatarUrl, currentConversationKey });
@@ -100,66 +81,6 @@ async function startConnection(connection, memberKey) {
                 console.error("[UpdateGroupAvatar] handler error:", ex);
             }
         });
-
-
-        //connection.on("UpdateGroupName", (conversationKey, newGroupName, memberName) => {
-        //    try {
-        //        console.log("[UpdateGroupName] received", { conversationKey, newGroupName, memberName, currentConversationKey });
-
-        //        // 1) Update list conversation
-        //        const listItem = document.querySelector(`.conversation-item[data-conversation-key="${conversationKey}"]`);
-        //        if (listItem) {
-        //            const nameEl = listItem.querySelector('p.fw-bold') || listItem.querySelector('p') || listItem;
-        //            if (nameEl) {
-        //                nameEl.textContent = newGroupName;
-        //                console.log("[UpdateGroupName] updated list name");
-        //            }
-        //        } else {
-        //            console.log("[UpdateGroupName] listItem not found");
-        //        }
-
-        //        // 2) Update Group Details modal if open
-        //        const displayNameEl = document.getElementById('displayGroupName');
-        //        if (displayNameEl) {
-        //            displayNameEl.textContent = newGroupName;
-        //            console.log("[UpdateGroupName] updated modal display name");
-        //        } else {
-        //            const groupNameContainer = document.getElementById('groupName');
-        //            if (groupNameContainer) {
-        //                const p = groupNameContainer.querySelector('#displayGroupName');
-        //                if (p) p.textContent = newGroupName;
-        //                else groupNameContainer.textContent = newGroupName;
-        //                console.log("[UpdateGroupName] updated modal groupNameContainer");
-        //            }
-        //        }
-
-        //        // 3) Only update header if this conversation is currently open in this tab
-        //        if (String(currentConversationKey) === String(conversationKey)) {
-        //            const applyHeaderName = () => {
-        //                const headerName = document.getElementById('headerName');
-        //                if (headerName) {
-        //                    headerName.textContent = newGroupName;
-        //                    console.log("[UpdateGroupName] header name updated to", newGroupName);
-        //                    return true;
-        //                }
-        //                return false;
-        //            };
-
-        //            if (!applyHeaderName()) {
-        //                setTimeout(() => {
-        //                    if (!applyHeaderName()) {
-        //                        console.warn("[UpdateGroupName] headerName not found after retry");
-        //                    }
-        //                }, 60);
-        //            }
-        //        }
-
-
-        //    } catch (ex) {
-        //        console.error("[UpdateGroupName handler] error:", ex);
-        //    }
-        //});
-
 
         connection.on("UpdateGroupName", (conversationKey, newGroupName, memberName) => {
             try {
@@ -219,7 +140,13 @@ async function startConnection(connection, memberKey) {
             }
         });
 
-
+        connection.on("RemoveMember", (conversationKey, userName) => {
+            console.log("[RemoveMember] received", { conversationKey, userName, currentConversationKey });
+            if (String(currentConversationKey) === String(conversationKey)) {
+                window.showGroupDetails(conversationKey); // Refresh danh sách thành viên
+                console.log("[RemoveMember] refreshed group details");
+            }
+        });
 
 
     } catch (err) {
@@ -1440,6 +1367,13 @@ window.showGroupDetails = async function (conversationKey) {
             return;
         }
 
+        const detailsView = document.getElementById('group-details-view');
+        const confirmationView = document.getElementById('remove-member-confirmation-view');
+        if (detailsView && confirmationView) {
+            detailsView.style.display = 'block';
+            confirmationView.style.display = 'none';
+        }
+
         if (!window.goupDetails_modal) {
             window.goupDetails_modal = new bootstrap.Modal(modalRoot, { keyboard: false });
         }
@@ -1450,12 +1384,12 @@ window.showGroupDetails = async function (conversationKey) {
         }
         const data = await resp.json();
 
-        const groupAvatar = modalRoot.querySelector('#groupAvatar') || document.getElementById('groupAvatar');
-        const groupNameContainer = modalRoot.querySelector('#groupName') || document.getElementById('groupName');
-        const memberList = modalRoot.querySelector('#memberList') || document.getElementById('memberList');
+        const groupAvatar = modalRoot.querySelector('#groupAvatar');
+        const groupNameContainer = modalRoot.querySelector('#groupName');
+        const memberList = modalRoot.querySelector('#memberList');
 
         if (!groupAvatar || !groupNameContainer || !memberList) {
-            console.error('DOM elements not found in group details modal.');
+            console.error('[showGroupDetails] DOM elements not found.');
             return;
         }
 
@@ -1464,14 +1398,20 @@ window.showGroupDetails = async function (conversationKey) {
             return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         }
 
-        // cache-busting avatar
         groupAvatar.src = (data.GroupAvatar || '/images/avatar/default-avatar.jpg') + '?v=' + Date.now();
 
         memberList.innerHTML = (data.Members || []).map(member => `
             <div class="member-item d-flex align-items-center mb-2">
-                <img src="${escapeHtml(member.Avatar || '/images/avatar/default-avatar.jpg')}?v=${Date.now()}" alt="${escapeHtml(member.UserName)}" class="member-avatar rounded-circle me-2" style="width:36px;height:36px;object-fit:cover;">
+                <img src="${escapeHtml(member.Avatar || '/images/avatar/default-avatar.jpg')}?v=${Date.now()}"
+                     alt="${escapeHtml(member.UserName)}"
+                     class="member-avatar rounded-circle me-2"
+                     style="width:36px;height:36px;object-fit:cover;">
                 <span class="member-name">${escapeHtml(member.UserName)}</span>
-                <span class="ms-auto remove-btn" style="font-size: 18px; font-weight: bold; cursor: pointer; display: none;">✖</span>
+                <button class="ms-auto remove-member-icon"
+                        title="Remove"
+                        data-user-key="${escapeHtml(member.UserKey)}"
+                        data-user-name="${escapeHtml(member.UserName)}"
+                        data-conversation-key="${escapeHtml(conversationKey)}">&times;</button>
             </div>
         `).join('');
 
@@ -1502,13 +1442,10 @@ window.showGroupDetails = async function (conversationKey) {
                 if (json && json.success) {
                     const bustUrl = (json.newAvatarUrl || '') + '?v=' + Date.now();
                     groupAvatar.src = bustUrl;
-
                     const listAvatar = document.querySelector(`.conversation-item[data-conversation-key="${conversationKey}"] img`);
                     if (listAvatar) listAvatar.src = bustUrl;
-
                     const headerAvatar = document.getElementById('headerAvatar');
                     if (headerAvatar && currentConversationKey === conversationKey) headerAvatar.src = bustUrl;
-
                     updatedGroupAvatars[conversationKey] = bustUrl;
                 } else {
                     showNotification(json.message || 'ACCESS DENIED', 'error');
@@ -1554,13 +1491,11 @@ window.showGroupDetails = async function (conversationKey) {
                         editInput.style.display = 'none';
                         saveButton.style.display = 'none';
                         showNotification('Group name updated', 'success');
-
                         const convItem = document.querySelector(`.conversation-item[data-conversation-key="${conversationKey}"]`);
                         if (convItem) {
                             const nameEl = convItem.querySelector('p.fw-bold') || convItem.querySelector('p');
                             if (nameEl) nameEl.textContent = newName;
                         }
-
                         const headerName = document.getElementById('headerName');
                         if (headerName && currentConversationKey === conversationKey) headerName.textContent = newName;
                     } else {
@@ -1630,6 +1565,8 @@ function showNotification(message, type) {
 
 
 
+
+
 // Hàm showLeaveConfirmation
 function showLeaveConfirmation(conversationKey) {
     const modalContent = document.getElementById('group_details_modal_content');
@@ -1649,22 +1586,88 @@ function showLeaveConfirmation(conversationKey) {
     }
 }
 
-// Hàm showAddMemberPopup
-function showAddMemberPopup(conversationKey) {
-    const modalContent = document.getElementById('group_details_modal_content');
-    modalContent.innerHTML = document.getElementById('addMemberPopup').innerHTML;
-    const okBtn = document.querySelector('.ok-btn');
-    const cancelBtn = document.querySelector('.cancel-btn');
 
-    if (okBtn) {
-        okBtn.addEventListener('click', function () {
-            console.log(`Add members to conversationKey: ${conversationKey}`);
-            window.showGroupDetails(conversationKey);
-        });
+document.addEventListener('click', function (e) {
+    const btn = e.target.closest('.remove-member-icon');
+    if (!btn) return;
+    const conversationKey = btn.getAttribute('data-conversation-key');
+    const userKey = btn.getAttribute('data-user-key');
+    const userName = btn.getAttribute('data-user-name') || 'this member';
+    showRemoveMemberConfirmation(conversationKey, userKey, userName);
+});
+
+function showRemoveMemberConfirmation(conversationKey, userKey, userName) {
+    const detailsView = document.getElementById('group-details-view');
+    const confirmationView = document.getElementById('remove-member-confirmation-view');
+    const confirmationTemplate = document.getElementById('removeMemberPopup');
+
+    if (!detailsView || !confirmationView || !confirmationTemplate) {
+        console.error('[showRemoveMemberConfirmation] Required view elements not found.');
+        return;
     }
+
+    confirmationView.className = 'confirmation-content';
+    confirmationView.innerHTML = confirmationTemplate.innerHTML;
+
+    const msg = confirmationView.querySelector('#removeMemberMessage');
+    if (msg) {
+        msg.textContent = `Are you sure you want to remove "${userName}" from this group?`;
+    } else {
+        console.error('[showRemoveMemberConfirmation] #removeMemberMessage not found');
+    }
+
+    const confirmBtn = confirmationView.querySelector('.confirm-remove');
+    const cancelBtn = confirmationView.querySelector('.cancel-remove');
+
+    if (confirmBtn) {
+        confirmBtn.onclick = async function () {
+            await removeMemberFromGroup(conversationKey, userKey, userName);
+        };
+    } else {
+        console.error('[showRemoveMemberConfirmation] .confirm-remove not found');
+    }
+
     if (cancelBtn) {
-        cancelBtn.addEventListener('click', function () {
-            window.showGroupDetails(conversationKey);
+        cancelBtn.onclick = function () {
+            confirmationView.style.display = 'none';
+            detailsView.style.display = 'block';
+        };
+    } else {
+        console.error('[showRemoveMemberConfirmation] .cancel-remove not found');
+    }
+
+    detailsView.style.display = 'none';
+    confirmationView.style.display = 'block';
+}
+// Hàm xóa thành viên khỏi nhóm
+async function removeMemberFromGroup(conversationKey, userKey, userName) {
+    const detailsView = document.getElementById('group-details-view');
+    const confirmationView = document.getElementById('remove-member-confirmation-view');
+
+    try {
+        const res = await fetch(`/api/conversations/RemoveMember`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ conversationKey, targetUserKey: userKey, targetUserName: userName })
         });
+        const data = await res.json();
+        if (data && data.success) {
+            showNotification('Member removed successfully', 'success');
+            await window.showGroupDetails(conversationKey);
+        } else {
+            showNotification(data.message || 'No permission to remove', 'error');
+            if (detailsView && confirmationView) {
+                confirmationView.style.display = 'none';
+                detailsView.style.display = 'block';
+            }
+        }
+    } catch (err) {
+        console.error('removeMemberFromGroup error:', err);
+        showNotification('Error removing member', 'error');
+        if (detailsView && confirmationView) {
+            confirmationView.style.display = 'none';
+            detailsView.style.display = 'block';
+        }
     }
 }
