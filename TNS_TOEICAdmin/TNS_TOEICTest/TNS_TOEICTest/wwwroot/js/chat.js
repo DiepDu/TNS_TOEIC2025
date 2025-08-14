@@ -886,7 +886,11 @@ document.addEventListener("DOMContentLoaded", async () => {
             messageConversationKey: message.ConversationKey
         });
 
-        allMessages.push(message);
+        if (message.MessageKey && allMessages.some(m => m.MessageKey === message.MessageKey)) {
+            console.log('[ReceiveMessage] duplicate message skipped:', message.MessageKey);
+        } else {
+            allMessages.push(message);
+        }
 
         const addMessageToUI = (attempt = 1, maxAttempts = 5) => {
             if (!messageList) {
@@ -1359,6 +1363,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 window.goupDetails_modal = null;
 // --- Replace the whole showGroupDetails function with this robust version ---
+window.goupDetails_modal = null;
+window.goupDetails_modal = null;
 window.showGroupDetails = async function (conversationKey) {
     try {
         const modalRoot = document.getElementById('group_details_modal');
@@ -1379,15 +1385,17 @@ window.showGroupDetails = async function (conversationKey) {
         }
 
         const resp = await fetch(`/api/conversations/GetGroupDetails/${encodeURIComponent(conversationKey)}`, { credentials: 'include' });
-        if (!resp.ok) {
-            throw new Error('[showGroupDetails] Failed to load group details: ' + resp.status);
-        }
-        const data = await resp.json();
+        if (!resp.ok) throw new Error('[showGroupDetails] Failed to load group details: ' + resp.status);
+
+        // Thay đổi #1: Lấy currentMemberKey từ API
+        const result = await resp.json();
+        const data = result.data || {};
+        const currentKey = (result.currentMemberKey || '').toString();
+        window.currentMemberKey = currentKey;
 
         const groupAvatar = modalRoot.querySelector('#groupAvatar');
         const groupNameContainer = modalRoot.querySelector('#groupName');
         const memberList = modalRoot.querySelector('#memberList');
-
         if (!groupAvatar || !groupNameContainer || !memberList) {
             console.error('[showGroupDetails] DOM elements not found.');
             return;
@@ -1395,32 +1403,56 @@ window.showGroupDetails = async function (conversationKey) {
 
         function escapeHtml(str) {
             if (!str && str !== '') return '';
-            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
         }
 
+        // Ảnh nhóm
         groupAvatar.src = (data.GroupAvatar || '/images/avatar/default-avatar.jpg') + '?v=' + Date.now();
 
-        memberList.innerHTML = (data.Members || []).map(member => `
-            <div class="member-item d-flex align-items-center mb-2">
-                <img src="${escapeHtml(member.Avatar || '/images/avatar/default-avatar.jpg')}?v=${Date.now()}"
-                     alt="${escapeHtml(member.UserName)}"
-                     class="member-avatar rounded-circle me-2"
-                     style="width:36px;height:36px;object-fit:cover;">
-                <span class="member-name">${escapeHtml(member.UserName)}</span>
+        // Danh sách thành viên
+        memberList.innerHTML = (data.Members || []).map(m => {
+            const userKey = (m.UserKey ?? m.MemberKey ?? '').toString();
+
+            // Thay đổi #2: So sánh với currentKey để ẩn nút ❌
+            const isSelf = userKey && userKey === currentKey;
+            const btnHtml = isSelf
+                ? ''
+                : `
                 <button class="ms-auto remove-member-icon"
                         title="Remove"
-                        data-user-key="${escapeHtml(member.UserKey)}"
-                        data-user-name="${escapeHtml(member.UserName)}"
-                        data-conversation-key="${escapeHtml(conversationKey)}">&times;</button>
-            </div>
-        `).join('');
+                        data-user-key="${escapeHtml(userKey)}"
+                        data-user-name="${escapeHtml(m.UserName || m.Name || 'Member')}"
+                        data-conversation-key="${escapeHtml(conversationKey)}">&times;</button>`;
 
+            return `
+    <div class="member-item d-flex align-items-center mb-2"
+         data-user-key="${escapeHtml(userKey)}">
+
+                    <img src="${escapeHtml(m.Avatar || '/images/avatar/default-avatar.jpg')}?v=${Date.now()}"
+                         alt="${escapeHtml(m.UserName || m.Name || '')}"
+                         class="member-avatar rounded-circle me-2"
+                         style="width:36px;height:36px;object-fit:cover;">
+                    <span class="member-name">${escapeHtml(m.UserName || m.Name || '')}</span>
+                    ${btnHtml}
+                </div>
+            `;
+        }).join('');
+
+        // Tên nhóm (click để sửa)
         groupNameContainer.innerHTML = `
-            <span id="displayGroupName" style="cursor: pointer; font-weight:600;">${escapeHtml(data.GroupName || 'Unnamed Group')}</span>
+            <span id="displayGroupName" style="cursor: pointer; font-weight:600;">
+                ${escapeHtml(data.GroupName || 'Unnamed Group')}
+            </span>
             <input id="editGroupName" type="text" style="display:none; width:100%; margin-top:6px;" placeholder="Enter new group name" />
             <button id="saveGroupName" style="display:none; margin-top:6px;" class="btn btn-sm btn-primary">Save</button>
         `;
 
+        // Upload avatar nhóm
         let fileInput = document.getElementById('groupAvatarInput');
         if (!fileInput) {
             fileInput = document.createElement('input');
@@ -1445,8 +1477,8 @@ window.showGroupDetails = async function (conversationKey) {
                     const listAvatar = document.querySelector(`.conversation-item[data-conversation-key="${conversationKey}"] img`);
                     if (listAvatar) listAvatar.src = bustUrl;
                     const headerAvatar = document.getElementById('headerAvatar');
-                    if (headerAvatar && currentConversationKey === conversationKey) headerAvatar.src = bustUrl;
-                    updatedGroupAvatars[conversationKey] = bustUrl;
+                    if (headerAvatar && String(window.currentConversationKey) === String(conversationKey)) headerAvatar.src = bustUrl;
+                    (window.updatedGroupAvatars || (window.updatedGroupAvatars = {}))[conversationKey] = bustUrl;
                 } else {
                     showNotification(json.message || 'ACCESS DENIED', 'error');
                 }
@@ -1457,13 +1489,12 @@ window.showGroupDetails = async function (conversationKey) {
                 fileInput.value = '';
             }
         };
+        groupAvatar.onclick = () => fileInput.click();
 
-        groupAvatar.onclick = function () { fileInput.click(); };
-
+        // Sửa tên nhóm
         const displayName = groupNameContainer.querySelector('#displayGroupName');
         const editInput = groupNameContainer.querySelector('#editGroupName');
         const saveButton = groupNameContainer.querySelector('#saveGroupName');
-
         if (displayName && editInput && saveButton) {
             displayName.onclick = function () {
                 displayName.style.display = 'none';
@@ -1491,13 +1522,14 @@ window.showGroupDetails = async function (conversationKey) {
                         editInput.style.display = 'none';
                         saveButton.style.display = 'none';
                         showNotification('Group name updated', 'success');
+
                         const convItem = document.querySelector(`.conversation-item[data-conversation-key="${conversationKey}"]`);
                         if (convItem) {
                             const nameEl = convItem.querySelector('p.fw-bold') || convItem.querySelector('p');
                             if (nameEl) nameEl.textContent = newName;
                         }
                         const headerName = document.getElementById('headerName');
-                        if (headerName && currentConversationKey === conversationKey) headerName.textContent = newName;
+                        if (headerName && String(window.currentConversationKey) === String(conversationKey)) headerName.textContent = newName;
                     } else {
                         showNotification(json.message || 'Failed to update group name', 'error');
                     }
@@ -1508,6 +1540,7 @@ window.showGroupDetails = async function (conversationKey) {
             };
         }
 
+        // Nút tác vụ khác (nếu có)
         const leaveBtn = modalRoot.querySelector('.leave-group-btn');
         const addBtn = modalRoot.querySelector('.add-member-btn');
         if (leaveBtn) leaveBtn.onclick = () => showLeaveConfirmation(conversationKey);
@@ -1518,6 +1551,8 @@ window.showGroupDetails = async function (conversationKey) {
         console.error('[showGroupDetails] Error:', err);
     }
 };
+
+
 
 
 
@@ -1671,3 +1706,405 @@ async function removeMemberFromGroup(conversationKey, userKey, userName) {
         }
     }
 }
+
+// --- Add Member UI ---
+
+// (1) Style nho nhỏ cho list add member (chỉ chèn 1 lần)
+(function ensureAddMemberStyles() {
+    if (document.getElementById('add-members-styles')) return;
+    const css = `
+    .add-members-wrap { padding: 6px 2px; }
+    .add-members-title { font-weight: 600; font-size: 16px; margin-bottom: 10px; }
+    .add-members-list { 
+        max-height: 360px; 
+        overflow: auto; 
+        padding-right: 4px; 
+    }
+    /* Thanh cuộn nhỏ và đồng bộ màu */
+    .add-members-list::-webkit-scrollbar {
+        width: 6px;
+    }
+    .add-members-list::-webkit-scrollbar-track {
+        background: rgba(255,255,255,0.05);
+    }
+    .add-members-list::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.3);
+        border-radius: 3px;
+    }
+
+    .add-item { 
+        display:flex; 
+        align-items:center; 
+        gap:10px; 
+        padding:8px 10px; 
+        border-radius:12px;
+        background: rgba(255,255,255,0.05); 
+        margin-bottom:8px; 
+        cursor:pointer;
+        transition: background .15s ease, transform .02s ease; 
+    }
+    .add-item:hover { background: rgba(255,255,255,0.08); }
+    .add-item.selected { outline:2px solid rgba(13,110,253,.5); background: rgba(13,110,253,.08); }
+    .add-item img { width:36px; height:36px; object-fit:cover; border-radius:50%; flex-shrink:0; }
+    .add-item .name { font-weight:500; }
+    
+    /* Nhãn user type kiểu thẻ cào */
+    .type-badge { 
+        font-size: 11px; 
+        text-transform: uppercase;
+        padding: 2px 6px;
+        border-radius: 6px;
+        background: repeating-linear-gradient(
+            45deg,
+            rgba(255,255,255,0.15),
+            rgba(255,255,255,0.15) 4px,
+            transparent 4px,
+            transparent 8px
+        );
+        color: rgba(255,255,255,0.85);
+        flex-shrink: 0;
+    }
+
+    /* Checkbox nằm cuối cùng */
+    .add-item .form-check-input { 
+        margin-left: auto; 
+        flex-shrink: 0;
+    }
+
+    .add-members-actions { 
+        display:flex; 
+        justify-content:flex-end; 
+        gap:10px; 
+        margin-top:12px; 
+    }
+    `;
+    const style = document.createElement('style');
+    style.id = 'add-members-styles';
+    style.textContent = css;
+    document.head.appendChild(style);
+})();
+
+
+// (2) Helper escape
+function __escHtml(s) {
+    if (!s && s !== '') return '';
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// (3) Render giao diện chọn người để add
+// (3) Render giao diện chọn người để add
+// Thay thế nguyên hàm hiện tại bằng bản này
+window.showAddMemberPopup = async function (conversationKey, preselectedKeys = []) {
+    const detailsView = document.getElementById('group-details-view');
+    const hostView = document.getElementById('remove-member-confirmation-view');
+    if (!detailsView || !hostView) return;
+
+    // 1) Lấy list key thành viên hiện tại (có thể remove)
+    const excludeKeys = Array.from(document.querySelectorAll('#memberList .remove-member-icon'))
+        .map(b => (b.getAttribute('data-user-key') || '').toString())
+        .filter(Boolean);
+
+    // 2) Loại bỏ luôn chính user đang đăng nhập (đã có sẵn currentMemberKey từ showGroupDetails)
+    if (window.currentMemberKey && !excludeKeys.includes(window.currentMemberKey)) {
+        excludeKeys.push(window.currentMemberKey);
+    }
+
+    let items = [];
+    try {
+        const res = await fetch('/api/conversations/GetAddableMembers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ conversationKey, excludeKeys })
+        });
+        const json = await res.json();
+        if (json && json.success && Array.isArray(json.items)) items = json.items;
+    } catch (e) {
+        console.error('[showAddMemberPopup] fetch addable error:', e);
+    }
+
+    // 3) Render UI
+    hostView.className = 'confirmation-content';
+    hostView.innerHTML = `
+        <div class="add-members-wrap">
+            <div class="add-members-title">Add members</div>
+            <div id="addMembersList" class="add-members-list">
+                ${items.length === 0
+            ? `<div class="text-muted">No candidates found.</div>`
+            : items.map(u => {
+                const uk = (u.UserKey ?? '').toString();
+                const checked = preselectedKeys.includes(uk);
+                return `
+                            <div class="add-item ${checked ? 'selected' : ''}" 
+                                 data-user-key="${__escHtml(uk)}"
+                                 data-user-name="${__escHtml(u.Name || '')}"
+                                 data-user-type="${__escHtml(u.UserType || '')}" tabindex="0">
+                                <img src="${__escHtml(u.Avatar || '/images/avatar/default-avatar.jpg')}" alt="">
+                                <div class="flex-grow-1 d-flex align-items-center gap-2">
+                                    <div class="name">${__escHtml(u.Name || '')}</div>
+                                    <div class="type-badge">${__escHtml(u.UserType || '')}</div>
+                                </div>
+                                <!-- Giữ stopPropagation để không bắn lên .add-item -->
+                                <input class="form-check-input" type="checkbox" ${checked ? 'checked' : ''} onclick="event.stopPropagation();" />
+                            </div>`;
+            }).join('')}
+            </div>
+            <div class="add-members-actions">
+                <button id="btnCancelAdd" class="btn btn-secondary">Cancel</button>
+                <button id="btnConfirmAdd" class="btn btn-primary" ${preselectedKeys.length ? '' : 'disabled'}>Add</button>
+            </div>
+        </div>
+    `;
+
+    // 4) Gán event
+    const listEl = hostView.querySelector('#addMembersList');
+    const btnAdd = hostView.querySelector('#btnConfirmAdd');
+    const btnCancel = hostView.querySelector('#btnCancelAdd');
+
+    const getSelectedKeys = () =>
+        Array.from(listEl.querySelectorAll('.add-item.selected'))
+            .map(it => it.getAttribute('data-user-key'))
+            .filter(Boolean);
+
+    // (A) Click vào item -> toggle cả highlight + checkbox
+    listEl.addEventListener('click', (e) => {
+        const item = e.target.closest('.add-item');
+        if (!item) return;
+        const cb = item.querySelector('input[type="checkbox"]');
+        const willSelect = !item.classList.contains('selected');
+        item.classList.toggle('selected', willSelect);
+        if (cb) cb.checked = willSelect;
+        btnAdd.disabled = getSelectedKeys().length === 0;
+    });
+
+    // (B) Bấm trực tiếp vào checkbox -> đồng bộ lại highlight
+    listEl.addEventListener('change', (e) => {
+        const cb = e.target;
+        if (!(cb instanceof HTMLInputElement) || cb.type !== 'checkbox') return;
+        const item = cb.closest('.add-item');
+        if (!item) return;
+        item.classList.toggle('selected', cb.checked);
+        btnAdd.disabled = getSelectedKeys().length === 0;
+    });
+
+    // Cancel → quay lại GroupDetails
+    btnCancel.addEventListener('click', () => {
+        hostView.style.display = 'none';
+        detailsView.style.display = 'block';
+    });
+
+    // Confirm → sang màn hình xác nhận
+    btnAdd.addEventListener('click', () => {
+        const selected = Array.from(listEl.querySelectorAll('.add-item.selected')).map(it => ({
+            UserKey: it.getAttribute('data-user-key'),
+            UserType: it.getAttribute('data-user-type'),
+            Name: it.getAttribute('data-user-name')
+        }));
+        showAddMembersConfirmation(conversationKey, selected);
+    });
+
+    detailsView.style.display = 'none';
+    hostView.style.display = 'block';
+};
+
+
+
+// (4) Màn hình xác nhận Add
+//function showAddMembersConfirmation(conversationKey, selected) {
+//    const detailsView = document.getElementById('group-details-view');
+//    const hostView = document.getElementById('remove-member-confirmation-view');
+//    if (!detailsView || !hostView) return;
+
+//    const names = selected.map(s => s.Name).join(', ');
+//    hostView.className = 'confirmation-content';
+//    hostView.innerHTML = `
+//        <div class="p-2">
+//            <p style="font-weight:600;">Add the following member(s) to this group?</p>
+//            <div class="mb-3 small text-break">${__escHtml(names || 'No one selected')}</div>
+//            <div class="d-flex justify-content-end gap-2">
+//                <button class="btn btn-secondary" id="btnBackToSelect">No</button>
+//                <button class="btn btn-primary" id="btnDoAdd">Yes</button>
+//            </div>
+//        </div>
+//    `;
+
+//    hostView.querySelector('#btnBackToSelect').onclick = () => {
+//        const preselected = selected.map(s => s.UserKey);
+//        window.showAddMemberPopup(conversationKey, preselected);
+//    };
+
+//    hostView.querySelector('#btnDoAdd').onclick = async () => {
+//        try {
+//            const res = await fetch('/api/conversations/AddMembers', {
+//                method: 'POST',
+//                headers: { 'Content-Type': 'application/json' },
+//                credentials: 'include',
+//                body: JSON.stringify({
+//                    conversationKey,
+//                    newMembers: selected.map(s => ({
+//                        userKey: s.UserKey,
+//                        userType: s.UserType,
+//                        userName: s.Name
+//                    }))
+//                })
+//            });
+//            const json = await res.json();
+//            if (json && json.success) {
+//                showNotification('Members added successfully', 'success');
+//                await window.showGroupDetails(conversationKey);
+//            } else {
+//                showNotification(json.message || 'Failed to add members', 'error');
+//                window.showAddMemberPopup(conversationKey, selected.map(s => s.UserKey));
+//            }
+//        } catch (err) {
+//            console.error('[AddMembers] error:', err);
+//            showNotification('Error adding members', 'error');
+//            window.showAddMemberPopup(conversationKey, selected.map(s => s.UserKey));
+//        }
+//    };
+
+//    detailsView.style.display = 'none';
+//    hostView.style.display = 'block';
+//}
+function showAddMembersConfirmation(conversationKey, selected) {
+    window.allMessages = window.allMessages || []; // đảm bảo tồn tại
+
+    const detailsView = document.getElementById('group-details-view');
+    const hostView = document.getElementById('remove-member-confirmation-view');
+    if (!detailsView || !hostView) return;
+
+    const names = selected.map(s => s.Name).join(', ');
+    hostView.className = 'confirmation-content';
+    hostView.innerHTML = `
+        <div class="p-2">
+            <p style="font-weight:600;">Add the following member(s) to this group?</p>
+            <div class="mb-3 small text-break">${__escHtml(names || 'No one selected')}</div>
+            <div class="d-flex justify-content-end gap-2">
+                <button class="btn btn-secondary" id="btnBackToSelect">No</button>
+                <button class="btn btn-primary" id="btnDoAdd">Yes</button>
+            </div>
+        </div>
+    `;
+
+    hostView.querySelector('#btnBackToSelect').onclick = () => {
+        const preselected = selected.map(s => s.UserKey);
+        window.showAddMemberPopup(conversationKey, preselected);
+    };
+
+    hostView.querySelector('#btnDoAdd').onclick = async () => {
+        const payload = {
+            conversationKey,
+            newMembers: selected.map(s => ({
+                userKey: s.UserKey,
+                userType: s.UserType,
+                userName: s.Name
+            }))
+        };
+
+        try {
+            const res = await fetch('/api/conversations/AddMembers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(payload)
+            });
+            const json = await res.json();
+            console.log('[AddMembers] raw json:', json);
+
+            const isSuccess = json && (json.success === true || String(json.success).toLowerCase() === 'true');
+            if (!isSuccess) {
+                showNotification(json?.message || 'Failed to add members', 'error');
+                window.showAddMemberPopup(conversationKey, selected.map(s => s.UserKey));
+                return;
+            }
+
+            const result = json.data || json;
+            const msgs = Array.isArray(result?.messages) ? result.messages : [];
+
+            if (msgs.length > 0) {
+                const normalized = msgs.map(m => ({
+                    MessageKey: (m["messageKey"] || m["MessageKey"] || '').toString(),
+                    ConversationKey: conversationKey,
+                    SenderKey: null,
+                    SenderName: null,
+                    SenderAvatar: null,
+                    MessageType: "Text",
+                    Content: m["systemContent"] || m["content"] || m["Content"] || '',
+                    ParentMessageKey: null,
+                    CreatedOn: m["createdOn"] || new Date().toISOString(),
+                    Status: 1,
+                    IsPinned: false,
+                    IsSystemMessage: true,
+                    Url: null
+                }));
+
+                normalized.forEach(msg => {
+                    if (!msg.MessageKey) return;
+                    if (!window.allMessages.some(x => x.MessageKey === msg.MessageKey)) {
+                        window.allMessages.push(msg);
+                    } else {
+                        console.log('[AddMembersConfirmation] skipped existing message', msg.MessageKey);
+                    }
+                });
+
+                if (String(window.currentConversationKey) === String(conversationKey)) {
+                    const msgsForConv = window.allMessages
+                        .filter(m => String(m.ConversationKey) === String(window.currentConversationKey))
+                        .sort((a, b) => new Date(a.CreatedOn) - new Date(b.CreatedOn));
+                    messageList.innerHTML = msgsForConv.map(m => addMessage(m)).join('');
+                    setTimeout(() => {
+                        messageList.scrollTop = messageList.scrollHeight;
+                    }, 0);
+                } else {
+                    const convItem = document.querySelector(`.conversation-item[data-conversation-key="${conversationKey}"]`);
+                    if (convItem) {
+                        const lastMessageEl = convItem.querySelector("p.small.mb-0");
+                        const timeEl = convItem.querySelector("p.small.mb-1");
+                        if (lastMessageEl) lastMessageEl.textContent = normalized[normalized.length - 1].Content || 'New message';
+                        if (timeEl) {
+                            const formatFn = window.formatTime || function (dt) {
+                                try {
+                                    return new Date(dt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                } catch {
+                                    return '';
+                                }
+                            };
+                            timeEl.textContent = formatFn(normalized[normalized.length - 1].CreatedOn);
+                        }
+
+
+                        const unreadBadge = convItem.querySelector(".badge");
+                        if (unreadBadge) {
+                            unreadBadge.textContent = (parseInt(unreadBadge.textContent) || 0) + normalized.length;
+                        } else {
+                            const newBadge = document.createElement("span");
+                            newBadge.className = "badge bg-danger rounded-pill px-2";
+                            newBadge.textContent = String(normalized.length);
+                            const endContainer = convItem.querySelector(".text-end") || convItem;
+                            endContainer.appendChild(newBadge);
+                        }
+
+                        window.unreadCount = (typeof window.unreadCount === 'number')
+                            ? window.unreadCount + normalized.length
+                            : normalized.length;
+                        if (typeof updateUnreadCount === 'function') updateUnreadCount(window.unreadCount);
+                    }
+                }
+            }
+
+            showNotification('Members added successfully', 'success');
+            await window.showGroupDetails(conversationKey);
+
+        } catch (err) {
+            console.error('[AddMembers] error:', err);
+            showNotification('Error adding members', 'error');
+            window.showAddMemberPopup(conversationKey, selected.map(s => s.UserKey));
+        }
+    };
+
+    detailsView.style.display = 'none';
+    hostView.style.display = 'block';
+}
+
+

@@ -9,6 +9,7 @@ using TNS_TOEICTest.Hubs;
 using Newtonsoft.Json;
 using static TNS_TOEICAdmin.Models.ChatAccessData;
 using Microsoft.AspNetCore.Authorization;
+using TNS_TOEICTest.Models.Chat;
 
 
 namespace TNS_TOEICTest.Controllers
@@ -227,41 +228,27 @@ namespace TNS_TOEICTest.Controllers
 
         [HttpGet("GetGroupDetails/{conversationKey}")]
         public async Task<IActionResult> GetGroupDetails(string conversationKey)
-       {
+        {
+            var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
+            var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
+            var currentMemberKey = memberLogin.MemberKey;
+
             var groupDetails = await ChatAccessData.GetGroupDetailsAsync(conversationKey);
             if (groupDetails == null)
             {
                 return NotFound(new { success = false, message = "Group not found." });
             }
-            return Ok(groupDetails);
+
+            // Trả thêm currentMemberKey về cho client
+            return Ok(new
+            {
+                success = true,
+                currentMemberKey,
+                data = groupDetails
+            });
         }
 
-        //[HttpPost("UpdateGroupAvatar")]
-        //[Authorize] // Yêu cầu xác thực
-        //public async Task<IActionResult> UpdateGroupAvatar([FromForm] IFormCollection formData)
-        //{
-        //    var conversationKey = formData["ConversationKey"];
-        //    var file = formData.Files["File"];
 
-        //    if (string.IsNullOrEmpty(conversationKey) || file == null || file.Length == 0)
-        //        return BadRequest(new { success = false, message = "Invalid input" });
-
-        //    // Lấy MemberKey từ ClaimsPrincipal
-        //    var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
-        //    var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
-        //    var currentMemberKey = memberLogin.MemberKey;
-
-        //    if (string.IsNullOrEmpty(currentMemberKey))
-        //        return Unauthorized(new { success = false, message = "MemberKey not found" });
-
-        //    // Gọi AccessData để kiểm tra role và cập nhật avatar
-        //    var result = await ChatAccessData.UpdateGroupAvatarAsync(conversationKey, currentMemberKey, file, HttpContext);
-        //    if (result["success"].ToString() == "True")
-        //    {
-        //        await _hubContext.Clients.Group(conversationKey).SendAsync("UpdateGroupAvatar", conversationKey, result["newAvatarUrl"].ToString());
-        //    }
-        //    return Ok(result);
-        //}
         [HttpPost("UpdateGroupAvatar")]
         [Authorize]
         public async Task<IActionResult> UpdateGroupAvatar([FromForm] IFormCollection formData)
@@ -430,6 +417,92 @@ namespace TNS_TOEICTest.Controllers
             }
 
             return Ok(new { success = false, message = result["message"]?.ToString() ?? "Remove failed" });
+        }
+        [HttpPost("GetAddableMembers")]
+        public async Task<IActionResult> GetAddableMembers([FromBody] AddableMembersRequest request)
+        {
+            if (string.IsNullOrEmpty(request.ConversationKey) || request.ExcludeKeys == null)
+                return BadRequest(new { success = false, message = "Invalid input" });
+
+            var result = await ChatAccessData.GetAddableMembersAsync(request.ConversationKey, request.ExcludeKeys);
+            return Ok(new { success = true, items = result });
+        }
+        [HttpPost("AddMembers")]
+        [Authorize]
+        public async Task<IActionResult> AddMembers([FromBody] AddMembersRequest request)
+        {
+            string conversationKey = request.ConversationKey?.Trim();
+            var newMembers = request.NewMembers ?? new List<NewMemberInfo>();
+
+            if (string.IsNullOrEmpty(conversationKey) || newMembers.Count == 0)
+                return BadRequest(new { success = false, message = "Invalid input" });
+
+            var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
+            var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
+            var currentMemberKey = memberLogin.MemberKey;
+            var currentMemberName = memberLogin.MemberName;
+
+            if (string.IsNullOrEmpty(currentMemberKey))
+                return Unauthorized(new { success = false, message = "MemberKey not found" });
+
+            var result = await ChatAccessData.AddMembersAsync(
+                conversationKey,
+                currentMemberKey,
+                currentMemberName,
+                newMembers,
+                HttpContext
+            );
+
+            if (result != null && result.ContainsKey("success") && result["success"]?.ToString() == "True")
+            {
+                // Gửi realtime MemberAdded (cập nhật UI nhóm)
+                foreach (var mem in newMembers)
+                {
+                    await _hubContext.Clients.Group(conversationKey)
+                        .SendAsync("MemberAdded", conversationKey, mem.UserKey, currentMemberName);
+                }
+
+                // Gửi các system message vừa insert
+                if (result.ContainsKey("messages") && result["messages"] is List<Dictionary<string, object>> msgList)
+                {
+                    foreach (var msg in msgList)
+                    {
+                        DateTime createdOn;
+                        if (!DateTime.TryParse(msg["createdOn"]?.ToString(), out createdOn))
+                            createdOn = DateTime.UtcNow;
+
+                        var messageObj = new
+                        {
+                            MessageKey = msg["messageKey"]?.ToString(),
+                            ConversationKey = conversationKey,
+                            SenderKey = (string)null,
+                            SenderName = (string)null,
+                            SenderAvatar = (string)null,
+                            MessageType = "Text",
+                            Content = msg["systemContent"]?.ToString(),
+                            ParentMessageKey = (string)null,
+                            CreatedOn = createdOn,
+                            Status = 1,
+                            IsPinned = false,
+                            IsSystemMessage = true,
+                            Url = (string)null
+                        };
+
+                        await _hubContext.Clients.Group(conversationKey)
+                            .SendAsync("ReceiveMessage", messageObj);
+                    }
+                }
+
+                return Ok(new { success = true, data = result });
+            }
+
+            return Ok(new { success = false, message = result["message"]?.ToString() ?? "Add members failed" });
+        }
+      
+        public class AddableMembersRequest
+        {
+            public string ConversationKey { get; set; }
+            public List<string> ExcludeKeys { get; set; }
         }
 
         public class RemoveMemberRequest

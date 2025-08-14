@@ -2,8 +2,10 @@
 using Microsoft.Data.SqlClient;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
+using TNS_TOEICTest.Models.Chat;
 
 namespace TNS_TOEICAdmin.Models
 {
@@ -1231,6 +1233,217 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
                     { "messageKey", messageKey },
                     { "systemContent", systemContent },
                     { "createdOn", createdOn }
+                };
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        return new Dictionary<string, object> {
+                    { "success", false },
+                    { "message", $"Error: {ex.Message}" }
+                };
+                    }
+                }
+            }
+        }
+
+        public static async Task<List<Dictionary<string, object>>> GetAddableMembersAsync(string conversationKey, List<string> excludeKeys)
+        {
+            var results = new List<Dictionary<string, object>>();
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                // Lấy danh sách tất cả Member (loại trừ những người đã ở trong nhóm)
+                var memberQuery = @"
+            SELECT m.MemberKey AS UserKey, m.MemberName AS Name, 
+                   ISNULL(m.Avatar, '/images/avatar/default-avatar.jpg') AS Avatar, 
+                   'Member' AS UserType
+            FROM EDU_Member m
+            WHERE m.MemberKey NOT IN (@ExcludeKeys)";
+
+                // Lấy danh sách tất cả Admin/User (loại trừ những người đã ở trong nhóm)
+                var userQuery = @"
+            SELECT u.UserKey, u.UserName AS Name, 
+                   ISNULL(e.PhotoPath, '/images/avatar/default-avatar.jpg') AS Avatar, 
+                   'Admin' AS UserType
+            FROM SYS_Users u
+            JOIN HRM_Employee e ON u.EmployeeKey = e.EmployeeKey
+            WHERE u.UserKey NOT IN (@ExcludeKeys)";
+
+                // Tạo table parameter cho ExcludeKeys
+                var excludeTable = new DataTable();
+                excludeTable.Columns.Add("Key", typeof(string));
+                foreach (var key in excludeKeys.Distinct())
+                    excludeTable.Rows.Add(key);
+
+                var queries = new[]
+                {
+            (query: memberQuery, type: "Member"),
+            (query: userQuery, type: "Admin")
+        };
+
+                foreach (var (q, _) in queries)
+                {
+                    using (var command = new SqlCommand(q.Replace("@ExcludeKeys",
+                        string.Join(",", excludeKeys.Select(k => $"'{k}'"))), connection))
+                    {
+                        using (var reader = await command.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                var avatar = reader["Avatar"]?.ToString();
+                                if (reader["UserType"].ToString() == "Admin" && !string.IsNullOrEmpty(avatar) && !avatar.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                                    avatar = $"https://localhost:7078/{avatar}";
+
+                                results.Add(new Dictionary<string, object>
+                        {
+                            { "UserKey", reader["UserKey"] },
+                            { "Name", reader["Name"] },
+                            { "Avatar", avatar ?? "/images/avatar/default-avatar.jpg" },
+                            { "UserType", reader["UserType"] }
+                        });
+                            }
+                        }
+                    }
+                }
+            }
+            return results;
+        }
+        public static async Task<Dictionary<string, object>> AddMembersAsync(
+    string conversationKey,
+    string adminKey,
+    string adminName,
+    List<NewMemberInfo> newMembers,
+    HttpContext httpContext)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var transaction = connection.BeginTransaction())
+                {
+                    try
+                    {
+                        // Kiểm tra quyền Admin
+                        var roleQuery = @"
+                    SELECT [Role]
+                    FROM [TNS_Toeic].[dbo].[ConversationParticipants]
+                    WHERE [ConversationKey] = @ConversationKey AND [UserKey] = @MemberKey AND [IsApproved] = 1";
+                        using (var cmd = new SqlCommand(roleQuery, connection, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            cmd.Parameters.AddWithValue("@MemberKey", adminKey);
+                            var role = (await cmd.ExecuteScalarAsync())?.ToString();
+                            if (role != "Admin")
+                            {
+                                return new Dictionary<string, object> {
+                            { "success", false },
+                            { "message", "ACCESS DENIED" }
+                        };
+                            }
+                        }
+
+                        var messageKeys = new List<string>();
+                        var messagesList = new List<object>();
+                        DateTime lastCreatedOn = DateTime.Now;
+                        string lastMessageKey = null;
+
+                        foreach (var nm in newMembers)
+                        {
+                            // Insert vào ConversationParticipants
+                            var participantKey = Guid.NewGuid().ToString();
+                            var insertParticipantQuery = @"
+                        INSERT INTO [TNS_Toeic].[dbo].[ConversationParticipants]
+                        ([ParticipantKey],[ConversationKey],[UserKey],[UserType],[Role],[JoinedOn],[UnreadCount],
+                         [LastReadMessageKey],[IsBanned],[IsApproved])
+                        VALUES
+                        (@ParticipantKey,@ConversationKey,@UserKey,@UserType,'Member',@JoinedOn,0,NULL,0,1)";
+                            using (var cmd = new SqlCommand(insertParticipantQuery, connection, transaction))
+                            {
+                                cmd.Parameters.AddWithValue("@ParticipantKey", participantKey);
+                                cmd.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                                cmd.Parameters.AddWithValue("@UserKey", nm.UserKey);
+                                cmd.Parameters.AddWithValue("@UserType", nm.UserType ?? "Member");
+                                cmd.Parameters.AddWithValue("@JoinedOn", DateTime.Now);
+                                await cmd.ExecuteNonQueryAsync();
+                            }
+
+                            // Insert System Message
+                            var messageKey = Guid.NewGuid().ToString();
+                            var createdOn = DateTime.Now;
+                            var content = $"{nm.UserName} added to group by {adminName}";
+
+                            var insertMsgQuery = @"
+                        INSERT INTO [TNS_Toeic].[dbo].[Messages]
+                        ([MessageKey],[ConversationKey],[SenderKey],[SenderType],[ReceiverKey],[ReceiverType],
+                         [MessageType],[Content],[ParentMessageKey],[CreatedOn],[Status],[IsPinned],[IsSystemMessage])
+                        VALUES
+                        (@MessageKey,@ConversationKey,NULL,NULL,NULL,NULL,'Text',@Content,NULL,@CreatedOn,1,0,1)";
+                            using (var cmd = new SqlCommand(insertMsgQuery, connection, transaction))
+                            {
+                                cmd.Parameters.AddWithValue("@MessageKey", messageKey);
+                                cmd.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                                cmd.Parameters.AddWithValue("@Content", content);
+                                cmd.Parameters.AddWithValue("@CreatedOn", createdOn);
+                                await cmd.ExecuteNonQueryAsync();
+                            }
+
+                            messageKeys.Add(messageKey);
+                            lastMessageKey = messageKey;
+                            lastCreatedOn = createdOn;
+
+                            // Thêm vào danh sách để trả về cho SignalR
+                            messagesList.Add(new
+                            {
+                                MessageKey = messageKey,
+                                ConversationKey = conversationKey,
+                                SenderKey = (string)null,
+                                SenderName = (string)null,
+                                SenderAvatar = (string)null,
+                                MessageType = "Text",
+                                Content = content,
+                                ParentMessageKey = (string)null,
+                                CreatedOn = createdOn,
+                                Status = 1,
+                                IsPinned = false,
+                                IsSystemMessage = true,
+                                Url = (string)null
+                            });
+                        }
+
+                        // Update UnreadCount
+                        var updateUnreadCountQuery = @"
+                    UPDATE [TNS_Toeic].[dbo].[ConversationParticipants]
+                    SET UnreadCount = UnreadCount + @AddCount
+                    WHERE ConversationKey = @ConversationKey";
+                        using (var cmd = new SqlCommand(updateUnreadCountQuery, connection, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            cmd.Parameters.AddWithValue("@AddCount", messageKeys.Count);
+                            await cmd.ExecuteNonQueryAsync();
+                        }
+
+                        // Update LastMessageKey & LastMessageTime
+                        if (!string.IsNullOrEmpty(lastMessageKey))
+                        {
+                            var updateLastMessageQuery = @"
+                        UPDATE [TNS_Toeic].[dbo].[Conversations]
+                        SET LastMessageKey = @LastMessageKey, LastMessageTime = @LastMessageTime
+                        WHERE ConversationKey = @ConversationKey";
+                            using (var cmd = new SqlCommand(updateLastMessageQuery, connection, transaction))
+                            {
+                                cmd.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                                cmd.Parameters.AddWithValue("@LastMessageKey", lastMessageKey);
+                                cmd.Parameters.AddWithValue("@LastMessageTime", lastCreatedOn);
+                                await cmd.ExecuteNonQueryAsync();
+                            }
+                        }
+
+                        transaction.Commit();
+                        return new Dictionary<string, object> {
+                    { "success", true },
+                    { "messages", messagesList }
                 };
                     }
                     catch (Exception ex)
