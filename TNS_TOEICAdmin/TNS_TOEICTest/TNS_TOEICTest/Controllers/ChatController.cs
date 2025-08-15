@@ -427,6 +427,154 @@ namespace TNS_TOEICTest.Controllers
             var result = await ChatAccessData.GetAddableMembersAsync(request.ConversationKey, request.ExcludeKeys);
             return Ok(new { success = true, items = result });
         }
+        //[HttpPost("AddMembers")]
+        //[Authorize]
+        //public async Task<IActionResult> AddMembers([FromBody] AddMembersRequest request)
+        //{
+        //    string conversationKey = request.ConversationKey?.Trim();
+        //    var newMembers = request.NewMembers ?? new List<NewMemberInfo>();
+
+        //    if (string.IsNullOrEmpty(conversationKey) || newMembers.Count == 0)
+        //        return BadRequest(new { success = false, message = "Invalid input" });
+
+        //    var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
+        //    var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
+        //    var currentMemberKey = memberLogin.MemberKey;
+        //    var currentMemberName = memberLogin.MemberName;
+
+        //    if (string.IsNullOrEmpty(currentMemberKey))
+        //        return Unauthorized(new { success = false, message = "MemberKey not found" });
+
+        //    var result = await ChatAccessData.AddMembersAsync(
+        //        conversationKey,
+        //        currentMemberKey,
+        //        currentMemberName,
+        //        newMembers,
+        //        HttpContext
+        //    );
+
+        //    if (result != null && result.ContainsKey("success") && result["success"]?.ToString() == "True")
+        //    {
+        //        // Gửi realtime MemberAdded (cập nhật UI nhóm)
+        //        foreach (var mem in newMembers)
+        //        {
+        //            await _hubContext.Clients.Group(conversationKey)
+        //                .SendAsync("MemberAdded", conversationKey, mem.UserKey, currentMemberName);
+        //        }
+
+        //        // Gửi các system message vừa insert
+        //        if (result.ContainsKey("messages") && result["messages"] is List<Dictionary<string, object>> msgList)
+        //        {
+        //            foreach (var msg in msgList)
+        //            {
+        //                DateTime createdOn;
+        //                if (!DateTime.TryParse(msg["createdOn"]?.ToString(), out createdOn))
+        //                    createdOn = DateTime.UtcNow;
+
+        //                var messageObj = new
+        //                {
+        //                    MessageKey = msg["messageKey"]?.ToString(),
+        //                    ConversationKey = conversationKey,
+        //                    SenderKey = (string)null,
+        //                    SenderName = (string)null,
+        //                    SenderAvatar = (string)null,
+        //                    MessageType = "Text",
+        //                    Content = msg["systemContent"]?.ToString(),
+        //                    ParentMessageKey = (string)null,
+        //                    CreatedOn = createdOn,
+        //                    Status = 1,
+        //                    IsPinned = false,
+        //                    IsSystemMessage = true,
+        //                    Url = (string)null
+        //                };
+
+        //                await _hubContext.Clients.Group(conversationKey)
+        //                    .SendAsync("ReceiveMessage", messageObj);
+        //            }
+        //        }
+
+        //        return Ok(new { success = true, data = result });
+        //    }
+
+        //    return Ok(new { success = false, message = result["message"]?.ToString() ?? "Add members failed" });
+        //}
+        // Trong file: ChatController.cs
+
+        //[HttpPost("AddMembers")]
+        //[Authorize]
+        //public async Task<IActionResult> AddMembers([FromBody] AddMembersRequest request)
+        //{
+        //    string conversationKey = request.ConversationKey?.Trim();
+        //    var newMembers = request.NewMembers ?? new List<NewMemberInfo>();
+
+        //    if (string.IsNullOrEmpty(conversationKey) || newMembers.Count == 0)
+        //        return BadRequest(new { success = false, message = "Invalid input" });
+
+        //    var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
+        //    var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
+        //    var currentMemberKey = memberLogin.MemberKey;
+        //    var currentMemberName = memberLogin.MemberName;
+
+        //    if (string.IsNullOrEmpty(currentMemberKey))
+        //        return Unauthorized(new { success = false, message = "MemberKey not found" });
+
+        //    var result = await ChatAccessData.AddMembersAsync(
+        //        conversationKey,
+        //        currentMemberKey,
+        //        currentMemberName,
+        //        newMembers,
+        //        HttpContext
+        //    );
+
+        //    if (result != null && result.ContainsKey("success") && result["success"]?.ToString() == "True")
+        //    {
+        //        // Gửi tín hiệu cập nhật UI chi tiết nhóm
+        //        foreach (var mem in newMembers)
+        //        {
+        //            await _hubContext.Clients.Group(conversationKey)
+        //                .SendAsync("MemberAdded", conversationKey, mem.UserKey, currentMemberName);
+        //        }
+
+        //        // ✅ THAY ĐỔI QUAN TRỌNG:
+        //        // Gộp tất cả tin nhắn hệ thống và gửi đi trong MỘT tín hiệu duy nhất.
+        //        if (result.ContainsKey("messages") && result["messages"] is List<Dictionary<string, object>> msgList && msgList.Any())
+        //        {
+        //            // Chuyển đổi toàn bộ danh sách sang định dạng chuẩn
+        //            var messageObjects = msgList.Select(msg => {
+        //                DateTime createdOn;
+        //                if (!DateTime.TryParse(msg["createdOn"]?.ToString(), out createdOn))
+        //                    createdOn = DateTime.UtcNow;
+
+        //                return new
+        //                {
+        //                    MessageKey = msg["messageKey"]?.ToString(),
+        //                    ConversationKey = conversationKey,
+        //                    SenderKey = (string)null,
+        //                    SenderName = (string)null,
+        //                    SenderAvatar = (string)null,
+        //                    MessageType = "Text",
+        //                    Content = msg["systemContent"]?.ToString(),
+        //                    ParentMessageKey = (string)null,
+        //                    CreatedOn = createdOn,
+        //                    Status = 1,
+        //                    IsPinned = false,
+        //                    IsSystemMessage = true,
+        //                    Url = (string)null
+        //                };
+        //            }).ToList();
+
+        //            // Gửi mảng tin nhắn đi
+        //            await _hubContext.Clients.Group(conversationKey)
+        //                .SendAsync("ReceiveMultipleMessages", messageObjects);
+        //        }
+
+        //        return Ok(new { success = true, data = result });
+        //    }
+
+        //    return Ok(new { success = false, message = result?["message"]?.ToString() ?? "Add members failed" });
+        //}
+
+        // Trong file: ChatController.cs
         [HttpPost("AddMembers")]
         [Authorize]
         public async Task<IActionResult> AddMembers([FromBody] AddMembersRequest request)
@@ -453,52 +601,77 @@ namespace TNS_TOEICTest.Controllers
                 HttpContext
             );
 
-            if (result != null && result.ContainsKey("success") && result["success"]?.ToString() == "True")
+            // Log để kiểm tra kết quả từ DAL
+            Console.WriteLine($"[AddMembers] Result from DAL: {JsonConvert.SerializeObject(result, Formatting.Indented)}");
+
+            // Kiểm tra kiểu của result["messages"]
+            if (result.ContainsKey("messages"))
             {
-                // Gửi realtime MemberAdded (cập nhật UI nhóm)
-                foreach (var mem in newMembers)
-                {
-                    await _hubContext.Clients.Group(conversationKey)
-                        .SendAsync("MemberAdded", conversationKey, mem.UserKey, currentMemberName);
-                }
-
-                // Gửi các system message vừa insert
-                if (result.ContainsKey("messages") && result["messages"] is List<Dictionary<string, object>> msgList)
-                {
-                    foreach (var msg in msgList)
-                    {
-                        DateTime createdOn;
-                        if (!DateTime.TryParse(msg["createdOn"]?.ToString(), out createdOn))
-                            createdOn = DateTime.UtcNow;
-
-                        var messageObj = new
-                        {
-                            MessageKey = msg["messageKey"]?.ToString(),
-                            ConversationKey = conversationKey,
-                            SenderKey = (string)null,
-                            SenderName = (string)null,
-                            SenderAvatar = (string)null,
-                            MessageType = "Text",
-                            Content = msg["systemContent"]?.ToString(),
-                            ParentMessageKey = (string)null,
-                            CreatedOn = createdOn,
-                            Status = 1,
-                            IsPinned = false,
-                            IsSystemMessage = true,
-                            Url = (string)null
-                        };
-
-                        await _hubContext.Clients.Group(conversationKey)
-                            .SendAsync("ReceiveMessage", messageObj);
-                    }
-                }
-
-                return Ok(new { success = true, data = result });
+                Console.WriteLine($"[AddMembers] Type of result['messages']: {result["messages"].GetType().FullName}");
+                Console.WriteLine($"[AddMembers] Raw result['messages']: {JsonConvert.SerializeObject(result["messages"], Formatting.Indented)}");
+            }
+            else
+            {
+                Console.WriteLine("[AddMembers] WARNING: 'messages' key not found in result.");
             }
 
-            return Ok(new { success = false, message = result["message"]?.ToString() ?? "Add members failed" });
+            // Sử dụng IList<object> để tránh lỗi CS0305
+            if (result.ContainsKey("messages") && result["messages"] is IList<object> msgList && msgList.Count > 0)
+            {
+                Console.WriteLine($"[AddMembers] Found {msgList.Count} system messages to send.");
+                var messageObjects = msgList.Select(msg => new
+                {
+                    MessageKey = msg.GetType().GetProperty("MessageKey")?.GetValue(msg)?.ToString(),
+                    ConversationKey = msg.GetType().GetProperty("ConversationKey")?.GetValue(msg)?.ToString() ?? conversationKey,
+                    SenderKey = msg.GetType().GetProperty("SenderKey")?.GetValue(msg)?.ToString(),
+                    SenderName = msg.GetType().GetProperty("SenderName")?.GetValue(msg)?.ToString(),
+                    SenderAvatar = msg.GetType().GetProperty("SenderAvatar")?.GetValue(msg)?.ToString(),
+                    MessageType = msg.GetType().GetProperty("MessageType")?.GetValue(msg)?.ToString() ?? "Text",
+                    Content = msg.GetType().GetProperty("Content")?.GetValue(msg)?.ToString(),
+                    ParentMessageKey = msg.GetType().GetProperty("ParentMessageKey")?.GetValue(msg)?.ToString(),
+                    CreatedOn = DateTime.TryParse(msg.GetType().GetProperty("CreatedOn")?.GetValue(msg)?.ToString(), out var createdOn) ? createdOn : DateTime.UtcNow,
+                    Status = int.TryParse(msg.GetType().GetProperty("Status")?.GetValue(msg)?.ToString(), out var status) ? status : 1,
+                    IsPinned = bool.TryParse(msg.GetType().GetProperty("IsPinned")?.GetValue(msg)?.ToString(), out var isPinned) ? isPinned : false,
+                    IsSystemMessage = bool.TryParse(msg.GetType().GetProperty("IsSystemMessage")?.GetValue(msg)?.ToString(), out var isSystem) ? isSystem : true,
+                    Url = msg.GetType().GetProperty("Url")?.GetValue(msg)?.ToString()
+                }).ToList();
+
+                Console.WriteLine($"[AddMembers] Sending ReceiveMultipleMessages: {JsonConvert.SerializeObject(messageObjects, Formatting.Indented)}");
+                await _hubContext.Clients.Group(conversationKey)
+                    .SendAsync("ReceiveMultipleMessages", messageObjects);
+            }
+            else
+            {
+                Console.WriteLine("[AddMembers] WARNING: 'messages' key not found or empty. Creating fallback system messages.");
+                var messageObjects = newMembers.Select(mem => new
+                {
+                    MessageKey = Guid.NewGuid().ToString(),
+                    ConversationKey = conversationKey,
+                    SenderKey = (string)null,
+                    SenderName = (string)null,
+                    SenderAvatar = (string)null,
+                    MessageType = "Text",
+                    Content = $"{mem.UserName} added to group by {currentMemberName}",
+                    ParentMessageKey = (string)null,
+                    CreatedOn = DateTime.UtcNow,
+                    Status = 1,
+                    IsPinned = false,
+                    IsSystemMessage = true,
+                    Url = (string)null
+                }).ToList();
+
+                Console.WriteLine($"[AddMembers] Sending fallback ReceiveMultipleMessages: {JsonConvert.SerializeObject(messageObjects, Formatting.Indented)}");
+                await _hubContext.Clients.Group(conversationKey)
+                    .SendAsync("ReceiveMultipleMessages", messageObjects);
+            }
+
+            // Sửa lỗi CS1503: Kiểm tra result["success"] và result["message"] cẩn thận
+            bool success = result.ContainsKey("success") && result["success"] is bool s && s;
+            string message = result.ContainsKey("message") && result["message"] != null ? result["message"].ToString() : (success ? "Members added successfully" : "Add members failed");
+
+            return Ok(new { success, message });
         }
-      
+
         public class AddableMembersRequest
         {
             public string ConversationKey { get; set; }

@@ -148,6 +148,15 @@ async function startConnection(connection, memberKey) {
             }
         });
 
+        connection.on("MemberAdded", (conversationKey, userKey, operatorName) => {
+            console.log("[MemberAdded] received", { conversationKey, userKey, operatorName, currentConversationKey });
+            if (String(currentConversationKey) === String(conversationKey)) {
+                // Làm giống RemoveMember: refresh chi tiết nhóm
+                window.showGroupDetails(conversationKey);
+            }
+        });
+
+
 
     } catch (err) {
         console.error("[startConnection] Connection failed:", err);
@@ -263,6 +272,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             timeout = setTimeout(() => func.apply(this, args), wait);
         };
     }
+
 
     function attachIconListeners() {
         const blockIcon = document.getElementById("iconBlock");
@@ -765,6 +775,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }, 300));
 
+
     //window.connection.on("ReceiveMessage", (message) => {
     //    // Normalize property names from server (case-insensitive)
     //    message = {
@@ -790,7 +801,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     //        messageConversationKey: message.ConversationKey
     //    });
 
-    //    allMessages.push(message);
+    //    if (message.MessageKey && allMessages.some(m => m.MessageKey === message.MessageKey)) {
+    //        console.log('[ReceiveMessage] duplicate message skipped:', message.MessageKey);
+    //    } else {
+    //        allMessages.push(message);
+    //    }
 
     //    const addMessageToUI = (attempt = 1, maxAttempts = 5) => {
     //        if (!messageList) {
@@ -809,22 +824,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     //            return;
     //        }
 
-    //        // Case 1: Message belongs to the current open conversation
+    //        // Nếu tin nhắn thuộc cuộc hội thoại đang mở
     //        if (String(message.ConversationKey) === String(currentConversationKey)) {
     //            console.log("[ReceiveMessage] Adding to UI:", message);
 
-    //            // Nếu là system message -> render style đặc biệt
-    //            if (message.IsSystemMessage) {
-    //                const systemMsgHtml = `
-    //                <li class="message system-message">
-    //                    <div id="system-message-box">${message.Content}</div>
-    //                </li>
-    //            `;
-    //                messageList.insertAdjacentHTML("beforeend", systemMsgHtml);
-    //            } else {
-    //                // Render tin nhắn thường
-    //                messageList.insertAdjacentHTML("beforeend", addMessage(message));
-    //            }
+    //            // ✅ Luôn dùng addMessage() để render đúng CSS
+    //            messageList.insertAdjacentHTML("beforeend", addMessage(message));
 
     //            // Cuộn xuống cuối
     //            setTimeout(() => {
@@ -832,7 +837,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     //                console.log("[ReceiveMessage] Scrolled to bottom");
     //            }, 0);
     //        }
-    //        // Case 2: Message belongs to another conversation
+    //        // Nếu tin nhắn thuộc cuộc hội thoại khác
     //        else {
     //            console.log("[ReceiveMessage] Message for other conversation:", message.ConversationKey);
     //            const convItem = document.querySelector(`.conversation-item[data-conversation-key="${message.ConversationKey}"]`);
@@ -861,100 +866,192 @@ document.addEventListener("DOMContentLoaded", async () => {
     //    addMessageToUI();
     //});
 
-    window.connection.on("ReceiveMessage", (message) => {
-        // Normalize property names from server (case-insensitive)
-        message = {
-            ...message,
-            ConversationKey: message.ConversationKey || message.conversationKey,
-            MessageKey: message.MessageKey || message.messageKey,
-            SenderKey: message.SenderKey || message.senderKey,
-            SenderName: message.SenderName || message.senderName,
-            SenderAvatar: message.SenderAvatar || message.senderAvatar,
-            MessageType: message.MessageType || message.messageType,
-            Content: message.Content || message.content,
-            ParentMessageKey: message.ParentMessageKey || message.parentMessageKey,
-            CreatedOn: message.CreatedOn || message.createdOn,
-            Status: message.Status ?? message.status,
-            IsPinned: message.IsPinned ?? message.isPinned,
-            IsSystemMessage: message.IsSystemMessage ?? message.isSystemMessage,
-            Url: message.Url || message.url
-        };
 
-        console.log("[ReceiveMessage] Received:", JSON.stringify(message));
-        console.log("[ReceiveMessage] Current state:", {
+    // === FIXED ReceiveMessage handler ===
+    //window.connection.on("ReceiveMessage", (raw) => {
+    //    // 1) Chuẩn hóa tên field
+    //    const message = {
+    //        ConversationKey: raw.ConversationKey ?? raw.conversationKey,
+    //        MessageKey: raw.MessageKey ?? raw.messageKey,
+    //        SenderKey: raw.SenderKey ?? raw.senderKey,
+    //        SenderName: raw.SenderName ?? raw.senderName,
+    //        SenderAvatar: raw.SenderAvatar ?? raw.senderAvatar,
+    //        MessageType: raw.MessageType ?? raw.messageType,
+    //        Content: raw.Content ?? raw.content,
+    //        ParentMessageKey: raw.ParentMessageKey ?? raw.parentMessageKey,
+    //        CreatedOn: raw.CreatedOn ?? raw.createdOn,
+    //        Status: raw.Status ?? raw.status,
+    //        IsPinned: raw.IsPinned ?? raw.isPinned,
+    //        IsSystemMessage: raw.IsSystemMessage ?? raw.isSystemMessage,
+    //        Url: raw.Url ?? raw.url
+    //    };
+
+    //    console.log("[ReceiveMessage] normalized:", message, { currentConversationKey });
+
+    //    // 2) Bỏ qua nếu trùng MessageKey
+    //    if (message.MessageKey && allMessages.some(m => m.MessageKey === message.MessageKey)) {
+    //        console.log('[ReceiveMessage] duplicate skipped:', message.MessageKey);
+    //        return;
+    //    }
+    //    allMessages.push(message);
+
+    //    const ensureUI = (attempt = 1, maxAttempts = 5) => {
+    //        if (!messageList) {
+    //            if (attempt < maxAttempts) return setTimeout(() => ensureUI(attempt + 1, maxAttempts), 100);
+    //            return;
+    //        }
+    //        if (!currentConversationKey) {
+    //            if (attempt < maxAttempts) return setTimeout(() => ensureUI(attempt + 1, maxAttempts), 100);
+    //            return;
+    //        }
+
+    //        // 3) Nếu là cuộc hội thoại đang mở -> append + scroll
+    //        if (String(message.ConversationKey) === String(currentConversationKey)) {
+    //            messageList.insertAdjacentHTML("beforeend", addMessage(message)); // addMessage đã xử lý system message
+    //            setTimeout(() => { messageList.scrollTop = messageList.scrollHeight; }, 0);
+    //        }
+    //        // 4) Nếu là cuộc hội thoại khác -> cập nhật list + unread
+    //        else {
+    //            const item = document.querySelector(`.conversation-item[data-conversation-key="${message.ConversationKey}"]`);
+    //            if (item) {
+    //                const lastMessageEl = item.querySelector("p.small.mb-0");
+    //                const timeEl = item.querySelector("p.small.mb-1");
+    //                lastMessageEl.textContent = message.Content || "New message";
+    //                timeEl.textContent = formatTime(message.CreatedOn);
+
+    //                const badge = item.querySelector(".badge");
+    //                if (badge) {
+    //                    badge.textContent = (parseInt(badge.textContent, 10) || 0) + 1;
+    //                } else {
+    //                    const newBadge = document.createElement("span");
+    //                    newBadge.className = "badge bg-danger rounded-pill px-2";
+    //                    newBadge.textContent = "1";
+    //                    item.querySelector(".text-end")?.appendChild(newBadge);
+    //                }
+    //                unreadCount++;
+    //                updateUnreadCount(unreadCount);
+    //            }
+    //        }
+
+    //        updatePinnedSection?.();
+    //    };
+
+    //    ensureUI();
+    //});
+
+    // TRONG FILE: chat.js
+
+    // ==============================================================================
+    // PHẦN MÃ NGUỒN MỚI ĐỂ ĐẢM BẢO TÍNH ĐỒNG BỘ
+    // ==============================================================================
+
+    // (A) HÀM XỬ LÝ CỐT LÕI CHO MỘT TIN NHẮN ĐẾN
+    // Hàm này chứa logic đã chạy ổn định từ trước, giờ được tách ra để dùng chung.
+    function processIncomingMessage(rawMessage) {
+        // 1) Chuẩn hóa tên thuộc tính
+        const message = {
+            ConversationKey: rawMessage.ConversationKey ?? rawMessage.conversationKey,
+            MessageKey: rawMessage.MessageKey ?? rawMessage.messageKey,
+            SenderKey: rawMessage.SenderKey ?? rawMessage.senderKey,
+            SenderName: rawMessage.SenderName ?? rawMessage.senderName,
+            SenderAvatar: rawMessage.SenderAvatar ?? rawMessage.senderAvatar,
+            MessageType: rawMessage.MessageType ?? rawMessage.messageType,
+            Content: rawMessage.Content ?? rawMessage.content,
+            ParentMessageKey: rawMessage.ParentMessageKey ?? rawMessage.parentMessageKey,
+            CreatedOn: rawMessage.CreatedOn ?? rawMessage.createdOn,
+            Status: rawMessage.Status ?? rawMessage.status,
+            IsPinned: rawMessage.IsPinned ?? rawMessage.isPinned,
+            IsSystemMessage: rawMessage.IsSystemMessage ?? rawMessage.isSystemMessage,
+            Url: rawMessage.Url ?? rawMessage.url
+        };
+        console.log("[processIncomingMessage] Processing:", message);
+        console.log("[processIncomingMessage] UI state:", {
+            messageListExists: !!messageList,
             currentConversationKey,
             messageConversationKey: message.ConversationKey
         });
-
+        // 2) Bỏ qua nếu tin nhắn đã tồn tại trong bộ nhớ đệm
         if (message.MessageKey && allMessages.some(m => m.MessageKey === message.MessageKey)) {
-            console.log('[ReceiveMessage] duplicate message skipped:', message.MessageKey);
-        } else {
-            allMessages.push(message);
+            console.log('[processIncomingMessage] Duplicate message skipped:', message.MessageKey);
+            return false; // Trả về false để báo hiệu không có gì mới
+        }
+        allMessages.push(message);
+
+        // 3) Nếu là cuộc hội thoại đang mở -> thêm tin nhắn vào UI
+        if (String(message.ConversationKey) === String(currentConversationKey)) {
+            messageList.insertAdjacentHTML("beforeend", addMessage(message));
+        }
+        // 4) Nếu là cuộc hội thoại khác -> cập nhật danh sách bên trái
+        else {
+            const item = document.querySelector(`.conversation-item[data-conversation-key="${message.ConversationKey}"]`);
+            if (item) {
+                const lastMessageEl = item.querySelector("p.small.mb-0");
+                const timeEl = item.querySelector("p.small.mb-1");
+                lastMessageEl.textContent = message.Content || "New message";
+                timeEl.textContent = formatTime(message.CreatedOn);
+
+                const badge = item.querySelector(".badge");
+                if (badge) {
+                    badge.textContent = (parseInt(badge.textContent, 10) || 0) + 1;
+                } else {
+                    const newBadge = document.createElement("span");
+                    newBadge.className = "badge bg-danger rounded-pill px-2";
+                    newBadge.textContent = "1";
+                    item.querySelector(".text-end")?.appendChild(newBadge);
+                }
+                // Cập nhật tổng số tin chưa đọc toàn cục
+                unreadCount++;
+                updateUnreadCount(unreadCount);
+            }
         }
 
-        const addMessageToUI = (attempt = 1, maxAttempts = 5) => {
-            if (!messageList) {
-                console.warn(`[ReceiveMessage] messageList not found, attempt ${attempt}/${maxAttempts}`);
-                if (attempt < maxAttempts) {
-                    setTimeout(() => addMessageToUI(attempt + 1, maxAttempts), 100);
-                }
-                return;
+        return true; // Trả về true để báo hiệu đã xử lý tin nhắn mới
+    }
+
+
+    // (B) HANDLER `ReceiveMessage` MỚI (DÙNG CHO RENAME, REMOVE)
+    // Giờ đây nó chỉ cần gọi hàm xử lý cốt lõi.
+    window.connection.on("ReceiveMessage", (rawMessage) => {
+        console.log("[ReceiveMessage] received", rawMessage);
+        const hasNewMessage = processIncomingMessage(rawMessage);
+
+        if (hasNewMessage) {
+            // Nếu là cuộc hội thoại đang mở, cuộn xuống dưới
+            if (String(rawMessage.ConversationKey ?? rawMessage.conversationKey) === String(currentConversationKey)) {
+                setTimeout(() => { messageList.scrollTop = messageList.scrollHeight; }, 0);
             }
-
-            if (!currentConversationKey) {
-                console.warn(`[ReceiveMessage] currentConversationKey not set, attempt ${attempt}/${maxAttempts}`);
-                if (attempt < maxAttempts) {
-                    setTimeout(() => addMessageToUI(attempt + 1, maxAttempts), 100);
-                }
-                return;
-            }
-
-            // Nếu tin nhắn thuộc cuộc hội thoại đang mở
-            if (String(message.ConversationKey) === String(currentConversationKey)) {
-                console.log("[ReceiveMessage] Adding to UI:", message);
-
-                // ✅ Luôn dùng addMessage() để render đúng CSS
-                messageList.insertAdjacentHTML("beforeend", addMessage(message));
-
-                // Cuộn xuống cuối
-                setTimeout(() => {
-                    messageList.scrollTop = messageList.scrollHeight;
-                    console.log("[ReceiveMessage] Scrolled to bottom");
-                }, 0);
-            }
-            // Nếu tin nhắn thuộc cuộc hội thoại khác
-            else {
-                console.log("[ReceiveMessage] Message for other conversation:", message.ConversationKey);
-                const convItem = document.querySelector(`.conversation-item[data-conversation-key="${message.ConversationKey}"]`);
-                if (convItem) {
-                    const lastMessageEl = convItem.querySelector("p.small.mb-0");
-                    const timeEl = convItem.querySelector("p.small.mb-1");
-                    lastMessageEl.textContent = message.Content || "New message";
-                    timeEl.textContent = formatTime(message.CreatedOn);
-                    const unreadBadge = convItem.querySelector(".badge");
-                    if (unreadBadge) {
-                        unreadBadge.textContent = parseInt(unreadBadge.textContent) + 1 || 1;
-                    } else {
-                        const newBadge = document.createElement("span");
-                        newBadge.className = "badge bg-danger rounded-pill px-2";
-                        newBadge.textContent = "1";
-                        convItem.querySelector(".text-end").appendChild(newBadge);
-                    }
-                    unreadCount++;
-                    updateUnreadCount(unreadCount);
-                }
-            }
-
-            updatePinnedSection();
-        };
-
-        addMessageToUI();
+            updatePinnedSection?.();
+        }
     });
 
 
+    // (C) HANDLER `ReceiveMultipleMessages` MỚI (DÙNG CHO ADD MEMBERS)
+    // Handler này lặp qua mảng và gọi cùng một hàm xử lý cốt lõi.
+    console.log("[startConnection] Registering ReceiveMultipleMessages handler");
+    window.connection.on("ReceiveMultipleMessages", (messages) => {
+        if (!messages || messages.length === 0) return;
+        console.log(`[ReceiveMultipleMessages] received ${messages.length} messages.`, messages);
 
+        let newMessagesProcessed = 0;
 
-  
+        // 1. Xử lý logic cho từng tin nhắn bằng cách gọi lại hàm chung
+        messages.forEach(rawMessage => {
+            if (processIncomingMessage(rawMessage)) {
+                newMessagesProcessed++;
+            }
+        });
+
+        // 2. Chỉ thực hiện các hành động cuối cùng nếu có tin nhắn mới được xử lý
+        if (newMessagesProcessed > 0) {
+            // Nếu là cuộc hội thoại đang mở, chỉ cuộn xuống dưới MỘT LẦN sau khi thêm tất cả
+            const lastMessage = messages[messages.length - 1];
+            if (String(lastMessage.ConversationKey ?? lastMessage.conversationKey) === String(currentConversationKey)) {
+                setTimeout(() => { messageList.scrollTop = messageList.scrollHeight; }, 0);
+            }
+            updatePinnedSection?.();
+        }
+    });
+    console.log("[startConnection] ReceiveMultipleMessages handler registered");
 
 
     window.connection.on("PinResponse", (conversationKey, messageKey, isPinned, success, message) => {
@@ -1968,8 +2065,6 @@ window.showAddMemberPopup = async function (conversationKey, preselectedKeys = [
 //    hostView.style.display = 'block';
 //}
 function showAddMembersConfirmation(conversationKey, selected) {
-    window.allMessages = window.allMessages || []; // đảm bảo tồn tại
-
     const detailsView = document.getElementById('group-details-view');
     const hostView = document.getElementById('remove-member-confirmation-view');
     if (!detailsView || !hostView) return;
@@ -2019,80 +2114,7 @@ function showAddMembersConfirmation(conversationKey, selected) {
                 return;
             }
 
-            const result = json.data || json;
-            const msgs = Array.isArray(result?.messages) ? result.messages : [];
-
-            if (msgs.length > 0) {
-                const normalized = msgs.map(m => ({
-                    MessageKey: (m["messageKey"] || m["MessageKey"] || '').toString(),
-                    ConversationKey: conversationKey,
-                    SenderKey: null,
-                    SenderName: null,
-                    SenderAvatar: null,
-                    MessageType: "Text",
-                    Content: m["systemContent"] || m["content"] || m["Content"] || '',
-                    ParentMessageKey: null,
-                    CreatedOn: m["createdOn"] || new Date().toISOString(),
-                    Status: 1,
-                    IsPinned: false,
-                    IsSystemMessage: true,
-                    Url: null
-                }));
-
-                normalized.forEach(msg => {
-                    if (!msg.MessageKey) return;
-                    if (!window.allMessages.some(x => x.MessageKey === msg.MessageKey)) {
-                        window.allMessages.push(msg);
-                    } else {
-                        console.log('[AddMembersConfirmation] skipped existing message', msg.MessageKey);
-                    }
-                });
-
-                if (String(window.currentConversationKey) === String(conversationKey)) {
-                    const msgsForConv = window.allMessages
-                        .filter(m => String(m.ConversationKey) === String(window.currentConversationKey))
-                        .sort((a, b) => new Date(a.CreatedOn) - new Date(b.CreatedOn));
-                    messageList.innerHTML = msgsForConv.map(m => addMessage(m)).join('');
-                    setTimeout(() => {
-                        messageList.scrollTop = messageList.scrollHeight;
-                    }, 0);
-                } else {
-                    const convItem = document.querySelector(`.conversation-item[data-conversation-key="${conversationKey}"]`);
-                    if (convItem) {
-                        const lastMessageEl = convItem.querySelector("p.small.mb-0");
-                        const timeEl = convItem.querySelector("p.small.mb-1");
-                        if (lastMessageEl) lastMessageEl.textContent = normalized[normalized.length - 1].Content || 'New message';
-                        if (timeEl) {
-                            const formatFn = window.formatTime || function (dt) {
-                                try {
-                                    return new Date(dt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                                } catch {
-                                    return '';
-                                }
-                            };
-                            timeEl.textContent = formatFn(normalized[normalized.length - 1].CreatedOn);
-                        }
-
-
-                        const unreadBadge = convItem.querySelector(".badge");
-                        if (unreadBadge) {
-                            unreadBadge.textContent = (parseInt(unreadBadge.textContent) || 0) + normalized.length;
-                        } else {
-                            const newBadge = document.createElement("span");
-                            newBadge.className = "badge bg-danger rounded-pill px-2";
-                            newBadge.textContent = String(normalized.length);
-                            const endContainer = convItem.querySelector(".text-end") || convItem;
-                            endContainer.appendChild(newBadge);
-                        }
-
-                        window.unreadCount = (typeof window.unreadCount === 'number')
-                            ? window.unreadCount + normalized.length
-                            : normalized.length;
-                        if (typeof updateUnreadCount === 'function') updateUnreadCount(window.unreadCount);
-                    }
-                }
-            }
-
+            // Tin nhắn hệ thống sẽ được xử lý bởi handler ReceiveMessage
             showNotification('Members added successfully', 'success');
             await window.showGroupDetails(conversationKey);
 
