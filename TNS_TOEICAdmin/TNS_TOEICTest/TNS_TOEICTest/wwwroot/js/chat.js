@@ -7,23 +7,42 @@ async function startConnection(connection, memberKey) {
         }
         await connection.start();
         console.log("[startConnection] Connected to ChatHub successfully");
-
-        // Gọi InitializeConnection để server biết connection này thuộc memberKey
         await connection.invoke("InitializeConnection", null, memberKey);
-
-        //// Các handler hiện có
-        //connection.on('ReceiveMessage', updateUnreadCount);
         connection.on('Disconnected', () => {
             console.log("[Disconnected] Connection lost, attempting reconnect");
             setTimeout(() => startConnection(connection, memberKey), 2000);
         });
-        connection.on("ReloadConversations", async (conversationKey) => {
+        //connection.on("ReloadConversations", async (conversationKey) => {
+        //    console.log(`Received ReloadConversations for conversation: ${conversationKey}`);
+        //    if (typeof loadConversations === 'function') {
+        //        await loadConversations();
+        //    }
+        //    if (currentConversationKey === conversationKey && typeof loadMessages === 'function') {
+        //        await loadMessages(conversationKey, false, 0);
+        //    }
+        //});
+        window.connection.on("ReloadConversations", async (conversationKey) => {
             console.log(`Received ReloadConversations for conversation: ${conversationKey}`);
             if (typeof loadConversations === 'function') {
                 await loadConversations();
             }
-            if (currentConversationKey === conversationKey && typeof loadMessages === 'function') {
-                await loadMessages(conversationKey, false, 0);
+            if (String(currentConversationKey) === String(conversationKey)) {
+                resetChatInterface();
+            }
+        });
+        window.connection.on("MemberRemoved", (conversationKey, userKey, operatorName) => {
+            if (String(currentConversationKey) === String(conversationKey)) {
+                // Nếu người rời là người dùng hiện tại
+                if (String(userKey) === String(memberKey)) {
+                    window.resetChatInterface();
+                    window.loadConversations();
+                } else {
+                    // Cập nhật chi tiết nhóm cho các thành viên còn lại
+                    window.showGroupDetails(conversationKey).catch(() => {
+                        // Bỏ qua lỗi 404/401 vì nhóm có thể đã bị xóa
+                        console.log('[MemberRemoved] Group details not available, possibly deleted');
+                    });
+                }
             }
         });
         connection.on("UpdateGroupAvatar", (conversationKey, newAvatarUrl) => {
@@ -84,25 +103,18 @@ async function startConnection(connection, memberKey) {
 
         connection.on("UpdateGroupName", (conversationKey, newGroupName, memberName) => {
             try {
-                console.log("[UpdateGroupName] received", { conversationKey, newGroupName, memberName, currentConversationKey });
-
-                // 1) Update list conversation
                 const listItem = document.querySelector(`.conversation-item[data-conversation-key="${conversationKey}"]`);
                 if (listItem) {
                     const nameEl = listItem.querySelector('p.fw-bold') || listItem.querySelector('p') || listItem;
                     if (nameEl) {
                         nameEl.textContent = newGroupName;
-                        console.log("[UpdateGroupName] updated list name");
                     }
                 } else {
                     console.log("[UpdateGroupName] listItem not found");
                 }
-
-                // 2) Update Group Details modal if open
                 const displayNameEl = document.getElementById('displayGroupName');
                 if (displayNameEl) {
                     displayNameEl.textContent = newGroupName;
-                    console.log("[UpdateGroupName] updated modal display name");
                 } else {
                     const groupNameContainer = document.getElementById('groupName');
                     if (groupNameContainer) {
@@ -112,8 +124,6 @@ async function startConnection(connection, memberKey) {
                         console.log("[UpdateGroupName] updated modal groupNameContainer");
                     }
                 }
-
-                // 3) Only update header if this conversation is currently open in this tab
                 if (String(currentConversationKey) === String(conversationKey)) {
                     const applyHeaderName = () => {
                         const headerName = document.getElementById('headerName');
@@ -141,30 +151,22 @@ async function startConnection(connection, memberKey) {
         });
 
         connection.on("RemoveMember", (conversationKey, userName) => {
-            console.log("[RemoveMember] received", { conversationKey, userName, currentConversationKey });
             if (String(currentConversationKey) === String(conversationKey)) {
-                window.showGroupDetails(conversationKey); // Refresh danh sách thành viên
-                console.log("[RemoveMember] refreshed group details");
+                window.showGroupDetails(conversationKey); 
             }
         });
 
         connection.on("MemberAdded", (conversationKey, userKey, operatorName) => {
-            console.log("[MemberAdded] received", { conversationKey, userKey, operatorName, currentConversationKey });
             if (String(currentConversationKey) === String(conversationKey)) {
-                // Làm giống RemoveMember: refresh chi tiết nhóm
                 window.showGroupDetails(conversationKey);
             }
         });
-
-
-
     } catch (err) {
         console.error("[startConnection] Connection failed:", err);
         setTimeout(() => startConnection(connection, memberKey), 5000);
     }
 }
 
-// Hàm updateUnreadCount cần được định nghĩa trước khi sử dụng
 function updateUnreadCount(count) {
     const badge = document.getElementById("unreadCount");
     if (badge) {
@@ -172,8 +174,6 @@ function updateUnreadCount(count) {
         badge.classList.toggle("d-none", count === 0);
     }
 }
-
-// Biến toàn cục
 let unreadInterval;
 let currentConversationKey = null;
 const updatedGroupAvatars = {};
@@ -432,7 +432,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         document.querySelectorAll(".conversation-item").forEach(i => i.parentElement.classList.remove("active"));
         updateIconsVisibility();
     }
-
+    window.resetChatInterface = resetChatInterface;
     function updatePinnedSection() {
         const pinnedMessages = allMessages.filter(m => m.IsPinned).sort((a, b) => new Date(b.CreatedOn) - new Date(a.CreatedOn));
         const firstPinned = pinnedMessages[0];
@@ -525,8 +525,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         currentUserKey = contact.UserKey || null;
         currentUserType = contact.UserType || null;
         currentConversationType = contact.ConversationType || null;
-
-        // ✅ Ưu tiên dùng avatar mới nếu có (đã được cập nhật qua SignalR)
         if (updatedGroupAvatars[contact.ConversationKey]) {
             headerAvatar.src = updatedGroupAvatars[contact.ConversationKey];
         } else {
@@ -592,7 +590,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         const url = `/api/conversations/messages/${conversationKey}?skip=${skip}&memberKey=${encodeURIComponent(memberKey)}`;
         try {
             const response = await fetch(url);
-            if (!response.ok) throw new Error(`[loadMessages] Failed to load messages: ${await response.text()}`);
+            if (!response.ok) {
+                if (response.status === 401) {
+                    console.log('[loadMessages] Access denied, user likely left the group');
+                    return; // Bỏ qua lỗi 401
+                }
+                throw new Error(`[loadMessages] Failed to load messages: ${await response.text()}`);
+            }
             const newMessages = await response.json();
             if (newMessages.length === 0) return;
 
@@ -776,177 +780,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }, 300));
 
 
-    //window.connection.on("ReceiveMessage", (message) => {
-    //    // Normalize property names from server (case-insensitive)
-    //    message = {
-    //        ...message,
-    //        ConversationKey: message.ConversationKey || message.conversationKey,
-    //        MessageKey: message.MessageKey || message.messageKey,
-    //        SenderKey: message.SenderKey || message.senderKey,
-    //        SenderName: message.SenderName || message.senderName,
-    //        SenderAvatar: message.SenderAvatar || message.senderAvatar,
-    //        MessageType: message.MessageType || message.messageType,
-    //        Content: message.Content || message.content,
-    //        ParentMessageKey: message.ParentMessageKey || message.parentMessageKey,
-    //        CreatedOn: message.CreatedOn || message.createdOn,
-    //        Status: message.Status ?? message.status,
-    //        IsPinned: message.IsPinned ?? message.isPinned,
-    //        IsSystemMessage: message.IsSystemMessage ?? message.isSystemMessage,
-    //        Url: message.Url || message.url
-    //    };
 
-    //    console.log("[ReceiveMessage] Received:", JSON.stringify(message));
-    //    console.log("[ReceiveMessage] Current state:", {
-    //        currentConversationKey,
-    //        messageConversationKey: message.ConversationKey
-    //    });
-
-    //    if (message.MessageKey && allMessages.some(m => m.MessageKey === message.MessageKey)) {
-    //        console.log('[ReceiveMessage] duplicate message skipped:', message.MessageKey);
-    //    } else {
-    //        allMessages.push(message);
-    //    }
-
-    //    const addMessageToUI = (attempt = 1, maxAttempts = 5) => {
-    //        if (!messageList) {
-    //            console.warn(`[ReceiveMessage] messageList not found, attempt ${attempt}/${maxAttempts}`);
-    //            if (attempt < maxAttempts) {
-    //                setTimeout(() => addMessageToUI(attempt + 1, maxAttempts), 100);
-    //            }
-    //            return;
-    //        }
-
-    //        if (!currentConversationKey) {
-    //            console.warn(`[ReceiveMessage] currentConversationKey not set, attempt ${attempt}/${maxAttempts}`);
-    //            if (attempt < maxAttempts) {
-    //                setTimeout(() => addMessageToUI(attempt + 1, maxAttempts), 100);
-    //            }
-    //            return;
-    //        }
-
-    //        // Nếu tin nhắn thuộc cuộc hội thoại đang mở
-    //        if (String(message.ConversationKey) === String(currentConversationKey)) {
-    //            console.log("[ReceiveMessage] Adding to UI:", message);
-
-    //            // ✅ Luôn dùng addMessage() để render đúng CSS
-    //            messageList.insertAdjacentHTML("beforeend", addMessage(message));
-
-    //            // Cuộn xuống cuối
-    //            setTimeout(() => {
-    //                messageList.scrollTop = messageList.scrollHeight;
-    //                console.log("[ReceiveMessage] Scrolled to bottom");
-    //            }, 0);
-    //        }
-    //        // Nếu tin nhắn thuộc cuộc hội thoại khác
-    //        else {
-    //            console.log("[ReceiveMessage] Message for other conversation:", message.ConversationKey);
-    //            const convItem = document.querySelector(`.conversation-item[data-conversation-key="${message.ConversationKey}"]`);
-    //            if (convItem) {
-    //                const lastMessageEl = convItem.querySelector("p.small.mb-0");
-    //                const timeEl = convItem.querySelector("p.small.mb-1");
-    //                lastMessageEl.textContent = message.Content || "New message";
-    //                timeEl.textContent = formatTime(message.CreatedOn);
-    //                const unreadBadge = convItem.querySelector(".badge");
-    //                if (unreadBadge) {
-    //                    unreadBadge.textContent = parseInt(unreadBadge.textContent) + 1 || 1;
-    //                } else {
-    //                    const newBadge = document.createElement("span");
-    //                    newBadge.className = "badge bg-danger rounded-pill px-2";
-    //                    newBadge.textContent = "1";
-    //                    convItem.querySelector(".text-end").appendChild(newBadge);
-    //                }
-    //                unreadCount++;
-    //                updateUnreadCount(unreadCount);
-    //            }
-    //        }
-
-    //        updatePinnedSection();
-    //    };
-
-    //    addMessageToUI();
-    //});
-
-
-    // === FIXED ReceiveMessage handler ===
-    //window.connection.on("ReceiveMessage", (raw) => {
-    //    // 1) Chuẩn hóa tên field
-    //    const message = {
-    //        ConversationKey: raw.ConversationKey ?? raw.conversationKey,
-    //        MessageKey: raw.MessageKey ?? raw.messageKey,
-    //        SenderKey: raw.SenderKey ?? raw.senderKey,
-    //        SenderName: raw.SenderName ?? raw.senderName,
-    //        SenderAvatar: raw.SenderAvatar ?? raw.senderAvatar,
-    //        MessageType: raw.MessageType ?? raw.messageType,
-    //        Content: raw.Content ?? raw.content,
-    //        ParentMessageKey: raw.ParentMessageKey ?? raw.parentMessageKey,
-    //        CreatedOn: raw.CreatedOn ?? raw.createdOn,
-    //        Status: raw.Status ?? raw.status,
-    //        IsPinned: raw.IsPinned ?? raw.isPinned,
-    //        IsSystemMessage: raw.IsSystemMessage ?? raw.isSystemMessage,
-    //        Url: raw.Url ?? raw.url
-    //    };
-
-    //    console.log("[ReceiveMessage] normalized:", message, { currentConversationKey });
-
-    //    // 2) Bỏ qua nếu trùng MessageKey
-    //    if (message.MessageKey && allMessages.some(m => m.MessageKey === message.MessageKey)) {
-    //        console.log('[ReceiveMessage] duplicate skipped:', message.MessageKey);
-    //        return;
-    //    }
-    //    allMessages.push(message);
-
-    //    const ensureUI = (attempt = 1, maxAttempts = 5) => {
-    //        if (!messageList) {
-    //            if (attempt < maxAttempts) return setTimeout(() => ensureUI(attempt + 1, maxAttempts), 100);
-    //            return;
-    //        }
-    //        if (!currentConversationKey) {
-    //            if (attempt < maxAttempts) return setTimeout(() => ensureUI(attempt + 1, maxAttempts), 100);
-    //            return;
-    //        }
-
-    //        // 3) Nếu là cuộc hội thoại đang mở -> append + scroll
-    //        if (String(message.ConversationKey) === String(currentConversationKey)) {
-    //            messageList.insertAdjacentHTML("beforeend", addMessage(message)); // addMessage đã xử lý system message
-    //            setTimeout(() => { messageList.scrollTop = messageList.scrollHeight; }, 0);
-    //        }
-    //        // 4) Nếu là cuộc hội thoại khác -> cập nhật list + unread
-    //        else {
-    //            const item = document.querySelector(`.conversation-item[data-conversation-key="${message.ConversationKey}"]`);
-    //            if (item) {
-    //                const lastMessageEl = item.querySelector("p.small.mb-0");
-    //                const timeEl = item.querySelector("p.small.mb-1");
-    //                lastMessageEl.textContent = message.Content || "New message";
-    //                timeEl.textContent = formatTime(message.CreatedOn);
-
-    //                const badge = item.querySelector(".badge");
-    //                if (badge) {
-    //                    badge.textContent = (parseInt(badge.textContent, 10) || 0) + 1;
-    //                } else {
-    //                    const newBadge = document.createElement("span");
-    //                    newBadge.className = "badge bg-danger rounded-pill px-2";
-    //                    newBadge.textContent = "1";
-    //                    item.querySelector(".text-end")?.appendChild(newBadge);
-    //                }
-    //                unreadCount++;
-    //                updateUnreadCount(unreadCount);
-    //            }
-    //        }
-
-    //        updatePinnedSection?.();
-    //    };
-
-    //    ensureUI();
-    //});
-
-    // TRONG FILE: chat.js
-
-    // ==============================================================================
-    // PHẦN MÃ NGUỒN MỚI ĐỂ ĐẢM BẢO TÍNH ĐỒNG BỘ
-    // ==============================================================================
-
-    // (A) HÀM XỬ LÝ CỐT LÕI CHO MỘT TIN NHẮN ĐẾN
-    // Hàm này chứa logic đã chạy ổn định từ trước, giờ được tách ra để dùng chung.
     function processIncomingMessage(rawMessage) {
         // 1) Chuẩn hóa tên thuộc tính
         const message = {
@@ -964,24 +798,13 @@ document.addEventListener("DOMContentLoaded", async () => {
             IsSystemMessage: rawMessage.IsSystemMessage ?? rawMessage.isSystemMessage,
             Url: rawMessage.Url ?? rawMessage.url
         };
-        console.log("[processIncomingMessage] Processing:", message);
-        console.log("[processIncomingMessage] UI state:", {
-            messageListExists: !!messageList,
-            currentConversationKey,
-            messageConversationKey: message.ConversationKey
-        });
-        // 2) Bỏ qua nếu tin nhắn đã tồn tại trong bộ nhớ đệm
         if (message.MessageKey && allMessages.some(m => m.MessageKey === message.MessageKey)) {
-            console.log('[processIncomingMessage] Duplicate message skipped:', message.MessageKey);
-            return false; // Trả về false để báo hiệu không có gì mới
+            return false; 
         }
         allMessages.push(message);
-
-        // 3) Nếu là cuộc hội thoại đang mở -> thêm tin nhắn vào UI
         if (String(message.ConversationKey) === String(currentConversationKey)) {
             messageList.insertAdjacentHTML("beforeend", addMessage(message));
         }
-        // 4) Nếu là cuộc hội thoại khác -> cập nhật danh sách bên trái
         else {
             const item = document.querySelector(`.conversation-item[data-conversation-key="${message.ConversationKey}"]`);
             if (item) {
@@ -998,25 +821,19 @@ document.addEventListener("DOMContentLoaded", async () => {
                     newBadge.className = "badge bg-danger rounded-pill px-2";
                     newBadge.textContent = "1";
                     item.querySelector(".text-end")?.appendChild(newBadge);
-                }
-                // Cập nhật tổng số tin chưa đọc toàn cục
+                }             
                 unreadCount++;
                 updateUnreadCount(unreadCount);
             }
         }
 
-        return true; // Trả về true để báo hiệu đã xử lý tin nhắn mới
+        return true; 
     }
-
-
-    // (B) HANDLER `ReceiveMessage` MỚI (DÙNG CHO RENAME, REMOVE)
-    // Giờ đây nó chỉ cần gọi hàm xử lý cốt lõi.
     window.connection.on("ReceiveMessage", (rawMessage) => {
         console.log("[ReceiveMessage] received", rawMessage);
         const hasNewMessage = processIncomingMessage(rawMessage);
 
         if (hasNewMessage) {
-            // Nếu là cuộc hội thoại đang mở, cuộn xuống dưới
             if (String(rawMessage.ConversationKey ?? rawMessage.conversationKey) === String(currentConversationKey)) {
                 setTimeout(() => { messageList.scrollTop = messageList.scrollHeight; }, 0);
             }
@@ -1025,25 +842,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
 
-    // (C) HANDLER `ReceiveMultipleMessages` MỚI (DÙNG CHO ADD MEMBERS)
-    // Handler này lặp qua mảng và gọi cùng một hàm xử lý cốt lõi.
-    console.log("[startConnection] Registering ReceiveMultipleMessages handler");
+
     window.connection.on("ReceiveMultipleMessages", (messages) => {
         if (!messages || messages.length === 0) return;
-        console.log(`[ReceiveMultipleMessages] received ${messages.length} messages.`, messages);
-
         let newMessagesProcessed = 0;
-
-        // 1. Xử lý logic cho từng tin nhắn bằng cách gọi lại hàm chung
         messages.forEach(rawMessage => {
             if (processIncomingMessage(rawMessage)) {
                 newMessagesProcessed++;
             }
         });
-
-        // 2. Chỉ thực hiện các hành động cuối cùng nếu có tin nhắn mới được xử lý
         if (newMessagesProcessed > 0) {
-            // Nếu là cuộc hội thoại đang mở, chỉ cuộn xuống dưới MỘT LẦN sau khi thêm tất cả
             const lastMessage = messages[messages.length - 1];
             if (String(lastMessage.ConversationKey ?? lastMessage.conversationKey) === String(currentConversationKey)) {
                 setTimeout(() => { messageList.scrollTop = messageList.scrollHeight; }, 0);
@@ -1051,9 +859,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             updatePinnedSection?.();
         }
     });
-    console.log("[startConnection] ReceiveMultipleMessages handler registered");
-
-
     window.connection.on("PinResponse", (conversationKey, messageKey, isPinned, success, message) => {
         if (success) {
             const msg = allMessages.find(m => m.MessageKey === messageKey);
@@ -1428,8 +1233,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             } else {
                 alert(result.message || "Recalling failed.");
             }
-        } catch (err) {
-            console.error("[recallMessage] Error recalling message:", err);
+        } catch (err) {          
             alert("Error recalling message. Check console for details.");
         }
     }
@@ -1459,9 +1263,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 window.goupDetails_modal = null;
-// --- Replace the whole showGroupDetails function with this robust version ---
-window.goupDetails_modal = null;
-window.goupDetails_modal = null;
 window.showGroupDetails = async function (conversationKey) {
     try {
         const modalRoot = document.getElementById('group_details_modal');
@@ -1484,7 +1285,6 @@ window.showGroupDetails = async function (conversationKey) {
         const resp = await fetch(`/api/conversations/GetGroupDetails/${encodeURIComponent(conversationKey)}`, { credentials: 'include' });
         if (!resp.ok) throw new Error('[showGroupDetails] Failed to load group details: ' + resp.status);
 
-        // Thay đổi #1: Lấy currentMemberKey từ API
         const result = await resp.json();
         const data = result.data || {};
         const currentKey = (result.currentMemberKey || '').toString();
@@ -1636,8 +1436,6 @@ window.showGroupDetails = async function (conversationKey) {
                 }
             };
         }
-
-        // Nút tác vụ khác (nếu có)
         const leaveBtn = modalRoot.querySelector('.leave-group-btn');
         const addBtn = modalRoot.querySelector('.add-member-btn');
         if (leaveBtn) leaveBtn.onclick = () => showLeaveConfirmation(conversationKey);
@@ -1648,13 +1446,6 @@ window.showGroupDetails = async function (conversationKey) {
         console.error('[showGroupDetails] Error:', err);
     }
 };
-
-
-
-
-
-
-// Hàm hiển thị thông báo đẹp mắt
 function showNotification(message, type) {
     // Xóa thông báo cũ nếu có
     const old = document.querySelector('.notification');
@@ -1695,26 +1486,92 @@ function showNotification(message, type) {
     }, 2000);
 }
 
-
-
-
-
-// Hàm showLeaveConfirmation
 function showLeaveConfirmation(conversationKey) {
     const modalContent = document.getElementById('group_details_modal_content');
-    modalContent.innerHTML = document.getElementById('leaveConfirmationPopup').innerHTML;
-    const confirmLeave = document.querySelector('.confirm-leave');
-    const cancelLeave = document.querySelector('.cancel-leave');
-    if (confirmLeave) {
-        confirmLeave.addEventListener('click', function () {
-            console.log(`Leave group with conversationKey: ${conversationKey}`);
-            window.goupDetails_modal.hide();
-        });
+    const detailsView = document.getElementById('group-details-view');
+    const confirmationView = document.getElementById('remove-member-confirmation-view');
+
+    if (!modalContent || !detailsView || !confirmationView) {
+        console.error('[showLeaveConfirmation] Required DOM elements not found.');
+        return;
     }
+
+    confirmationView.className = 'confirmation-content';
+    confirmationView.innerHTML = `
+        <div class="p-2">
+            <h4 class="confirmation-title">Confirm Leave Group</h4>
+            <p style="font-size: 1.1em; color: #f0f0f0; text-align: center; margin: 20px 0;">
+                Are you sure you want to leave this group?
+            </p>
+            <div class="confirmation-actions">
+                <button class="btn btn-secondary cancel-leave">No</button>
+                <button class="btn btn-danger confirm-leave">Yes</button>
+            </div>
+        </div>
+    `;
+
+    const confirmLeave = confirmationView.querySelector('.confirm-leave');
+    const cancelLeave = confirmationView.querySelector('.cancel-leave');
+
+    if (confirmLeave) {
+        confirmLeave.addEventListener('click', async () => {
+            await leaveGroup(conversationKey);
+        });
+    } else {
+        console.error('[showLeaveConfirmation] .confirm-leave not found');
+    }
+
     if (cancelLeave) {
-        cancelLeave.addEventListener('click', function () {
+        cancelLeave.addEventListener('click', () => {
+            confirmationView.style.display = 'none';
+            detailsView.style.display = 'block';
             window.showGroupDetails(conversationKey);
         });
+    } else {
+        console.error('[showLeaveConfirmation] .cancel-leave not found');
+    }
+
+    detailsView.style.display = 'none';
+    confirmationView.style.display = 'block';
+}
+
+async function leaveGroup(conversationKey) {
+    const detailsView = document.getElementById('group-details-view');
+    const confirmationView = document.getElementById('remove-member-confirmation-view');
+
+    try {
+        const res = await fetch('/api/conversations/LeaveGroup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ conversationKey })
+        });
+        const json = await res.json();
+        console.log('[LeaveGroup] raw json:', json);
+
+        const isSuccess = json && (json.success === true || String(json.success).toLowerCase() === 'true');
+        if (!isSuccess) {
+            showNotification(json?.message || 'Failed to leave group', 'error');
+            return; // Không gọi showGroupDetails vì người dùng đã rời nhóm
+        }
+
+        // Hiển thị thông báo thành công
+        showNotification('You have left the group successfully', 'success');
+
+        // Đóng modal chi tiết nhóm
+        if (window.goupDetails_modal) {
+            window.goupDetails_modal.hide();
+        }
+
+        // Reset giao diện nội dung tin nhắn về trạng thái trống
+        window.resetChatInterface();
+
+        // Reload danh sách conversation trực tiếp
+        await window.loadConversations();
+
+    } catch (err) {
+        console.error('[LeaveGroup] error:', err);
+        showNotification('Error leaving group', 'error');
     }
 }
 
@@ -1771,7 +1628,7 @@ function showRemoveMemberConfirmation(conversationKey, userKey, userName) {
     detailsView.style.display = 'none';
     confirmationView.style.display = 'block';
 }
-// Hàm xóa thành viên khỏi nhóm
+
 async function removeMemberFromGroup(conversationKey, userKey, userName) {
     const detailsView = document.getElementById('group-details-view');
     const confirmationView = document.getElementById('remove-member-confirmation-view');
@@ -1804,9 +1661,7 @@ async function removeMemberFromGroup(conversationKey, userKey, userName) {
     }
 }
 
-// --- Add Member UI ---
 
-// (1) Style nho nhỏ cho list add member (chỉ chèn 1 lần)
 (function ensureAddMemberStyles() {
     if (document.getElementById('add-members-styles')) return;
     const css = `
@@ -1881,28 +1736,19 @@ async function removeMemberFromGroup(conversationKey, userKey, userName) {
     document.head.appendChild(style);
 })();
 
-
-// (2) Helper escape
 function __escHtml(s) {
     if (!s && s !== '') return '';
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-// (3) Render giao diện chọn người để add
-// (3) Render giao diện chọn người để add
-// Thay thế nguyên hàm hiện tại bằng bản này
 window.showAddMemberPopup = async function (conversationKey, preselectedKeys = []) {
     const detailsView = document.getElementById('group-details-view');
     const hostView = document.getElementById('remove-member-confirmation-view');
     if (!detailsView || !hostView) return;
-
-    // 1) Lấy list key thành viên hiện tại (có thể remove)
     const excludeKeys = Array.from(document.querySelectorAll('#memberList .remove-member-icon'))
         .map(b => (b.getAttribute('data-user-key') || '').toString())
         .filter(Boolean);
-
-    // 2) Loại bỏ luôn chính user đang đăng nhập (đã có sẵn currentMemberKey từ showGroupDetails)
     if (window.currentMemberKey && !excludeKeys.includes(window.currentMemberKey)) {
         excludeKeys.push(window.currentMemberKey);
     }
@@ -1920,8 +1766,6 @@ window.showAddMemberPopup = async function (conversationKey, preselectedKeys = [
     } catch (e) {
         console.error('[showAddMemberPopup] fetch addable error:', e);
     }
-
-    // 3) Render UI
     hostView.className = 'confirmation-content';
     hostView.innerHTML = `
         <div class="add-members-wrap">
@@ -1954,7 +1798,6 @@ window.showAddMemberPopup = async function (conversationKey, preselectedKeys = [
         </div>
     `;
 
-    // 4) Gán event
     const listEl = hostView.querySelector('#addMembersList');
     const btnAdd = hostView.querySelector('#btnConfirmAdd');
     const btnCancel = hostView.querySelector('#btnCancelAdd');
@@ -1963,8 +1806,6 @@ window.showAddMemberPopup = async function (conversationKey, preselectedKeys = [
         Array.from(listEl.querySelectorAll('.add-item.selected'))
             .map(it => it.getAttribute('data-user-key'))
             .filter(Boolean);
-
-    // (A) Click vào item -> toggle cả highlight + checkbox
     listEl.addEventListener('click', (e) => {
         const item = e.target.closest('.add-item');
         if (!item) return;
@@ -1974,8 +1815,6 @@ window.showAddMemberPopup = async function (conversationKey, preselectedKeys = [
         if (cb) cb.checked = willSelect;
         btnAdd.disabled = getSelectedKeys().length === 0;
     });
-
-    // (B) Bấm trực tiếp vào checkbox -> đồng bộ lại highlight
     listEl.addEventListener('change', (e) => {
         const cb = e.target;
         if (!(cb instanceof HTMLInputElement) || cb.type !== 'checkbox') return;
@@ -1984,14 +1823,10 @@ window.showAddMemberPopup = async function (conversationKey, preselectedKeys = [
         item.classList.toggle('selected', cb.checked);
         btnAdd.disabled = getSelectedKeys().length === 0;
     });
-
-    // Cancel → quay lại GroupDetails
     btnCancel.addEventListener('click', () => {
         hostView.style.display = 'none';
         detailsView.style.display = 'block';
     });
-
-    // Confirm → sang màn hình xác nhận
     btnAdd.addEventListener('click', () => {
         const selected = Array.from(listEl.querySelectorAll('.add-item.selected')).map(it => ({
             UserKey: it.getAttribute('data-user-key'),
@@ -2005,65 +1840,6 @@ window.showAddMemberPopup = async function (conversationKey, preselectedKeys = [
     hostView.style.display = 'block';
 };
 
-
-
-// (4) Màn hình xác nhận Add
-//function showAddMembersConfirmation(conversationKey, selected) {
-//    const detailsView = document.getElementById('group-details-view');
-//    const hostView = document.getElementById('remove-member-confirmation-view');
-//    if (!detailsView || !hostView) return;
-
-//    const names = selected.map(s => s.Name).join(', ');
-//    hostView.className = 'confirmation-content';
-//    hostView.innerHTML = `
-//        <div class="p-2">
-//            <p style="font-weight:600;">Add the following member(s) to this group?</p>
-//            <div class="mb-3 small text-break">${__escHtml(names || 'No one selected')}</div>
-//            <div class="d-flex justify-content-end gap-2">
-//                <button class="btn btn-secondary" id="btnBackToSelect">No</button>
-//                <button class="btn btn-primary" id="btnDoAdd">Yes</button>
-//            </div>
-//        </div>
-//    `;
-
-//    hostView.querySelector('#btnBackToSelect').onclick = () => {
-//        const preselected = selected.map(s => s.UserKey);
-//        window.showAddMemberPopup(conversationKey, preselected);
-//    };
-
-//    hostView.querySelector('#btnDoAdd').onclick = async () => {
-//        try {
-//            const res = await fetch('/api/conversations/AddMembers', {
-//                method: 'POST',
-//                headers: { 'Content-Type': 'application/json' },
-//                credentials: 'include',
-//                body: JSON.stringify({
-//                    conversationKey,
-//                    newMembers: selected.map(s => ({
-//                        userKey: s.UserKey,
-//                        userType: s.UserType,
-//                        userName: s.Name
-//                    }))
-//                })
-//            });
-//            const json = await res.json();
-//            if (json && json.success) {
-//                showNotification('Members added successfully', 'success');
-//                await window.showGroupDetails(conversationKey);
-//            } else {
-//                showNotification(json.message || 'Failed to add members', 'error');
-//                window.showAddMemberPopup(conversationKey, selected.map(s => s.UserKey));
-//            }
-//        } catch (err) {
-//            console.error('[AddMembers] error:', err);
-//            showNotification('Error adding members', 'error');
-//            window.showAddMemberPopup(conversationKey, selected.map(s => s.UserKey));
-//        }
-//    };
-
-//    detailsView.style.display = 'none';
-//    hostView.style.display = 'block';
-//}
 function showAddMembersConfirmation(conversationKey, selected) {
     const detailsView = document.getElementById('group-details-view');
     const hostView = document.getElementById('remove-member-confirmation-view');
