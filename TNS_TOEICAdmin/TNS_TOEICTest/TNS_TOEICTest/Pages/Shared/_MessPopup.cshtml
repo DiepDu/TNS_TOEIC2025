@@ -839,7 +839,18 @@
 }
  .message-timestamp {
     display: none;
-} 
+}
+
+        .custom-block-icon.highlighted {
+            color: #e74c3c; /* Đỏ rực để nổi bật */
+            border: 3px solid #e74c3c; /* Border dày hơn, đỏ */
+            background: linear-gradient(135deg, rgba(231, 76, 60, 0.3), rgba(231, 76, 60, 0.1)); /* Gradient đỏ mờ */
+            opacity: 1;
+            animation: pulse 1.5s infinite ease-in-out; /* Animation nhấp nháy "bùng nổ" chỉ khi highlighted */
+            transform: scale(1.1); /* To hơn một chút chỉ khi highlighted */
+        }
+
+
 </style>
 </head>
 <body>

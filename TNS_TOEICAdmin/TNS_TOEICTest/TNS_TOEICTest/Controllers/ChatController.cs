@@ -427,11 +427,12 @@ namespace TNS_TOEICTest.Controllers
             var result = await ChatAccessData.GetAddableMembersAsync(request.ConversationKey, request.ExcludeKeys);
             return Ok(new { success = true, items = result });
         }
-     
+
         [HttpPost("AddMembers")]
         [Authorize]
         public async Task<IActionResult> AddMembers([FromBody] AddMembersRequest request)
         {
+            // --- VALIDATION & SETUP ---
             string conversationKey = request.ConversationKey?.Trim();
             var newMembers = request.NewMembers ?? new List<NewMemberInfo>();
 
@@ -446,6 +447,8 @@ namespace TNS_TOEICTest.Controllers
             if (string.IsNullOrEmpty(currentMemberKey))
                 return Unauthorized(new { success = false, message = "MemberKey not found" });
 
+            // --- THỰC HIỆN LOGIC THÊM THÀNH VIÊN ---
+            // Gọi vào Data Access Layer để xử lý, bao gồm cả việc kiểm tra quyền (permission check)
             var result = await ChatAccessData.AddMembersAsync(
                 conversationKey,
                 currentMemberKey,
@@ -453,54 +456,65 @@ namespace TNS_TOEICTest.Controllers
                 newMembers,
                 HttpContext
             );
-            if (result.ContainsKey("messages") && result["messages"] is IList<object> msgList && msgList.Count > 0)
-            {
-                var messageObjects = msgList.Select(msg => new
-                {
-                    MessageKey = msg.GetType().GetProperty("MessageKey")?.GetValue(msg)?.ToString(),
-                    ConversationKey = msg.GetType().GetProperty("ConversationKey")?.GetValue(msg)?.ToString() ?? conversationKey,
-                    SenderKey = msg.GetType().GetProperty("SenderKey")?.GetValue(msg)?.ToString(),
-                    SenderName = msg.GetType().GetProperty("SenderName")?.GetValue(msg)?.ToString(),
-                    SenderAvatar = msg.GetType().GetProperty("SenderAvatar")?.GetValue(msg)?.ToString(),
-                    MessageType = msg.GetType().GetProperty("MessageType")?.GetValue(msg)?.ToString() ?? "Text",
-                    Content = msg.GetType().GetProperty("Content")?.GetValue(msg)?.ToString(),
-                    ParentMessageKey = msg.GetType().GetProperty("ParentMessageKey")?.GetValue(msg)?.ToString(),
-                    CreatedOn = DateTime.TryParse(msg.GetType().GetProperty("CreatedOn")?.GetValue(msg)?.ToString(), out var createdOn) ? createdOn : DateTime.UtcNow,
-                    Status = int.TryParse(msg.GetType().GetProperty("Status")?.GetValue(msg)?.ToString(), out var status) ? status : 1,
-                    IsPinned = bool.TryParse(msg.GetType().GetProperty("IsPinned")?.GetValue(msg)?.ToString(), out var isPinned) ? isPinned : false,
-                    IsSystemMessage = bool.TryParse(msg.GetType().GetProperty("IsSystemMessage")?.GetValue(msg)?.ToString(), out var isSystem) ? isSystem : true,
-                    Url = msg.GetType().GetProperty("Url")?.GetValue(msg)?.ToString()
-                }).ToList();
 
-                await _hubContext.Clients.Group(conversationKey)
-                    .SendAsync("ReceiveMultipleMessages", messageObjects);
-            }
-            else
-            {
-                var messageObjects = newMembers.Select(mem => new
-                {
-                    MessageKey = Guid.NewGuid().ToString(),
-                    ConversationKey = conversationKey,
-                    SenderKey = (string)null,
-                    SenderName = (string)null,
-                    SenderAvatar = (string)null,
-                    MessageType = "Text",
-                    Content = $"{mem.UserName} added to group by {currentMemberName}",
-                    ParentMessageKey = (string)null,
-                    CreatedOn = DateTime.UtcNow,
-                    Status = 1,
-                    IsPinned = false,
-                    IsSystemMessage = true,
-                    Url = (string)null
-                }).ToList();
-
-              
-                await _hubContext.Clients.Group(conversationKey)
-                    .SendAsync("ReceiveMultipleMessages", messageObjects);
-            }
+            // --- KIỂM TRA KẾT QUẢ TRƯỚC KHI GỬI SIGNALR ---
             bool success = result.ContainsKey("success") && result["success"] is bool s && s;
-            string message = result.ContainsKey("message") && result["message"] != null ? result["message"].ToString() : (success ? "Members added successfully" : "Add members failed");
+            string message = result.ContainsKey("message") && result["message"] != null
+                ? result["message"].ToString()
+                : (success ? "Members added successfully" : "Add members failed");
 
+            // *** SỬA LỖI: CHỈ GỬI SIGNALR KHI THAO TÁC THÀNH CÔNG ***
+            if (success)
+            {
+                // Kiểm tra xem ChatAccessData có trả về danh sách tin nhắn hệ thống đã được tạo sẵn không
+                if (result.ContainsKey("messages") && result["messages"] is IList<object> msgList && msgList.Count > 0)
+                {
+                    // Nếu có, định dạng lại và gửi đi
+                    var messageObjects = msgList.Select(msg => new
+                    {
+                        MessageKey = msg.GetType().GetProperty("MessageKey")?.GetValue(msg)?.ToString(),
+                        ConversationKey = msg.GetType().GetProperty("ConversationKey")?.GetValue(msg)?.ToString() ?? conversationKey,
+                        SenderKey = msg.GetType().GetProperty("SenderKey")?.GetValue(msg)?.ToString(),
+                        SenderName = msg.GetType().GetProperty("SenderName")?.GetValue(msg)?.ToString(),
+                        SenderAvatar = msg.GetType().GetProperty("SenderAvatar")?.GetValue(msg)?.ToString(),
+                        MessageType = msg.GetType().GetProperty("MessageType")?.GetValue(msg)?.ToString() ?? "Text",
+                        Content = msg.GetType().GetProperty("Content")?.GetValue(msg)?.ToString(),
+                        ParentMessageKey = msg.GetType().GetProperty("ParentMessageKey")?.GetValue(msg)?.ToString(),
+                        CreatedOn = DateTime.TryParse(msg.GetType().GetProperty("CreatedOn")?.GetValue(msg)?.ToString(), out var createdOn) ? createdOn : DateTime.UtcNow,
+                        Status = int.TryParse(msg.GetType().GetProperty("Status")?.GetValue(msg)?.ToString(), out var status) ? status : 1,
+                        IsPinned = bool.TryParse(msg.GetType().GetProperty("IsPinned")?.GetValue(msg)?.ToString(), out var isPinned) ? isPinned : false,
+                        IsSystemMessage = bool.TryParse(msg.GetType().GetProperty("IsSystemMessage")?.GetValue(msg)?.ToString(), out var isSystem) ? isSystem : true,
+                        Url = msg.GetType().GetProperty("Url")?.GetValue(msg)?.ToString()
+                    }).ToList();
+
+                    await _hubContext.Clients.Group(conversationKey)
+                        .SendAsync("ReceiveMultipleMessages", messageObjects);
+                }
+                else // Nếu không, tự tạo tin nhắn hệ thống mặc định
+                {
+                    var messageObjects = newMembers.Select(mem => new
+                    {
+                        MessageKey = Guid.NewGuid().ToString(),
+                        ConversationKey = conversationKey,
+                        SenderKey = (string)null,
+                        SenderName = (string)null,
+                        SenderAvatar = (string)null,
+                        MessageType = "Text",
+                        Content = $"{mem.UserName} added to group by {currentMemberName}",
+                        ParentMessageKey = (string)null,
+                        CreatedOn = DateTime.UtcNow,
+                        Status = 1,
+                        IsPinned = false,
+                        IsSystemMessage = true,
+                        Url = (string)null
+                    }).ToList();
+
+                    await _hubContext.Clients.Group(conversationKey)
+                        .SendAsync("ReceiveMultipleMessages", messageObjects);
+                }
+            }
+
+            // --- TRẢ VỀ KẾT QUẢ HTTP REQUEST ---
             return Ok(new { success, message });
         }
         [HttpPost("LeaveGroup")]
@@ -572,7 +586,63 @@ namespace TNS_TOEICTest.Controllers
 
             return Ok(new { success = false, message = result["message"]?.ToString() ?? "Leave group failed" });
         }
+        [HttpPost("ToggleBlockUser/{conversationKey}")]
+        public async Task<IActionResult> ToggleBlockUser(string conversationKey, [FromBody] BlockUserRequest request)
+        {
+            // Lấy thông tin người dùng đang đăng nhập
+            var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
+            var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
+            var currentUserKey = memberLogin.MemberKey;
 
+            // Kiểm tra thông tin đầu vào
+            if (string.IsNullOrEmpty(currentUserKey) || string.IsNullOrEmpty(request?.TargetUserKey))
+            {
+                return BadRequest(new { success = false, message = "Invalid request data." });
+            }
+
+            // Gọi hàm từ AccessData để cập nhật DB
+            var (success, isBanned) = await ChatAccessData.ToggleBlockUserAsync(conversationKey, request.TargetUserKey, currentUserKey);
+
+            if (success)
+            {
+                // Trả về thông báo thành công dựa trên kết quả
+                return Ok(new
+                {
+                    success = true,
+                    message = isBanned ? "User blocked successfully." : "User unblocked successfully."
+                });
+            }
+            else
+            {
+                return StatusCode(500, new { success = false, message = "An error occurred. Please try again." });
+            }
+        }
+        [HttpGet("GetBanStatus")]
+        public async Task<IActionResult> GetBanStatus([FromQuery] string conversationKey, [FromQuery] string targetUserKey)
+        {
+            var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
+            var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
+            var currentMemberKey = memberLogin.MemberKey;
+
+            if (string.IsNullOrEmpty(currentMemberKey) || string.IsNullOrEmpty(conversationKey) || string.IsNullOrEmpty(targetUserKey))
+            {
+                return BadRequest(new { success = false, message = "Invalid request parameters." });
+            }
+
+            // Kiểm tra người dùng hiện tại có trong cuộc hội thoại không
+            var isInConversation = await ChatAccessData.CheckUserInConversationAsync(currentMemberKey, conversationKey);
+            if (!isInConversation)
+            {
+                return Unauthorized(new { success = false, message = "You do not have access to this conversation." });
+            }
+
+            var isBanned = await ChatAccessData.GetParticipantBanStatusAsync(conversationKey, targetUserKey);
+            return Ok(new { success = true, isBanned });
+        }
+        public class BlockUserRequest
+        {
+            public string TargetUserKey { get; set; }
+        }
         public class LeaveGroupRequest
         {
             public string ConversationKey { get; set; }

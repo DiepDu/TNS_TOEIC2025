@@ -1,5 +1,4 @@
-﻿
-async function startConnection(connection, memberKey) {
+﻿async function startConnection(connection, memberKey) {
     try {
         console.log("Checking connection:", connection.state);
         if (connection.state !== signalR.HubConnectionState.Disconnected) {
@@ -12,15 +11,6 @@ async function startConnection(connection, memberKey) {
             console.log("[Disconnected] Connection lost, attempting reconnect");
             setTimeout(() => startConnection(connection, memberKey), 2000);
         });
-        //connection.on("ReloadConversations", async (conversationKey) => {
-        //    console.log(`Received ReloadConversations for conversation: ${conversationKey}`);
-        //    if (typeof loadConversations === 'function') {
-        //        await loadConversations();
-        //    }
-        //    if (currentConversationKey === conversationKey && typeof loadMessages === 'function') {
-        //        await loadMessages(conversationKey, false, 0);
-        //    }
-        //});
         window.connection.on("ReloadConversations", async (conversationKey) => {
             console.log(`Received ReloadConversations for conversation: ${conversationKey}`);
             if (typeof loadConversations === 'function') {
@@ -152,7 +142,7 @@ async function startConnection(connection, memberKey) {
 
         connection.on("RemoveMember", (conversationKey, userName) => {
             if (String(currentConversationKey) === String(conversationKey)) {
-                window.showGroupDetails(conversationKey); 
+                window.showGroupDetails(conversationKey);
             }
         });
 
@@ -273,107 +263,158 @@ document.addEventListener("DOMContentLoaded", async () => {
         };
     }
 
+    let blockIconAbortController = new AbortController();
 
+    function applyBlockUI(isBlocked) {
+        const iconBlock = document.getElementById("iconBlock");
+        if (!iconBlock) return;
+        console.log("[applyBlockUI] Applying state:", isBlocked, "Current classes:", iconBlock.classList.value);
+        if (isBlocked) {
+            iconBlock.classList.add("highlighted");
+            iconBlock.setAttribute("title", "User is blocked. Click to unblock.");
+        } else {
+            iconBlock.classList.remove("highlighted");
+            iconBlock.setAttribute("title", "Block this user.");
+        }
+    }
+
+    // Hàm khởi tạo và gắn các sự kiện cho icon
     function attachIconListeners() {
         const blockIcon = document.getElementById("iconBlock");
-        if (!blockIcon) {
-            console.warn("[attachIconListeners] IconBlock not found");
-            return;
-        }
+        if (!blockIcon) return; // Nếu không tìm thấy icon thì dừng lại
 
-        blockIcon.replaceWith(blockIcon.cloneNode(true));
-        const newBlockIcon = document.getElementById("iconBlock");
-        newBlockIcon.classList.add("icon-hover");
-        newBlockIcon.style.cursor = "pointer";
+        // 1. Gỡ bỏ event listener cũ một cách an toàn
+        blockIconAbortController.abort();
+        blockIconAbortController = new AbortController(); // Tạo controller mới cho lần gắn tiếp theo
 
-        newBlockIcon.addEventListener("mouseenter", () => console.log(`[IconHover] Hover on iconBlock at:`, new Date().toISOString()));
-        newBlockIcon.addEventListener("mouseleave", () => console.log(`[IconHover] Mouse left iconBlock at:`, new Date().toISOString()));
+        // Thêm các class và thuộc tính cần thiết
+        blockIcon.classList.add("icon-hover");
+        blockIcon.style.cursor = "pointer";
 
-        newBlockIcon.addEventListener("click", debounce((e) => {
-            if (blockPopup) {
-                blockPopup.remove();
-                blockPopup = null;
+        // 2. Cập nhật trạng thái ban đầu của icon khi mở hội thoại
+        const isInitiallyBlocked = window.currentConversationDetails ? window.currentConversationDetails.IsBanned : false;
+        applyBlockUI(isInitiallyBlocked);
+
+        // 3. Gắn sự kiện click mới với AbortSignal
+        blockIcon.addEventListener("click", () => {
+            // Xóa popup cũ nếu có
+            const oldPopup = document.getElementById("blockConfirmationPopup");
+            if (oldPopup) oldPopup.remove();
+
+            // Kiểm tra dữ liệu cuộc hội thoại
+            if (!window.currentConversationDetails || !window.currentConversationDetails.Participants) {
+              
+                showNotification("Conversation data not ready.", "error");
                 return;
             }
 
-            blockPopup = document.createElement("div");
-            blockPopup.id = "blockPopup";
-            blockPopup.innerHTML = `
-                <div class="popup-dialog">
-                    <p class="popup-title">What would you like to do?</p>
-                    <button class="btn btn-danger w-100 mb-2" id="btnDeleteConversation">Delete Conversation</button>
-                    <button class="btn btn-warning w-100 mb-2" id="btnBlockUser">Block</button>
-                    <button class="btn btn-secondary w-100" id="btnCancelBlock">Cancel</button>
+            const isCurrentlyBanned = window.currentConversationDetails.IsBanned || false;
+
+            // Tạo popup xác nhận
+            const confirmationPopup = document.createElement("div");
+            confirmationPopup.id = "blockConfirmationPopup";
+            confirmationPopup.innerHTML = `
+            <div class="popup-dialog">
+                <p class="popup-title">${isCurrentlyBanned ? "Are you sure you want to unblock this person?" : "Are you sure you want to block this person?"}</p>
+                <div class="popup-buttons">
+                    <button class="btn btn-success" id="btnConfirmBlockAction">Có</button>
+                    <button class="btn btn-secondary" id="btnCancelBlockAction">Không</button>
                 </div>
-            `;
-            Object.assign(blockPopup.style, {
-                position: "absolute",
-                top: "60px",
-                right: "20px",
-                zIndex: "1050",
-                background: "#222",
-                padding: "16px",
-                borderRadius: "12px",
-                boxShadow: "0 4px 8px rgba(0,0,0,0.2)",
-                minWidth: "200px",
-                color: "white",
-                pointerEvents: "auto"
-            });
-            chatModal.appendChild(blockPopup);
+            </div>`;
 
-            document.getElementById("btnDeleteConversation").addEventListener("click", async () => {
-                try {
-                    await fetch(`/api/ChatController/DeleteConversation/${currentConversationKey}`, { method: 'POST', credentials: 'include' });
-                    resetChatInterface();
-                    loadConversations();
-                } catch (err) {
-                    console.error("[blockPopup] Error deleting conversation:", err);
+            // CSS cho popup
+            Object.assign(confirmationPopup.style, {
+                position: "absolute", top: "60px", right: "20px", zIndex: "1050",
+                background: "#2c3e50", padding: "16px", borderRadius: "12px",
+                border: "1px solid #3498db", boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
+                minWidth: "220px", color: "white", pointerEvents: "auto"
+            });
+            const popupButtons = confirmationPopup.querySelector(".popup-buttons");
+            if (popupButtons) {
+                popupButtons.style.display = "flex";
+                popupButtons.style.justifyContent = "space-around";
+                popupButtons.style.marginTop = "15px";
+            }
+
+            document.getElementById("chatModal").appendChild(confirmationPopup);
+
+            // Sự kiện cho nút "Có"
+            document.getElementById("btnConfirmBlockAction").addEventListener("click", async () => {
+                // Tìm đối tác trong cuộc hội thoại 1-1
+                const partner = window.currentConversationDetails.Participants.find(p => p.UserKey !== memberKey);
+                if (!partner) {
+                    showNotification("Unable to identify the opposing user.", "error");
+                    confirmationPopup.remove();
+                    return;
                 }
-                blockPopup.remove();
-                blockPopup = null;
-            });
 
-            document.getElementById("btnBlockUser").addEventListener("click", async () => {
                 try {
-                    await fetch(`/api/ChatController/BlockUser/${currentConversationKey}`, { method: 'POST', credentials: 'include' });
-                    resetChatInterface();
-                    loadConversations();
+                    // Gọi API để thay đổi trạng thái block
+                    const response = await fetch(`/api/conversations/ToggleBlockUser/${currentConversationKey}`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        credentials: "include",
+                        body: JSON.stringify({ TargetUserKey: partner.UserKey })
+                    });
+                    const result = await response.json();
+
+                    // Xử lý kết quả trả về từ API
+                    if (response.ok && result.success) {
+                        showNotification(result.message, "success");
+
+                        // --- BẮT ĐẦU PHẦN SỬA LỖI QUAN TRỌNG ---
+                        if (window.currentConversationDetails) {
+                            // 1. Xác định trạng thái block mới (ngược lại với trạng thái hiện tại)
+                            const newBlockState = !window.currentConversationDetails.IsBanned;
+
+                            // 2. Cập nhật trạng thái cho đối tượng cuộc hội thoại đang xem
+                            window.currentConversationDetails.IsBanned = newBlockState;
+
+                            // 3. Tìm và cập nhật trạng thái trong danh sách tổng (quan trọng để "ghi nhớ")
+                            const conversationInMasterList = window.allConversations.find(
+                                c => String(c.ConversationKey) === String(currentConversationKey)
+                            );
+                            if (conversationInMasterList) {
+                                conversationInMasterList.IsBanned = newBlockState;
+                            }
+
+                            // 4. Cập nhật giao diện (icon) theo trạng thái mới
+                            applyBlockUI(newBlockState);
+                           
+                        }
+                        // --- KẾT THÚC PHẦN SỬA LỖI QUAN TRỌNG ---
+
+                    } else {
+                        throw new Error(result.message || "Error calling API");
+                    }
                 } catch (err) {
-                    console.error("[blockPopup] Error blocking user:", err);
+                  
+                    showNotification(err.message || "Đã có lỗi xảy ra.", "error");
+                } finally {
+                    // Luôn đóng popup sau khi hoàn tất
+                    confirmationPopup.remove();
                 }
-                blockPopup.remove();
-                blockPopup = null;
             });
 
-            document.getElementById("btnCancelBlock").addEventListener("click", () => {
-                blockPopup.remove();
-                blockPopup = null;
+            // Sự kiện cho nút "Không"
+            document.getElementById("btnCancelBlockAction").addEventListener("click", () => {
+                confirmationPopup.remove();
             });
 
+            // Đóng popup khi click ra ngoài
             const outsideClickHandler = (event) => {
-                if (blockPopup && !blockPopup.contains(event.target) && event.target !== newBlockIcon && !newBlockIcon.contains(event.target)) {
-                    blockPopup.remove();
-                    blockPopup = null;
+                if (confirmationPopup && !confirmationPopup.contains(event.target) && event.target !== blockIcon) {
+                    confirmationPopup.remove();
                     document.removeEventListener("click", outsideClickHandler);
                 }
             };
-            setTimeout(() => document.addEventListener("click", outsideClickHandler), 100);
-        }, 100));
+            setTimeout(() => document.addEventListener("click", outsideClickHandler), 50);
 
-        const iconIds = ["iconCall", "iconVideo", "iconSetting"];
-        iconIds.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-                el.classList.add("icon-hover");
-                el.style.cursor = "pointer";
-                el.addEventListener("click", (e) => console.log(`[IconClick] Clicked ${id} at:`, new Date().toISOString()));
-                el.addEventListener("mouseenter", () => console.log(`[IconHover] Hover on ${id} at:`, new Date().toISOString()));
-                el.addEventListener("mouseleave", () => console.log(`[IconHover] Mouse left ${id} at:`, new Date().toISOString()));
-            } else {
-                console.warn(`[attachIconListeners] Element with ID ${id} not found`);
-            }
-        });
+        }, { signal: blockIconAbortController.signal }); // Gắn signal vào listener
     }
+
+
+ 
 
     function updateIconsVisibility() {
         const blockIcon = document.getElementById("iconBlock");
@@ -455,39 +496,50 @@ document.addEventListener("DOMContentLoaded", async () => {
     async function loadConversations() {
         try {
             const response = await fetch(`/api/conversations?memberKey=${encodeURIComponent(memberKey)}`);
-            if (!response.ok) throw new Error(`[loadConversations] API failed: ${await response.text()} (Status: ${response.status})`);
-            const { conversations } = await response.json();
+            if (!response.ok) {
+                throw new Error(`[loadConversations] API failed: ${await response.text()} (Status: ${response.status})`);
+            }
+
+            const responseData = await response.json();
+            const conversations = responseData.conversations || responseData;
+
+            if (!Array.isArray(conversations)) {
+                console.error("API did not return a valid array of conversations.", responseData);
+                return;
+            }
+
+            // Gán dữ liệu vào biến toàn cục
+            window.allConversations = conversations;
+
+            console.log("Successfully stored conversation details.", window.allConversations);
+
             conversationList.innerHTML = "";
+
             conversations.sort((a, b) => {
                 const timeA = a.LastMessageTime ? new Date(a.LastMessageTime) : new Date(0);
                 const timeB = b.LastMessageTime ? new Date(b.LastMessageTime) : new Date(0);
                 return timeB - timeA;
             });
+
             conversations.forEach(conv => {
                 const li = document.createElement("li");
                 li.className = "p-2 border-bottom border-white border-opacity-25";
-                let lastMessage = conv.LastMessage || "No messages";
-                if (conv.ConversationType === "Group" && conv.LastMessage && allMessages.length > 0) {
-                    const lastMsgObj = allMessages.find(m => m.ConversationKey === conv.ConversationKey && new Date(m.CreatedOn) >= new Date(conv.LastMessageTime));
-                    if (lastMsgObj && lastMsgObj.IsSystemMessage === true) {
-                        lastMessage = "No messages";
-                    }
-                }
                 li.innerHTML = `
-                    <a href="#" class="d-flex justify-content-between text-white conversation-item" 
-                        data-conversation-key="${conv.ConversationKey}" 
-                        data-user-key="${conv.ConversationType !== 'Group' ? (conv.PartnerUserKey || '') : ''}" 
-                        data-user-type="${conv.ConversationType !== 'Group' ? (conv.PartnerUserType || '') : ''}"
-                        data-conversation-type="${conv.ConversationType || ''}">
-                        <div class="d-flex">
-                            <img src="${conv.Avatar || '/images/avatar/default-avatar.jpg'}" alt="avatar" class="rounded-circle me-3" style="width: 48px; height: 48px;">
-                            <div><p class="fw-bold mb-0">${conv.DisplayName || "Unknown"}</p><p class="small mb-0">${lastMessage}</p></div>
-                        </div>
-                        <div class="text-end"><p class="small mb-1">${conv.LastMessageTime ? formatTime(conv.LastMessageTime) : ""}</p>${conv.UnreadCount > 0 ? `<span class="badge bg-danger rounded-pill px-2">${conv.UnreadCount}</span>` : ''}</div>
-                    </a>
-                `;
+                <a href="#" class="d-flex justify-content-between text-white conversation-item" 
+                   data-conversation-key="${conv.ConversationKey}" 
+                   data-user-key="${conv.ConversationType !== 'Group' ? (conv.PartnerUserKey || '') : ''}" 
+                   data-user-type="${conv.ConversationType !== 'Group' ? (conv.PartnerUserType || '') : ''}"
+                   data-conversation-type="${conv.ConversationType || ''}">
+                    <div class="d-flex">
+                        <img src="${conv.Avatar || '/images/avatar/default-avatar.jpg'}" alt="avatar" class="rounded-circle me-3" style="width: 48px; height: 48px;">
+                        <div><p class="fw-bold mb-0">${conv.DisplayName || "Unknown"}</p><p class="small mb-0">${conv.LastMessage || "No messages"}</p></div>
+                    </div>
+                    <div class="text-end"><p class="small mb-1">${conv.LastMessageTime ? formatTime(conv.LastMessageTime) : ""}</p>${conv.UnreadCount > 0 ? `<span class="badge bg-danger rounded-pill px-2">${conv.UnreadCount}</span>` : ''}</div>
+                </a>
+            `;
                 conversationList.appendChild(li);
             });
+
             addConversationClickListeners();
         } catch (err) {
             console.error("[loadConversations] Error loading conversations:", err);
@@ -520,7 +572,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             searchResults.classList.add("show");
         }
     }
-    function selectContact(contact) {
+    async function selectContact(contact) {
         currentConversationKey = contact.ConversationKey || null;
         currentUserKey = contact.UserKey || null;
         currentUserType = contact.UserType || null;
@@ -530,7 +582,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         } else {
             headerAvatar.src = contact.Avatar || '/images/avatar/default-avatar.jpg';
         }
-
         headerName.textContent = contact.Name || "Unknown";
         chatHeaderInfo.style.display = "flex";
         chatHeaderContent.style.display = "block";
@@ -540,33 +591,90 @@ document.addEventListener("DOMContentLoaded", async () => {
         conversationListContainer.classList.remove("focused");
         skip = 0;
         allMessages = [];
-
         document.querySelectorAll(".conversation-item").forEach(i => i.parentElement.classList.remove("active"));
         if (currentConversationKey) {
             const matchingConv = document.querySelector(`.conversation-item[data-conversation-key="${currentConversationKey}"]`);
             if (matchingConv) matchingConv.parentElement.classList.add("active");
             loadMessages(currentConversationKey, false, skip);
         }
-
+        // Sửa lỗi: Gán window.currentConversationDetails từ window.allConversations nếu có
+        if (currentConversationKey) {
+            const conversationDetails = window.allConversations.find(c => String(c.ConversationKey) === String(currentConversationKey));
+            if (conversationDetails) {
+                window.currentConversationDetails = conversationDetails;
+                // Đối với cuộc hội thoại 1-1 (Private), tự xây dựng Participants nếu chưa có
+                if (currentConversationType === "Private" && !conversationDetails.Participants) {
+                    window.currentConversationDetails.Participants = [
+                        { UserKey: memberKey },
+                        { UserKey: currentUserKey }
+                    ];
+                }
+            } else {
+                console.warn("[selectContact] Conversation details not found in window.allConversations");
+            }
+        }
         updatePinnedSection();
         updateIconsVisibility();
-    }
 
+        // Thêm: Gọi API để lấy trạng thái IsBanned của đối phương và cập nhật icon
+        if (currentConversationType === "Private" && currentUserKey) {
+            try {
+                const response = await fetch(`/api/conversations/GetBanStatus?conversationKey=${currentConversationKey}&targetUserKey=${currentUserKey}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        window.currentConversationDetails.IsBanned = data.isBanned;
+                        applyBlockUI(data.isBanned);
+                        console.log(`[GetBanStatus] Updated IsBanned for ${currentUserKey}: ${data.isBanned}`);
+                    } else {
+                        console.warn("[GetBanStatus] API returned failure:", data.message);
+                    }
+                } else {
+                    console.error("[GetBanStatus] API call failed:", response.status);
+                }
+            } catch (err) {
+                console.error("[GetBanStatus] Error fetching ban status:", err);
+            }
+        }
+    }
 
     function addConversationClickListeners() {
         document.querySelectorAll(".conversation-item").forEach(item => {
-            item.addEventListener("click", (e) => {
+            item.addEventListener("click", async (e) => {
                 e.preventDefault();
                 const conversationKey = item.getAttribute("data-conversation-key");
+                // Di chuyển các const lên đầu để sử dụng trong phần sửa lỗi
                 const userKey = item.getAttribute("data-user-key") || null;
                 const userType = item.getAttribute("data-user-type") || null;
                 const conversationType = item.getAttribute("data-conversation-type") || null;
+                // --- BẮT ĐẦU PHẦN SỬA LỖI QUAN TRỌNG ---
+                // 1. Kiểm tra xem danh sách toàn cục có tồn tại không
+                if (!window.allConversations) {
+                    console.error("CRITICAL: Conversation list (window.allConversations) is not available!");
+                    showNotification("Error: Conversation list not loaded.", "error");
+                    return;
+                }
+                // 2. Tìm chi tiết cuộc hội thoại từ danh sách đã lưu (so sánh dưới dạng chuỗi để đảm bảo an toàn)
+                const conversationDetails = window.allConversations.find(c => String(c.ConversationKey) === String(conversationKey));
+                // 3. Gán chi tiết vào biến toàn cục. Đây là bước khắc phục lỗi!
+                window.currentConversationDetails = conversationDetails;
 
+                // Sửa lỗi: Đối với cuộc hội thoại 1-1 (Private), tự xây dựng Participants nếu chưa có
+                // Sử dụng conversationType (local) và userKey thay vì global variables chưa set
+                if (conversationType === "Private" && conversationDetails && !conversationDetails.Participants) {
+                    window.currentConversationDetails.Participants = [
+                        { UserKey: memberKey },
+                        { UserKey: userKey }
+                    ];
+                }
+                // Debug log để kiểm tra (có thể xóa sau khi test ổn)
+                console.log("Set details:", window.currentConversationDetails);
+                // --- KẾT THÚC PHẦN SỬA LỖI QUAN TRỌNG ---
+                // Tất cả logic cũ của bạn bên dưới được giữ nguyên và sẽ hoạt động đúng
                 currentConversationKey = conversationKey;
                 currentUserKey = userKey;
                 currentUserType = userType;
                 currentConversationType = conversationType;
-
                 const conv = item.closest("li").querySelector(".conversation-item");
                 headerAvatar.src = conv.querySelector("img").src;
                 headerName.textContent = conv.querySelector("p.fw-bold").textContent;
@@ -577,10 +685,30 @@ document.addEventListener("DOMContentLoaded", async () => {
                 messageList.innerHTML = "";
                 skip = 0;
                 allMessages = [];
-
                 updatePinnedSection();
                 loadMessages(currentConversationKey, false, skip);
                 updateIconsVisibility();
+
+                // Thêm: Gọi API để lấy trạng thái IsBanned của đối phương và cập nhật icon
+                if (currentConversationType === "Private" && currentUserKey) {
+                    try {
+                        const response = await fetch(`/api/conversations/GetBanStatus?conversationKey=${conversationKey}&targetUserKey=${currentUserKey}`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.success) {
+                                window.currentConversationDetails.IsBanned = data.isBanned;
+                                applyBlockUI(data.isBanned);
+                                console.log(`[GetBanStatus] Updated IsBanned for ${currentUserKey}: ${data.isBanned}`);
+                            } else {
+                                console.warn("[GetBanStatus] API returned failure:", data.message);
+                            }
+                        } else {
+                            console.error("[GetBanStatus] API call failed:", response.status);
+                        }
+                    } catch (err) {
+                        console.error("[GetBanStatus] Error fetching ban status:", err);
+                    }
+                }
             });
         });
     }
@@ -799,7 +927,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             Url: rawMessage.Url ?? rawMessage.url
         };
         if (message.MessageKey && allMessages.some(m => m.MessageKey === message.MessageKey)) {
-            return false; 
+            return false;
         }
         allMessages.push(message);
         if (String(message.ConversationKey) === String(currentConversationKey)) {
@@ -821,13 +949,13 @@ document.addEventListener("DOMContentLoaded", async () => {
                     newBadge.className = "badge bg-danger rounded-pill px-2";
                     newBadge.textContent = "1";
                     item.querySelector(".text-end")?.appendChild(newBadge);
-                }             
+                }
                 unreadCount++;
                 updateUnreadCount(unreadCount);
             }
         }
 
-        return true; 
+        return true;
     }
     window.connection.on("ReceiveMessage", (rawMessage) => {
         console.log("[ReceiveMessage] received", rawMessage);
@@ -1233,7 +1361,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             } else {
                 alert(result.message || "Recalling failed.");
             }
-        } catch (err) {          
+        } catch (err) {
             alert("Error recalling message. Check console for details.");
         }
     }
@@ -1904,5 +2032,4 @@ function showAddMembersConfirmation(conversationKey, selected) {
     detailsView.style.display = 'none';
     hostView.style.display = 'block';
 }
-
 

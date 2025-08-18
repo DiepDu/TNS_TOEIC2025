@@ -1859,6 +1859,98 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
                 }
             }
         }
+        /// <summary>
+        /// Đảo ngược trạng thái chặn (block/unblock) của một người dùng trong cuộc hội thoại.
+        /// </summary>
+        /// <param name="conversationKey">Khóa của cuộc hội thoại.</param>
+        /// <param name="targetUserKey">Khóa của người dùng bị chặn/bỏ chặn.</param>
+        /// <param name="currentUserKey">Khóa của người dùng thực hiện hành động.</param>
+        /// <returns>Một tuple chứa trạng thái thành công và trạng thái bị chặn mới.</returns>
+        public static async Task<(bool success, bool isBanned)> ToggleBlockUserAsync(string conversationKey, string targetUserKey, string currentUserKey)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                // Câu lệnh SQL để kiểm tra và cập nhật
+                var query = @"
+            -- Kiểm tra xem người dùng hiện tại có thuộc cuộc hội thoại này không để đảm bảo an toàn
+            IF NOT EXISTS (SELECT 1 FROM ConversationParticipants WHERE ConversationKey = @ConversationKey AND UserKey = @CurrentUserKey)
+            BEGIN
+                -- Nếu không, trả về lỗi (select một giá trị không hợp lệ để nhận biết)
+                SELECT -1 AS NewStatus;
+            END
+            ELSE
+            BEGIN
+                -- Cập nhật trạng thái IsBanned (nếu là 1 thì thành 0, và ngược lại)
+                UPDATE ConversationParticipants
+                SET IsBanned = CASE WHEN IsBanned = 1 THEN 0 ELSE 1 END
+                WHERE ConversationKey = @ConversationKey AND UserKey = @TargetUserKey;
+
+                -- Trả về trạng thái IsBanned mới sau khi cập nhật
+                SELECT IsBanned FROM ConversationParticipants WHERE ConversationKey = @ConversationKey AND UserKey = @TargetUserKey;
+            END";
+
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                    command.Parameters.AddWithValue("@TargetUserKey", targetUserKey);
+                    command.Parameters.AddWithValue("@CurrentUserKey", currentUserKey);
+
+                    var result = await command.ExecuteScalarAsync();
+
+                    if (result != null && result != DBNull.Value)
+                    {
+                        var newStatus = Convert.ToInt32(result);
+                        if (newStatus == -1)
+                        {
+                            // Người dùng không có quyền
+                            return (success: false, isBanned: false);
+                        }
+                        return (success: true, isBanned: Convert.ToBoolean(newStatus));
+                    }
+                }
+            }
+            // Trường hợp có lỗi xảy ra
+            return (success: false, isBanned: false);
+        }
+        public static async Task<bool> CheckUserInConversationAsync(string userKey, string conversationKey)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                var query = @"
+            SELECT COUNT(*)
+            FROM [ConversationParticipants]
+            WHERE [UserKey] = @UserKey AND [ConversationKey] = @ConversationKey AND [IsApproved] = 1";
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@UserKey", userKey);
+                    command.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                    var count = (int)await command.ExecuteScalarAsync();
+                    return count > 0;
+                }
+            }
+        }
+
+        public static async Task<bool> GetParticipantBanStatusAsync(string conversationKey, string targetUserKey)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                var query = @"
+            SELECT [IsBanned]
+            FROM [ConversationParticipants]
+            WHERE [ConversationKey] = @ConversationKey AND [UserKey] = @TargetUserKey";
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                    command.Parameters.AddWithValue("@TargetUserKey", targetUserKey);
+                    var result = await command.ExecuteScalarAsync();
+                    return result != null && result != DBNull.Value ? Convert.ToBoolean(result) : false;
+                }
+            }
+        }
         public class UserData
         {
             public string userKey { get; set; }
