@@ -639,6 +639,75 @@ namespace TNS_TOEICTest.Controllers
             var isBanned = await ChatAccessData.GetParticipantBanStatusAsync(conversationKey, targetUserKey);
             return Ok(new { success = true, isBanned });
         }
+        // Đặt hàm này vào bên trong class ChatController, ví dụ như sau hàm GetUnthread
+        [HttpPost("markAsRead/{conversationKey}")]
+        public async Task<IActionResult> MarkConversationAsRead(string conversationKey)
+        {
+            var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
+            var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
+            var memberKey = memberLogin.MemberKey;
+
+            if (string.IsNullOrEmpty(memberKey))
+            {
+                return Unauthorized(new { success = false, message = "MemberKey not found." });
+            }
+
+            if (string.IsNullOrEmpty(conversationKey))
+            {
+                return BadRequest(new { success = false, message = "ConversationKey is required." });
+            }
+
+            var success = await ChatAccessData.MarkConversationAsReadAsync(conversationKey, memberKey);
+
+            if (success)
+            {
+                // Gửi sự kiện qua SignalR đến tất cả thành viên trong nhóm,
+                // để client của họ có thể cập nhật trạng thái tin nhắn (từ 1 thành 2 dấu tích)
+                await _hubContext.Clients.Group(conversationKey).SendAsync("MessagesRead", conversationKey, memberKey);
+
+                return Ok(new { success = true, message = "Conversation marked as read." });
+            }
+
+            return StatusCode(500, new { success = false, message = "An error occurred while marking messages as read." });
+        }
+        // Đặt hàm này vào bên trong class ChatController
+
+        [HttpPost("markMessagesAsRead")]
+        public async Task<IActionResult> MarkMessagesAsRead([FromBody] MarkMessagesRequest request)
+        {
+            var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
+            var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
+            var memberKey = memberLogin.MemberKey;
+
+            if (string.IsNullOrEmpty(memberKey))
+            {
+                return Unauthorized(new { success = false, message = "MemberKey not found." });
+            }
+
+            if (request == null || request.MessageKeys == null || !request.MessageKeys.Any() || string.IsNullOrEmpty(request.ConversationKey))
+            {
+                return BadRequest(new { success = false, message = "MessageKeys and ConversationKey are required." });
+            }
+
+            var success = await ChatAccessData.MarkSpecificMessagesAsReadAsync(request.MessageKeys);
+
+            if (success)
+            {
+                // Vẫn gửi sự kiện "MessagesRead" như cũ
+                // để người gửi biết tin nhắn của họ đã được đọc
+                await _hubContext.Clients.Group(request.ConversationKey).SendAsync("MessagesRead", request.ConversationKey, memberKey);
+
+                return Ok(new { success = true });
+            }
+
+            return StatusCode(500, new { success = false, message = "An error occurred while marking messages as read." });
+        }
+        public class MarkMessagesRequest
+        {
+            public List<string> MessageKeys { get; set; }
+            // Thêm ConversationKey để có thể gửi SignalR đến đúng group
+            public string ConversationKey { get; set; }
+        }
         public class BlockUserRequest
         {
             public string TargetUserKey { get; set; }

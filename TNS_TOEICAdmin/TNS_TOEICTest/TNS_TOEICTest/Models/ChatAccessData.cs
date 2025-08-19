@@ -1951,6 +1951,100 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
                 }
             }
         }
+        // Đặt hàm này vào bên trong class ChatAccessData
+        public static async Task<bool> MarkConversationAsReadAsync(string conversationKey, string memberKey)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var transaction = connection.BeginTransaction())
+                {
+                    try
+                    {
+                        // Bước 1: Cập nhật tất cả tin nhắn của đối phương thành "đã đọc" (Status = 1)
+                        var updateMessagesQuery = @"
+                    UPDATE Messages
+                    SET Status = 1
+                    WHERE ConversationKey = @ConversationKey 
+                      AND SenderKey != @MemberKey 
+                      AND Status = 0;"; // Chỉ cập nhật tin nhắn có trạng thái "đã gửi" (0)
+
+                        using (var command = new SqlCommand(updateMessagesQuery, connection, transaction))
+                        {
+                            command.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            command.Parameters.AddWithValue("@MemberKey", memberKey);
+                            await command.ExecuteNonQueryAsync();
+                        }
+
+                        // Bước 2: Reset UnreadCount về 0 cho người dùng hiện tại trong cuộc hội thoại này
+                        var updateParticipantQuery = @"
+                    UPDATE ConversationParticipants
+                    SET UnreadCount = 0
+                    WHERE ConversationKey = @ConversationKey 
+                      AND UserKey = @MemberKey;";
+
+                        using (var command = new SqlCommand(updateParticipantQuery, connection, transaction))
+                        {
+                            command.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            command.Parameters.AddWithValue("@MemberKey", memberKey);
+                            await command.ExecuteNonQueryAsync();
+                        }
+
+                        transaction.Commit();
+                        return true;
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        // Ghi lại lỗi để debug
+                        Console.WriteLine($"[MarkConversationAsReadAsync] Error: {ex.Message}");
+                        return false;
+                    }
+                }
+            }
+        }
+        public static async Task<bool> MarkSpecificMessagesAsReadAsync(List<string> messageKeys)
+        {
+            // Nếu không có key nào thì không làm gì cả
+            if (messageKeys == null || !messageKeys.Any())
+            {
+                return true;
+            }
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                // Xây dựng câu lệnh SQL với các tham số để tránh SQL Injection
+                var parameters = new List<string>();
+                var command = new SqlCommand();
+                for (int i = 0; i < messageKeys.Count; i++)
+                {
+                    var paramName = $"@p{i}";
+                    parameters.Add(paramName);
+                    command.Parameters.AddWithValue(paramName, messageKeys[i]);
+                }
+
+                var query = $@"
+            UPDATE Messages
+            SET Status = 1
+            WHERE MessageKey IN ({string.Join(", ", parameters)}) AND Status = 0;";
+
+                command.CommandText = query;
+                command.Connection = connection;
+
+                try
+                {
+                    await command.ExecuteNonQueryAsync();
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[MarkSpecificMessagesAsReadAsync] Error: {ex.Message}");
+                    return false;
+                }
+            }
+        }
         public class UserData
         {
             public string userKey { get; set; }

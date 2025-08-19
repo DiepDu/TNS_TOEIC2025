@@ -182,6 +182,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     let skip = 0;
     let allMessages = [];
     let memberKey = null;
+    let markAsReadTimer = null;
+    let unreadMessageKeysInActiveChat = []; 
 
     try {
         const response = await fetch('/api/conversations/GetMemberKey', {
@@ -638,6 +640,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
+    // Thay thế toàn bộ hàm addConversationClickListeners trong chat.js
     function addConversationClickListeners() {
         document.querySelectorAll(".conversation-item").forEach(item => {
             item.addEventListener("click", async (e) => {
@@ -647,6 +650,42 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const userKey = item.getAttribute("data-user-key") || null;
                 const userType = item.getAttribute("data-user-type") || null;
                 const conversationType = item.getAttribute("data-conversation-type") || null;
+
+                // --- BẮT ĐẦU PHẦN BỔ SUNG: ĐÁNH DẤU ĐÃ ĐỌC ---
+                const badge = item.querySelector(".badge");
+                if (badge) {
+                    const unreadCount = parseInt(badge.textContent, 10);
+                    if (unreadCount > 0) {
+                        // Ẩn badge ngay trên giao diện để phản hồi nhanh
+                        badge.remove();
+
+                        // Cập nhật tổng số tin chưa đọc
+                        try {
+                            const totalBadge = document.getElementById("unreadCount");
+                            let currentTotal = parseInt(totalBadge.textContent, 10) || 0;
+                            currentTotal -= unreadCount;
+                            updateUnreadCount(Math.max(0, currentTotal));
+                        } catch (err) {
+                            console.error("Failed to update total unread count on UI", err);
+                        }
+
+                        // Gọi API ở chế độ nền
+                        fetch(`/api/conversations/markAsRead/${conversationKey}`, {
+                            method: 'POST',
+                            credentials: 'include'
+                        }).then(response => {
+                            if (!response.ok) {
+                                console.error(`API markAsRead for ${conversationKey} failed.`);
+                            } else {
+                                console.log(`[MarkAsRead] Conversation ${conversationKey} marked as read.`);
+                            }
+                        }).catch(err => {
+                            console.error(`[MarkAsRead] Error calling API for ${conversationKey}:`, err);
+                        });
+                    }
+                }
+                // --- KẾT THÚC PHẦN BỔ SUNG ---
+
                 // --- BẮT ĐẦU PHẦN SỬA LỖI QUAN TRỌNG ---
                 // 1. Kiểm tra xem danh sách toàn cục có tồn tại không
                 if (!window.allConversations) {
@@ -909,6 +948,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 
 
+    // Thay thế toàn bộ hàm này trong chat.js
+
     function processIncomingMessage(rawMessage) {
         // 1) Chuẩn hóa tên thuộc tính
         const message = {
@@ -932,8 +973,47 @@ document.addEventListener("DOMContentLoaded", async () => {
         allMessages.push(message);
         if (String(message.ConversationKey) === String(currentConversationKey)) {
             messageList.insertAdjacentHTML("beforeend", addMessage(message));
-        }
-        else {
+
+            // --- BẮT ĐẦU LOGIC DEBOUNCE ĐÁNH DẤU ĐÃ ĐỌC ---
+            // Chỉ thực hiện khi người gửi không phải là mình
+            if (message.SenderKey !== memberKey) {
+                unreadMessageKeysInActiveChat.push(message.MessageKey);
+
+                // Xóa timer cũ và đặt timer mới
+                clearTimeout(markAsReadTimer);
+                markAsReadTimer = setTimeout(() => {
+                    if (unreadMessageKeysInActiveChat.length > 0) {
+                        // Sao chép mảng key để gửi đi
+                        const keysToSend = [...unreadMessageKeysInActiveChat];
+                        // Reset lại mảng ngay lập tức
+                        unreadMessageKeysInActiveChat = [];
+
+                        // Gọi API
+                        fetch('/api/conversations/markMessagesAsRead', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            credentials: 'include',
+                            body: JSON.stringify({
+                                MessageKeys: keysToSend,
+                                ConversationKey: currentConversationKey
+                            })
+                        }).then(response => {
+                            if (response.ok) {
+                                console.log(`[Debounce MarkAsRead] Sent ${keysToSend.length} message keys to be marked as read.`);
+                            } else {
+                                console.error('[Debounce MarkAsRead] API call failed.');
+                            }
+                        }).catch(err => {
+                            console.error('[Debounce MarkAsRead] Fetch error:', err);
+                        });
+                    }
+                }, 2000); // Đợi 2 giây "yên tĩnh" rồi mới gửi
+            }
+            // --- KẾT THÚC LOGIC DEBOUNCE ---
+
+        } else {
             const item = document.querySelector(`.conversation-item[data-conversation-key="${message.ConversationKey}"]`);
             if (item) {
                 const lastMessageEl = item.querySelector("p.small.mb-0");
@@ -957,6 +1037,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         return true;
     }
+
     window.connection.on("ReceiveMessage", (rawMessage) => {
         console.log("[ReceiveMessage] received", rawMessage);
         const hasNewMessage = processIncomingMessage(rawMessage);
@@ -969,7 +1050,27 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
+    window.connection.on("MessagesRead", (conversationKey, readerUserKey) => {
+        // Chỉ cập nhật nếu sự kiện này dành cho cuộc hội thoại đang mở
+        // Và người đọc không phải là chính mình
+        if (String(conversationKey) === String(currentConversationKey) && String(readerUserKey) !== String(memberKey)) {
+            console.log(`[MessagesRead] User ${readerUserKey} has read messages in this conversation.`);
 
+            // Lặp qua tất cả các tin nhắn của bạn trên màn hình có trạng thái 'đã gửi'
+            document.querySelectorAll(`.message.right .status`).forEach(statusElement => {
+                if (statusElement.textContent === '✔') {
+                    statusElement.textContent = '✔✔';
+                }
+            });
+
+            // Cập nhật trạng thái trong mảng dữ liệu allMessages
+            allMessages.forEach(msg => {
+                if (msg.SenderKey === memberKey && msg.Status === 0) {
+                    msg.Status = 1;
+                }
+            });
+        }
+    });
 
     window.connection.on("ReceiveMultipleMessages", (messages) => {
         if (!messages || messages.length === 0) return;
