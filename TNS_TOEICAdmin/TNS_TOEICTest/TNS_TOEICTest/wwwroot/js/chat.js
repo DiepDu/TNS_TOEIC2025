@@ -175,13 +175,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     let unreadCount = 0;
-    let selectedFile = null;
     let currentUserKey = null;
     let currentUserType = null;
     let currentConversationType = null;
     let skip = 0;
     let allMessages = [];
     let memberKey = null;
+    let parentMessageKeyForReply = null;
+    let parentMessageContentForReply = null;
+    let parentSenderNameForReply = null;
+    let selectedFile = null;
     let markAsReadTimer = null;
     let unreadMessageKeysInActiveChat = []; 
 
@@ -950,6 +953,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Thay thế toàn bộ hàm này trong chat.js
 
+    // TÌM VÀ THAY THẾ TOÀN BỘ HÀM NÀY TRONG FILE chat.js
+
     function processIncomingMessage(rawMessage) {
         // 1) Chuẩn hóa tên thuộc tính
         const message = {
@@ -965,8 +970,16 @@ document.addEventListener("DOMContentLoaded", async () => {
             Status: rawMessage.Status ?? rawMessage.status,
             IsPinned: rawMessage.IsPinned ?? rawMessage.isPinned,
             IsSystemMessage: rawMessage.IsSystemMessage ?? rawMessage.isSystemMessage,
-            Url: rawMessage.Url ?? rawMessage.url
+            Url: rawMessage.Url ?? rawMessage.url,
+
+            // --- BẮT ĐẦU PHẦN SỬA LỖI ---
+            // Bổ sung 2 dòng bị thiếu để đọc thông tin tin nhắn cha
+            ParentContent: rawMessage.ParentContent ?? rawMessage.parentContent,
+            ParentStatus: rawMessage.ParentStatus ?? rawMessage.parentStatus
+            // --- KẾT THÚC PHẦN SỬA LỖI ---
         };
+
+        // Phần logic còn lại của hàm được giữ nguyên
         if (message.MessageKey && allMessages.some(m => m.MessageKey === message.MessageKey)) {
             return false;
         }
@@ -974,26 +987,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (String(message.ConversationKey) === String(currentConversationKey)) {
             messageList.insertAdjacentHTML("beforeend", addMessage(message));
 
-            // --- BẮT ĐẦU LOGIC DEBOUNCE ĐÁNH DẤU ĐÃ ĐỌC ---
-            // Chỉ thực hiện khi người gửi không phải là mình
+            // Logic Debounce đánh dấu đã đọc
             if (message.SenderKey !== memberKey) {
                 unreadMessageKeysInActiveChat.push(message.MessageKey);
-
-                // Xóa timer cũ và đặt timer mới
                 clearTimeout(markAsReadTimer);
                 markAsReadTimer = setTimeout(() => {
                     if (unreadMessageKeysInActiveChat.length > 0) {
-                        // Sao chép mảng key để gửi đi
                         const keysToSend = [...unreadMessageKeysInActiveChat];
-                        // Reset lại mảng ngay lập tức
                         unreadMessageKeysInActiveChat = [];
-
-                        // Gọi API
                         fetch('/api/conversations/markMessagesAsRead', {
                             method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
+                            headers: { 'Content-Type': 'application/json' },
                             credentials: 'include',
                             body: JSON.stringify({
                                 MessageKeys: keysToSend,
@@ -1001,17 +1005,14 @@ document.addEventListener("DOMContentLoaded", async () => {
                             })
                         }).then(response => {
                             if (response.ok) {
-                                console.log(`[Debounce MarkAsRead] Sent ${keysToSend.length} message keys to be marked as read.`);
+                                console.log(`[Debounce MarkAsRead] Sent ${keysToSend.length} message keys.`);
                             } else {
                                 console.error('[Debounce MarkAsRead] API call failed.');
                             }
-                        }).catch(err => {
-                            console.error('[Debounce MarkAsRead] Fetch error:', err);
-                        });
+                        }).catch(err => console.error('[Debounce MarkAsRead] Fetch error:', err));
                     }
-                }, 2000); // Đợi 2 giây "yên tĩnh" rồi mới gửi
+                }, 2000);
             }
-            // --- KẾT THÚC LOGIC DEBOUNCE ---
 
         } else {
             const item = document.querySelector(`.conversation-item[data-conversation-key="${message.ConversationKey}"]`);
@@ -1020,7 +1021,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const timeEl = item.querySelector("p.small.mb-1");
                 lastMessageEl.textContent = message.Content || "New message";
                 timeEl.textContent = formatTime(message.CreatedOn);
-
                 const badge = item.querySelector(".badge");
                 if (badge) {
                     badge.textContent = (parseInt(badge.textContent, 10) || 0) + 1;
@@ -1144,68 +1144,169 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     if (fileIcon) fileIcon.addEventListener("click", () => fileInput.click());
-    if (fileInput) fileInput.addEventListener("change", (e) => {
-        selectedFile = e.target.files[0];
-        if (selectedFile) {
-            filePreviewContainer.style.display = "block";
-            fileInput.disabled = true;
-            const fileType = selectedFile.type;
-            if (fileType.startsWith("image/")) {
-                filePreview.src = URL.createObjectURL(selectedFile);
-                filePreview.classList.remove("d-none");
-                videoPreview.classList.add("d-none");
-                audioPreview.classList.add("d-none");
-            } else if (fileType.startsWith("video/")) {
-                videoPreview.src = URL.createObjectURL(selectedFile);
-                videoPreview.classList.remove("d-none");
-                filePreview.classList.add("d-none");
-                audioPreview.classList.add("d-none");
-            } else if (fileType.startsWith("audio/")) {
-                audioPreview.src = URL.createObjectURL(selectedFile);
-                audioPreview.classList.remove("d-none");
-                filePreview.classList.add("d-none");
-                videoPreview.classList.add("d-none");
+    if (fileInput) {
+        fileInput.addEventListener('change', e => {
+            const file = e.target.files[0];
+            if (file) {
+                selectedFile = file;
+                showFilePreview(file);
             }
+        });
+    }
+
+    // BỔ SUNG CÁC HÀM TIỆN ÍCH MỚI
+    function clearFilePreview() {
+        const previewContainer = document.getElementById('file-preview-container');
+        selectedFile = null;
+        if (fileInput) fileInput.value = ''; // Quan trọng: reset input file
+        previewContainer.innerHTML = '';
+        previewContainer.style.display = 'none';
+    }
+
+    function showFilePreview(file) {
+        const previewContainer = document.getElementById('file-preview-container');
+        const fileType = file.type;
+        let previewElement;
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'preview-wrapper';
+
+        if (fileType.startsWith('image/')) {
+            previewElement = document.createElement('img');
+            previewElement.src = URL.createObjectURL(file);
+        } else if (fileType.startsWith('video/')) {
+            previewElement = document.createElement('video');
+            previewElement.src = URL.createObjectURL(file);
+            previewElement.controls = false;
+        } else if (fileType.startsWith('audio/')) {
+            previewElement = document.createElement('audio');
+            previewElement.src = URL.createObjectURL(file);
+            previewElement.controls = true;
+        } else {
+            previewElement = document.createElement('span');
+            previewElement.className = 'preview-filename';
+            previewElement.textContent = file.name;
         }
-    });
+
+        previewElement.className += ' preview-item';
+
+        const removeIcon = document.createElement('span');
+        removeIcon.className = 'remove-preview-icon';
+        removeIcon.innerHTML = '&times;';
+        removeIcon.title = 'Remove file';
+        removeIcon.onclick = clearFilePreview;
+
+        wrapper.appendChild(previewElement);
+        wrapper.appendChild(removeIcon);
+
+        previewContainer.innerHTML = '';
+        previewContainer.appendChild(wrapper);
+        previewContainer.style.display = 'flex';
+    }
+
+    function clearReplyPreview() {
+        const previewContainer = document.getElementById('reply-preview-container');
+        parentMessageKeyForReply = null;
+        parentMessageContentForReply = null;
+        parentSenderNameForReply = null;
+        previewContainer.innerHTML = '';
+        previewContainer.style.display = 'none';
+    }
+
+    function showReplyPreview(key, content, senderName) {
+        parentMessageKeyForReply = key;
+        parentMessageContentForReply = content;
+        parentSenderNameForReply = senderName;
+
+        const previewContainer = document.getElementById('reply-preview-container');
+        previewContainer.innerHTML = `
+        <div class="preview-content">
+            <span class="reply-user">Replying to ${senderName}</span>
+            <span class="reply-text text-muted">${content}</span>
+        </div>
+        <span class="remove-preview-icon" title="Cancel reply">&times;</span>
+    `;
+        previewContainer.querySelector('.remove-preview-icon').onclick = clearReplyPreview;
+        previewContainer.style.display = 'flex';
+    }
     if (clearFile) clearFile.addEventListener("click", resetFileInput);
-    if (sendIcon) sendIcon.addEventListener("click", async () => {
-        const messageText = chatInput.value.trim();
-        if ((messageText || selectedFile) && (currentConversationKey || currentUserKey)) {
+    if (sendIcon) {
+        sendIcon.addEventListener("click", async () => {
+            const content = chatInput.value.trim();
+
+            if (!content && !selectedFile) {
+                return; // Không có gì để gửi
+            }
+
+            if (!currentConversationKey) {
+                showNotification("Please select a conversation first.", "error");
+                return;
+            }
+
+            const formData = new FormData();
+            // --- BẮT ĐẦU SỬA LỖI: Chuyển tên tham số sang chữ thường ---
+            formData.append("conversationKey", currentConversationKey);
+            formData.append("content", content);
+
+            if (currentConversationType === 'Private' && currentUserKey) {
+                formData.append("userKey", currentUserKey);
+                formData.append("userType", currentUserType);
+            }
+
+            if (selectedFile) {
+                formData.append("file", selectedFile);
+            }
+
+            if (parentMessageKeyForReply) {
+                formData.append("parentMessageKey", parentMessageKeyForReply);
+                formData.append("parentMessageContent", parentMessageContentForReply);
+            }
+            // --- KẾT THÚC SỬA LỖI ---
+
+            const originalContent = chatInput.value;
+            const replyingMessage = {
+                key: parentMessageKeyForReply,
+                content: parentMessageContentForReply,
+                sender: parentSenderNameForReply
+            };
+            const sendingFile = selectedFile;
+
+            chatInput.value = "";
+            clearFilePreview();
+            clearReplyPreview();
+
             try {
-                const formData = new FormData();
-                formData.append("ConversationKey", currentConversationKey || "");
-                formData.append("UserKey", memberKey);
-                formData.append("UserType", currentUserType || "");
-                formData.append("Content", messageText);
-                if (selectedFile) formData.append("File", selectedFile);
+                const response = await fetch("/api/conversations/messages", {
+                    method: "POST",
+                    body: formData,
+                    credentials: 'include'
+                });
 
-                if (!currentConversationKey && currentUserKey) {
-                    const formDataInit = new FormData();
-                    formDataInit.append("UserKey", currentUserKey);
-                    formDataInit.append("UserType", currentUserType);
-                    formDataInit.append("MemberKey", memberKey);
-
-                    const initResponse = await fetch("/api/conversations/init", { method: "POST", body: formDataInit });
-                    if (!initResponse.ok) throw new Error("[sendIcon] Failed to initialize conversation");
-                    const initData = await initResponse.json();
-                    currentConversationKey = initData.ConversationKey;
-                    currentConversationType = initData.ConversationType || "Private";
-                    updateIconsVisibility();
+                if (!response.ok) {
+                    const errorResult = await response.json().catch(() => ({ message: "Failed to send message and parse error." }));
+                    throw new Error(errorResult.message || "Failed to send message.");
                 }
 
-                const response = await fetch("/api/conversations/messages", { method: "POST", body: formData });
-                if (!response.ok) throw new Error("[sendIcon] Failed to send message");
-                chatInput.value = "";
-                resetFileInput();
-                skip = 0;
-                allMessages = [];
-                await loadMessages(currentConversationKey, false, skip);
+                console.log("Message sent successfully, waiting for SignalR echo.");
+
             } catch (err) {
                 console.error("[sendIcon] Error sending message:", err);
+                showNotification(err.message, "error");
+
+                // Khôi phục lại giao diện nếu gửi thất bại
+                chatInput.value = originalContent;
+                if (replyingMessage.key) {
+                    showReplyPreview(replyingMessage.key, replyingMessage.content, replyingMessage.sender);
+                }
+                if (sendingFile) {
+                    selectedFile = sendingFile;
+                    showFilePreview(sendingFile);
+                }
+            } finally {
+                chatInput.focus();
             }
-        }
-    });
+        });
+    }
     if (openChat) openChat.addEventListener("click", async () => {
         const chatLoading = document.getElementById('chatLoading');
         if (chatLoading) chatLoading.classList.remove('d-none');
@@ -1270,84 +1371,88 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    messageList.addEventListener('click', (e) => {
-        const optionsButton = e.target.closest('.message-options');
-        if (optionsButton) {
-            const messageElement = optionsButton.closest('.message');
-            const messageKey = messageElement.dataset.messageKey;
-            const senderKey = messageElement.dataset.senderKey;
-            showMessageOptions(optionsButton, messageKey, senderKey);
-        }
-    });
+    if (messageList) {
+        messageList.addEventListener('click', (e) => {
+            // --- Logic xử lý menu options (pin, recall, reply) ---
+            const optionsButton = e.target.closest('.message-options');
+            if (optionsButton) {
+                const messageElement = optionsButton.closest('.message');
+                const messageKey = messageElement.dataset.messageKey;
+                const senderKey = messageElement.dataset.senderKey;
 
-    function showMessageOptions(targetIcon, messageKey, senderKey) {
-        const existingMenu = document.getElementById("messageOptionsMenu");
-        if (existingMenu) existingMenu.remove();
+                const message = allMessages.find(m => m.MessageKey === messageKey);
+                if (!message) return;
 
-        const isMyMessage = senderKey === memberKey;
-        const message = allMessages.find(m => m.MessageKey === messageKey);
-        const isPinned = message ? message.IsPinned : false;
+                // Xóa menu cũ nếu có
+                const existingMenu = document.getElementById("messageOptionsMenu");
+                if (existingMenu) existingMenu.remove();
 
-        const menu = document.createElement("div");
-        menu.id = "messageOptionsMenu";
-        menu.className = "message-options-menu";
-        menu.innerHTML = `
-            <div class="menu-item" data-action="${isPinned ? 'unpin' : 'pin'}">${isPinned ? '📌 Unpin' : '📌 Pin'}</div>
-            ${isMyMessage ? '<div class="menu-item" data-action="recall">↩️ Recall</div>' : ""}
-            <div class="menu-item" data-action="reply">💬 Reply</div>
-        `;
+                const isMyMessage = senderKey === memberKey;
+                const isPinned = message.IsPinned;
 
-        const modalContent = document.querySelector('#chatModal .modal-content');
-        if (!modalContent) return;
-        modalContent.appendChild(menu);
+                const menu = document.createElement("div");
+                menu.id = "messageOptionsMenu";
+                menu.className = "message-options-menu";
+                // Tạo menu với các tùy chọn
+                menu.innerHTML = `
+                <div class="menu-item" data-action="reply">💬 Reply</div>
+                <div class="menu-item" data-action="${isPinned ? 'unpin' : 'pin'}">${isPinned ? '📌 Unpin' : '📌 Pin'}</div>
+                ${isMyMessage ? `<div class="menu-item" data-action="recall">↩️ Recall</div>` : ""}
+            `;
 
-        const iconRect = targetIcon.getBoundingClientRect();
-        const modalRect = modalContent.getBoundingClientRect();
-        let top = iconRect.top - modalRect.top + targetIcon.offsetHeight;
-        let left = iconRect.left - modalRect.left;
+                // Code hiển thị menu
+                const modalContent = document.querySelector('#chatModal .modal-content');
+                if (!modalContent) return;
+                modalContent.appendChild(menu);
+                const iconRect = optionsButton.getBoundingClientRect();
+                const modalRect = modalContent.getBoundingClientRect();
+                let top = iconRect.top - modalRect.top + optionsButton.offsetHeight;
+                let left = iconRect.left - modalRect.left;
+                Object.assign(menu.style, { position: "absolute", top: `${top}px`, left: `${left}px` });
 
-        const menuHeight = menu.offsetHeight || 90;
-        const menuWidth = menu.offsetWidth || 120;
+                // Gắn sự kiện cho các item trong menu
+                menu.querySelectorAll(".menu-item").forEach(item => {
+                    item.addEventListener("click", (evt) => {
+                        evt.stopPropagation();
+                        const action = item.dataset.action;
+                        menu.remove(); // Đóng menu sau khi chọn
 
-        if (left + menuWidth > modalRect.width) left = modalRect.width - menuWidth - 10;
-        if (top + menuHeight > modalRect.height) top = iconRect.top - modalRect.top - menuHeight;
+                        if (action === "pin") pinMessage(messageKey);
+                        if (action === "unpin") unpinMessage(messageKey);
+                        if (action === "recall" && isMyMessage) recallMessage(messageKey);
+                        if (action === "reply") {
+                            const content = message.Content || (message.MessageType !== 'Text' ? message.MessageType : 'Attachment');
+                            showReplyPreview(messageKey, content, message.SenderName);
+                            document.getElementById('chatInput').focus();
+                        }
+                    });
+                });
 
-        Object.assign(menu.style, {
-            position: "absolute",
-            top: `${top}px`,
-            left: `${left}px`,
-            zIndex: 1051,
-            display: "block",
-            background: "linear-gradient(90deg, #6a11cb 0%, #2575fc 100%)",
-            color: "#fff",
-            borderRadius: "4px",
-            boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
-            padding: "5px 0"
-        });
-
-        menu.querySelectorAll(".menu-item").forEach(item => {
-            item.style.padding = "5px 15px";
-            item.addEventListener("click", (e) => {
-                e.stopPropagation();
-                const action = item.dataset.action;
-                menu.remove();
-                if (action === "pin") pinMessage(messageKey);
-                if (action === "unpin") unpinMessage(messageKey);
-                if (action === "recall" && isMyMessage) recallMessage(messageKey);
-                if (action === "reply") replyToMessage(messageKey, messageElement);
-            });
-        });
-
-        const hideMenu = (e) => {
-            if (!menu.contains(e.target) && !targetIcon.contains(e.target)) {
-                menu.remove();
-                document.removeEventListener("click", hideMenu);
-                document.removeEventListener("scroll", hideMenu, true);
+                // Logic ẩn menu khi click ra ngoài
+                const hideMenu = (evt) => {
+                    if (!menu.contains(evt.target) && !optionsButton.contains(evt.target)) {
+                        menu.remove();
+                        document.removeEventListener("click", hideMenu);
+                    }
+                };
+                setTimeout(() => document.addEventListener("click", hideMenu), 0);
             }
-        };
-        document.addEventListener("click", hideMenu);
-        document.addEventListener("scroll", hideMenu, true);
+
+            // --- Logic xử lý click vào tin nhắn cha để scroll ---
+            const parentEl = e.target.closest(".parent-message");
+            if (parentEl) {
+                const parentKey = parentEl.getAttribute("data-parent-key");
+                const targetEl = document.querySelector(`[data-message-key="${parentKey}"]`);
+                if (targetEl) {
+                    targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
+                } else {
+                    loadMessageUntilFound(parentKey, skip);
+                }
+            }
+        });
     }
+
+
 
     async function pinMessage(messageKey) {
         const message = allMessages.find(m => m.MessageKey === messageKey);
@@ -1467,14 +1572,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
-    function replyToMessage(messageKey, messageElement) {
-        const message = allMessages.find(m => m.MessageKey === messageKey);
-        if (message) {
-            chatInput.value = `${message.Content ? `Replying to ${message.SenderName || "someone"}: ${message.Content}` : "Replying to message"}`;
-            chatInput.focus();
-            messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-    }
+
+    
 
     const hamburgerBtn = document.querySelector('.hamburger-btn');
     const navMenu = document.querySelector('.nav-menu');

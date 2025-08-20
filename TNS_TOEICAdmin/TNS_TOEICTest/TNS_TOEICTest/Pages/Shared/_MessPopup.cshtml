@@ -852,6 +852,85 @@
         }
 
 
+        /* ===== BẮT ĐẦU PHẦN BỔ SUNG CSS MỚI ===== */
+        .preview-container {
+            padding: 8px 15px;
+            background-color: rgba(44, 62, 80, 0.7);
+            border-bottom: 1px solid rgba(52, 152, 219, 0.2);
+            display: none; /* Mặc định ẩn */
+            align-items: center;
+        }
+
+        .preview-wrapper {
+            position: relative; /* Quan trọng để định vị icon X */
+            display: inline-flex;
+            align-items: center;
+            min-height: 50px;
+        }
+
+        .preview-item {
+            max-width: 150px;
+            max-height: 80px;
+            display: block;
+            border-radius: 8px;
+            background-color: #1a252f;
+        }
+
+        .preview-filename {
+            color: #ecf0f1;
+            font-style: italic;
+            font-size: 0.9em;
+        }
+
+        .remove-preview-icon {
+            position: absolute;
+            top: 50%;
+            /* Đặt icon ở bên phải, bên ngoài preview một chút cho đẹp */
+            right: -15px;
+            transform: translateY(-50%); /* Căn giữa theo chiều dọc */
+            width: 24px;
+            height: 24px;
+            background-color: rgba(0, 0, 0, 0.6);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            cursor: pointer;
+            font-family: sans-serif;
+            border: 1px solid white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            transition: background-color 0.2s;
+        }
+
+            .remove-preview-icon:hover {
+                background-color: #e74c3c;
+            }
+
+        /* Style cho phần preview của tin nhắn trả lời */
+        #reply-preview-container .preview-content {
+            flex-grow: 1;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            font-size: 0.85em;
+            padding-right: 40px; /* Chừa không gian cho nút X */
+            border-left: 3px solid #3498db;
+            padding-left: 10px;
+        }
+
+            #reply-preview-container .preview-content .reply-user {
+                font-weight: bold;
+                color: #3498db;
+                display: block;
+            }
+
+            #reply-preview-container .preview-content .reply-text {
+                color: #bdc3c7;
+            }
+        /* ===== KẾT THÚC PHẦN BỔ SUNG CSS MỚI ===== */
+
 </style>
 </head>
 <body>
@@ -891,18 +970,21 @@
                                 <ul id="messageList" class="list-unstyled"></ul>
                             </div>
                             <div class="input-container-sticky">
-                                <div class="file-preview-container" id="filePreviewContainer">
-                                    <img id="filePreview" class="file-preview d-none" alt="Preview">
-                                    <video id="videoPreview" class="file-preview d-none" controls></video>
-                                    <audio id="audioPreview" class="file-preview d-none" controls></audio>
-                                    <button id="clearFile" class="btn btn-sm btn-danger ms-2">Clear</button>
-                                </div>
-                                <div class="input-container">
-                                    <i id="fileIcon" class="fas fa-paperclip icon-left"></i>
+                                <div id="reply-preview-container" class="preview-container"></div>
+                                <div id="file-preview-container" class="preview-container"></div>
+
+                                <div class="input-container p-3">
+                                    <label for="fileInput" class="ms-1 text-muted icon-hover" style="cursor: pointer; padding: 5px;">
+                                        <i id="fileIcon" class="fas fa-paperclip"></i>
+                                    </label>
+                                    <input type="file" id="fileInput" accept="image/*,video/*,audio/*" class="d-none">
+
                                     <textarea id="chatInput" class="form-control" rows="1" placeholder="Message"></textarea>
-                                    <i id="sendIcon" class="fas fa-arrow-right icon-right"></i>
+
+                                    <a id="sendIcon" class="ms-3 icon-hover" style="cursor: pointer; padding: 5px;">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </a>
                                 </div>
-                                <input type="file" id="fileInput" accept="image/*,video/*,audio/mpeg" class="d-none">
                             </div>
                         </div>
                     </div>

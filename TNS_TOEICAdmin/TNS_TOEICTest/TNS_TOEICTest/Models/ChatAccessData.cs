@@ -2003,45 +2003,214 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
                 }
             }
         }
-        public static async Task<bool> MarkSpecificMessagesAsReadAsync(List<string> messageKeys)
+        // TÌM VÀ THAY THẾ TOÀN BỘ HÀM NÀY TRONG FILE ChatAccessData.cs
+
+        public static async Task<(bool success, string errorMessage)> MarkSpecificMessagesAsReadAsync(List<string> messageKeys, string conversationKey, string readerUserKey)
         {
-            // Nếu không có key nào thì không làm gì cả
-            if (messageKeys == null || !messageKeys.Any())
+            if (messageKeys == null || !messageKeys.Any() || string.IsNullOrEmpty(conversationKey) || string.IsNullOrEmpty(readerUserKey))
             {
-                return true;
+                return (true, null); // Không có gì để xử lý
             }
 
             using (var connection = new SqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
-
-                // Xây dựng câu lệnh SQL với các tham số để tránh SQL Injection
-                var parameters = new List<string>();
-                var command = new SqlCommand();
-                for (int i = 0; i < messageKeys.Count; i++)
+                using (var transaction = connection.BeginTransaction())
                 {
-                    var paramName = $"@p{i}";
-                    parameters.Add(paramName);
-                    command.Parameters.AddWithValue(paramName, messageKeys[i]);
+                    try
+                    {
+                        // --- BƯỚC 1: Cập nhật trạng thái các tin nhắn cụ thể ---
+                        var parameters = new List<string>();
+                        var updateMessagesCommand = new SqlCommand();
+                        for (int i = 0; i < messageKeys.Count; i++)
+                        {
+                            var paramName = $"@p{i}";
+                            parameters.Add(paramName);
+                            updateMessagesCommand.Parameters.AddWithValue(paramName, messageKeys[i]);
+                        }
+
+                        var updateMessagesQuery = $@"
+                    UPDATE Messages
+                    SET Status = 1
+                    WHERE MessageKey IN ({string.Join(", ", parameters)}) AND Status = 0;";
+
+                        updateMessagesCommand.CommandText = updateMessagesQuery;
+                        updateMessagesCommand.Connection = connection;
+                        updateMessagesCommand.Transaction = transaction;
+                        int messagesUpdatedCount = await updateMessagesCommand.ExecuteNonQueryAsync();
+
+                        // --- BƯỚC 2 (QUAN TRỌNG): Cập nhật UnreadCount ---
+                        // Chỉ cập nhật UnreadCount nếu có tin nhắn thực sự được chuyển trạng thái
+                        if (messagesUpdatedCount > 0)
+                        {
+                            var updateParticipantQuery = @"
+                        UPDATE ConversationParticipants
+                        SET UnreadCount = UnreadCount - @MessagesUpdatedCount
+                        WHERE ConversationKey = @ConversationKey 
+                          AND UserKey = @ReaderUserKey
+                          AND UnreadCount > 0;"; // Đảm bảo không bị số âm
+
+                            using (var updateParticipantCommand = new SqlCommand(updateParticipantQuery, connection, transaction))
+                            {
+                                updateParticipantCommand.Parameters.AddWithValue("@MessagesUpdatedCount", messagesUpdatedCount);
+                                updateParticipantCommand.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                                updateParticipantCommand.Parameters.AddWithValue("@ReaderUserKey", readerUserKey);
+                                await updateParticipantCommand.ExecuteNonQueryAsync();
+                            }
+                        }
+
+                        transaction.Commit();
+                        return (true, null);
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        Console.WriteLine($"[MarkSpecificMessagesAsReadAsync] Error: {ex.Message}");
+                        return (false, ex.Message);
+                    }
                 }
-
-                var query = $@"
-            UPDATE Messages
-            SET Status = 1
-            WHERE MessageKey IN ({string.Join(", ", parameters)}) AND Status = 0;";
-
-                command.CommandText = query;
-                command.Connection = connection;
-
-                try
+            }
+        }
+        public static async Task<Dictionary<string, object>> SendMessageAsync(
+            string conversationKey,
+            string senderKey,
+            string senderType,
+            string senderName,
+            string senderAvatar,
+            string receiverKey,
+            string receiverType,
+            string content,
+            string parentMessageKey,
+            string parentMessageContent,
+            IFormFile file,
+            HttpContext httpContext)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var transaction = connection.BeginTransaction())
                 {
-                    await command.ExecuteNonQueryAsync();
-                    return true;
-                }
-                catch (Exception ex)
+                    try
+                    {
+                        var messageKey = Guid.NewGuid().ToString();
+                        var createdOn = DateTime.Now;
+                        var messageType = "Text";
+                        string fileUrl = null;
+
+                        // --- Bước 1: Xử lý file đính kèm nếu có ---
+                        if (file != null && file.Length > 0)
+                        {
+                            // Xác định MessageType từ MimeType của file
+                            if (file.ContentType.StartsWith("image/")) messageType = "Image";
+                            else if (file.ContentType.StartsWith("audio/")) messageType = "Audio";
+                            else if (file.ContentType.StartsWith("video/")) messageType = "Video";
+                            else messageType = "File"; // Loại file khác
+
+                            var fileName = $"{messageKey}{Path.GetExtension(file.FileName)}";
+                            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "messages", fileName);
+
+                            // Tạo thư mục nếu chưa tồn tại
+                            Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+
+                            using (var stream = new FileStream(filePath, FileMode.Create))
+                            {
+                                await file.CopyToAsync(stream);
+                            }
+                            fileUrl = $"/images/messages/{fileName}";
+
+                            // Insert vào MessageAttachments
+                            var attachmentQuery = @"
+                        INSERT INTO MessageAttachments 
+                        (AttachmentKey, MessageKey, Type, Url, FileSize, CreatedOn, FileName, MimeType)
+                        VALUES (@AttachmentKey, @MessageKey, @Type, @Url, @FileSize, @CreatedOn, @FileName, @MimeType)";
+                            using (var cmd = new SqlCommand(attachmentQuery, connection, transaction))
+                            {
+                                cmd.Parameters.AddWithValue("@AttachmentKey", Guid.NewGuid().ToString());
+                                cmd.Parameters.AddWithValue("@MessageKey", messageKey);
+                                cmd.Parameters.AddWithValue("@Type", messageType);
+                                cmd.Parameters.AddWithValue("@Url", fileUrl);
+                                cmd.Parameters.AddWithValue("@FileSize", file.Length);
+                                cmd.Parameters.AddWithValue("@CreatedOn", createdOn);
+                                cmd.Parameters.AddWithValue("@FileName", file.FileName);
+                                cmd.Parameters.AddWithValue("@MimeType", file.ContentType);
+                                await cmd.ExecuteNonQueryAsync();
+                            }
+                        }
+
+                        // --- Bước 2: Insert vào Messages ---
+                        var messageQuery = @"
+                    INSERT INTO Messages 
+                    (MessageKey, ConversationKey, SenderKey, SenderType, ReceiverKey, ReceiverType, MessageType, Content, ParentMessageKey, CreatedOn, Status, IsPinned, IsSystemMessage)
+                    VALUES (@MessageKey, @ConversationKey, @SenderKey, @SenderType, @ReceiverKey, @ReceiverType, @MessageType, @Content, @ParentMessageKey, @CreatedOn, @Status, 0, 0)";
+                        using (var cmd = new SqlCommand(messageQuery, connection, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@MessageKey", messageKey);
+                            cmd.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            cmd.Parameters.AddWithValue("@SenderKey", senderKey);
+                            cmd.Parameters.AddWithValue("@SenderType", senderType);
+                            cmd.Parameters.AddWithValue("@ReceiverKey", (object)receiverKey ?? DBNull.Value);
+                            cmd.Parameters.AddWithValue("@ReceiverType", (object)receiverType ?? DBNull.Value);
+                            cmd.Parameters.AddWithValue("@MessageType", messageType);
+                            cmd.Parameters.AddWithValue("@Content", (object)content ?? DBNull.Value);
+                            cmd.Parameters.AddWithValue("@ParentMessageKey", (object)parentMessageKey ?? DBNull.Value);
+                            cmd.Parameters.AddWithValue("@CreatedOn", createdOn);
+                            cmd.Parameters.AddWithValue("@Status", 0); // 0 = Đã gửi, 1 = Đã đọc
+                            await cmd.ExecuteNonQueryAsync();
+                        }
+
+                        // --- Bước 3: Cập nhật Conversations ---
+                        var updateConvQuery = @"
+                    UPDATE Conversations 
+                    SET LastMessageKey = @LastMessageKey, LastMessageTime = @LastMessageTime 
+                    WHERE ConversationKey = @ConversationKey";
+                        using (var cmd = new SqlCommand(updateConvQuery, connection, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@LastMessageKey", messageKey);
+                            cmd.Parameters.AddWithValue("@LastMessageTime", createdOn);
+                            cmd.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            await cmd.ExecuteNonQueryAsync();
+                        }
+
+                        // --- Bước 4: Cập nhật UnreadCount ---
+                        var updateUnreadQuery = @"
+                    UPDATE ConversationParticipants 
+                    SET UnreadCount = UnreadCount + 1 
+                    WHERE ConversationKey = @ConversationKey AND UserKey != @SenderKey";
+                        using (var cmd = new SqlCommand(updateUnreadQuery, connection, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            cmd.Parameters.AddWithValue("@SenderKey", senderKey);
+                            await cmd.ExecuteNonQueryAsync();
+                        }
+
+                        transaction.Commit();
+
+                        // --- Bước 5: Trả về đối tượng message hoàn chỉnh để gửi qua SignalR ---
+                        var messageObject = new Dictionary<string, object>
                 {
-                    Console.WriteLine($"[MarkSpecificMessagesAsReadAsync] Error: {ex.Message}");
-                    return false;
+                    { "MessageKey", messageKey },
+                    { "ConversationKey", conversationKey },
+                    { "SenderKey", senderKey },
+                    { "SenderName", senderName },
+                    { "SenderAvatar", senderAvatar },
+                    { "MessageType", messageType },
+                    { "Content", content },
+                    { "ParentMessageKey", parentMessageKey },
+                    { "ParentContent", parentMessageContent }, // Trả về content tin nhắn cha
+                    { "CreatedOn", createdOn },
+                    { "Status", 0 }, // Trạng thái ban đầu là "Đã gửi"
+                    { "IsPinned", false },
+                    { "IsSystemMessage", false },
+                    { "Url", fileUrl }
+                };
+                        return messageObject;
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        Console.WriteLine($"[SendMessageAsync] Error: {ex.Message}");
+                        return null;
+                    }
                 }
             }
         }

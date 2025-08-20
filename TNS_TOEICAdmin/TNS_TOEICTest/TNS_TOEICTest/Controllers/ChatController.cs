@@ -672,6 +672,8 @@ namespace TNS_TOEICTest.Controllers
         }
         // Đặt hàm này vào bên trong class ChatController
 
+        // TÌM VÀ THAY THẾ TOÀN BỘ HÀM NÀY TRONG FILE ChatController.cs
+
         [HttpPost("markMessagesAsRead")]
         public async Task<IActionResult> MarkMessagesAsRead([FromBody] MarkMessagesRequest request)
         {
@@ -689,18 +691,78 @@ namespace TNS_TOEICTest.Controllers
                 return BadRequest(new { success = false, message = "MessageKeys and ConversationKey are required." });
             }
 
-            var success = await ChatAccessData.MarkSpecificMessagesAsReadAsync(request.MessageKeys);
+            // --- THAY ĐỔI: Truyền memberKey vào hàm AccessData ---
+            var (success, errorMessage) = await ChatAccessData.MarkSpecificMessagesAsReadAsync(request.MessageKeys, request.ConversationKey, memberKey);
 
             if (success)
             {
                 // Vẫn gửi sự kiện "MessagesRead" như cũ
-                // để người gửi biết tin nhắn của họ đã được đọc
                 await _hubContext.Clients.Group(request.ConversationKey).SendAsync("MessagesRead", request.ConversationKey, memberKey);
-
                 return Ok(new { success = true });
             }
 
-            return StatusCode(500, new { success = false, message = "An error occurred while marking messages as read." });
+            return StatusCode(500, new { success = false, message = "An error occurred while marking messages as read.", error = errorMessage });
+        }
+
+
+        // TÌM VÀ THAY THẾ TOÀN BỘ HÀM NÀY TRONG FILE ChatController.cs
+
+        [HttpPost("messages")]
+        [Authorize]
+        public async Task<IActionResult> SendMessage(
+            // --- BẮT ĐẦU SỬA LỖI: Thêm giá trị mặc định "= null" để biến các tham số thành tùy chọn ---
+            [FromForm] string conversationKey,
+            [FromForm] string content,
+            [FromForm] string userKey = null,                 // Receiver Key
+            [FromForm] string userType = null,                // Receiver Type
+            [FromForm] string parentMessageKey = null,
+            [FromForm] string parentMessageContent = null,
+            [FromForm] IFormFile file = null
+        // --- KẾT THÚC SỬA LỖI ---
+        )
+        {
+            // --- Lấy thông tin người gửi từ cookie ---
+            var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
+            var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
+            var senderKey = memberLogin.MemberKey;
+            var senderName = memberLogin.MemberName;
+            var senderAvatar = memberLogin.Avatar;
+
+            if (string.IsNullOrEmpty(senderKey))
+            {
+                return Unauthorized(new { success = false, message = "Sender not authenticated." });
+            }
+
+            // Thêm kiểm tra conversationKey để đảm bảo an toàn
+            if (string.IsNullOrEmpty(conversationKey))
+            {
+                return BadRequest(new { success = false, message = "ConversationKey is required." });
+            }
+
+            // --- Gọi hàm xử lý logic trong AccessData ---
+            var messageObject = await ChatAccessData.SendMessageAsync(
+                conversationKey,
+                senderKey,
+                "Member", // SenderType, giả sử người gửi luôn là Member
+                senderName,
+                senderAvatar,
+                userKey,
+                userType,
+                content,
+                parentMessageKey,
+                parentMessageContent,
+                file,
+                HttpContext
+            );
+
+            if (messageObject != null)
+            {
+                // --- Gửi tin nhắn real-time qua SignalR cho tất cả client trong group ---
+                await _hubContext.Clients.Group(conversationKey).SendAsync("ReceiveMessage", messageObject);
+                return Ok(new { success = true, data = messageObject });
+            }
+
+            return StatusCode(500, new { success = false, message = "An error occurred while sending the message." });
         }
         public class MarkMessagesRequest
         {
