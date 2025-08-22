@@ -134,6 +134,8 @@ namespace TNS_TOEICAdmin.Models
     };
         }
 
+        // TÌM VÀ THAY THẾ TOÀN BỘ HÀM NÀY TRONG FILE ChatAccessData.cs
+
         public static async Task<List<Dictionary<string, object>>> SearchContactsAsync(string query, string memberKey)
         {
             var results = new List<Dictionary<string, object>>();
@@ -141,46 +143,24 @@ namespace TNS_TOEICAdmin.Models
             {
                 await connection.OpenAsync();
 
+                // Các câu query giữ nguyên
                 var groupQuery = @"
             SELECT c.ConversationKey, c.Name AS Name, c.GroupAvatar AS Avatar, 'Group' AS UserType, c.ConversationType
-            FROM Conversations c
-            JOIN ConversationParticipants cp ON c.ConversationKey = cp.ConversationKey
-            WHERE c.ConversationType = 'Group'
-            AND cp.UserKey = @MemberKey
-            AND c.Name LIKE '%' + @Query + '%'";
+            FROM Conversations c JOIN ConversationParticipants cp ON c.ConversationKey = cp.ConversationKey
+            WHERE c.ConversationType = 'Group' AND cp.UserKey = @MemberKey AND c.Name LIKE '%' + @Query + '%'";
 
                 var memberQuery = @"
             SELECT m.MemberKey AS UserKey, m.MemberName AS Name, m.Avatar AS Avatar, 'Member' AS UserType,
-                   (SELECT TOP 1 c.ConversationKey 
-                    FROM Conversations c
-                    JOIN ConversationParticipants cp1 ON c.ConversationKey = cp1.ConversationKey
-                    JOIN ConversationParticipants cp2 ON c.ConversationKey = cp2.ConversationKey
-                    WHERE cp1.UserKey = @MemberKey AND cp2.UserKey = m.MemberKey AND c.ConversationType = 'Private') AS ConversationKey,
-                   (SELECT TOP 1 c.ConversationType 
-                    FROM Conversations c
-                    JOIN ConversationParticipants cp1 ON c.ConversationKey = cp1.ConversationKey
-                    JOIN ConversationParticipants cp2 ON c.ConversationKey = cp2.ConversationKey
-                    WHERE cp1.UserKey = @MemberKey AND cp2.UserKey = m.MemberKey AND c.ConversationType = 'Private') AS ConversationType
-            FROM EDU_Member m
-            WHERE m.MemberName LIKE '%' + @Query + '%'
-            AND m.MemberKey != @MemberKey";
+                   (SELECT TOP 1 c.ConversationKey FROM Conversations c JOIN ConversationParticipants cp1 ON c.ConversationKey = cp1.ConversationKey JOIN ConversationParticipants cp2 ON c.ConversationKey = cp2.ConversationKey WHERE cp1.UserKey = @MemberKey AND cp2.UserKey = m.MemberKey AND c.ConversationType = 'Private') AS ConversationKey,
+                   (SELECT TOP 1 c.ConversationType FROM Conversations c JOIN ConversationParticipants cp1 ON c.ConversationKey = cp1.ConversationKey JOIN ConversationParticipants cp2 ON c.ConversationKey = cp2.ConversationKey WHERE cp1.UserKey = @MemberKey AND cp2.UserKey = m.MemberKey AND c.ConversationType = 'Private') AS ConversationType
+            FROM EDU_Member m WHERE m.MemberName LIKE '%' + @Query + '%' AND m.MemberKey != @MemberKey";
 
                 var userQuery = @"
             SELECT u.UserKey, u.UserName AS Name, e.PhotoPath AS Avatar, 'Admin' AS UserType,
-                   (SELECT TOP 1 c.ConversationKey 
-                    FROM Conversations c
-                    JOIN ConversationParticipants cp1 ON c.ConversationKey = cp1.ConversationKey
-                    JOIN ConversationParticipants cp2 ON c.ConversationKey = cp2.ConversationKey
-                    WHERE cp1.UserKey = @MemberKey AND cp2.UserKey = u.UserKey AND c.ConversationType = 'Private') AS ConversationKey,
-                   (SELECT TOP 1 c.ConversationType 
-                    FROM Conversations c
-                    JOIN ConversationParticipants cp1 ON c.ConversationKey = cp1.ConversationKey
-                    JOIN ConversationParticipants cp2 ON c.ConversationKey = cp2.ConversationKey
-                    WHERE cp1.UserKey = @MemberKey AND cp2.UserKey = u.UserKey AND c.ConversationType = 'Private') AS ConversationType
-            FROM SYS_Users u
-            JOIN HRM_Employee e ON u.EmployeeKey = e.EmployeeKey
-            WHERE u.UserName LIKE '%' + @Query + '%'
-            AND u.UserKey != @MemberKey";
+                   (SELECT TOP 1 c.ConversationKey FROM Conversations c JOIN ConversationParticipants cp1 ON c.ConversationKey = cp1.ConversationKey JOIN ConversationParticipants cp2 ON c.ConversationKey = cp2.ConversationKey WHERE cp1.UserKey = @MemberKey AND cp2.UserKey = u.UserKey AND c.ConversationType = 'Private') AS ConversationKey,
+                   (SELECT TOP 1 c.ConversationType FROM Conversations c JOIN ConversationParticipants cp1 ON c.ConversationKey = cp1.ConversationKey JOIN ConversationParticipants cp2 ON c.ConversationKey = cp2.ConversationKey WHERE cp1.UserKey = @MemberKey AND cp2.UserKey = u.UserKey AND c.ConversationType = 'Private') AS ConversationType
+            FROM SYS_Users u JOIN HRM_Employee e ON u.EmployeeKey = e.EmployeeKey
+            WHERE u.UserName LIKE '%' + @Query + '%' AND u.UserKey != @MemberKey";
 
                 var queries = new[]
                 {
@@ -188,6 +168,7 @@ namespace TNS_TOEICAdmin.Models
             (query: memberQuery, hasConversationKey: true, hasUserKey: true),
             (query: userQuery, hasConversationKey: true, hasUserKey: true)
         };
+
                 foreach (var (q, hasConversationKey, hasUserKey) in queries)
                 {
                     using (var command = new SqlCommand(q, connection))
@@ -204,23 +185,17 @@ namespace TNS_TOEICAdmin.Models
                             { "Avatar", reader["Avatar"] ?? "/images/avatar/default-avatar.jpg" },
                             { "UserType", reader["UserType"] }
                         };
-                                if (hasConversationKey && reader["ConversationKey"] != DBNull.Value)
-                                    result["ConversationKey"] = reader["ConversationKey"];
-                                else
-                                    result["ConversationKey"] = DBNull.Value;
 
-                                if (hasUserKey && reader["UserKey"] != DBNull.Value)
-                                    result["UserKey"] = reader["UserKey"];
-                                else
-                                    result["UserKey"] = DBNull.Value;
+                                // --- BẮT ĐẦU SỬA LỖI ---
+                                // Thay thế DBNull.Value bằng null của C#
+                                result["ConversationKey"] = reader["ConversationKey"] == DBNull.Value ? null : reader["ConversationKey"];
+                                result["UserKey"] = hasUserKey ? (reader["UserKey"] == DBNull.Value ? null : reader["UserKey"]) : null;
+                                result["ConversationType"] = reader["ConversationType"] == DBNull.Value ? null : reader["ConversationType"];
+                                // --- KẾT THÚC SỬA LỖI ---
 
-                                if (reader["ConversationType"] != DBNull.Value)
-                                    result["ConversationType"] = reader["ConversationType"];
-                                else
-                                    result["ConversationType"] = DBNull.Value;
-
-                                if (result["UserType"].ToString() == "Admin" && !string.IsNullOrEmpty(result["Avatar"].ToString()))
+                                if (result["UserType"].ToString() == "Admin" && result["Avatar"] != null && !string.IsNullOrEmpty(result["Avatar"].ToString()))
                                     result["Avatar"] = $"https://localhost:7078/{result["Avatar"]}";
+
                                 results.Add(result);
                             }
                         }
@@ -2071,6 +2046,9 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
                 }
             }
         }
+
+        // File: Models/ChatAccessData.cs
+
         public static async Task<Dictionary<string, object>> SendMessageAsync(
             string conversationKey,
             string senderKey,
@@ -2097,19 +2075,16 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
                         var messageType = "Text";
                         string fileUrl = null;
 
-                        // --- Bước 1: Xử lý file đính kèm nếu có ---
                         if (file != null && file.Length > 0)
                         {
-                            // Xác định MessageType từ MimeType của file
                             if (file.ContentType.StartsWith("image/")) messageType = "Image";
                             else if (file.ContentType.StartsWith("audio/")) messageType = "Audio";
                             else if (file.ContentType.StartsWith("video/")) messageType = "Video";
-                            else messageType = "File"; // Loại file khác
+                            else messageType = "File";
 
                             var fileName = $"{messageKey}{Path.GetExtension(file.FileName)}";
                             var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "messages", fileName);
 
-                            // Tạo thư mục nếu chưa tồn tại
                             Directory.CreateDirectory(Path.GetDirectoryName(filePath));
 
                             using (var stream = new FileStream(filePath, FileMode.Create))
@@ -2118,11 +2093,10 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
                             }
                             fileUrl = $"/images/messages/{fileName}";
 
-                            // Insert vào MessageAttachments
                             var attachmentQuery = @"
-                        INSERT INTO MessageAttachments 
-                        (AttachmentKey, MessageKey, Type, Url, FileSize, CreatedOn, FileName, MimeType)
-                        VALUES (@AttachmentKey, @MessageKey, @Type, @Url, @FileSize, @CreatedOn, @FileName, @MimeType)";
+                INSERT INTO MessageAttachments 
+                (AttachmentKey, MessageKey, Type, Url, FileSize, CreatedOn, FileName, MimeType)
+                VALUES (@AttachmentKey, @MessageKey, @Type, @Url, @FileSize, @CreatedOn, @FileName, @MimeType)";
                             using (var cmd = new SqlCommand(attachmentQuery, connection, transaction))
                             {
                                 cmd.Parameters.AddWithValue("@AttachmentKey", Guid.NewGuid().ToString());
@@ -2137,11 +2111,10 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
                             }
                         }
 
-                        // --- Bước 2: Insert vào Messages ---
                         var messageQuery = @"
-                    INSERT INTO Messages 
-                    (MessageKey, ConversationKey, SenderKey, SenderType, ReceiverKey, ReceiverType, MessageType, Content, ParentMessageKey, CreatedOn, Status, IsPinned, IsSystemMessage)
-                    VALUES (@MessageKey, @ConversationKey, @SenderKey, @SenderType, @ReceiverKey, @ReceiverType, @MessageType, @Content, @ParentMessageKey, @CreatedOn, @Status, 0, 0)";
+            INSERT INTO Messages 
+            (MessageKey, ConversationKey, SenderKey, SenderType, ReceiverKey, ReceiverType, MessageType, Content, ParentMessageKey, CreatedOn, Status, IsPinned, IsSystemMessage)
+            VALUES (@MessageKey, @ConversationKey, @SenderKey, @SenderType, @ReceiverKey, @ReceiverType, @MessageType, @Content, @ParentMessageKey, @CreatedOn, @Status, 0, 0)";
                         using (var cmd = new SqlCommand(messageQuery, connection, transaction))
                         {
                             cmd.Parameters.AddWithValue("@MessageKey", messageKey);
@@ -2154,15 +2127,14 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
                             cmd.Parameters.AddWithValue("@Content", (object)content ?? DBNull.Value);
                             cmd.Parameters.AddWithValue("@ParentMessageKey", (object)parentMessageKey ?? DBNull.Value);
                             cmd.Parameters.AddWithValue("@CreatedOn", createdOn);
-                            cmd.Parameters.AddWithValue("@Status", 0); // 0 = Đã gửi, 1 = Đã đọc
+                            cmd.Parameters.AddWithValue("@Status", 0);
                             await cmd.ExecuteNonQueryAsync();
                         }
 
-                        // --- Bước 3: Cập nhật Conversations ---
                         var updateConvQuery = @"
-                    UPDATE Conversations 
-                    SET LastMessageKey = @LastMessageKey, LastMessageTime = @LastMessageTime 
-                    WHERE ConversationKey = @ConversationKey";
+            UPDATE Conversations 
+            SET LastMessageKey = @LastMessageKey, LastMessageTime = @LastMessageTime 
+            WHERE ConversationKey = @ConversationKey";
                         using (var cmd = new SqlCommand(updateConvQuery, connection, transaction))
                         {
                             cmd.Parameters.AddWithValue("@LastMessageKey", messageKey);
@@ -2171,11 +2143,10 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
                             await cmd.ExecuteNonQueryAsync();
                         }
 
-                        // --- Bước 4: Cập nhật UnreadCount ---
                         var updateUnreadQuery = @"
-                    UPDATE ConversationParticipants 
-                    SET UnreadCount = UnreadCount + 1 
-                    WHERE ConversationKey = @ConversationKey AND UserKey != @SenderKey";
+            UPDATE ConversationParticipants 
+            SET UnreadCount = UnreadCount + 1 
+            WHERE ConversationKey = @ConversationKey AND UserKey != @SenderKey";
                         using (var cmd = new SqlCommand(updateUnreadQuery, connection, transaction))
                         {
                             cmd.Parameters.AddWithValue("@ConversationKey", conversationKey);
@@ -2185,7 +2156,6 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
 
                         transaction.Commit();
 
-                        // --- Bước 5: Trả về đối tượng message hoàn chỉnh để gửi qua SignalR ---
                         var messageObject = new Dictionary<string, object>
                 {
                     { "MessageKey", messageKey },
@@ -2196,19 +2166,120 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
                     { "MessageType", messageType },
                     { "Content", content },
                     { "ParentMessageKey", parentMessageKey },
-                    { "ParentContent", parentMessageContent }, // Trả về content tin nhắn cha
+                    { "ParentContent", parentMessageContent },
                     { "CreatedOn", createdOn },
-                    { "Status", 0 }, // Trạng thái ban đầu là "Đã gửi"
+                    { "Status", 0 },
                     { "IsPinned", false },
                     { "IsSystemMessage", false },
                     { "Url", fileUrl }
                 };
+
+                        // --- BẮT ĐẦU SỬA LỖI ---
+                        // Bổ sung các thông tin file còn thiếu vào đối tượng trả về
+                        // để client có thể render media đúng ngay từ đầu.
+                        if (file != null)
+                        {
+                            messageObject.Add("FileName", file.FileName);
+                            messageObject.Add("FileSize", file.Length);
+                            messageObject.Add("MimeType", file.ContentType);
+                        }
+                        // --- KẾT THÚC SỬA LỖI ---
+
                         return messageObject;
                     }
                     catch (Exception ex)
                     {
                         transaction.Rollback();
                         Console.WriteLine($"[SendMessageAsync] Error: {ex.Message}");
+                        return null;
+                    }
+                }
+            }
+        }
+
+
+        public static async Task<bool> IsUserBlockedInConversationAsync(string conversationKey, string userKey)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                var query = @"
+            SELECT IsBanned 
+            FROM ConversationParticipants
+            WHERE ConversationKey = @ConversationKey AND UserKey = @UserKey";
+
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                    command.Parameters.AddWithValue("@UserKey", userKey);
+
+                    var result = await command.ExecuteScalarAsync();
+                    // Nếu result không null và có giá trị, chuyển đổi nó sang boolean. Mặc định là false.
+                    return result != null && result != DBNull.Value ? Convert.ToBoolean(result) : false;
+                }
+            }
+        }
+
+        public static async Task<string> CreatePrivateConversationAsync(string creatorKey, string partnerKey, string partnerType)
+        {
+            var conversationKey = Guid.NewGuid().ToString();
+            var createdOn = DateTime.Now;
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var transaction = connection.BeginTransaction())
+                {
+                    try
+                    {
+                        // Bước 1: Tạo cuộc hội thoại mới trong bảng Conversations
+                        var convQuery = @"
+                    INSERT INTO Conversations 
+                    (ConversationKey, ConversationType, CreatedOn, ConversationMode, CreatorKey, IsActive)
+                    VALUES (@ConversationKey, 'Private', @CreatedOn, 'Private', @CreatorKey, 1)";
+                        using (var cmd = new SqlCommand(convQuery, connection, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            cmd.Parameters.AddWithValue("@CreatedOn", createdOn);
+                            cmd.Parameters.AddWithValue("@CreatorKey", creatorKey);
+                            await cmd.ExecuteNonQueryAsync();
+                        }
+
+                        // Bước 2: Thêm 2 người tham gia vào bảng ConversationParticipants
+                        var participantQuery = @"
+                    INSERT INTO ConversationParticipants
+                    (ParticipantKey, ConversationKey, UserKey, UserType, Role, JoinedOn, UnreadCount, IsBanned, IsApproved)
+                    VALUES (@ParticipantKey, @ConversationKey, @UserKey, @UserType, 'Member', @JoinedOn, 0, 0, 1)";
+
+                        // Thêm người tạo (người gửi tin nhắn)
+                        using (var cmd = new SqlCommand(participantQuery, connection, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@ParticipantKey", Guid.NewGuid().ToString());
+                            cmd.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            cmd.Parameters.AddWithValue("@UserKey", creatorKey);
+                            cmd.Parameters.AddWithValue("@UserType", "Member"); // Giả sử người tạo luôn là Member
+                            cmd.Parameters.AddWithValue("@JoinedOn", createdOn);
+                            await cmd.ExecuteNonQueryAsync();
+                        }
+
+                        // Thêm người đối tác (người nhận tin nhắn)
+                        using (var cmd = new SqlCommand(participantQuery, connection, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@ParticipantKey", Guid.NewGuid().ToString());
+                            cmd.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            cmd.Parameters.AddWithValue("@UserKey", partnerKey);
+                            cmd.Parameters.AddWithValue("@UserType", partnerType);
+                            cmd.Parameters.AddWithValue("@JoinedOn", createdOn);
+                            await cmd.ExecuteNonQueryAsync();
+                        }
+
+                        transaction.Commit();
+                        return conversationKey; // Trả về key của cuộc hội thoại vừa tạo
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        Console.WriteLine($"[CreatePrivateConversationAsync] Error: {ex.Message}");
                         return null;
                     }
                 }

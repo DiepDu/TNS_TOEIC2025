@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 using static TNS_TOEICAdmin.Models.ChatAccessData;
 using Microsoft.AspNetCore.Authorization;
 using TNS_TOEICTest.Models.Chat;
-
+using TNS_TOEICTest.Services;
 
 namespace TNS_TOEICTest.Controllers
 {
@@ -20,11 +20,15 @@ namespace TNS_TOEICTest.Controllers
     {
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IHubContext<ChatHub> _hubContext;
-
-        public ChatController(IHttpContextAccessor httpContextAccessor, IHubContext<ChatHub> hubContext)
+        private readonly IUserConnectionManager _userConnectionManager;
+        public ChatController(
+            IHttpContextAccessor httpContextAccessor,
+            IHubContext<ChatHub> hubContext,
+            IUserConnectionManager userConnectionManager) // <-- THÊM THAM SỐ
         {
             _httpContextAccessor = httpContextAccessor;
             _hubContext = hubContext;
+            _userConnectionManager = userConnectionManager; // <-- GÁN SERVICE
         }
 
         [HttpGet]
@@ -763,6 +767,81 @@ namespace TNS_TOEICTest.Controllers
             }
 
             return StatusCode(500, new { success = false, message = "An error occurred while sending the message." });
+        }
+        public class CreateConversationRequest
+        {
+            public string PartnerUserKey { get; set; }
+            public string PartnerUserType { get; set; }
+        }
+
+
+        [HttpPost("createPrivate")]
+        [Authorize]
+        public async Task<IActionResult> CreatePrivateConversation([FromBody] CreateConversationRequest request)
+        {
+            var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
+            var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
+            var creatorKey = memberLogin.MemberKey;
+
+            if (string.IsNullOrEmpty(creatorKey) || string.IsNullOrEmpty(request?.PartnerUserKey) || string.IsNullOrEmpty(request.PartnerUserType))
+            {
+                return BadRequest(new { success = false, message = "Invalid request data." });
+            }
+
+            var conversationKey = await ChatAccessData.CreatePrivateConversationAsync(creatorKey, request.PartnerUserKey, request.PartnerUserType);
+
+            if (!string.IsNullOrEmpty(conversationKey))
+            {
+                // --- BẮT ĐẦU NÂNG CẤP QUAN TRỌNG ---
+                // Chủ động thêm cả hai người dùng vào SignalR group ngay lập tức.
+                // Đây là chìa khóa để giải quyết vấn đề.
+
+                // Lấy tất cả connectionId của người tạo (người gửi)
+                var creatorConnectionIds = _userConnectionManager.GetConnectionIds(creatorKey);
+                foreach (var connectionId in creatorConnectionIds)
+                {
+                    await _hubContext.Groups.AddToGroupAsync(connectionId, conversationKey);
+                }
+
+                // Lấy tất cả connectionId của người đối tác (người nhận)
+                var partnerConnectionIds = _userConnectionManager.GetConnectionIds(request.PartnerUserKey);
+                foreach (var connectionId in partnerConnectionIds)
+                {
+                    await _hubContext.Groups.AddToGroupAsync(connectionId, conversationKey);
+                }
+                // --- KẾT THÚC NÂNG CẤP QUAN TRỌNG ---
+
+                // Tín hiệu ReloadConversations vẫn cần thiết để cập nhật danh sách bên trái
+                await _hubContext.Clients.User(creatorKey).SendAsync("ReloadConversations");
+                await _hubContext.Clients.User(request.PartnerUserKey).SendAsync("ReloadConversations");
+
+                return Ok(new { success = true, conversationKey });
+            }
+
+            return StatusCode(500, new { success = false, message = "Failed to create conversation." });
+        }
+
+        [HttpGet("checkBlockStatus/{conversationKey}")]
+        [Authorize]
+        public async Task<IActionResult> CheckBlockStatus(string conversationKey)
+        {
+            var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
+            var memberLogin = new MemberLogin_Info(memberCookie ?? new ClaimsPrincipal());
+            var currentUserKey = memberLogin.MemberKey;
+
+            if (string.IsNullOrEmpty(currentUserKey))
+            {
+                return Unauthorized(new { success = false, message = "User not authenticated." });
+            }
+
+            if (string.IsNullOrEmpty(conversationKey))
+            {
+                return BadRequest(new { success = false, message = "ConversationKey is required." });
+            }
+
+            var isBlocked = await ChatAccessData.IsUserBlockedInConversationAsync(conversationKey, currentUserKey);
+
+            return Ok(new { success = true, isBlocked });
         }
         public class MarkMessagesRequest
         {

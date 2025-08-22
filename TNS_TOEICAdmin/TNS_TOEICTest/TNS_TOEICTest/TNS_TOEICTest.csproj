@@ -18,6 +18,7 @@
 
 	<ItemGroup>
 		<Folder Include="wwwroot\images\avatar\group\" />
+		<Folder Include="wwwroot\images\messages\" />
 		<Folder Include="wwwroot\lib\tinymce\plugins\contextmenu\" />
 		<Folder Include="wwwroot\lib\tinymce\plugins\textcolor\" />
 	</ItemGroup>

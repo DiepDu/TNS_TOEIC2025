@@ -4,8 +4,7 @@
             <img src="/images/avatar/default-avatar.jpg" alt="Group Avatar" class="group-avatar rounded-circle" id="groupAvatar">
             <h3 class="group-name" id="groupName">Unnamed Group</h3>
         </div>
-        <div class="member-list" style="overflow-y: auto; max-height: 200px;" id="memberList">
-            <!-- Members will be populated dynamically -->
+        <div class="member-list" style="overflow-y: auto; max-height: 350px;" id="memberList">
         </div>
         <div class="group-actions">
             <button class="add-member-btn btn btn-primary">Add Member</button>
@@ -88,22 +87,60 @@
         border-radius: 10px;
     }
 
-    .member-list::-webkit-scrollbar {
-        width: 8px;
-    }
+        /* ===== BẮT ĐẦU KHỐI CSS THANH CUỘN TỔNG HỢP ===== */
 
-    .member-list::-webkit-scrollbar-track {
-        background: #252525;
-    }
+        /* Áp dụng cho TẤT CẢ các thanh cuộn trong toàn bộ giao diện chat */
+        .conversation-list::-webkit-scrollbar,
+        .message-list-container::-webkit-scrollbar,
+        .user-list::-webkit-scrollbar,
+        .selected-users::-webkit-scrollbar,
+        .search-results::-webkit-scrollbar,
+        .group-details-content::-webkit-scrollbar, /* <--- THÊM MỚI */
+        .member-list::-webkit-scrollbar, /* <--- THÊM MỚI */
+        .member-selection::-webkit-scrollbar { /* <--- THÊM MỚI */
+            width: 4px; /* Làm thanh cuộn dọc hẹp hơn */
+            height: 4px; /* Làm thanh cuộn ngang hẹp hơn */
+        }
 
-    .member-list::-webkit-scrollbar-thumb {
-        background: #000;
-        border-radius: 4px;
-    }
+        /* Phần nền (track) của thanh cuộn */
+        .conversation-list::-webkit-scrollbar-track,
+        .message-list-container::-webkit-scrollbar-track,
+        .user-list::-webkit-scrollbar-track,
+        .selected-users::-webkit-scrollbar-track,
+        .search-results::-webkit-scrollbar-track,
+        .group-details-content::-webkit-scrollbar-track, /* <--- THÊM MỚI */
+        .member-list::-webkit-scrollbar-track, /* <--- THÊM MỚI */
+        .member-selection::-webkit-scrollbar-track { /* <--- THÊM MỚI */
+            background: transparent; /* Nền trong suốt để chìm vào giao diện */
+        }
 
-    .member-list::-webkit-scrollbar-thumb:hover {
-        background: #111;
-    }
+        /* Phần con trượt (thumb) của thanh cuộn */
+        .conversation-list::-webkit-scrollbar-thumb,
+        .message-list-container::-webkit-scrollbar-thumb,
+        .user-list::-webkit-scrollbar-thumb,
+        .selected-users::-webkit-scrollbar-thumb,
+        .search-results::-webkit-scrollbar-thumb,
+        .group-details-content::-webkit-scrollbar-thumb, /* <--- THÊM MỚI */
+        .member-list::-webkit-scrollbar-thumb, /* <--- THÊM MỚI */
+        .member-selection::-webkit-scrollbar-thumb { /* <--- THÊM MỚI */
+            background: #273746; /* Màu đậm hơn nền một chút */
+            border-radius: 2px;
+            transition: background 0.3s ease;
+        }
+
+            /* Phần con trượt khi di chuột vào */
+            .conversation-list::-webkit-scrollbar-thumb:hover,
+            .message-list-container::-webkit-scrollbar-thumb:hover,
+            .user-list::-webkit-scrollbar-thumb:hover,
+            .selected-users::-webkit-scrollbar-thumb:hover,
+            .search-results::-webkit-scrollbar-thumb:hover,
+            .group-details-content::-webkit-scrollbar-thumb:hover, /* <--- THÊM MỚI */
+            .member-list::-webkit-scrollbar-thumb:hover, /* <--- THÊM MỚI */
+            .member-selection::-webkit-scrollbar-thumb:hover { /* <--- THÊM MỚI */
+                background: #34495e; /* Màu sáng hơn một chút khi di chuột vào */
+            }
+
+    /* ===== KẾT THÚC KHỐI CSS THANH CUỘN TỔNG HỢP ===== */
 
     .member-item {
         display: flex;

@@ -229,6 +229,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     const conversationList = document.getElementById("conversationList");
     const searchInput = document.getElementById("searchInput");
     const searchResults = document.getElementById("searchResults");
+    if (searchResults) {
+        searchResults.addEventListener('wheel', (event) => {
+            // Ngăn trang cuộn dọc
+            event.preventDefault();
+            // Cuộn ngang phần tử
+            // event.deltaY chứa giá trị cuộn dọc của chuột
+            searchResults.scrollLeft += event.deltaY;
+        });
+    }
     const chatHeaderInfo = document.getElementById("chatHeaderInfo");
     const chatHeaderContent = document.getElementById("chatHeaderContent");
     const headerAvatar = document.getElementById("headerAvatar");
@@ -236,7 +245,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     const pinnedSection = document.getElementById("pinnedSection");
     const pinnedPopup = document.getElementById("pinnedPopup");
     const pinnedContent = document.getElementById("pinnedContent");
-
+    if (chatInput && sendIcon) {
+        chatInput.addEventListener('keydown', (event) => {
+            // Nếu nhấn Enter và không giữ phím Shift
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault(); // Ngăn không cho xuống dòng
+                sendIcon.click();       // Giả lập hành động click nút gửi
+            }
+        });
+    }
     let blockPopup = null;
 
     // Polling unread count
@@ -259,7 +276,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         unreadInterval = setInterval(updateUnreadCountInitial, 60000);
         updateUnreadCountInitial();
     }
-
+    if (searchResults) {
+        searchResults.addEventListener('wheel', (event) => {
+            // Ngăn trang cuộn dọc
+            event.preventDefault();
+            // Cuộn ngang phần tử
+            // event.deltaY chứa giá trị cuộn dọc của chuột
+            searchResults.scrollLeft += event.deltaY;
+        });
+    }
     function debounce(func, wait) {
         let timeout;
         return (...args) => {
@@ -577,175 +602,166 @@ document.addEventListener("DOMContentLoaded", async () => {
             searchResults.classList.add("show");
         }
     }
+    // TÌM VÀ THAY THẾ TOÀN BỘ HÀM NÀY TRONG FILE chat.js
+
+    // Tệp: chat.js
+
+    // TÌM VÀ THAY THẾ TOÀN BỘ HÀM NÀY
     async function selectContact(contact) {
+        console.log("[selectContact] Selecting new contact:", contact);
+
+        // Gán các biến toàn cục ngay lập tức và chắc chắn
         currentConversationKey = contact.ConversationKey || null;
         currentUserKey = contact.UserKey || null;
         currentUserType = contact.UserType || null;
-        currentConversationType = contact.ConversationType || null;
-        if (updatedGroupAvatars[contact.ConversationKey]) {
-            headerAvatar.src = updatedGroupAvatars[contact.ConversationKey];
-        } else {
-            headerAvatar.src = contact.Avatar || '/images/avatar/default-avatar.jpg';
-        }
+        currentConversationType = contact.ConversationType || (contact.UserKey ? 'Private' : null);
+
+        // Xóa tin nhắn cũ và reset trạng thái
+        messageList.innerHTML = "";
+        allMessages = [];
+        skip = 0;
+
+        // Cập nhật header
+        headerAvatar.src = contact.Avatar || '/images/avatar/default-avatar.jpg';
         headerName.textContent = contact.Name || "Unknown";
         chatHeaderInfo.style.display = "flex";
-        chatHeaderContent.style.display = "block";
-        messageList.innerHTML = "";
+
+        // Xử lý currentConversationDetails
+        if (currentConversationKey) {
+            // Cuộc hội thoại đã tồn tại
+            const conversationDetails = window.allConversations.find(c => String(c.ConversationKey) === String(currentConversationKey));
+            if (conversationDetails) {
+                window.currentConversationDetails = { ...conversationDetails }; // Tạo một bản sao để đảm bảo an toàn
+
+                // --- BẮT ĐẦU SỬA LỖI: Tạo Participants nếu thiếu ---
+                if (window.currentConversationDetails.ConversationType === 'Private' && currentUserKey) {
+                    window.currentConversationDetails.Participants = [
+                        { UserKey: memberKey },      // Người dùng hiện tại
+                        { UserKey: currentUserKey }  // Đối tác trò chuyện
+                    ];
+                    console.log("[BlockFix] Manually constructed Participants for existing contact.");
+                }
+                // --- KẾT THÚC SỬA LỖI ---
+            }
+            await loadMessages(currentConversationKey, false, skip);
+        } else {
+            // Người lạ, tạo đối tượng tạm thời đã có sẵn Participants
+            window.currentConversationDetails = {
+                ConversationKey: null,
+                ConversationType: 'Private',
+                DisplayName: contact.Name,
+                Avatar: contact.Avatar,
+                Participants: [{ UserKey: memberKey }, { UserKey: currentUserKey }],
+                IsBanned: false // Giả định chưa bị ban
+            };
+            console.log("[selectContact] Created temporary conversation details for new contact.");
+        }
+
+        // Logic cập nhật giao diện chung
         searchInput.value = "";
         searchResults.classList.remove("show");
         conversationListContainer.classList.remove("focused");
-        skip = 0;
-        allMessages = [];
+
         document.querySelectorAll(".conversation-item").forEach(i => i.parentElement.classList.remove("active"));
         if (currentConversationKey) {
             const matchingConv = document.querySelector(`.conversation-item[data-conversation-key="${currentConversationKey}"]`);
             if (matchingConv) matchingConv.parentElement.classList.add("active");
-            loadMessages(currentConversationKey, false, skip);
         }
-        // Sửa lỗi: Gán window.currentConversationDetails từ window.allConversations nếu có
-        if (currentConversationKey) {
-            const conversationDetails = window.allConversations.find(c => String(c.ConversationKey) === String(currentConversationKey));
-            if (conversationDetails) {
-                window.currentConversationDetails = conversationDetails;
-                // Đối với cuộc hội thoại 1-1 (Private), tự xây dựng Participants nếu chưa có
-                if (currentConversationType === "Private" && !conversationDetails.Participants) {
-                    window.currentConversationDetails.Participants = [
-                        { UserKey: memberKey },
-                        { UserKey: currentUserKey }
-                    ];
-                }
-            } else {
-                console.warn("[selectContact] Conversation details not found in window.allConversations");
-            }
-        }
+
         updatePinnedSection();
         updateIconsVisibility();
-
-        // Thêm: Gọi API để lấy trạng thái IsBanned của đối phương và cập nhật icon
-        if (currentConversationType === "Private" && currentUserKey) {
-            try {
-                const response = await fetch(`/api/conversations/GetBanStatus?conversationKey=${currentConversationKey}&targetUserKey=${currentUserKey}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.success) {
-                        window.currentConversationDetails.IsBanned = data.isBanned;
-                        applyBlockUI(data.isBanned);
-                        console.log(`[GetBanStatus] Updated IsBanned for ${currentUserKey}: ${data.isBanned}`);
-                    } else {
-                        console.warn("[GetBanStatus] API returned failure:", data.message);
-                    }
-                } else {
-                    console.error("[GetBanStatus] API call failed:", response.status);
-                }
-            } catch (err) {
-                console.error("[GetBanStatus] Error fetching ban status:", err);
-            }
-        }
+        chatInput.focus();
     }
 
-    // Thay thế toàn bộ hàm addConversationClickListeners trong chat.js
+    // Tệp: chat.js
+
+    // TÌM VÀ THAY THẾ TOÀN BỘ HÀM NÀY
     function addConversationClickListeners() {
         document.querySelectorAll(".conversation-item").forEach(item => {
             item.addEventListener("click", async (e) => {
                 e.preventDefault();
                 const conversationKey = item.getAttribute("data-conversation-key");
-                // Di chuyển các const lên đầu để sử dụng trong phần sửa lỗi
-                const userKey = item.getAttribute("data-user-key") || null;
+                const userKey = item.getAttribute("data-user-key") || null; // Key của đối phương
                 const userType = item.getAttribute("data-user-type") || null;
                 const conversationType = item.getAttribute("data-conversation-type") || null;
 
-                // --- BẮT ĐẦU PHẦN BỔ SUNG: ĐÁNH DẤU ĐÃ ĐỌC ---
+                // Đánh dấu đã đọc
                 const badge = item.querySelector(".badge");
                 if (badge) {
-                    const unreadCount = parseInt(badge.textContent, 10);
-                    if (unreadCount > 0) {
-                        // Ẩn badge ngay trên giao diện để phản hồi nhanh
+                    const unreadCountVal = parseInt(badge.textContent, 10);
+                    if (unreadCountVal > 0) {
                         badge.remove();
-
-                        // Cập nhật tổng số tin chưa đọc
                         try {
                             const totalBadge = document.getElementById("unreadCount");
                             let currentTotal = parseInt(totalBadge.textContent, 10) || 0;
-                            currentTotal -= unreadCount;
+                            currentTotal -= unreadCountVal;
                             updateUnreadCount(Math.max(0, currentTotal));
-                        } catch (err) {
-                            console.error("Failed to update total unread count on UI", err);
-                        }
-
-                        // Gọi API ở chế độ nền
-                        fetch(`/api/conversations/markAsRead/${conversationKey}`, {
-                            method: 'POST',
-                            credentials: 'include'
-                        }).then(response => {
-                            if (!response.ok) {
-                                console.error(`API markAsRead for ${conversationKey} failed.`);
-                            } else {
-                                console.log(`[MarkAsRead] Conversation ${conversationKey} marked as read.`);
-                            }
-                        }).catch(err => {
-                            console.error(`[MarkAsRead] Error calling API for ${conversationKey}:`, err);
-                        });
+                        } catch (err) { }
+                        fetch(`/api/conversations/markAsRead/${conversationKey}`, { method: 'POST', credentials: 'include' });
                     }
                 }
-                // --- KẾT THÚC PHẦN BỔ SUNG ---
 
-                // --- BẮT ĐẦU PHẦN SỬA LỖI QUAN TRỌNG ---
-                // 1. Kiểm tra xem danh sách toàn cục có tồn tại không
+                // --- BẮT ĐẦU SỬA LỖI: ĐẢM BẢO currentConversationDetails CÓ PARTICIPANTS ---
                 if (!window.allConversations) {
                     console.error("CRITICAL: Conversation list (window.allConversations) is not available!");
                     showNotification("Error: Conversation list not loaded.", "error");
                     return;
                 }
-                // 2. Tìm chi tiết cuộc hội thoại từ danh sách đã lưu (so sánh dưới dạng chuỗi để đảm bảo an toàn)
                 const conversationDetails = window.allConversations.find(c => String(c.ConversationKey) === String(conversationKey));
-                // 3. Gán chi tiết vào biến toàn cục. Đây là bước khắc phục lỗi!
-                window.currentConversationDetails = conversationDetails;
 
-                // Sửa lỗi: Đối với cuộc hội thoại 1-1 (Private), tự xây dựng Participants nếu chưa có
-                // Sử dụng conversationType (local) và userKey thay vì global variables chưa set
-                if (conversationType === "Private" && conversationDetails && !conversationDetails.Participants) {
-                    window.currentConversationDetails.Participants = [
-                        { UserKey: memberKey },
-                        { UserKey: userKey }
-                    ];
+                if (!conversationDetails) {
+                    console.error(`Could not find details for conversationKey: ${conversationKey}`);
+                    return;
                 }
-                // Debug log để kiểm tra (có thể xóa sau khi test ổn)
-                console.log("Set details:", window.currentConversationDetails);
-                // --- KẾT THÚC PHẦN SỬA LỖI QUAN TRỌNG ---
-                // Tất cả logic cũ của bạn bên dưới được giữ nguyên và sẽ hoạt động đúng
+
+                window.currentConversationDetails = { ...conversationDetails }; // Tạo bản sao
+
+                // Nếu đây là cuộc hội thoại 1-1, hãy tự xây dựng mảng Participants.
+                // Đây là chìa khóa để sửa lỗi "Conversation data not ready".
+                if (conversationType === "Private" && userKey) {
+                    window.currentConversationDetails.Participants = [
+                        { UserKey: memberKey }, // Người dùng hiện tại
+                        { UserKey: userKey }    // Đối tác trò chuyện
+                    ];
+                    console.log("[BlockFix] Manually constructed Participants for private chat.");
+                }
+                // --- KẾT THÚC SỬA LỖI ---
+
+                // Gán các biến toàn cục khác
                 currentConversationKey = conversationKey;
                 currentUserKey = userKey;
                 currentUserType = userType;
                 currentConversationType = conversationType;
+
+                // Cập nhật header
                 const conv = item.closest("li").querySelector(".conversation-item");
                 headerAvatar.src = conv.querySelector("img").src;
                 headerName.textContent = conv.querySelector("p.fw-bold").textContent;
                 chatHeaderInfo.style.display = "flex";
-                chatHeaderContent.style.display = "block";
+
+                // Cập nhật giao diện
                 document.querySelectorAll(".conversation-item").forEach(i => i.parentElement.classList.remove("active"));
                 item.parentElement.classList.add("active");
+
                 messageList.innerHTML = "";
                 skip = 0;
                 allMessages = [];
+
                 updatePinnedSection();
                 loadMessages(currentConversationKey, false, skip);
                 updateIconsVisibility();
+                chatInput.focus();
 
-                // Thêm: Gọi API để lấy trạng thái IsBanned của đối phương và cập nhật icon
+                // Lấy trạng thái ban ban đầu (giữ nguyên)
                 if (currentConversationType === "Private" && currentUserKey) {
                     try {
                         const response = await fetch(`/api/conversations/GetBanStatus?conversationKey=${conversationKey}&targetUserKey=${currentUserKey}`);
                         if (response.ok) {
                             const data = await response.json();
-                            if (data.success) {
+                            if (data.success && window.currentConversationDetails) {
                                 window.currentConversationDetails.IsBanned = data.isBanned;
                                 applyBlockUI(data.isBanned);
-                                console.log(`[GetBanStatus] Updated IsBanned for ${currentUserKey}: ${data.isBanned}`);
-                            } else {
-                                console.warn("[GetBanStatus] API returned failure:", data.message);
                             }
-                        } else {
-                            console.error("[GetBanStatus] API call failed:", response.status);
                         }
                     } catch (err) {
                         console.error("[GetBanStatus] Error fetching ban status:", err);
@@ -950,13 +966,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     }, 300));
 
 
-
-    // Thay thế toàn bộ hàm này trong chat.js
-
-    // TÌM VÀ THAY THẾ TOÀN BỘ HÀM NÀY TRONG FILE chat.js
-
     function processIncomingMessage(rawMessage) {
-        // 1) Chuẩn hóa tên thuộc tính
+        // 1) Chuẩn hóa tên thuộc tính từ PascalCase (C#) sang camelCase (JS)
         const message = {
             ConversationKey: rawMessage.ConversationKey ?? rawMessage.conversationKey,
             MessageKey: rawMessage.MessageKey ?? rawMessage.messageKey,
@@ -971,12 +982,15 @@ document.addEventListener("DOMContentLoaded", async () => {
             IsPinned: rawMessage.IsPinned ?? rawMessage.isPinned,
             IsSystemMessage: rawMessage.IsSystemMessage ?? rawMessage.isSystemMessage,
             Url: rawMessage.Url ?? rawMessage.url,
-
-            // --- BẮT ĐẦU PHẦN SỬA LỖI ---
-            // Bổ sung 2 dòng bị thiếu để đọc thông tin tin nhắn cha
             ParentContent: rawMessage.ParentContent ?? rawMessage.parentContent,
-            ParentStatus: rawMessage.ParentStatus ?? rawMessage.parentStatus
-            // --- KẾT THÚC PHẦN SỬA LỖI ---
+            ParentStatus: rawMessage.ParentStatus ?? rawMessage.parentStatus,
+
+            // --- BẮT ĐẦU SỬA LỖI ---
+            // Bổ sung các thuộc tính file bị thiếu để render media chính xác
+            FileName: rawMessage.FileName ?? rawMessage.fileName,
+            FileSize: rawMessage.FileSize ?? rawMessage.fileSize,
+            MimeType: rawMessage.MimeType ?? rawMessage.mimeType
+            // --- KẾT THÚC SỬA LỖI ---
         };
 
         // Phần logic còn lại của hàm được giữ nguyên
@@ -1229,84 +1243,126 @@ document.addEventListener("DOMContentLoaded", async () => {
         previewContainer.querySelector('.remove-preview-icon').onclick = clearReplyPreview;
         previewContainer.style.display = 'flex';
     }
+
     if (clearFile) clearFile.addEventListener("click", resetFileInput);
+    // TÌM VÀ THAY THẾ TOÀN BỘ HÀM NÀY TRONG FILE chat.js
+
     if (sendIcon) {
         sendIcon.addEventListener("click", async () => {
             const content = chatInput.value.trim();
+            if (!content && !selectedFile) return;
 
-            if (!content && !selectedFile) {
-                return; // Không có gì để gửi
-            }
-
-            if (!currentConversationKey) {
-                showNotification("Please select a conversation first.", "error");
-                return;
-            }
-
-            const formData = new FormData();
-            // --- BẮT ĐẦU SỬA LỖI: Chuyển tên tham số sang chữ thường ---
-            formData.append("conversationKey", currentConversationKey);
-            formData.append("content", content);
-
-            if (currentConversationType === 'Private' && currentUserKey) {
-                formData.append("userKey", currentUserKey);
-                formData.append("userType", currentUserType);
-            }
-
-            if (selectedFile) {
-                formData.append("file", selectedFile);
-            }
-
-            if (parentMessageKeyForReply) {
-                formData.append("parentMessageKey", parentMessageKeyForReply);
-                formData.append("parentMessageContent", parentMessageContentForReply);
-            }
-            // --- KẾT THÚC SỬA LỖI ---
-
-            const originalContent = chatInput.value;
-            const replyingMessage = {
-                key: parentMessageKeyForReply,
-                content: parentMessageContentForReply,
-                sender: parentSenderNameForReply
-            };
-            const sendingFile = selectedFile;
-
-            chatInput.value = "";
-            clearFilePreview();
-            clearReplyPreview();
+            // Lấy các biến trạng thái hiện tại
+            let convKey = currentConversationKey;
+            let convType = currentConversationType;
+            let isNewConversation = false; // Đặt cờ để nhận biết đây là cuộc hội thoại mới
 
             try {
+                // --- BẮT ĐẦU PHẦN SỬA LỖI LOGIC ---
+
+                // BƯỚC 1: Nếu chưa có conversation key (nhắn cho người lạ), gọi API để tạo trước.
+                if (!convKey && currentUserKey && currentUserType) {
+                    console.log("[SendMessage] No convKey found. Creating new private conversation...");
+                    const createResponse = await fetch('/api/conversations/createPrivate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ PartnerUserKey: currentUserKey, PartnerUserType: currentUserType })
+                    });
+
+                    const createResult = await createResponse.json();
+                    if (!createResponse.ok || !createResult.success) {
+                        throw new Error(createResult.message || 'Failed to create conversation.');
+                    }
+
+                    // Lấy key mới và cập nhật trạng thái
+                    convKey = createResult.conversationKey;
+                    convType = 'Private';
+                    currentConversationKey = convKey; // Rất quan trọng: Cập nhật key toàn cục ngay lập tức
+                    isNewConversation = true;
+                    console.log(`[SendMessage] New conversation created with key: ${convKey}`);
+                }
+
+                // Nếu sau bước trên vẫn không có key, đó là lỗi
+                if (!convKey) {
+                    throw new Error("Conversation key is missing. Cannot send message.");
+                }
+
+                // Kiểm tra trạng thái block (giữ nguyên logic cũ)
+                if (convType === 'Private') {
+                    const blockCheckResponse = await fetch(`/api/conversations/checkBlockStatus/${convKey}`);
+                    const blockResult = await blockCheckResponse.json();
+                    if (!blockCheckResponse.ok) throw new Error('Could not verify block status.');
+                    if (blockResult.isBlocked) throw new Error("You have been blocked by this user or have blocked this user.");
+                }
+
+                // BƯỚC 2: Chuẩn bị và gửi tin nhắn
+                const formData = new FormData();
+                formData.append("conversationKey", convKey);
+                formData.append("content", content);
+
+                // Luôn gửi thông tin người nhận để backend xử lý (nếu cần)
+                if (currentUserKey && currentUserType) {
+                    formData.append("userKey", currentUserKey);
+                    formData.append("userType", currentUserType);
+                }
+                if (selectedFile) formData.append("file", selectedFile);
+                if (parentMessageKeyForReply) {
+                    formData.append("parentMessageKey", parentMessageKeyForReply);
+                    formData.append("parentMessageContent", parentMessageContentForReply);
+                }
+
+                // Reset input ngay để người dùng cảm thấy nhanh
+                chatInput.value = "";
+                clearFilePreview();
+                clearReplyPreview();
+
                 const response = await fetch("/api/conversations/messages", {
                     method: "POST",
                     body: formData,
                     credentials: 'include'
                 });
 
-                if (!response.ok) {
-                    const errorResult = await response.json().catch(() => ({ message: "Failed to send message and parse error." }));
-                    throw new Error(errorResult.message || "Failed to send message.");
+                const result = await response.json();
+
+                if (!response.ok || !result.success) {
+                    throw new Error(result.message || "An error occurred while sending the message.");
                 }
 
-                console.log("Message sent successfully, waiting for SignalR echo.");
+                console.log("[SendMessage] Message sent via API successfully.");
+
+                // BƯỚC 3: Hiển thị tin nhắn vừa gửi ngay lập tức
+                // Dữ liệu `result.data` được trả về từ `SendMessage` controller
+                if (result.data) {
+                    processIncomingMessage(result.data);
+                    // Cuộn xuống tin nhắn mới nhất
+                    setTimeout(() => { messageList.scrollTop = messageList.scrollHeight; }, 0);
+                }
+
+                // BƯỚC 4: Nếu đây là cuộc hội thoại mới, tải lại danh sách và đánh dấu active
+                if (isNewConversation) {
+                    console.log("[SendMessage] Reloading conversation list for new conversation...");
+                    await loadConversations();
+
+                    // Sau khi tải lại, tìm và kích hoạt cuộc hội thoại mới trong danh sách
+                    const newItem = document.querySelector(`.conversation-item[data-conversation-key="${convKey}"]`);
+                    if (newItem) {
+                        document.querySelectorAll(".conversation-item").forEach(i => i.parentElement.classList.remove("active"));
+                        newItem.parentElement.classList.add("active");
+                    }
+                }
+
+                // --- KẾT THÚC PHẦN SỬA LỖI LOGIC ---
 
             } catch (err) {
-                console.error("[sendIcon] Error sending message:", err);
+                console.error("[SendMessage] Error:", err.message);
                 showNotification(err.message, "error");
-
-                // Khôi phục lại giao diện nếu gửi thất bại
-                chatInput.value = originalContent;
-                if (replyingMessage.key) {
-                    showReplyPreview(replyingMessage.key, replyingMessage.content, replyingMessage.sender);
-                }
-                if (sendingFile) {
-                    selectedFile = sendingFile;
-                    showFilePreview(sendingFile);
-                }
             } finally {
                 chatInput.focus();
             }
         });
     }
+
     if (openChat) openChat.addEventListener("click", async () => {
         const chatLoading = document.getElementById('chatLoading');
         if (chatLoading) chatLoading.classList.remove('d-none');

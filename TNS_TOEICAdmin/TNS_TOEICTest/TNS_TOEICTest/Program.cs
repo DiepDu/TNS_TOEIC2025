@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authentication.Cookies;
+﻿using TNS_TOEICTest.Services;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using TNS_TOEICTest.DataAccess;
@@ -8,7 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddRazorPages();
 
-builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
+builder.Services.AddSingleton<IUserConnectionManager, UserConnectionManager>();
 
 builder.Services.AddCors(options =>
 {

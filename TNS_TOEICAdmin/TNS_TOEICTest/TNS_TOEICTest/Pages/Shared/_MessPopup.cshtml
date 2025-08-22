@@ -44,21 +44,26 @@
             margin-bottom: 10px;
         }
 
+        /* Đoạn code mới để thay thế */
         .input-container {
             position: relative;
             display: flex;
             align-items: center;
+            gap: 10px; /* Thêm khoảng cách giữa các phần tử */
         }
 
             .input-container textarea {
-                padding-left: 40px;
-                padding-right: 40px;
+                flex-grow: 1; /* Để ô nhập liệu tự co giãn */
                 border-radius: 20px;
-                height: 30px;
-                line-height: 1.2;
+                line-height: 1.5;
                 color: #ecf0f1;
                 background: rgba(52, 152, 219, 0.3);
                 border: 1px solid rgba(44, 62, 80, 0.6);
+                resize: none; /* Tắt tính năng thay đổi kích thước thủ công */
+                padding: 8px 15px;
+                min-height: 42px; /* Đặt chiều cao tối thiểu */
+                max-height: 120px; /* Cho phép mở rộng khi nhập nhiều chữ */
+                overflow-y: auto;
             }
 
             .input-container .icon-left {
@@ -144,36 +149,48 @@
             margin-bottom: 6px;
         }
 
+        /* ===== BẮT ĐẦU KHỐI CSS THANH CUỘN ĐÃ ĐƯỢC TINH CHỈNH ===== */
+
+        /* Áp dụng cho tất cả các thanh cuộn trong giao diện chat */
         .conversation-list::-webkit-scrollbar,
         .message-list-container::-webkit-scrollbar,
         .user-list::-webkit-scrollbar,
-        .selected-users::-webkit-scrollbar {
-            width: 6px;
+        .selected-users::-webkit-scrollbar,
+        .search-results::-webkit-scrollbar {
+            width: 4px; /* GIẢM: Làm thanh cuộn dọc hẹp hơn */
+            height: 4px; /* GIẢM: Làm thanh cuộn ngang hẹp hơn */
         }
 
+        /* Phần nền (track) của thanh cuộn */
         .conversation-list::-webkit-scrollbar-track,
         .message-list-container::-webkit-scrollbar-track,
         .user-list::-webkit-scrollbar-track,
-        .selected-users::-webkit-scrollbar-track {
-            background: #1a252f;
-            border-radius: 10px;
+        .selected-users::-webkit-scrollbar-track,
+        .search-results::-webkit-scrollbar-track {
+            background: transparent; /* GIỮ NGUYÊN hoặc làm trong suốt để chìm vào nền */
         }
 
+        /* Phần con trượt (thumb) của thanh cuộn */
         .conversation-list::-webkit-scrollbar-thumb,
         .message-list-container::-webkit-scrollbar-thumb,
         .user-list::-webkit-scrollbar-thumb,
-        .selected-users::-webkit-scrollbar-thumb {
-            background: #34495e;
-            border-radius: 10px;
+        .selected-users::-webkit-scrollbar-thumb,
+        .search-results::-webkit-scrollbar-thumb {
+            background: #273746; /* THAY ĐỔI: Màu đậm hơn nền #2c3e50 một chút */
+            border-radius: 2px;
             transition: background 0.3s ease;
         }
 
+            /* Phần con trượt khi di chuột vào */
             .conversation-list::-webkit-scrollbar-thumb:hover,
             .message-list-container::-webkit-scrollbar-thumb:hover,
             .user-list::-webkit-scrollbar-thumb:hover,
-            .selected-users::-webkit-scrollbar-thumb:hover {
-                background: #2c3e50;
+            .selected-users::-webkit-scrollbar-thumb:hover,
+            .search-results::-webkit-scrollbar-thumb:hover {
+                background: #34495e; /* THAY ĐỔI: Màu sáng hơn một chút khi di chuột vào */
             }
+
+        /* ===== KẾT THÚC KHỐI CSS THANH CUỘN ===== */
 
         .message-list-container::before {
             content: '';
@@ -388,19 +405,22 @@
                 color: #ecf0f1;
             }
 
+        /* Đoạn code mới để thay thế */
         .pinned-popup {
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(52, 152, 219, 0.9);
+            /* Thay đổi màu nền và thêm viền để giống menu options */
+            background: #2c3e50;
+            border: 1px solid rgba(255,255,255,0.2);
             padding: 20px;
             border-radius: 10px;
             z-index: 1000;
             max-height: 80vh;
             overflow-y: auto;
             color: #ecf0f1;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
             display: none;
             min-width: 400px;
         }
@@ -410,8 +430,16 @@
                 border-bottom: 1px solid rgba(44, 62, 80, 0.5);
                 display: flex;
                 flex-direction: column;
+                [cite_start]padding: 10px 0;
+                [cite: 77] [cite_start]border-bottom: 1px solid rgba(44, 62, 80, 0.5);
+                [cite: 77] [cite_start]display: flex;
+                [cite: 78] [cite_start]flex-direction: column;
+                [cite: 78]
             }
 
+                .pinned-popup div:last-child {
+                    border-bottom: none;
+                }
             .pinned-popup .pinned-message-container {
                 display: flex;
                 align-items: center;
@@ -930,7 +958,28 @@
                 color: #bdc3c7;
             }
         /* ===== KẾT THÚC PHẦN BỔ SUNG CSS MỚI ===== */
+        /* Dán đoạn code này vào cuối thẻ <style> */
+        .chat-action-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            flex-shrink: 0; /* Ngăn nút bị co lại */
+            border-radius: 50%;
+            background-color: rgba(52, 152, 219, 0.4);
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            color: #ecf0f1;
+        }
 
+            .chat-action-btn:hover {
+                background-color: rgba(52, 152, 219, 0.7);
+            }
+
+            .chat-action-btn i {
+                font-size: 1.2rem; /* Tăng kích thước icon */
+            }
 </style>
 </head>
 <body>
@@ -974,14 +1023,14 @@
                                 <div id="file-preview-container" class="preview-container"></div>
 
                                 <div class="input-container p-3">
-                                    <label for="fileInput" class="ms-1 text-muted icon-hover" style="cursor: pointer; padding: 5px;">
+                                    <label for="fileInput" class="chat-action-btn" title="Attach file">
                                         <i id="fileIcon" class="fas fa-paperclip"></i>
                                     </label>
                                     <input type="file" id="fileInput" accept="image/*,video/*,audio/*" class="d-none">
 
                                     <textarea id="chatInput" class="form-control" rows="1" placeholder="Message"></textarea>
 
-                                    <a id="sendIcon" class="ms-3 icon-hover" style="cursor: pointer; padding: 5px;">
+                                    <a id="sendIcon" class="chat-action-btn" title="Send">
                                         <i class="fas fa-paper-plane"></i>
                                     </a>
                                 </div>

@@ -23,6 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="wwwroot\images\messages\" />
     <Folder Include="wwwroot\lib\tinymce\plugins\textcolor\" />
     <Folder Include="wwwroot\lib\tinymce\skins\content\" />
     <Folder Include="wwwroot\upload\answer\" />

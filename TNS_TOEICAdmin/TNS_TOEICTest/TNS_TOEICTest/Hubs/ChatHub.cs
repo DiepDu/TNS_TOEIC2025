@@ -1,89 +1,117 @@
-﻿using Microsoft.AspNetCore.SignalR;
-using System.Collections.Concurrent;
+﻿// File: Hubs/ChatHub.cs
+
+using Microsoft.AspNetCore.SignalR;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using TNS.Member;
 using TNS_TOEICAdmin.Models;
+using TNS_TOEICTest.Services;
 
 namespace TNS_TOEICTest.Hubs
 {
     public class ChatHub : Hub
     {
-        private static readonly ConcurrentDictionary<string, string> _connectionMapping = new ConcurrentDictionary<string, string>();
+        // HOÀN TOÀN LOẠI BỎ DÒNG SAU:
+        // private static readonly ConcurrentDictionary<string, string> _connectionMapping = new ConcurrentDictionary<string, string>();
 
-        public override async Task OnConnectedAsync()
+        private readonly IUserConnectionManager _userConnectionManager;
+
+        public ChatHub(IUserConnectionManager userConnectionManager)
         {
-            await base.OnConnectedAsync();
+            _userConnectionManager = userConnectionManager;
         }
 
-        public async Task InitializeConnection(string userKey = null, string memberKey = null)
+        // Hàm này đã đúng, lấy MemberKey khi kết nối
+        public override Task OnConnectedAsync()
         {
-            var participantKey = !string.IsNullOrEmpty(userKey) ? userKey : (!string.IsNullOrEmpty(memberKey) ? memberKey : GetParticipantKey());
-            if (string.IsNullOrEmpty(participantKey))
-                return;
-
-            if (_connectionMapping.ContainsKey(Context.ConnectionId))
-                _connectionMapping.TryRemove(Context.ConnectionId, out _);
-            _connectionMapping.AddOrUpdate(Context.ConnectionId, participantKey, (key, oldValue) => participantKey);
-
-            var conversationKeys = await ChatAccessData.GetConversationKeysAsync(participantKey);
-            foreach (var key in conversationKeys)
-                await Groups.AddToGroupAsync(Context.ConnectionId, key);
-            await Clients.Caller.SendAsync("ConnectionEstablished", participantKey);
+            var memberKey = GetCurrentMemberKey();
+            if (!string.IsNullOrEmpty(memberKey))
+            {
+                _userConnectionManager.AddConnection(memberKey, Context.ConnectionId);
+            }
+            return base.OnConnectedAsync();
         }
+
+        // Hàm này đã đúng, xóa kết nối
+        public override Task OnDisconnectedAsync(Exception? exception)
+        {
+            _userConnectionManager.RemoveConnection(Context.ConnectionId);
+            return base.OnDisconnectedAsync(exception);
+        }
+
+        // Hàm này đã đúng, dùng để đồng bộ khi F5
+        public async Task InitializeConnection(string userKey, string memberKey)
+        {
+            var currentKey = GetCurrentMemberKey(userKey, memberKey);
+
+            if (!string.IsNullOrEmpty(currentKey))
+            {
+                _userConnectionManager.AddConnection(currentKey, Context.ConnectionId);
+
+                var conversationKeys = await ChatAccessData.GetConversationKeysAsync(currentKey);
+                foreach (var key in conversationKeys)
+                {
+                    await Groups.AddToGroupAsync(Context.ConnectionId, key);
+                }
+                await Clients.Caller.SendAsync("ConnectionEstablished", currentKey);
+            }
+        }
+
+        // --- SỬA LẠI CÁC HÀM BÊN DƯỚI ĐỂ KHÔNG DÙNG _connectionMapping ---
 
         public async Task JoinConversation(string conversationKey)
         {
-            var participantKey = _connectionMapping.GetValueOrDefault(Context.ConnectionId);
-            if (!string.IsNullOrEmpty(participantKey))
+            // Lấy key trực tiếp, không qua mapping cũ
+            var memberKey = GetCurrentMemberKey();
+            if (!string.IsNullOrEmpty(memberKey))
                 await Groups.AddToGroupAsync(Context.ConnectionId, conversationKey);
         }
 
         public async Task LeaveConversation(string conversationKey)
         {
-            var participantKey = _connectionMapping.GetValueOrDefault(Context.ConnectionId);
-            if (!string.IsNullOrEmpty(participantKey))
+            var memberKey = GetCurrentMemberKey();
+            if (!string.IsNullOrEmpty(memberKey))
                 await Groups.RemoveFromGroupAsync(Context.ConnectionId, conversationKey);
         }
 
         public async Task UpdatePinStatus(string conversationKey, string messageKey, bool isPinned)
         {
-            var participantKey = _connectionMapping.GetValueOrDefault(Context.ConnectionId);
-            if (string.IsNullOrEmpty(participantKey))
-                return;
+            var memberKey = GetCurrentMemberKey();
+            if (string.IsNullOrEmpty(memberKey)) return;
 
-            var success = await ChatAccessData.PinMessageAsync(messageKey, participantKey);
+            var success = await ChatAccessData.PinMessageAsync(messageKey, memberKey);
             if (success)
             {
                 await Clients.Group(conversationKey).SendAsync("PinResponse", conversationKey, messageKey, isPinned, true, null);
-                await SendPinUpdate(conversationKey, messageKey, isPinned);
             }
             else
+            {
                 await Clients.Caller.SendAsync("PinResponse", conversationKey, messageKey, isPinned, false, "Database update failed");
+            }
         }
 
         public async Task UpdateUnpinStatus(string conversationKey, string messageKey)
         {
-            var participantKey = _connectionMapping.GetValueOrDefault(Context.ConnectionId);
-            if (string.IsNullOrEmpty(participantKey))
-                return;
+            var memberKey = GetCurrentMemberKey();
+            if (string.IsNullOrEmpty(memberKey)) return;
 
-            var success = await ChatAccessData.UnpinMessageAsync(messageKey, participantKey);
+            var success = await ChatAccessData.UnpinMessageAsync(messageKey, memberKey);
             if (success)
             {
                 await Clients.Group(conversationKey).SendAsync("UnpinResponse", conversationKey, messageKey, true, null);
-                await SendUnpinUpdate(conversationKey, messageKey);
             }
             else
+            {
                 await Clients.Caller.SendAsync("UnpinResponse", conversationKey, messageKey, false, "Database update failed");
+            }
         }
 
         public async Task UpdateRecallStatus(string conversationKey, string messageKey)
         {
-            var participantKey = _connectionMapping.GetValueOrDefault(Context.ConnectionId);
-            if (string.IsNullOrEmpty(participantKey))
-                return;
+            var memberKey = GetCurrentMemberKey();
+            if (string.IsNullOrEmpty(memberKey)) return;
 
-            var success = await ChatAccessData.RecallMessageAsync(messageKey, participantKey);
+            var success = await ChatAccessData.RecallMessageAsync(messageKey, memberKey);
             if (success)
             {
                 await Clients.Group(conversationKey).SendAsync("RecallResponse", conversationKey, messageKey, true, null);
@@ -94,73 +122,45 @@ namespace TNS_TOEICTest.Hubs
             }
         }
 
-        public async Task SendPinUpdate(string conversationKey, string messageKey, bool isPinned)
-        {
-            await Clients.GroupExcept(conversationKey, new[] { Context.ConnectionId }).SendAsync("ReceivePinUpdate", messageKey, isPinned);
-        }
-
-        public async Task SendUnpinUpdate(string conversationKey, string messageKey)
-        {
-            await Clients.GroupExcept(conversationKey, new[] { Context.ConnectionId }).SendAsync("ReceiveUnpinUpdate", messageKey);
-        }
-
-        public async Task SendRecallUpdate(string conversationKey, string messageKey)
-        {
-            await Clients.GroupExcept(conversationKey, new[] { Context.ConnectionId }).SendAsync("ReceiveRecallUpdate", messageKey);
-        }
-
-        public override async Task OnDisconnectedAsync(Exception exception)
-        {
-            if (_connectionMapping.TryRemove(Context.ConnectionId, out var participantKey) && !string.IsNullOrEmpty(participantKey))
-            {
-                var conversationKeys = await ChatAccessData.GetConversationKeysAsync(participantKey);
-                foreach (var key in conversationKeys)
-                    await Groups.RemoveFromGroupAsync(Context.ConnectionId, key);
-            }
-            await base.OnDisconnectedAsync(exception);
-        }
-
-        public async Task DisconnectSignal()
-        {
-            if (_connectionMapping.TryRemove(Context.ConnectionId, out var participantKey) && !string.IsNullOrEmpty(participantKey))
-            {
-                var conversationKeys = await ChatAccessData.GetConversationKeysAsync(participantKey);
-                foreach (var key in conversationKeys)
-                    await Groups.RemoveFromGroupAsync(Context.ConnectionId, key);
-                await Clients.Caller.SendAsync("Disconnected");
-            }
-        }
-
-        private string GetParticipantKey()
-        {
-            var claimsPrincipal = Context.User as ClaimsPrincipal;
-            return claimsPrincipal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        }
         public async Task NotifyGroupCreated(string conversationKey, string[] userKeys)
         {
             foreach (var userKey in userKeys)
             {
-                // Tìm tất cả connectionId tương ứng với userKey
-                var connectionIds = _connectionMapping.Where(kv => kv.Value == userKey).Select(kv => kv.Key).ToList();
+                // Sử dụng service mới để lấy tất cả các connection ID của user
+                var connectionIds = _userConnectionManager.GetConnectionIds(userKey);
                 foreach (var connectionId in connectionIds)
                 {
-                    // Gửi thông báo để reload danh sách cuộc trò chuyện
                     await Clients.Client(connectionId).SendAsync("ReloadConversations", conversationKey);
-                    // Thêm user vào group nếu chưa có (tùy chọn, nếu dùng group trong SignalR)
                     await Groups.AddToGroupAsync(connectionId, conversationKey);
                 }
             }
         }
+
         public async Task NotifyAvatarUpdate(string conversationKey, string newAvatarUrl)
         {
             await Clients.Group(conversationKey)
                 .SendAsync("UpdateGroupAvatar", conversationKey, newAvatarUrl);
         }
+
         public async Task NotifyGroupNameUpdate(string conversationKey, string newGroupName, string memberName)
         {
             await Clients.Group(conversationKey)
                 .SendAsync("UpdateGroupName", conversationKey, newGroupName, memberName);
         }
 
+        private string GetCurrentMemberKey(string userKey = null, string memberKey = null)
+        {
+            var httpContext = Context.GetHttpContext();
+            if (httpContext == null) return null;
+
+            // Ưu tiên key được truyền vào
+            if (!string.IsNullOrEmpty(memberKey)) return memberKey;
+            if (!string.IsNullOrEmpty(userKey)) return userKey;
+
+            // Nếu không có, lấy từ cookie
+            var claimsPrincipal = httpContext.User as ClaimsPrincipal;
+            var memberLogin = new MemberLogin_Info(claimsPrincipal ?? new ClaimsPrincipal());
+            return memberLogin.MemberKey;
+        }
     }
 }
