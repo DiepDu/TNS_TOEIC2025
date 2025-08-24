@@ -220,6 +220,7 @@
 
             .noti-icon:hover {
                 color: #1A73E8 !important;
+
                 transform: scale(1.1) !important;
             }
 
@@ -787,7 +788,14 @@
     <script src="~/js/feedbackPopup.js"></script> 
     <script>
         $(document).ready(function () {
-            console.log('Document ready, initializing scripts.');
+            function debounce(func, wait) {
+                let timeout;
+                return function (...args) {
+                    const context = this;
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => func.apply(context, args), wait);
+                };
+            }
 
             if (typeof jQuery === 'undefined') {
                 console.error('jQuery is not loaded. Check ~/lib/jquery/jquery.min.js.');
@@ -978,9 +986,14 @@
                     .withUrl("/notificationHub", { accessTokenFactory: () => userKey || "" })
                     .build();
 
+                      const debouncedLoadUnreadCount = debounce(function() {
+        console.log("Debounced: Loading unread count now...");
+        loadUnreadCount(); 
+    }, 2000);
+
                 connection.on("ReceiveNotification", function (content) {
-                    console.log("New notification received:", content);
-                    loadUnreadCount();
+                    debouncedLoadUnreadCount();
+                   
                     if (parseInt($("#txtAmountNoticeNotRead").text()) > 0) {
                         shakeBell();
                     }

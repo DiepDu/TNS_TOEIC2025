@@ -155,18 +155,18 @@ namespace TNS_TOEICAdmin.Models
                    (SELECT TOP 1 c.ConversationType FROM Conversations c JOIN ConversationParticipants cp1 ON c.ConversationKey = cp1.ConversationKey JOIN ConversationParticipants cp2 ON c.ConversationKey = cp2.ConversationKey WHERE cp1.UserKey = @MemberKey AND cp2.UserKey = m.MemberKey AND c.ConversationType = 'Private') AS ConversationType
             FROM EDU_Member m WHERE m.MemberName LIKE '%' + @Query + '%' AND m.MemberKey != @MemberKey";
 
-                var userQuery = @"
-            SELECT u.UserKey, u.UserName AS Name, e.PhotoPath AS Avatar, 'Admin' AS UserType,
-                   (SELECT TOP 1 c.ConversationKey FROM Conversations c JOIN ConversationParticipants cp1 ON c.ConversationKey = cp1.ConversationKey JOIN ConversationParticipants cp2 ON c.ConversationKey = cp2.ConversationKey WHERE cp1.UserKey = @MemberKey AND cp2.UserKey = u.UserKey AND c.ConversationType = 'Private') AS ConversationKey,
-                   (SELECT TOP 1 c.ConversationType FROM Conversations c JOIN ConversationParticipants cp1 ON c.ConversationKey = cp1.ConversationKey JOIN ConversationParticipants cp2 ON c.ConversationKey = cp2.ConversationKey WHERE cp1.UserKey = @MemberKey AND cp2.UserKey = u.UserKey AND c.ConversationType = 'Private') AS ConversationType
-            FROM SYS_Users u JOIN HRM_Employee e ON u.EmployeeKey = e.EmployeeKey
-            WHERE u.UserName LIKE '%' + @Query + '%' AND u.UserKey != @MemberKey";
+            //    var userQuery = @"
+            //SELECT u.UserKey, u.UserName AS Name, e.PhotoPath AS Avatar, 'Admin' AS UserType,
+            //       (SELECT TOP 1 c.ConversationKey FROM Conversations c JOIN ConversationParticipants cp1 ON c.ConversationKey = cp1.ConversationKey JOIN ConversationParticipants cp2 ON c.ConversationKey = cp2.ConversationKey WHERE cp1.UserKey = @MemberKey AND cp2.UserKey = u.UserKey AND c.ConversationType = 'Private') AS ConversationKey,
+            //       (SELECT TOP 1 c.ConversationType FROM Conversations c JOIN ConversationParticipants cp1 ON c.ConversationKey = cp1.ConversationKey JOIN ConversationParticipants cp2 ON c.ConversationKey = cp2.ConversationKey WHERE cp1.UserKey = @MemberKey AND cp2.UserKey = u.UserKey AND c.ConversationType = 'Private') AS ConversationType
+            //FROM SYS_Users u JOIN HRM_Employee e ON u.EmployeeKey = e.EmployeeKey
+            //WHERE u.UserName LIKE '%' + @Query + '%' AND u.UserKey != @MemberKey";
 
                 var queries = new[]
                 {
             (query: groupQuery, hasConversationKey: true, hasUserKey: false),
             (query: memberQuery, hasConversationKey: true, hasUserKey: true),
-            (query: userQuery, hasConversationKey: true, hasUserKey: true)
+            //(query: userQuery, hasConversationKey: true, hasUserKey: true)
         };
 
                 foreach (var (q, hasConversationKey, hasUserKey) in queries)
@@ -555,16 +555,16 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
             FROM EDU_Member m
             WHERE m.MemberKey != @MemberKey";
 
-                var userQuery = @"
-            SELECT u.UserKey, u.UserName AS Name, e.PhotoPath AS Avatar, 'Admin' AS UserType
-            FROM SYS_Users u
-            JOIN HRM_Employee e ON u.EmployeeKey = e.EmployeeKey
-            WHERE u.UserKey != @MemberKey";
+            //    var userQuery = @"
+            //SELECT u.UserKey, u.UserName AS Name, e.PhotoPath AS Avatar, 'Admin' AS UserType
+            //FROM SYS_Users u
+            //JOIN HRM_Employee e ON u.EmployeeKey = e.EmployeeKey
+            //WHERE u.UserKey != @MemberKey";
 
                 var queries = new[]
                 {
             (query: memberQuery, hasUserKey: true),
-            (query: userQuery, hasUserKey: true)
+            //(query: userQuery, hasUserKey: true)
         };
                 foreach (var (q, hasUserKey) in queries)
                 {
@@ -1238,14 +1238,14 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
             FROM EDU_Member m
             WHERE m.MemberKey NOT IN (@ExcludeKeys)";
 
-                // Lấy danh sách tất cả Admin/User (loại trừ những người đã ở trong nhóm)
-                var userQuery = @"
-            SELECT u.UserKey, u.UserName AS Name, 
-                   ISNULL(e.PhotoPath, '/images/avatar/default-avatar.jpg') AS Avatar, 
-                   'Admin' AS UserType
-            FROM SYS_Users u
-            JOIN HRM_Employee e ON u.EmployeeKey = e.EmployeeKey
-            WHERE u.UserKey NOT IN (@ExcludeKeys)";
+            //    // Lấy danh sách tất cả Admin/User (loại trừ những người đã ở trong nhóm)
+            //    var userQuery = @"
+            //SELECT u.UserKey, u.UserName AS Name, 
+            //       ISNULL(e.PhotoPath, '/images/avatar/default-avatar.jpg') AS Avatar, 
+            //       'Admin' AS UserType
+            //FROM SYS_Users u
+            //JOIN HRM_Employee e ON u.EmployeeKey = e.EmployeeKey
+            //WHERE u.UserKey NOT IN (@ExcludeKeys)";
 
                 // Tạo table parameter cho ExcludeKeys
                 var excludeTable = new DataTable();
@@ -1256,7 +1256,7 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
                 var queries = new[]
                 {
             (query: memberQuery, type: "Member"),
-            (query: userQuery, type: "Admin")
+            //(query: userQuery, type: "Admin")
         };
 
                 foreach (var (q, _) in queries)
@@ -1980,6 +1980,7 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
         }
         // TÌM VÀ THAY THẾ TOÀN BỘ HÀM NÀY TRONG FILE ChatAccessData.cs
 
+        // TÌM VÀ THAY THẾ TOÀN BỘ HÀM NÀY TRONG FILE ChatAccessData.cs
         public static async Task<(bool success, string errorMessage)> MarkSpecificMessagesAsReadAsync(List<string> messageKeys, string conversationKey, string readerUserKey)
         {
             if (messageKeys == null || !messageKeys.Any() || string.IsNullOrEmpty(conversationKey) || string.IsNullOrEmpty(readerUserKey))
@@ -1994,40 +1995,62 @@ OFFSET @Skip ROWS FETCH NEXT 100 ROWS ONLY";
                 {
                     try
                     {
-                        // --- BƯỚC 1: Cập nhật trạng thái các tin nhắn cụ thể ---
+                        // --- BƯỚC 1: Đếm chính xác số lượng tin nhắn cần giảm UnreadCount ---
+                        // Logic mới: Đếm tất cả tin nhắn trong danh sách có SenderKey không phải là người đọc, HOẶC là tin nhắn hệ thống (SenderKey IS NULL).
                         var parameters = new List<string>();
-                        var updateMessagesCommand = new SqlCommand();
+                        var countCommand = new SqlCommand();
                         for (int i = 0; i < messageKeys.Count; i++)
                         {
                             var paramName = $"@p{i}";
                             parameters.Add(paramName);
-                            updateMessagesCommand.Parameters.AddWithValue(paramName, messageKeys[i]);
+                            countCommand.Parameters.AddWithValue(paramName, messageKeys[i]);
                         }
 
-                        var updateMessagesQuery = $@"
+                        var countQuery = $@"
+                    SELECT COUNT(*) 
+                    FROM Messages
+                    WHERE MessageKey IN ({string.Join(", ", parameters)}) 
+                      AND (SenderKey IS NULL OR SenderKey != @ReaderUserKey);";
+
+                        countCommand.CommandText = countQuery;
+                        countCommand.Connection = connection;
+                        countCommand.Transaction = transaction;
+                        countCommand.Parameters.AddWithValue("@ReaderUserKey", readerUserKey);
+
+                        int messagesToDecrementCount = (int)await countCommand.ExecuteScalarAsync();
+
+                        // --- BƯỚC 2: Cập nhật trạng thái "đã xem" (cho dấu tick) ---
+                        // Logic này không thay đổi, chỉ dùng cho mục đích hiển thị.
+                        var updateStatusQuery = $@"
                     UPDATE Messages
                     SET Status = 1
                     WHERE MessageKey IN ({string.Join(", ", parameters)}) AND Status = 0;";
 
-                        updateMessagesCommand.CommandText = updateMessagesQuery;
-                        updateMessagesCommand.Connection = connection;
-                        updateMessagesCommand.Transaction = transaction;
-                        int messagesUpdatedCount = await updateMessagesCommand.ExecuteNonQueryAsync();
+                        using (var updateStatusCommand = new SqlCommand(updateStatusQuery, connection, transaction))
+                        {
+                            // Sao chép parameters từ countCommand
+                            foreach (SqlParameter p in countCommand.Parameters)
+                            {
+                                updateStatusCommand.Parameters.Add(new SqlParameter(p.ParameterName, p.Value));
+                            }
+                            await updateStatusCommand.ExecuteNonQueryAsync();
+                        }
 
-                        // --- BƯỚC 2 (QUAN TRỌNG): Cập nhật UnreadCount ---
-                        // Chỉ cập nhật UnreadCount nếu có tin nhắn thực sự được chuyển trạng thái
-                        if (messagesUpdatedCount > 0)
+                        // --- BƯỚC 3: Cập nhật UnreadCount dựa trên số đếm chính xác ở Bước 1 ---
+                        if (messagesToDecrementCount > 0)
                         {
                             var updateParticipantQuery = @"
                         UPDATE ConversationParticipants
-                        SET UnreadCount = UnreadCount - @MessagesUpdatedCount
+                        SET UnreadCount = CASE 
+                                            WHEN UnreadCount - @MessagesToDecrementCount < 0 THEN 0
+                                            ELSE UnreadCount - @MessagesToDecrementCount 
+                                          END
                         WHERE ConversationKey = @ConversationKey 
-                          AND UserKey = @ReaderUserKey
-                          AND UnreadCount > 0;"; // Đảm bảo không bị số âm
+                          AND UserKey = @ReaderUserKey;";
 
                             using (var updateParticipantCommand = new SqlCommand(updateParticipantQuery, connection, transaction))
                             {
-                                updateParticipantCommand.Parameters.AddWithValue("@MessagesUpdatedCount", messagesUpdatedCount);
+                                updateParticipantCommand.Parameters.AddWithValue("@MessagesToDecrementCount", messagesToDecrementCount);
                                 updateParticipantCommand.Parameters.AddWithValue("@ConversationKey", conversationKey);
                                 updateParticipantCommand.Parameters.AddWithValue("@ReaderUserKey", readerUserKey);
                                 await updateParticipantCommand.ExecuteNonQueryAsync();

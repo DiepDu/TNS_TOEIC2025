@@ -1001,8 +1001,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (String(message.ConversationKey) === String(currentConversationKey)) {
             messageList.insertAdjacentHTML("beforeend", addMessage(message));
 
-            // Logic Debounce đánh dấu đã đọc
-            if (message.SenderKey !== memberKey) {
+            if ((message.SenderKey && message.SenderKey !== memberKey) || message.IsSystemMessage === true) {
+
                 unreadMessageKeysInActiveChat.push(message.MessageKey);
                 clearTimeout(markAsReadTimer);
                 markAsReadTimer = setTimeout(() => {

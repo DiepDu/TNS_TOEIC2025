@@ -461,13 +461,11 @@ namespace TNS_TOEICTest.Controllers
                 HttpContext
             );
 
-            // --- KIỂM TRA KẾT QUẢ TRƯỚC KHI GỬI SIGNALR ---
             bool success = result.ContainsKey("success") && result["success"] is bool s && s;
             string message = result.ContainsKey("message") && result["message"] != null
                 ? result["message"].ToString()
                 : (success ? "Members added successfully" : "Add members failed");
 
-            // *** SỬA LỖI: CHỈ GỬI SIGNALR KHI THAO TÁC THÀNH CÔNG ***
             if (success)
             {
                 // Kiểm tra xem ChatAccessData có trả về danh sách tin nhắn hệ thống đã được tạo sẵn không
@@ -515,6 +513,11 @@ namespace TNS_TOEICTest.Controllers
 
                     await _hubContext.Clients.Group(conversationKey)
                         .SendAsync("ReceiveMultipleMessages", messageObjects);
+                }
+                foreach (var newMember in newMembers)
+                {
+                    // Sử dụng Clients.User() để gửi tín hiệu đến một người dùng cụ thể
+                    await _hubContext.Clients.User(newMember.UserKey).SendAsync("ReloadConversations", conversationKey);
                 }
             }
 
