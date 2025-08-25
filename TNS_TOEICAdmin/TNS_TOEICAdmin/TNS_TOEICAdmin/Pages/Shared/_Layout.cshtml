@@ -863,7 +863,7 @@
             // Tải số lượng thông báo chưa đọc khi load trang
             function loadUnreadCount() {
                 $.ajax({
-                    url: "/NotificationHandler/GetUnreadCount",
+                    url: "/api/NotificationHandler/GetUnreadCount",
                     type: "GET",
                     success: function (data) {
                         $("#txtAmountNoticeNotRead").text(data.count || 0);
@@ -896,7 +896,7 @@
             const take = 30;
             function loadNotifications() {
                 $.ajax({
-                    url: `/NotificationHandler/GetNotifications?skip=${skip}&take=${take}`,
+                    url: `/api/NotificationHandler/GetNotifications?skip=${skip}&take=${take}`,
                     type: "GET",
                     success: function (data) {
                         console.log("Notifications data:", data);
@@ -930,7 +930,7 @@
                             const notificationIds = data.notifications.map(n => n.NotificationKey);
                             if (notificationIds.length > 0) {
                                 $.ajax({
-                                    url: "/NotificationHandler/MarkAsRead",
+                                    url: "/api/NotificationHandler/MarkAsRead",
                                     type: "POST",
                                     contentType: "application/json",
                                     data: JSON.stringify(notificationIds),

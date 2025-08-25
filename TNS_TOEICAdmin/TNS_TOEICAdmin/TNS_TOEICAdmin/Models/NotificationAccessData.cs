@@ -169,6 +169,8 @@ namespace TNS_TOEICAdmin.Models
             }
         }
 
+        // TÌM VÀ THAY THẾ PHƯƠNG THỨC NÀY TRONG NotificationAccessData.cs
+
         public static async Task<List<Feedback>> GetFeedbacksAsync(int skip = 0, int take = 50)
         {
             var feedbacks = new List<Feedback>();
@@ -176,13 +178,14 @@ namespace TNS_TOEICAdmin.Models
             {
                 await connection.OpenAsync();
                 var query = @"
-                    SELECT f.FeedbackKey, f.QuestionKey, f.MemberKey, f.FeedbackText, f.CreatedOn, f.Part, f.Status,
-                           m.MemberName, m.Avatar
-                    FROM QuestionFeedbacks f
-                    JOIN EDU_Member m ON f.MemberKey = m.MemberKey
-                   
-                    ORDER BY f.CreatedOn DESC  -- ĐÃ SỬA: Thay đổi thành DESC để lấy bản mới nhất trước
-                    OFFSET @Skip ROWS FETCH NEXT @Take ROWS ONLY";
+            SELECT f.FeedbackKey, f.QuestionKey, f.MemberKey, f.FeedbackText, f.CreatedOn, f.Part, f.Status,
+                   m.MemberName, m.Avatar
+            FROM QuestionFeedbacks f
+            JOIN EDU_Member m ON f.MemberKey = m.MemberKey
+           
+            -- --- ĐẢM BẢO DÒNG NÀY LUÔN LÀ DESC ---
+            ORDER BY f.CreatedOn DESC
+            OFFSET @Skip ROWS FETCH NEXT @Take ROWS ONLY";
                 using (var command = new SqlCommand(query, connection))
                 {
                     command.Parameters.AddWithValue("@Skip", skip);
@@ -193,6 +196,7 @@ namespace TNS_TOEICAdmin.Models
                         {
                             feedbacks.Add(new Feedback
                             {
+                                // ... code đọc dữ liệu không đổi ...
                                 FeedbackKey = reader.GetGuid(0),
                                 QuestionKey = reader.GetGuid(1),
                                 MemberKey = reader.GetGuid(2),
@@ -237,6 +241,144 @@ namespace TNS_TOEICAdmin.Models
                 }
             }
         }
+        public static async Task<(bool success, string message)> SendFeedbackReplyAsync(Guid feedbackKey, Guid memberKey, string replyContent, string adminKey)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var transaction = connection.BeginTransaction())
+                {
+                    try
+                    {
+                        // BƯỚC 1: Lấy hoặc tạo kênh Admin cho member.
+                        string conversationKey = await GetOrCreateAdminChannelAsync(memberKey, connection, transaction);
+                        if (string.IsNullOrEmpty(conversationKey))
+                        {
+                            throw new Exception("Could not get or create an admin channel for the member.");
+                        }
+
+                        // BƯỚC 2: Insert tin nhắn vào bảng Messages.
+                        var messageKey = Guid.NewGuid();
+                        var createdOn = DateTime.Now;
+                        var finalContent = $"Feedback from administrator: {replyContent}";
+
+                        var insertMsgQuery = @"
+                            INSERT INTO Messages 
+                            (MessageKey, ConversationKey, SenderKey, SenderType, ReceiverKey, ReceiverType, MessageType, Content, CreatedOn, Status, IsPinned, IsSystemMessage)
+                            VALUES 
+                            (@MessageKey, @ConversationKey, @SenderKey, 'Admin', @ReceiverKey, 'Member', 'Text', @Content, @CreatedOn, 0, 0, 0)";
+
+                        using (var insertCmd = new SqlCommand(insertMsgQuery, connection, transaction))
+                        {
+                            insertCmd.Parameters.AddWithValue("@MessageKey", messageKey);
+                            insertCmd.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            insertCmd.Parameters.AddWithValue("@SenderKey", adminKey);
+                            insertCmd.Parameters.AddWithValue("@ReceiverKey", memberKey);
+                            insertCmd.Parameters.AddWithValue("@Content", finalContent);
+                            insertCmd.Parameters.AddWithValue("@CreatedOn", createdOn);
+                            await insertCmd.ExecuteNonQueryAsync();
+                        }
+
+                        // BƯỚC 3: Cập nhật LastMessage và UnreadCount.
+                        var updateConvQuery = @"
+                            UPDATE Conversations 
+                            SET LastMessageKey = @MessageKey, LastMessageTime = @CreatedOn 
+                            WHERE ConversationKey = @ConversationKey";
+                        using (var updateConvCmd = new SqlCommand(updateConvQuery, connection, transaction))
+                        {
+                            updateConvCmd.Parameters.AddWithValue("@MessageKey", messageKey);
+                            updateConvCmd.Parameters.AddWithValue("@CreatedOn", createdOn);
+                            updateConvCmd.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            await updateConvCmd.ExecuteNonQueryAsync();
+                        }
+
+                        var updateParticipantQuery = @"
+                            UPDATE ConversationParticipants
+                            SET UnreadCount = UnreadCount + 1
+                            WHERE ConversationKey = @ConversationKey AND UserKey = @MemberKey";
+                        using (var updateParticipantCmd = new SqlCommand(updateParticipantQuery, connection, transaction))
+                        {
+                            updateParticipantCmd.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                            updateParticipantCmd.Parameters.AddWithValue("@MemberKey", memberKey);
+                            await updateParticipantCmd.ExecuteNonQueryAsync();
+                        }
+
+                        // (Tùy chọn) Đánh dấu feedback gốc là đã được phản hồi (Status = 2)
+                        var updateFeedbackQuery = "UPDATE QuestionFeedbacks SET Status = 2 WHERE FeedbackKey = @FeedbackKey";
+                        using (var updateFeedbackCmd = new SqlCommand(updateFeedbackQuery, connection, transaction))
+                        {
+                            updateFeedbackCmd.Parameters.AddWithValue("@FeedbackKey", feedbackKey);
+                            await updateFeedbackCmd.ExecuteNonQueryAsync();
+                        }
+
+                        transaction.Commit();
+                        return (true, "Reply sent successfully.");
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        // Ghi lại lỗi để debug
+                        Console.WriteLine($"[SendFeedbackReplyAsync] Error: {ex.Message}");
+                        return (false, "An internal error occurred.");
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Hàm helper để tìm hoặc tạo một kênh giao tiếp Admin riêng cho từng Member.
+        /// </summary>
+        private static async Task<string> GetOrCreateAdminChannelAsync(Guid memberKey, SqlConnection connection, SqlTransaction transaction)
+        {
+            // BƯỚC 1: Tìm kênh Admin đã có.
+            // LƯU Ý QUAN TRỌNG: Cần đảm bảo bạn đã thêm cột `IsAdminChannelForMemberKey` (UNIQUEIDENTIFIER, NULL) vào bảng Conversations.
+            var findQuery = "SELECT ConversationKey FROM Conversations WHERE IsAdminChannelForMemberKey = @MemberKey";
+            using (var findCmd = new SqlCommand(findQuery, connection, transaction))
+            {
+                findCmd.Parameters.AddWithValue("@MemberKey", memberKey);
+                var result = await findCmd.ExecuteScalarAsync();
+                if (result != null && result != DBNull.Value)
+                {
+                    return result.ToString(); // Trả về key nếu đã tồn tại
+                }
+            }
+
+            // BƯỚC 2: Nếu không có, tạo kênh mới.
+            var conversationKey = Guid.NewGuid();
+            var now = DateTime.Now;
+
+            // Insert vào Conversations
+            var createConvQuery = @"
+                INSERT INTO Conversations 
+                (ConversationKey, ConversationType, CreatedOn, ConversationMode, Name, CreatorKey, IsActive, IsAdminChannelForMemberKey)
+                VALUES 
+                (@ConversationKey, 'Private', @CreatedOn, 'Private', 'Administrator', NULL, 1, @MemberKey)";
+            using (var createConvCmd = new SqlCommand(createConvQuery, connection, transaction))
+            {
+                createConvCmd.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                createConvCmd.Parameters.AddWithValue("@CreatedOn", now);
+                createConvCmd.Parameters.AddWithValue("@MemberKey", memberKey);
+                await createConvCmd.ExecuteNonQueryAsync();
+            }
+
+            // Insert vào ConversationParticipants
+            var createParticipantQuery = @"
+                INSERT INTO ConversationParticipants
+                (ParticipantKey, ConversationKey, UserKey, UserType, Role, JoinedOn, UnreadCount, IsBanned, IsApproved)
+                VALUES 
+                (@ParticipantKey, @ConversationKey, @UserKey, 'Member', 'Member', @JoinedOn, 0, 0, 1)";
+            using (var createParticipantCmd = new SqlCommand(createParticipantQuery, connection, transaction))
+            {
+                createParticipantCmd.Parameters.AddWithValue("@ParticipantKey", Guid.NewGuid());
+                createParticipantCmd.Parameters.AddWithValue("@ConversationKey", conversationKey);
+                createParticipantCmd.Parameters.AddWithValue("@UserKey", memberKey);
+                createParticipantCmd.Parameters.AddWithValue("@JoinedOn", now);
+                await createParticipantCmd.ExecuteNonQueryAsync();
+            }
+
+            return conversationKey.ToString();
+        }
+        // --- KẾT THÚC CODE MỚI ---
     }
 
     public class Notification

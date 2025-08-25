@@ -10,14 +10,17 @@ using Microsoft.AspNetCore.Http;
 
 namespace TNS_TOEICAdmin.Controllers
 {
-    [Route("[controller]")]
+    [ApiController]
+    [Route("api/[controller]")]
     [IgnoreAntiforgeryToken]
     public class NotificationHandler : Controller
     {
         // Biến để lưu thông tin quyền
         public TNS_Auth.UserLogin_Info UserLogin;
         public bool IsFullAdmin { get; private set; }
-        private readonly IHttpContextAccessor _httpContextAccessor; private readonly string _connectionString = TNS.DBConnection.Connecting.SQL_MainDatabase; private readonly IHubContext _hubContext;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly string _connectionString = TNS.DBConnection.Connecting.SQL_MainDatabase; private readonly IHubContext _hubContext;
+
 
         public NotificationHandler(IHttpContextAccessor httpContextAccessor, IHubContext<NotificationHub> hubContext)
         {
@@ -117,7 +120,37 @@ namespace TNS_TOEICAdmin.Controllers
 
             return Json(new { feedbacks, totalCount });
         }
+        [HttpPost("SendFeedbackReply")]
+        public async Task<IActionResult> SendFeedbackReply([FromBody] FeedbackReplyRequest request)
+        {
+            var userCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
+            var userLogin = new TNS_Auth.UserLogin_Info(userCookie ?? new ClaimsPrincipal());
+            var adminKey = userLogin.UserKey;
 
+            if (string.IsNullOrEmpty(adminKey))
+            {
+                return Unauthorized(new { success = false, message = "Admin not authenticated." });
+            }
+
+            if (request == null || request.MemberKey == Guid.Empty || string.IsNullOrWhiteSpace(request.ReplyContent))
+            {
+                return BadRequest(new { success = false, message = "Invalid request data." });
+            }
+
+            var (success, message) = await NotificationAccessData.SendFeedbackReplyAsync(
+                request.FeedbackKey,
+                request.MemberKey,
+                request.ReplyContent,
+                adminKey
+            );
+
+            if (success)
+            {
+                return Ok(new { success = true, message });
+            }
+
+            return BadRequest(new { success = false, message });
+        }
         // Thêm phương thức CheckAuth
         private void CheckAuth(TNS_Auth.UserLogin_Info userLogin)
         {
@@ -229,5 +262,10 @@ namespace TNS_TOEICAdmin.Controllers
     {
         public string Content { get; set; }
     }
-
+    public class FeedbackReplyRequest
+    {
+        public Guid FeedbackKey { get; set; }
+        public Guid MemberKey { get; set; }
+        public string ReplyContent { get; set; }
+    }
 }

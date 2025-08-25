@@ -1,4 +1,5 @@
-﻿// Debounce function (Giữ nguyên)
+﻿// TÌM VÀ THAY THẾ TOÀN BỘ FILE NÀY
+
 function debounce(func, wait) {
     let timeout;
     return function (...args) {
@@ -7,180 +8,195 @@ function debounce(func, wait) {
     };
 }
 
-// Variables (Giữ nguyên)
 let feedbackSkip = 0;
 const feedbackTake = 50;
 let isLoading = false;
 let hasMoreFeedbacks = true;
-let currentReplyFeedbackId = null;
-let initialLoadDone = false;
+let currentReplyInfo = {
+    feedbackKey: null,
+    memberKey: null
+};
+let isInitialLoading = false; // Cờ để tránh xung đột cuộn
 
-// Helper: Get avatar URL (Giữ nguyên)
 function getAvatarUrl(feedback) {
     const baseUrl = "https://localhost:7003";
     return feedback.AvatarUrl ? `${baseUrl}${feedback.AvatarUrl}` : "/images/avatar/default-avatar.jpg";
 }
 
-// Helper: Convert datetime to time-ago (Giữ nguyên)
 function getFeedbackTimeAgo(createdOn) {
     const now = new Date();
     const createdDate = new Date(createdOn);
     const diff = Math.floor((now - createdDate) / 60000);
-    if (diff < 1) return "Vừa xong";
-    if (diff < 60) return `${diff} phút trước`;
+    if (diff < 1) return "Just now";
+    if (diff < 60) return `${diff} minutes ago`;
     const hours = Math.floor(diff / 60);
-    if (hours < 24) return `${hours} giờ trước`;
-    return `${Math.floor(hours / 24)} ngày trước`;
+    if (hours < 24) return `${hours} hours ago`;
+    return `${Math.floor(hours / 24)} days ago`;
 }
 
-// Render feedback (Giữ nguyên)
 function renderFeedback(fb) {
     const avatarUrl = getAvatarUrl(fb);
     const isResolved = fb.Status === 1;
-    const resolvedButtonStyle = isResolved ? 'style="display: none;"' : '';
+    const isReplied = fb.Status === 2;
+    let statusBadge = '';
+    if (isReplied) {
+        statusBadge = '<span class="badge bg-info ms-2">Replied</span>';
+    } else if (isResolved) {
+        statusBadge = '<span class="badge bg-success ms-2">Resolved</span>';
+    }
+    const actionsVisible = !isResolved && !isReplied;
     return `
         <div class="feedback-item" data-feedback-id="${fb.FeedbackKey}">
             <div class="d-flex align-items-start">
                 <img src="${avatarUrl}" class="avatar" onerror="this.src='/images/avatar/default-avatar.jpg';">
                 <div class="content">
-                    <div class="name">${fb.Name}</div>
+                    <div class="name">${fb.Name} ${statusBadge}</div>
                     <div class="text">${fb.Content}</div>
                     <div class="time">Part ${fb.Part} - ${getFeedbackTimeAgo(fb.CreatedOn)}</div>
+                    ${actionsVisible ? `
                     <div class="actions">
-                        <button class="btn btn-sm btn-primary reply-feedback" data-feedback-id="${fb.FeedbackKey}" data-member-key="${fb.MemberKey}">Trả lời</button>
-                        <a class="btn btn-sm btn-secondary view-detail" data-feedback-id="${fb.FeedbackKey}" href="#">Xem chi tiết</a>
-                        <button class="btn btn-sm btn-success mark-resolved" data-feedback-id="${fb.FeedbackKey}" ${resolvedButtonStyle}>Đã xử lý</button>
+                        <button class="btn btn-sm btn-primary reply-feedback" data-feedback-key="${fb.FeedbackKey}" data-member-key="${fb.MemberKey}">Reply</button>
+                        <a class="btn btn-sm btn-secondary view-detail" data-feedback-key="${fb.FeedbackKey}" href="#">View Details</a>
+                        <button class="btn btn-sm btn-success mark-resolved" data-feedback-key="${fb.FeedbackKey}">Mark as Resolved</button>
                     </div>
+                    ` : ''}
                 </div>
             </div>
         </div>`;
 }
 
-// Load feedbacks (Đã điều chỉnh để trả về Promise)
 function loadFeedbacks(isPrepending = false) {
-    if (isLoading || (!hasMoreFeedbacks && initialLoadDone)) {
-        console.log(`[Load] Aborted: isLoading=${isLoading}, hasMoreFeedbacks=${hasMoreFeedbacks}, initialLoadDone=${initialLoadDone}`);
-        return $.Deferred().resolve().promise(); // Trả về một promise đã resolved để không chặn chain
+    if (isLoading || (!hasMoreFeedbacks && isPrepending)) {
+        return $.Deferred().resolve().promise();
     }
     isLoading = true;
-    $("#loading-feedback").show();
+    if (!isPrepending) { // Chỉ hiện spinner to ở giữa khi tải lần đầu
+        $("#loading-feedback").show();
+    }
 
     const $list = $("#feedback-list");
     const $container = $("#feedback-container")[0];
     const oldScrollHeight = $container.scrollHeight;
-    const oldScrollTop = $container.scrollTop;
-    const currentApiSkip = feedbackSkip;
 
-    console.log(`[Load] Calling API with skip=${currentApiSkip}, take=${feedbackTake}, isPrepending=${isPrepending}`);
-
-    return $.getJSON(`/NotificationHandler/GetFeedbacks?skip=${currentApiSkip}&take=${feedbackTake}`)
+    $.getJSON(`/api/NotificationHandler/GetFeedbacks?skip=${feedbackSkip}&take=${feedbackTake}`)
         .done(data => {
             const items = data.feedbacks || [];
-            console.log("[Load] API Response:", data);
-            console.log(`[Load] Items received: ${items.length}, totalCount from DB: ${data.totalCount}`);
+            if (items.length > 0) {
+                items.reverse();
+                const feedbacksHtml = items.map(renderFeedback).join('');
+                const $feedbacksHtml = $(feedbacksHtml);
+                const $images = $feedbacksHtml.find('img.avatar');
+                const promises = $images.map(function () {
+                    const d = $.Deferred();
+                    $(this).on('load', d.resolve).on('error', d.resolve);
+                    if (this.complete) d.resolve();
+                    return d.promise();
+                }).get();
 
-            if (!isPrepending) {
-                $list.empty();
-                // Sắp xếp lại để hiển thị từ cũ đến mới (nếu API trả về từ mới đến cũ)
-                items.reverse().forEach(fb => $list.append(renderFeedback(fb)));
-                initialLoadDone = true;
-                console.log("[Load] Initial load complete.");
-            } else { // Tải thêm tin cũ hơn (khi cuộn lên)
-                // Prepend từng feedback vào đầu danh sách (đúng thứ tự từ cũ đến mới trong batch)
-                items.reverse().forEach(fb => $list.prepend(renderFeedback(fb)));
-
-                // Điều chỉnh vị trí cuộn để giữ nguyên điểm nhìn
-                const newScrollHeight = $container.scrollHeight;
-                $container.scrollTop = oldScrollTop + (newScrollHeight - oldScrollHeight);
-                console.log(`[Load] Prepended items. oldScrollHeight=${oldScrollHeight}, newScrollHeight=${newScrollHeight}, oldScrollTop=${oldScrollTop}, newScrollTop=${$container.scrollTop}`);
+                $.when.apply($, promises).done(function () {
+                    if (isPrepending) {
+                        $list.prepend($feedbacksHtml);
+                        $container.scrollTop = $container.scrollHeight - oldScrollHeight;
+                    } else {
+                        $list.append($feedbacksHtml);
+                        $container.scrollTop = $container.scrollHeight;
+                    }
+                });
             }
 
             feedbackSkip += items.length;
             hasMoreFeedbacks = data.totalCount > feedbackSkip;
-            console.log(`[Load] Updated feedbackSkip=${feedbackSkip}, hasMoreFeedbacks=${hasMoreFeedbacks}`);
-
-            if (!hasMoreFeedbacks && $list.children().length > 0) {
-                console.log("[Load] All feedbacks loaded.");
-            } else if (!hasMoreFeedbacks && $list.children().length === 0) {
-                $list.html('<p class="text-center text-muted">Chưa có phản hồi nào.</p>');
-                console.log("[Load] No feedbacks found.");
+            if ($list.children().length === 0) {
+                $list.html('<p class="text-center text-muted">No feedback yet.</p>');
             }
         })
         .fail(xhr => {
-            console.error("Lỗi khi tải phản hồi:", xhr.status, xhr.responseText);
+            console.error("Error loading feedback:", xhr.status, xhr.responseText);
             if (!isPrepending) {
-                $("#feedback-list").html('<p class="text-center text-danger">Lỗi tải dữ liệu.</p>');
+                $list.html('<p class="text-center text-danger">Error loading data.</p>');
             }
         })
         .always(() => {
             isLoading = false;
+            isInitialLoading = false; // Tắt cờ sau lần tải đầu tiên
             $("#loading-feedback").hide();
-            console.log("[Load] Loading finished.");
         });
 }
 
-// Mark as resolved (Giữ nguyên)
+function sendReplyFeedback() {
+    const replyContent = $("#reply-text").val().trim();
+    if (!replyContent) {
+        alert("Please enter reply content.");
+        return;
+    }
+    if (!currentReplyInfo.feedbackKey || !currentReplyInfo.memberKey) {
+        alert("Error: Could not find feedback information to reply to.");
+        return;
+    }
+    const payload = {
+        FeedbackKey: currentReplyInfo.feedbackKey,
+        MemberKey: currentReplyInfo.memberKey,
+        ReplyContent: replyContent
+    };
+    $.ajax({
+        url: '/api/NotificationHandler/SendFeedbackReply',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(payload),
+        success: res => {
+            if (res.success) {
+                closeReplyBox();
+                alert('Reply has been sent.');
+                const $feedbackItem = $(`div[data-feedback-id="${payload.FeedbackKey}"]`);
+                $feedbackItem.find('.actions').remove();
+                $feedbackItem.find('.name').append('<span class="badge bg-info ms-2">Replied</span>');
+            } else {
+                alert(res.message || 'Failed to send reply.');
+            }
+        },
+        error: xhr => {
+            console.error('Error sending reply:', xhr);
+            alert('Failed to send reply. Please check the console for details.');
+        }
+    });
+}
+
 function markFeedbackAsResolved(feedbackId) {
     $.ajax({
-        url: '/NotificationHandler/MarkFeedbackAsResolved',
+        url: '/api/NotificationHandler/MarkFeedbackAsResolved',
         type: 'POST',
         contentType: 'application/json',
         data: JSON.stringify(feedbackId),
         success: res => {
             if (res.success) {
-                $(`div[data-feedback-id="${feedbackId}"]`).fadeOut(300, function () {
-                    $(this).remove();
-                    feedbackSkip--;
-                    if (feedbackSkip < 0) feedbackSkip = 0;
-                });
+                const $feedbackItem = $(`div[data-feedback-id="${feedbackId}"]`);
+                $feedbackItem.find('.actions').remove();
+                $feedbackItem.find('.name').append('<span class="badge bg-success ms-2">Resolved</span>');
             } else {
-                alert(res.message || 'Xử lý thất bại.');
+                alert(res.message || 'Action failed.');
             }
         },
         error: xhr => {
-            console.error('Lỗi xử lý:', xhr);
-            alert('Xử lý thất bại.');
+            console.error('Error marking as resolved:', xhr);
+            alert('Action failed.');
         }
     });
 }
 
-// Reply logic (Giữ nguyên)
-function sendReplyFeedback(feedbackId, replyText) {
-    $.ajax({
-        url: '/NotificationHandler/SendReplyFeedback',
-        type: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify({ feedbackId: feedbackId, replyText: replyText }),
-        success: res => {
-            if (res.success) {
-                closeReplyBox();
-                alert('Phản hồi đã được gửi.');
-            } else {
-                alert(res.message || 'Gửi phản hồi thất bại.');
-            }
-        },
-        error: xhr => {
-            console.error('Lỗi gửi phản hồi:', xhr);
-            alert('Gửi phản hồi thất bại.');
-        }
-    });
-}
-
-function openReplyBox(feedbackId) {
-    currentReplyFeedbackId = feedbackId;
+function openReplyBox(feedbackKey, memberKey) {
+    currentReplyInfo = { feedbackKey, memberKey };
     $("#reply-box").addClass("active");
     $("#reply-text").val("").focus();
 }
 
 function closeReplyBox() {
-    currentReplyFeedbackId = null;
+    currentReplyInfo = { feedbackKey: null, memberKey: null };
     $("#reply-box").removeClass("active");
     $("#reply-text").val("");
 }
 
-// Updated function to handle view detail with dynamic part
 function viewDetail(feedbackId) {
-    $.getJSON(`/NotificationHandler/GetFeedbackDetail?feedbackKey=${feedbackId}`)
+    $.getJSON(`/api/NotificationHandler/GetFeedbackDetail?feedbackKey=${feedbackId}`)
         .done(data => {
             if (data.success) {
                 const feedback = data.feedback;
@@ -190,73 +206,62 @@ function viewDetail(feedbackId) {
                 } else if ([3, 4, 6, 7].includes(feedback.Part)) {
                     url = `/ToeicPart${feedback.Part}/Question?Key=${feedback.QuestionKey}&source=QuestionSubList`;
                 } else {
-                    alert("Part không hợp lệ.");
+                    alert("Invalid Part.");
                     return;
                 }
-                window.location.href = url; // Chuyển hướng đến URL tương ứng
+                window.open(url, '_blank');
             } else {
-                alert(data.message || "Không thể lấy thông tin chi tiết.");
+                alert(data.message || "Could not retrieve details.");
             }
         })
         .fail(xhr => {
-            console.error("Lỗi khi lấy chi tiết:", xhr);
-            alert("Lỗi khi lấy chi tiết.");
+            console.error("Error retrieving details:", xhr);
+            alert("Error retrieving details.");
         });
 }
 
-// Initialize popup (Đã cập nhật logic cuộn)
 function initFeedbackPopup() {
     $("#feedback-container").on("scroll", debounce(function () {
-        if ($(this).scrollTop() < 50 && hasMoreFeedbacks && !isLoading && initialLoadDone) {
-            console.log("Scroll event: Triggering loadFeedbacks(true)");
+        if ($(this).scrollTop() < 50 && hasMoreFeedbacks && !isLoading && !isInitialLoading) {
             loadFeedbacks(true);
         }
     }, 200));
 
+    // --- SỬA LỖI CÁC NÚT BẤM ---
     $(document).on("click", ".mark-resolved", function () {
-        markFeedbackAsResolved($(this).data("feedback-id"));
+        // Sửa lại cách lấy data attribute cho đúng
+        markFeedbackAsResolved($(this).data("feedback-key"));
     });
 
     $(document).on("click", ".reply-feedback", function () {
-        openReplyBox($(this).data("feedback-id"));
-    });
-
-    $(document).on("click", ".btn-cancel-reply", closeReplyBox);
-
-    $(document).on("click", ".btn-send-reply", function () {
-        const text = $("#reply-text").val().trim();
-        if (!text) return alert("Vui lòng nhập nội dung phản hồi.");
-        if (currentReplyFeedbackId) sendReplyFeedback(currentReplyFeedbackId, text);
+        const feedbackKey = $(this).data("feedback-key");
+        const memberKey = $(this).data("member-key");
+        openReplyBox(feedbackKey, memberKey);
     });
 
     $(document).on("click", ".view-detail", function (e) {
         e.preventDefault();
-        const feedbackId = $(this).data("feedback-id");
-        console.log("View detail clicked for FeedbackKey:", feedbackId);
-        viewDetail(feedbackId);
+        // Sửa lại cách lấy data attribute cho đúng
+        viewDetail($(this).data("feedback-key"));
     });
+    // --- KẾT THÚC SỬA LỖI CÁC NÚT BẤM ---
+
+
+    $(document).on("click", ".btn-cancel-reply", closeReplyBox);
+    $(document).on("click", ".btn-send-reply", sendReplyFeedback);
 
     $('#feedbackModal').on('show.bs.modal', function () {
-        console.log("Modal show event: Resetting and loading initial feedbacks.");
+        isInitialLoading = true; // Bật cờ
         feedbackSkip = 0;
         hasMoreFeedbacks = true;
         isLoading = false;
-        initialLoadDone = false;
-
-        loadFeedbacks(false).done(() => {
-            // Thêm một setTimeout nhỏ ở đây để đảm bảo DOM đã render xong
-            setTimeout(() => {
-                const $container = $("#feedback-container")[0];
-                $container.scrollTop = $container.scrollHeight;
-                console.log("[Load] Scrolled to bottom (latest feedback) after loading with timeout.");
-            }, 50); // Độ trễ 50ms
-        });
+        $("#feedback-list").empty();
+        loadFeedbacks(false);
     });
 
     $('#feedbackModal').on('hidden.bs.modal', closeReplyBox);
 }
 
-// Init
 $(document).ready(function () {
     initFeedbackPopup();
 });
