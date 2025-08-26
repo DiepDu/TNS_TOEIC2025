@@ -13,6 +13,8 @@ namespace TNS_TOEICAdmin.Models
     {
         private static readonly string _connectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
         private static readonly string _mediaRootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "messages");
+        // TÌM VÀ THAY THẾ HÀM NÀY TRONG FILE ChatAccessData.cs
+
         public static async Task<Dictionary<string, object>> GetConversationsAsync(string userKey = null, string memberKey = null, string currentMemberKey = null)
         {
             var conversations = new List<Dictionary<string, object>>();
@@ -22,105 +24,69 @@ namespace TNS_TOEICAdmin.Models
                 await connection.OpenAsync();
 
                 var query = @"
-            SELECT DISTINCT 
-                c.ConversationKey,
-                c.ConversationType,
-                cp.UnreadCount,
-                CASE 
-                    WHEN c.ConversationType = 'Group' THEN c.Name
-                    ELSE 
-                        COALESCE(
-                            (SELECT TOP 1 m.MemberName 
-                             FROM ConversationParticipants cp2 
-                             JOIN EDU_Member m ON cp2.UserKey = m.MemberKey 
-                             WHERE cp2.ConversationKey = c.ConversationKey AND cp2.UserKey != @MemberKey AND cp2.UserType = 'Member'),
-                            (SELECT TOP 1 u.UserName 
-                             FROM ConversationParticipants cp2 
-                             JOIN SYS_Users u ON cp2.UserKey = u.UserKey 
-                             WHERE cp2.ConversationKey = c.ConversationKey AND cp2.UserKey != @MemberKey AND cp2.UserType = 'Admin'),
-                            'Unknown'
-                        )
-                END AS DisplayName,
-                CASE 
-                    WHEN c.ConversationType = 'Group' THEN COALESCE(c.GroupAvatar, '/images/avatar/default-avatar.jpg')
-                    ELSE 
-                        COALESCE(
-                            (SELECT TOP 1 m.Avatar 
-                             FROM ConversationParticipants cp2 
-                             JOIN EDU_Member m ON cp2.UserKey = m.MemberKey 
-                             WHERE cp2.ConversationKey = c.ConversationKey AND cp2.UserKey != @MemberKey AND cp2.UserType = 'Member'),
-                            (SELECT TOP 1 e.PhotoPath 
-                             FROM ConversationParticipants cp2 
-                             JOIN SYS_Users u ON cp2.UserKey = u.UserKey 
-                             JOIN HRM_Employee e ON u.EmployeeKey = e.EmployeeKey 
-                             WHERE cp2.ConversationKey = c.ConversationKey AND cp2.UserKey != @MemberKey AND cp2.UserType = 'Admin'),
-                            '/images/avatar/default-avatar.jpg'
-                        )
-                END AS Avatar,
-                CASE 
-                    WHEN c.ConversationType = 'Group' THEN NULL
-                    ELSE 
-                        COALESCE(
-                            (SELECT TOP 1 cp2.UserType 
-                             FROM ConversationParticipants cp2 
-                             WHERE cp2.ConversationKey = c.ConversationKey AND cp2.UserKey != @MemberKey),
-                            NULL
-                        )
-                END AS PartnerUserType,
-                (SELECT TOP 1 cp2.UserKey 
-                 FROM ConversationParticipants cp2 
-                 WHERE cp2.ConversationKey = c.ConversationKey AND cp2.UserKey != @MemberKey) AS PartnerUserKey,
-                c.LastMessageKey,
-                c.LastMessageTime,
-                m.Content,
-                m.SenderKey,
-                c.Name,
-                cp.IsBanned
-            FROM ConversationParticipants cp
-            JOIN Conversations c ON cp.ConversationKey = c.ConversationKey
-            LEFT JOIN Messages m ON c.LastMessageKey = m.MessageKey
-            WHERE cp.UserKey = @MemberKey
-            AND cp.IsApproved = 1
-            AND c.IsActive = 1";
+        SELECT DISTINCT 
+            c.ConversationKey,
+            c.ConversationType,
+            cp.UnreadCount,
+            CASE 
+                WHEN c.IsAdminChannelForMemberKey IS NOT NULL THEN 'Administrator'
+                WHEN c.ConversationType = 'Group' THEN c.Name
+                ELSE (SELECT TOP 1 m.MemberName FROM ConversationParticipants cp2 JOIN EDU_Member m ON cp2.UserKey = m.MemberKey WHERE cp2.ConversationKey = c.ConversationKey AND cp2.UserKey != @MemberKey)
+            END AS DisplayName,
+            CASE 
+                WHEN c.IsAdminChannelForMemberKey IS NOT NULL THEN '/images/avatar/Administrator.png'
+                WHEN c.ConversationType = 'Group' THEN COALESCE(c.GroupAvatar, '/images/avatar/default-avatar.jpg')
+                ELSE (SELECT TOP 1 m.Avatar FROM ConversationParticipants cp2 JOIN EDU_Member m ON cp2.UserKey = m.MemberKey WHERE cp2.ConversationKey = c.ConversationKey AND cp2.UserKey != @MemberKey)
+            END AS Avatar,
+            -- Chỉ lấy PartnerUserKey/Type cho cuộc hội thoại private thông thường
+            CASE WHEN c.ConversationType = 'Private' AND c.IsAdminChannelForMemberKey IS NULL THEN (SELECT TOP 1 cp2.UserKey FROM ConversationParticipants cp2 WHERE cp2.ConversationKey = c.ConversationKey AND cp2.UserKey != @MemberKey) ELSE NULL END AS PartnerUserKey,
+            CASE WHEN c.ConversationType = 'Private' AND c.IsAdminChannelForMemberKey IS NULL THEN (SELECT TOP 1 cp2.UserType FROM ConversationParticipants cp2 WHERE cp2.ConversationKey = c.ConversationKey AND cp2.UserKey != @MemberKey) ELSE NULL END AS PartnerUserType,
+            c.LastMessageTime,
+            m.Content,
+            m.SenderKey,
+            cp.IsBanned,
+            CASE WHEN c.IsAdminChannelForMemberKey IS NOT NULL THEN 1 ELSE 0 END AS IsAdminChannel
+        FROM ConversationParticipants cp
+        JOIN Conversations c ON cp.ConversationKey = c.ConversationKey
+        LEFT JOIN Messages m ON c.LastMessageKey = m.MessageKey
+        WHERE cp.UserKey = @MemberKey AND cp.IsApproved = 1 AND c.IsActive = 1";
 
                 using (var command = new SqlCommand(query, connection))
                 {
                     command.Parameters.AddWithValue("@MemberKey", memberKey ?? currentMemberKey ?? (object)DBNull.Value);
-
                     using (var reader = await command.ExecuteReaderAsync())
                     {
                         while (await reader.ReadAsync())
                         {
-                            var partnerUserType = reader["PartnerUserType"]?.ToString();
-                            var avatarUrl = reader["Avatar"]?.ToString() ?? "/images/avatar/default-avatar.jpg";
-                            if (partnerUserType == "Admin" && !string.IsNullOrEmpty(avatarUrl))
+                            var lastMessage = "No messages";
+                            if (reader["Content"] != DBNull.Value)
                             {
-                                avatarUrl = $"https://localhost:7078/{avatarUrl}";
+                                var senderKeyStr = reader["SenderKey"]?.ToString();
+                                if (senderKeyStr == (memberKey ?? currentMemberKey))
+                                {
+                                    lastMessage = "You: " + reader["Content"].ToString();
+                                }
+                                else
+                                {
+                                    // Đối với kênh Admin, hiển thị nội dung gốc thay vì "Administrator: ..."
+                                    lastMessage = reader["Content"].ToString();
+                                }
                             }
-                            var lastMessage = reader["SenderKey"] != DBNull.Value && reader["Content"] != DBNull.Value
-                                ? (reader["SenderKey"].ToString() == currentMemberKey ? "Bạn: " : reader["DisplayName"] + ": ") + (Convert.ToInt32(reader["IsBanned"]) == 1 ? "Đã bị chặn" : reader["Content"].ToString())
-                                : "No messages";
+
                             var conversation = new Dictionary<string, object>
                     {
                         { "ConversationKey", reader["ConversationKey"] },
                         { "ConversationType", reader["ConversationType"] },
                         { "UnreadCount", reader["UnreadCount"] ?? 0 },
                         { "DisplayName", reader["DisplayName"] ?? "Unknown" },
-                        { "Avatar", avatarUrl },
-                        { "LastMessageKey", reader["LastMessageKey"] ?? (object)DBNull.Value },
+                        { "Avatar", reader["Avatar"]?.ToString() ?? "/images/avatar/default-avatar.jpg" },
                         { "LastMessageTime", reader["LastMessageTime"] ?? (object)DBNull.Value },
                         { "LastMessage", lastMessage },
-                        { "Name", reader["Name"] ?? (object)DBNull.Value },
-                        { "IsBanned", reader["IsBanned"] }
+                        { "IsBanned", reader["IsBanned"] },
+                        { "PartnerUserKey", reader["PartnerUserKey"] ?? (object)DBNull.Value },
+                        { "PartnerUserType", reader["PartnerUserType"] ?? (object)DBNull.Value },
+                        { "IsAdminChannel", Convert.ToBoolean(reader["IsAdminChannel"]) }
                     };
-
-                            // Thêm UserKey và UserType cho 1-1
-                            if (reader["ConversationType"].ToString() != "Group")
-                            {
-                                conversation.Add("PartnerUserKey", reader["PartnerUserKey"] ?? (object)DBNull.Value);
-                                conversation.Add("PartnerUserType", reader["PartnerUserType"] ?? (object)DBNull.Value);
-                            }
-
                             conversations.Add(conversation);
                             totalUnreadCount += Convert.ToInt32(reader["UnreadCount"] ?? 0);
                         }
@@ -133,8 +99,6 @@ namespace TNS_TOEICAdmin.Models
         { "totalUnreadCount", totalUnreadCount }
     };
         }
-
-        // TÌM VÀ THAY THẾ TOÀN BỘ HÀM NÀY TRONG FILE ChatAccessData.cs
 
         public static async Task<List<Dictionary<string, object>>> SearchContactsAsync(string query, string memberKey)
         {

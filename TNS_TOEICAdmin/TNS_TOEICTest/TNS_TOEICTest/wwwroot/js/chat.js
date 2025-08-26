@@ -187,6 +187,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     let selectedFile = null;
     let markAsReadTimer = null;
     let unreadMessageKeysInActiveChat = []; 
+    let currentConversationIsAdminChannel = false;
 
     try {
         const response = await fetch('/api/conversations/GetMemberKey', {
@@ -245,6 +246,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const pinnedSection = document.getElementById("pinnedSection");
     const pinnedPopup = document.getElementById("pinnedPopup");
     const pinnedContent = document.getElementById("pinnedContent");
+    const iconSetting = document.getElementById('iconSetting');
     if (chatInput && sendIcon) {
         chatInput.addEventListener('keydown', (event) => {
             // Nếu nhấn Enter và không giữ phím Shift
@@ -255,7 +257,23 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
     let blockPopup = null;
+    if (iconSetting) {
+        iconSetting.addEventListener("click", (event) => {
+            event.stopPropagation();
+            if (typeof window.showGroupDetails === 'function' && currentConversationKey) {
+                window.showGroupDetails(currentConversationKey);
+            }
+        });
+    }
 
+    if (chatInput && sendIcon) {
+        chatInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendIcon.click();
+            }
+        });
+    }
     // Polling unread count
     async function updateUnreadCountInitial() {
         try {
@@ -555,18 +573,19 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const li = document.createElement("li");
                 li.className = "p-2 border-bottom border-white border-opacity-25";
                 li.innerHTML = `
-                <a href="#" class="d-flex justify-content-between text-white conversation-item" 
-                   data-conversation-key="${conv.ConversationKey}" 
-                   data-user-key="${conv.ConversationType !== 'Group' ? (conv.PartnerUserKey || '') : ''}" 
-                   data-user-type="${conv.ConversationType !== 'Group' ? (conv.PartnerUserType || '') : ''}"
-                   data-conversation-type="${conv.ConversationType || ''}">
-                    <div class="d-flex">
-                        <img src="${conv.Avatar || '/images/avatar/default-avatar.jpg'}" alt="avatar" class="rounded-circle me-3" style="width: 48px; height: 48px;">
-                        <div><p class="fw-bold mb-0">${conv.DisplayName || "Unknown"}</p><p class="small mb-0">${conv.LastMessage || "No messages"}</p></div>
-                    </div>
-                    <div class="text-end"><p class="small mb-1">${conv.LastMessageTime ? formatTime(conv.LastMessageTime) : ""}</p>${conv.UnreadCount > 0 ? `<span class="badge bg-danger rounded-pill px-2">${conv.UnreadCount}</span>` : ''}</div>
-                </a>
-            `;
+            <a href="#" class="d-flex justify-content-between text-white conversation-item" 
+               data-conversation-key="${conv.ConversationKey}" 
+               data-user-key="${conv.ConversationType !== 'Group' ? (conv.PartnerUserKey || '') : ''}" 
+               data-user-type="${conv.ConversationType !== 'Group' ? (conv.PartnerUserType || '') : ''}"
+               data-conversation-type="${conv.ConversationType || ''}"
+               data-is-admin-channel="${conv.IsAdminChannel || false}">
+                <div class="d-flex">
+                    <img src="${conv.Avatar || '/images/avatar/default-avatar.jpg'}" alt="avatar" class="rounded-circle me-3" style="width: 48px; height: 48px;">
+                    <div><p class="fw-bold mb-0">${conv.DisplayName || "Unknown"}</p><p class="small mb-0">${conv.LastMessage || "No messages"}</p></div>
+                </div>
+                <div class="text-end"><p class="small mb-1">${conv.LastMessageTime ? formatTime(conv.LastMessageTime) : ""}</p>${conv.UnreadCount > 0 ? `<span class="badge bg-danger rounded-pill px-2">${conv.UnreadCount}</span>` : ''}</div>
+            </a>
+        `;
                 conversationList.appendChild(li);
             });
 
@@ -680,66 +699,57 @@ document.addEventListener("DOMContentLoaded", async () => {
         document.querySelectorAll(".conversation-item").forEach(item => {
             item.addEventListener("click", async (e) => {
                 e.preventDefault();
+
+                const isAdminChannel = item.getAttribute("data-is-admin-channel") === 'true';
+                currentConversationIsAdminChannel = isAdminChannel;
+
+                const inputContainer = document.querySelector('.input-container-sticky');
+                const callIcons = document.getElementById('iconCall')?.parentElement;
+                const blockIcon = document.getElementById('iconBlock');
+                const settingIcon = document.getElementById('iconSetting');
+
+                if (isAdminChannel) {
+                    if (inputContainer) inputContainer.style.display = 'none';
+                    if (callIcons) callIcons.style.display = 'none';
+                    if (blockIcon) blockIcon.style.display = 'none';
+                    if (settingIcon) settingIcon.style.display = 'none';
+                } else {
+                    if (inputContainer) inputContainer.style.display = 'block';
+                    if (callIcons) callIcons.style.display = 'flex';
+                    const convType = item.getAttribute("data-conversation-type");
+                    if (blockIcon) blockIcon.style.display = (convType === "Private") ? 'inline-flex' : 'none';
+                    if (settingIcon) settingIcon.style.display = (convType === "Group") ? 'inline-flex' : 'none';
+                }
+
                 const conversationKey = item.getAttribute("data-conversation-key");
-                const userKey = item.getAttribute("data-user-key") || null; // Key của đối phương
+                const userKey = item.getAttribute("data-user-key") || null;
                 const userType = item.getAttribute("data-user-type") || null;
                 const conversationType = item.getAttribute("data-conversation-type") || null;
 
-                // Đánh dấu đã đọc
                 const badge = item.querySelector(".badge");
                 if (badge) {
-                    const unreadCountVal = parseInt(badge.textContent, 10);
-                    if (unreadCountVal > 0) {
-                        badge.remove();
-                        try {
-                            const totalBadge = document.getElementById("unreadCount");
-                            let currentTotal = parseInt(totalBadge.textContent, 10) || 0;
-                            currentTotal -= unreadCountVal;
-                            updateUnreadCount(Math.max(0, currentTotal));
-                        } catch (err) { }
-                        fetch(`/api/conversations/markAsRead/${conversationKey}`, { method: 'POST', credentials: 'include' });
-                    }
+                    badge.remove();
+                    fetch(`/api/conversations/markAsRead/${conversationKey}`, { method: 'POST', credentials: 'include' });
                 }
 
-                // --- BẮT ĐẦU SỬA LỖI: ĐẢM BẢO currentConversationDetails CÓ PARTICIPANTS ---
-                if (!window.allConversations) {
-                    console.error("CRITICAL: Conversation list (window.allConversations) is not available!");
-                    showNotification("Error: Conversation list not loaded.", "error");
-                    return;
-                }
                 const conversationDetails = window.allConversations.find(c => String(c.ConversationKey) === String(conversationKey));
+                if (!conversationDetails) return;
 
-                if (!conversationDetails) {
-                    console.error(`Could not find details for conversationKey: ${conversationKey}`);
-                    return;
+                // Sửa lỗi "DATA NOT READY": Luôn đảm bảo có mảng Participants cho các cuộc hội thoại 1-1
+                if (conversationDetails.ConversationType === 'Private' && userKey) {
+                    conversationDetails.Participants = [{ UserKey: memberKey }, { UserKey: userKey }];
                 }
+                window.currentConversationDetails = { ...conversationDetails };
 
-                window.currentConversationDetails = { ...conversationDetails }; // Tạo bản sao
-
-                // Nếu đây là cuộc hội thoại 1-1, hãy tự xây dựng mảng Participants.
-                // Đây là chìa khóa để sửa lỗi "Conversation data not ready".
-                if (conversationType === "Private" && userKey) {
-                    window.currentConversationDetails.Participants = [
-                        { UserKey: memberKey }, // Người dùng hiện tại
-                        { UserKey: userKey }    // Đối tác trò chuyện
-                    ];
-                    console.log("[BlockFix] Manually constructed Participants for private chat.");
-                }
-                // --- KẾT THÚC SỬA LỖI ---
-
-                // Gán các biến toàn cục khác
                 currentConversationKey = conversationKey;
                 currentUserKey = userKey;
                 currentUserType = userType;
                 currentConversationType = conversationType;
 
-                // Cập nhật header
-                const conv = item.closest("li").querySelector(".conversation-item");
-                headerAvatar.src = conv.querySelector("img").src;
-                headerName.textContent = conv.querySelector("p.fw-bold").textContent;
+                headerAvatar.src = item.querySelector("img").src;
+                headerName.textContent = item.querySelector("p.fw-bold").textContent;
                 chatHeaderInfo.style.display = "flex";
 
-                // Cập nhật giao diện
                 document.querySelectorAll(".conversation-item").forEach(i => i.parentElement.classList.remove("active"));
                 item.parentElement.classList.add("active");
 
@@ -749,23 +759,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                 updatePinnedSection();
                 loadMessages(currentConversationKey, false, skip);
-                updateIconsVisibility();
-                chatInput.focus();
 
-                // Lấy trạng thái ban ban đầu (giữ nguyên)
-                if (currentConversationType === "Private" && currentUserKey) {
-                    try {
-                        const response = await fetch(`/api/conversations/GetBanStatus?conversationKey=${conversationKey}&targetUserKey=${currentUserKey}`);
-                        if (response.ok) {
-                            const data = await response.json();
-                            if (data.success && window.currentConversationDetails) {
-                                window.currentConversationDetails.IsBanned = data.isBanned;
-                                applyBlockUI(data.isBanned);
-                            }
-                        }
-                    } catch (err) {
-                        console.error("[GetBanStatus] Error fetching ban status:", err);
-                    }
+                if (!isAdminChannel && currentConversationType === "Private" && currentUserKey) {
+                    attachIconListeners();
                 }
             });
         });
@@ -1250,7 +1246,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (sendIcon) {
         sendIcon.addEventListener("click", async () => {
             const content = chatInput.value.trim();
-            if (!content && !selectedFile) return;
+            if (!content) {
+                showNotification("Please enter message content.", "error");
+                return; // Dừng lại nếu không có nội dung text
+            }
 
             // Lấy các biến trạng thái hiện tại
             let convKey = currentConversationKey;
@@ -1429,7 +1428,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (messageList) {
         messageList.addEventListener('click', (e) => {
-            // --- Logic xử lý menu options (pin, recall, reply) ---
             const optionsButton = e.target.closest('.message-options');
             if (optionsButton) {
                 const messageElement = optionsButton.closest('.message');
@@ -1439,7 +1437,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const message = allMessages.find(m => m.MessageKey === messageKey);
                 if (!message) return;
 
-                // Xóa menu cũ nếu có
                 const existingMenu = document.getElementById("messageOptionsMenu");
                 if (existingMenu) existingMenu.remove();
 
@@ -1449,14 +1446,24 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const menu = document.createElement("div");
                 menu.id = "messageOptionsMenu";
                 menu.className = "message-options-menu";
-                // Tạo menu với các tùy chọn
-                menu.innerHTML = `
-                <div class="menu-item" data-action="reply">💬 Reply</div>
-                <div class="menu-item" data-action="${isPinned ? 'unpin' : 'pin'}">${isPinned ? '📌 Unpin' : '📌 Pin'}</div>
-                ${isMyMessage ? `<div class="menu-item" data-action="recall">↩️ Recall</div>` : ""}
-            `;
 
-                // Code hiển thị menu
+                let menuItems = '';
+
+                // KIỂM TRA BIẾN TOÀN CỤC ĐỂ QUYẾT ĐỊNH HIỂN THỊ MENU
+                if (currentConversationIsAdminChannel) {
+                    // Chỉ hiển thị 'Pin' cho kênh Admin
+                    menuItems = `<div class="menu-item" data-action="${isPinned ? 'unpin' : 'pin'}">${isPinned ? '📌 Unpin' : '📌 Pin'}</div>`;
+                } else {
+                    // Hiển thị menu đầy đủ cho các kênh bình thường
+                    menuItems = `
+                    <div class="menu-item" data-action="reply">💬 Reply</div>
+                    <div class="menu-item" data-action="${isPinned ? 'unpin' : 'pin'}">${isPinned ? '📌 Unpin' : '📌 Pin'}</div>
+                    ${isMyMessage ? `<div class="menu-item" data-action="recall">↩️ Recall</div>` : ""}
+                `;
+                }
+
+                menu.innerHTML = menuItems;
+
                 const modalContent = document.querySelector('#chatModal .modal-content');
                 if (!modalContent) return;
                 modalContent.appendChild(menu);
@@ -1466,12 +1473,11 @@ document.addEventListener("DOMContentLoaded", async () => {
                 let left = iconRect.left - modalRect.left;
                 Object.assign(menu.style, { position: "absolute", top: `${top}px`, left: `${left}px` });
 
-                // Gắn sự kiện cho các item trong menu
                 menu.querySelectorAll(".menu-item").forEach(item => {
                     item.addEventListener("click", (evt) => {
                         evt.stopPropagation();
                         const action = item.dataset.action;
-                        menu.remove(); // Đóng menu sau khi chọn
+                        menu.remove();
 
                         if (action === "pin") pinMessage(messageKey);
                         if (action === "unpin") unpinMessage(messageKey);
@@ -1484,7 +1490,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                     });
                 });
 
-                // Logic ẩn menu khi click ra ngoài
                 const hideMenu = (evt) => {
                     if (!menu.contains(evt.target) && !optionsButton.contains(evt.target)) {
                         menu.remove();
@@ -1494,7 +1499,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 setTimeout(() => document.addEventListener("click", hideMenu), 0);
             }
 
-            // --- Logic xử lý click vào tin nhắn cha để scroll ---
             const parentEl = e.target.closest(".parent-message");
             if (parentEl) {
                 const parentKey = parentEl.getAttribute("data-parent-key");
