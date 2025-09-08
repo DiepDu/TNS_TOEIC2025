@@ -70,6 +70,7 @@
     </div>
 
     @await Html.PartialAsync("_MessPopup")
+    @await Html.PartialAsync("_ChatbotAIPopup")
 
     <script src="/lib/jquery/jquery.min.js"></script>
     <script src="/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
@@ -79,6 +80,7 @@
     </script>
     <script src="/js/chat.js"></script>
     <script src="/js/groupPopup.js"></script>
+    <script src="~/js/chatbot_ai.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
 
 

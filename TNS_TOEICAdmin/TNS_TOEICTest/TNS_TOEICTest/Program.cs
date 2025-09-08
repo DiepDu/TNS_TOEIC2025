@@ -40,6 +40,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     .AddCookie();
 
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddMemoryCache();
 builder.Services.AddSignalR(options =>
 {
     options.ClientTimeoutInterval = TimeSpan.FromMinutes(60);

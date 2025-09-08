@@ -4,9 +4,11 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>1d37de1d-ff0c-49f2-bdc9-56691d05c81d</UserSecretsId>
   </PropertyGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Google.Cloud.AIPlatform.V1" Version="3.45.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 	</ItemGroup>
 

@@ -260,7 +260,7 @@ namespace TNS_TOEICAdmin.Models
                         // BƯỚC 2: Insert tin nhắn vào bảng Messages.
                         var messageKey = Guid.NewGuid();
                         var createdOn = DateTime.Now;
-                        var finalContent = $"Feedback from administrator: {replyContent}";
+                        var finalContent = $" From the administrator: {replyContent}";
 
                         var insertMsgQuery = @"
                             INSERT INTO Messages 

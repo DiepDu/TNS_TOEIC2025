@@ -11,8 +11,7 @@ namespace TNS_TOEICTest.Hubs
 {
     public class ChatHub : Hub
     {
-        // HOÀN TOÀN LOẠI BỎ DÒNG SAU:
-        // private static readonly ConcurrentDictionary<string, string> _connectionMapping = new ConcurrentDictionary<string, string>();
+     
 
         private readonly IUserConnectionManager _userConnectionManager;
 

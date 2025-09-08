@@ -1,0 +1,349 @@
+﻿<!-- =================================================================
+     HTML & CSS CHO CHATBOT AI - ĐẶT TRONG MỘT FILE PARTIAL VIEW RIÊNG
+     ================================================================= -->
+
+<!-- Nút bấm để mở Chatbot AI -->
+<button id="ai-chatbot-toggler" class="ai-chat-bubble">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path><path d="M5 3v4"></path><path d="M19 17v4"></path><path d="M3 5h4"></path><path d="M17 19h4"></path></svg>
+</button>
+
+<!-- Khung Popup của Chatbot -->
+<div class="ai-chatbot-popup">
+    <!-- Sidebar Lịch sử Chat - Mặc định ẩn -->
+    <div class="ai-history-sidebar">
+        <button id="ai-new-chat-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"></line><line x1="5" x2="19" y1="12" y2="12"></line></svg>
+            <span>New Conversation</span>
+        </button>
+        <div class="ai-conversations-list">
+            <!-- Danh sách các cuộc hội thoại sẽ được load vào đây -->
+            <div class="ai-history-loader"></div>
+        </div>
+    </div>
+
+    <!-- Khung Chat Chính -->
+    <div class="ai-chat-main">
+        <div class="ai-chat-header">
+            <button id="ai-history-toggler" class="ai-header-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" x2="21" y1="12" y2="12"></line><line x1="3" x2="21" y1="6" y2="6"></line><line x1="3" x2="21" y1="18" y2="18"></line></svg>
+            </button>
+            <h2>Mr.TOEIC</h2>
+            <button id="ai-close-chatbot" class="ai-header-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" x2="6" y1="6" y2="18"></line><line x1="6" x2="18" y1="6" y2="18"></line></svg>
+            </button>
+        </div>
+
+        <div class="ai-chat-body">
+            <!-- Tin nhắn sẽ được load vào đây -->
+        </div>
+
+        <div class="ai-chat-footer">
+            <form id="ai-chat-form" class="ai-chat-form">
+                <textarea id="ai-message-input" placeholder="Ask Mr.TOEIC anything..." required></textarea>
+                <div class="ai-chat-controls">
+                    <input type="file" id="ai-file-input" hidden>
+                    <button type="button" id="ai-file-upload-btn" title="Attach file">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+                    </button>
+                    <button type="button" id="ai-screen-analysis-btn" class="toggle-btn" title="Toggle screen content analysis">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    </button>
+                    <button type="submit" id="ai-send-message-btn" title="Send message">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" x2="11" y1="2" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- ======================= CSS CHO CHATBOT AI ======================= -->
+<style>
+    :root {
+        --ai-primary-color: #007bff;
+        --ai-bg-color: #ffffff;
+        --ai-header-bg: #f8f9fa;
+        --ai-sidebar-bg: #f1f3f5;
+        --ai-user-msg-bg: #007bff;
+        --ai-bot-msg-bg: #e9ecef;
+        --ai-text-color: #212529;
+        --ai-light-text: #6c757d;
+        --ai-border-color: #dee2e6;
+    }
+
+    /* Nút bấm mở chat */
+    .ai-chat-bubble {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        background: var(--ai-primary-color);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        z-index: 999;
+        cursor: pointer;
+        border: none;
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+    .ai-chat-bubble:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+    }
+    .ai-chat-bubble svg {
+        transition: opacity 0.2s, transform 0.2s;
+    }
+   
+    /* Khung Chat Popup */
+    .ai-chatbot-popup {
+        position: fixed;
+        bottom: 100px;
+        right: 20px;
+        width: 420px;
+        max-width: 90vw;
+        height: 70vh;
+        max-height: 600px;
+        background: var(--ai-bg-color);
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        z-index: 1000;
+        transform: scale(0.5);
+        opacity: 0;
+        pointer-events: none;
+        transform-origin: bottom right;
+        transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+    }
+
+    body.show-ai-chatbot .ai-chatbot-popup {
+        transform: scale(1);
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    /* Sidebar Lịch sử Chat */
+    .ai-history-sidebar {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 80%;
+        height: 100%;
+        background: var(--ai-sidebar-bg);
+        z-index: 1100;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease-in-out;
+        display: flex;
+        flex-direction: column;
+    }
+    .ai-chatbot-popup.show-history .ai-history-sidebar {
+        transform: translateX(0);
+    }
+    #ai-new-chat-btn {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: calc(100% - 20px);
+        margin: 10px;
+        padding: 12px;
+        border: 1px solid var(--ai-border-color);
+        background: var(--ai-bg-color);
+        color: var(--ai-text-color);
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1rem;
+        transition: background-color 0.2s;
+    }
+    #ai-new-chat-btn:hover {
+        background-color: #f8f9fa;
+    }
+    .ai-conversations-list {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding: 0 10px 10px 10px;
+    }
+    .ai-conversation-item {
+        padding: 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        margin-bottom: 5px;
+        transition: background-color 0.2s;
+    }
+    .ai-conversation-item:hover, .ai-conversation-item.active {
+        background-color: #dee2e6;
+    }
+    .ai-conversation-item .title {
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .ai-conversation-item .last-message {
+        font-size: 0.85rem;
+        color: var(--ai-light-text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-top: 4px;
+    }
+
+    /* Khung Chat chính */
+    .ai-chat-main {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.3s ease-in-out;
+    }
+    .ai-chatbot-popup.show-history .ai-chat-main {
+        transform: translateX(80%);
+    }
+
+    /* Header */
+    .ai-chat-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 15px;
+        background: var(--ai-header-bg);
+        border-bottom: 1px solid var(--ai-border-color);
+    }
+    .ai-chat-header h2 {
+        margin: 0;
+        font-size: 1.2rem;
+        color: var(--ai-text-color);
+    }
+    .ai-header-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--ai-light-text);
+        padding: 5px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+     .ai-header-btn:hover {
+        background-color: #dee2e6;
+     }
+
+    /* Body (khung tin nhắn) */
+    .ai-chat-body {
+        flex-grow: 1;
+        padding: 15px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .ai-message {
+        display: flex;
+        align-items: flex-end;
+        gap: 10px;
+        max-width: 85%;
+    }
+    .ai-message-text {
+        padding: 10px 15px;
+        border-radius: 18px;
+        word-wrap: break-word;
+    }
+    .user-message {
+        align-self: flex-end;
+    }
+    .user-message .ai-message-text {
+        background: var(--ai-user-msg-bg);
+        color: white;
+        border-bottom-right-radius: 4px;
+    }
+    .bot-message {
+        align-self: flex-start;
+    }
+    .bot-message .ai-message-text {
+        background: var(--ai-bot-msg-bg);
+        color: var(--ai-text-color);
+        border-bottom-left-radius: 4px;
+    }
+    .thinking-indicator {
+        display: flex; gap: 5px; padding: 10px 0;
+    }
+    .thinking-indicator .dot {
+        width: 8px; height: 8px; background: #999; border-radius: 50%;
+        animation: bounce 1.4s infinite ease-in-out both;
+    }
+    .thinking-indicator .dot:nth-child(1) { animation-delay: -0.32s; }
+    .thinking-indicator .dot:nth-child(2) { animation-delay: -0.16s; }
+    @@keyframes bounce {
+      0%, 80%, 100% { transform: scale(0); }
+      40% { transform: scale(1.0); }
+    }
+
+    /* Footer (khung nhập liệu) */
+    .ai-chat-footer {
+        padding: 10px 15px;
+        border-top: 1px solid var(--ai-border-color);
+    }
+    .ai-chat-form {
+        display: flex;
+        align-items: flex-end;
+        gap: 10px;
+    }
+    #ai-message-input {
+        flex-grow: 1;
+        border: 1px solid var(--ai-border-color);
+        border-radius: 20px;
+        padding: 10px 15px;
+        resize: none;
+        max-height: 100px;
+        font-size: 1rem;
+        outline: none;
+    }
+    .ai-chat-controls {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .ai-chat-controls button {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: none;
+        background: none;
+        color: var(--ai-light-text);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.2s;
+    }
+    .ai-chat-controls button:hover {
+        background-color: #f1f3f5;
+    }
+    .ai-chat-controls .toggle-btn.active {
+        background-color: var(--ai-primary-color);
+        color: white;
+    }
+
+    /* Loader */
+    .ai-history-loader {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid var(--ai-primary-color);
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        margin: 20px auto;
+    }
+    @@keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+</style>

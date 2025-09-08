@@ -1,0 +1,45 @@
+{
+  "version": "1.0",
+  "defaultProvider": "jsdelivr",
+  "libraries": [
+    {
+      "library": "sweetalert2@11.22.5",
+      "destination": "wwwroot/lib/sweetalert2/",
+      "files": [
+        "dist/sweetalert2.min.css",
+        "dist/sweetalert2.min.js"
+      ]
+    },
+    {
+      "library": "emoji-mart@5.6.0",
+      "destination": "wwwroot/lib/emoji-mart/",
+      "files": [
+        "dist/browser.js"
+      ]
+    },
+    {
+      "library": "simplebar@5.3.9",
+      "destination": "wwwroot/lib/simplebar/",
+      "files": [
+        "dist/simplebar.min.css",
+        "dist/simplebar.min.js"
+      ]
+    },
+    {
+      "library": "node-waves@0.7.6",
+      "destination": "wwwroot/lib/node-waves/",
+      "files": [
+        "dist/waves.min.css",
+        "dist/waves.min.js"
+      ]
+    },
+    {
+      "library": "chart.js@4.4.3",
+      "destination": "wwwroot/lib/chart.js/",
+      "files": [
+        "dist/chart.js",
+        "dist/chart.umd.min.js"
+      ]
+    }
+  ]
+}
