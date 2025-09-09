@@ -169,15 +169,18 @@ namespace TNS_TOEICTest.Controllers
                 }
 
                 // === BƯỚC 3: LƯU TIN NHẮN MỚI VÀ XÂY DỰNG PROMPT ===
+                string recentFeedbacks = await ChatWithAIAccessData.LoadRecentFeedbacksAsync(memberId);
+
                 await ChatWithAIAccessData.SaveMessageAsync(data.ConversationId, "user", data.Message);
                 var chatHistoryForPrompt = await ChatWithAIAccessData.GetMessageHistoryForApiAsync(data.ConversationId);
 
                 string finalPrompt = _promptService.BuildPromptForMember(
-                    backgroundData,
-                    chatHistoryForPrompt,
-                    data.Message,
-                    data.ScreenData
-                );
+             backgroundData,
+             recentFeedbacks, // Dữ liệu mới
+             chatHistoryForPrompt,
+             data.Message,
+             data.ScreenData
+         );
 
                 // === BƯỚC 4: GỌI API VỚI ĐÚNG MODEL BẠN YÊU CẦU ===
                 string botMessage;

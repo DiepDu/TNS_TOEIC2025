@@ -4,65 +4,85 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-// Namespace có thể là TNS_TOEICTest.Services hoặc tương tự
 namespace TNS_TOEICTest.Services
 {
     public class PromptEngineeringService
     {
-        /// <summary>
-        /// Xây dựng một prompt hoàn chỉnh cho Member dựa trên tất cả ngữ cảnh.
-        /// </summary>
-        /// <param name="backgroundData">Dữ liệu nền đã được xử lý từ LoadMemberOriginalDataAsync.</param>
-        /// <param name="chatHistory">Lịch sử tin nhắn gần nhất.</param>
-        /// <param name="currentUserMessage">Tin nhắn mới nhất của người dùng.</param>
-        /// <param name="screenData">Dữ liệu màn hình (nếu có, có thể là null).</param>
-        /// <returns>Một chuỗi prompt hoàn chỉnh, thân thiện với AI.</returns>
         public string BuildPromptForMember(
             string backgroundData,
+             string recentFeedbacks,
             IEnumerable<Content> chatHistory,
             string currentUserMessage,
             string? screenData = null)
         {
             var promptBuilder = new StringBuilder();
 
-            // === 1. CHỈ THỊ VAI TRÒ (SYSTEM PROMPT) ===
-            promptBuilder.AppendLine("--- SYSTEM INSTRUCTION ---");
-            promptBuilder.AppendLine("You are a professional, friendly, and patient TOEIC tutor AI. Your main goal is to help the student improve their score. Analyze all the provided data to give personalized advice. You must always respond in Vietnamese.");
-            promptBuilder.AppendLine($"Current date is: {DateTime.Now:yyyy-MM-dd HH:mm}.");
+            // === 1. SỬ DỤNG THẺ CẤU TRÚC CHO CÁC CHỈ THỊ CỐT LÕI ===
+            promptBuilder.AppendLine("<core_instructions>");
+            promptBuilder.AppendLine("You are \"Mr. TOEIC\", an AI assistant and professional TOEIC tutor, deeply integrated into our test preparation website system. You are not a regular chatbot; you are an intelligent companion who is always understanding and dedicated to each student.");
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine("**INTERACTION CONTEXT:**");
+            promptBuilder.AppendLine("- Your Position: You are chatting with a student via a chat window directly on the practice website. The student might be reviewing their results or reading study materials.");
+            promptBuilder.AppendLine("- Your Data Access: You have access to the student's academic profile, recent score data, recent errors, and their latest feedback/questions about specific test items.");
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine("**YOUR PRIMARY MISSIONS:**");
+            promptBuilder.AppendLine("1. Personalized Tutoring: Your most important mission is to use the provided data—including student information, the screen the student is currently viewing (if available), and chat history (the last 10 exchanges)—as a foundation for reasoning, thinking, and providing the most logical answer to the student's current question. Answer what they ask based on the data you have; do not provide redundant or rambling information unless they ask for it.");
+            promptBuilder.AppendLine("2. In-depth Q&A: Answer all student questions related to the TOEIC test, vocabulary, grammar, and test-taking strategies. Always try to connect your answers to their own academic data to be more persuasive.");
+            promptBuilder.AppendLine("3. Attitude: Maintain a friendly, patient, and positive attitude. Be an inspiring teacher who helps students not get discouraged on their TOEIC journey. However, you must also be strict and stern enough to seriously remind the student when needed. Occasionally, you can be playful, friendly, and joke.");
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine("**MANDATORY RULES:**");
+            promptBuilder.AppendLine("- Language: Whatever language the student uses for their question, you must respond in that same language.");
+            promptBuilder.AppendLine("- Concise and Focused: Get straight to the point. Avoid long, generic answers that provide no value.");
+            promptBuilder.AppendLine("- Data-Driven: When making comments about a student's abilities, always base them on the provided \"Academic Report\". Do not speculate.");
+            promptBuilder.AppendLine("</core_instructions>");
             promptBuilder.AppendLine();
 
-            // === 2. DỮ LIỆU NỀN CỦA HỌC VIÊN ===
-            promptBuilder.AppendLine("--- STUDENT'S BACKGROUND REPORT ---");
+            // === 2. SỬ DỤNG THẺ CẤU TRÚC CHO DỮ LIỆU HỌC VIÊN ===
+            promptBuilder.AppendLine("<academic_report>");
             promptBuilder.AppendLine(backgroundData);
+            promptBuilder.AppendLine("</academic_report>");
             promptBuilder.AppendLine();
 
-            // === 3. LỊCH SỬ HỘI THOẠI GẦN ĐÂY ===
-            promptBuilder.AppendLine("--- RECENT CONVERSATION HISTORY ---");
-            foreach (var message in chatHistory)
+            if (!string.IsNullOrEmpty(recentFeedbacks))
             {
-                // Đảm bảo message.Parts không rỗng
-                var textPart = message.Parts?.FirstOrDefault()?.Text ?? "";
-                promptBuilder.AppendLine($"{message.Role}: {textPart}");
-            }
-            promptBuilder.AppendLine();
-
-            // === 4. DỮ LIỆU MÀN HÌNH (NẾU CÓ) ===
-            if (!string.IsNullOrEmpty(screenData))
-            {
-                promptBuilder.AppendLine("--- CURRENT SCREEN CONTEXT ---");
-                promptBuilder.AppendLine("The user is looking at a screen with the following information. Use this context to answer the question accurately.");
-                promptBuilder.AppendLine(screenData);
+                promptBuilder.AppendLine("<student_recent_feedbacks>");
+                promptBuilder.AppendLine("Below are the student's most recent questions or complaints about specific test items. Use this to understand their pain points.");
+                promptBuilder.AppendLine(recentFeedbacks);
+                promptBuilder.AppendLine("</student_recent_feedbacks>");
                 promptBuilder.AppendLine();
             }
 
-            // === 5. CÂU HỎI MỚI NHẤT CỦA NGƯỜI DÙNG ===
-            promptBuilder.AppendLine("--- USER'S NEW QUESTION ---");
+            // === 3. SỬ DỤNG THẺ CẤU TRÚC CHO LỊCH SỬ CHAT ===
+            promptBuilder.AppendLine("<conversation_history>");
+            foreach (var message in chatHistory)
+            {
+                var textPart = message.Parts?.FirstOrDefault()?.Text ?? "";
+                // Để rõ ràng hơn, chúng ta có thể dùng thẻ cho từng vai trò
+                promptBuilder.AppendLine($"<{message.Role.ToLower()}>{textPart}</{message.Role.ToLower()}>");
+            }
+            promptBuilder.AppendLine("</conversation_history>");
+            promptBuilder.AppendLine();
+
+            // === 4. SỬ DỤNG THẺ CẤU TRÚC CHO DỮ LIỆU MÀN HÌNH ===
+            if (!string.IsNullOrEmpty(screenData))
+            {
+                promptBuilder.AppendLine("<screen_context>");
+                promptBuilder.AppendLine("The user is looking at a screen with the following information. Use this context to answer the question accurately.");
+                promptBuilder.AppendLine(screenData);
+                promptBuilder.AppendLine("</screen_context>");
+                promptBuilder.AppendLine();
+            }
+
+            // === 5. CÂU HỎI MỚI VÀ MỆNH LỆNH CUỐI CÙNG ===
+            promptBuilder.AppendLine("<user_new_question>");
             promptBuilder.AppendLine(currentUserMessage);
+            promptBuilder.AppendLine("</user_new_question>");
+            promptBuilder.AppendLine();
+
+            // Mệnh lệnh cuối cùng để tái tập trung AI vào đúng nhiệm vụ
+            promptBuilder.AppendLine("Based on all the provided instructions and data, analyze the user's new question and provide a concise, personalized, and helpful response now.");
 
             return promptBuilder.ToString();
         }
-
-        // Trong tương lai, bạn có thể thêm hàm cho Admin ở đây
-        // public string BuildPromptForAdmin(...) { ... }
     }
 }

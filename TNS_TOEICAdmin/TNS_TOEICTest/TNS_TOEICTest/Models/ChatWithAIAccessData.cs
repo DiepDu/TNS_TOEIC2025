@@ -251,7 +251,8 @@ namespace TNS_TOEICTest.Models
             {
                 await connection.OpenAsync();
 
-                // === PHẦN 1: LẤY HỒ SƠ CÁ NHÂN TỪ EDU_Member ===
+                // === PHẦN 1: LẤY HỒ SƠ CÁ NHÂN (Giữ nguyên) ===
+                // ... (Code không đổi)
                 var memberQuery = "SELECT MemberName, Gender, YearOld, ToeicScoreStudy, ToeicScoreExam FROM EDU_Member WHERE MemberKey = @MemberKey;";
                 using (var command = new SqlCommand(memberQuery, connection))
                 {
@@ -270,31 +271,45 @@ namespace TNS_TOEICTest.Models
                     }
                 }
 
-                // === PHẦN 2: LẤY 5 KẾT QUẢ THI GẦN NHẤT VÀ TÍNH TOÁN TÓM TẮT ===
-                var resultsQuery = "SELECT TOP 5 TestScore FROM ResultOfUserForTest WHERE MemberKey = @MemberKey AND TestScore IS NOT NULL ORDER BY StartTime DESC;";
-                var recentScores = new List<int>();
-                using (var command = new SqlCommand(resultsQuery, connection))
+
+                // === PHẦN 2: TÓM TẮT HIỆU SUẤT TOÀN DIỆN (Giữ nguyên) ===
+                // ... (Code không đổi)
+                var allResultsQuery = "SELECT TestScore FROM ResultOfUserForTest WHERE MemberKey = @MemberKey AND TestScore IS NOT NULL ORDER BY StartTime ASC;"; // Lấy toàn bộ, sắp xếp từ cũ đến mới
+                var allScores = new List<int>();
+                using (var command = new SqlCommand(allResultsQuery, connection))
                 {
                     command.Parameters.AddWithValue("@MemberKey", memberKey);
                     using (var reader = await command.ExecuteReaderAsync())
                     {
                         while (await reader.ReadAsync())
                         {
-                            recentScores.Add(Convert.ToInt32(reader["TestScore"]));
+                            allScores.Add(Convert.ToInt32(reader["TestScore"]));
                         }
                     }
                 }
 
-                contextBuilder.AppendLine("--- Performance Summary ---");
-                if (recentScores.Any())
+                contextBuilder.AppendLine("--- Comprehensive Performance Summary ---");
+                if (allScores.Count > 0)
                 {
-                    contextBuilder.AppendLine($"Highest Score: {recentScores.Max()}");
-                    contextBuilder.AppendLine($"Average Score (last {recentScores.Count} tests): {recentScores.Average():F0}");
-                    if (recentScores.Count > 1)
+                    contextBuilder.AppendLine($"Highest Score: {allScores.Max()}");
+                    contextBuilder.AppendLine($"Lowest Score: {allScores.Min()}");
+                    contextBuilder.AppendLine($"Average Score (all {allScores.Count} tests): {allScores.Average():F0}");
+
+                    if (allScores.Count >= 3)
                     {
-                        // So sánh điểm đầu tiên (mới nhất) và điểm cuối cùng (cũ nhất) trong 5 bài
-                        var trend = recentScores.First() > recentScores.Last() ? "Upward" : (recentScores.First() < recentScores.Last() ? "Downward" : "Stable");
-                        contextBuilder.AppendLine($"Score Trend: {trend}");
+                        var firstThreeAvg = allScores.Take(3).Average();
+                        var lastThreeAvg = allScores.Skip(allScores.Count - 3).Average();
+                        string trend = lastThreeAvg > firstThreeAvg + 10 ? "Clearly Upward" : (lastThreeAvg < firstThreeAvg - 10 ? "Clearly Downward" : "Stable");
+                        contextBuilder.AppendLine($"Long-term Trend: {trend}");
+
+                        double avg = allScores.Average();
+                        double sumOfSquares = allScores.Sum(score => Math.Pow(score - avg, 2));
+                        double stdDev = Math.Sqrt(sumOfSquares / allScores.Count);
+                        string stability = stdDev < 50 ? "Very Stable" : (stdDev < 100 ? "Relatively Stable" : "Unstable");
+                        contextBuilder.AppendLine($"Performance Stability: {stability} (Std. Deviation: {stdDev:F1})");
+
+                        string recentStatus = lastThreeAvg > avg ? "Improving" : "Below Average";
+                        contextBuilder.AppendLine($"Recent Performance Status: {recentStatus}");
                     }
                 }
                 else
@@ -303,13 +318,15 @@ namespace TNS_TOEICTest.Models
                 }
                 contextBuilder.AppendLine();
 
-                // === PHẦN 3: PHÂN TÍCH HÀNH VI LÀM BÀI ===
+
+                // === PHẦN 3: PHÂN TÍCH HÀNH VI LÀM BÀI (ĐÃ SỬA LẠI) ===
+                contextBuilder.AppendLine("--- Test-taking Behavior Analysis ---");
                 var behaviorQuery = @"
-                    SELECT 
-                        AVG(CAST(ua.TimeSpent AS FLOAT)) AS AvgTime, 
-                        AVG(CAST(ua.NumberOfAnswerChanges AS FLOAT)) AS AvgChanges
-                    FROM UserAnswers ua
-                    WHERE ua.ResultKey IN (SELECT TOP 5 ResultKey FROM ResultOfUserForTest WHERE MemberKey = @MemberKey ORDER BY StartTime DESC);";
+            SELECT 
+                AVG(CAST(ua.TimeSpent AS FLOAT)) AS AvgTime, 
+                AVG(CAST(ua.NumberOfAnswerChanges AS FLOAT)) AS AvgChanges
+            FROM UserAnswers ua
+            WHERE ua.ResultKey IN (SELECT TOP 10 ResultKey FROM ResultOfUserForTest WHERE MemberKey = @MemberKey ORDER BY StartTime DESC);";
                 using (var command = new SqlCommand(behaviorQuery, connection))
                 {
                     command.Parameters.AddWithValue("@MemberKey", memberKey);
@@ -317,15 +334,50 @@ namespace TNS_TOEICTest.Models
                     {
                         if (await reader.ReadAsync() && reader["AvgTime"] != DBNull.Value)
                         {
-                            contextBuilder.AppendLine("--- Test-taking Behavior ---");
-                            contextBuilder.AppendLine($"Average time per question: {Convert.ToDouble(reader["AvgTime"]):F1} seconds");
-                            contextBuilder.AppendLine($"Average answer changes per question: {Convert.ToDouble(reader["AvgChanges"]):F2}");
-                            contextBuilder.AppendLine();
+                            contextBuilder.AppendLine($"- Average time per question (last 10 tests): {Convert.ToDouble(reader["AvgTime"]):F1} seconds");
+                            contextBuilder.AppendLine($"- Average answer changes (last 10 tests): {Convert.ToDouble(reader["AvgChanges"]):F2}");
                         }
                     }
                 }
 
-                // === PHẦN 4: PHÂN TÍCH SÂU VỀ LỖI SAI (LOGIC CÓ ĐIỀU KIỆN - ĐÃ CẬP NHẬT) ===
+                // ĐÃ SỬA: Lấy thời gian từ cột [Time]
+                var completionTimeQuery = @"
+            SELECT TOP 5 R.[Time]
+            FROM ResultOfUserForTest R
+            JOIN Test T ON R.TestKey = T.TestKey
+            WHERE R.MemberKey = @MemberKey AND T.TotalQuestion >= 100 AND R.[Time] IS NOT NULL
+            ORDER BY R.StartTime DESC;";
+                var completionTimesInMinutes = new List<double>();
+                using (var command = new SqlCommand(completionTimeQuery, connection))
+                {
+                    command.Parameters.AddWithValue("@MemberKey", memberKey);
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            // Cột Time là nvarchar, cần Parse sang số. Giả định là số phút.
+                            if (double.TryParse(reader["Time"].ToString(), out double time))
+                            {
+                                completionTimesInMinutes.Add(time);
+                            }
+                        }
+                    }
+                }
+
+                if (completionTimesInMinutes.Any())
+                {
+                    contextBuilder.AppendLine("- Completion Times for recent Full Tests:");
+                    for (int i = 0; i < completionTimesInMinutes.Count; i++)
+                    {
+                        contextBuilder.AppendLine($"  - Test {i + 1}: {completionTimesInMinutes[i]:F0} minutes");
+                    }
+                    contextBuilder.AppendLine($"- Average Full Test Completion Time: {completionTimesInMinutes.Average():F0} minutes");
+                }
+                contextBuilder.AppendLine();
+
+
+                // === PHẦN 4: PHÂN TÍCH LỖI SAI CHI TIẾT (Giữ nguyên như lần nâng cấp trước) ===
+                // ... (Code không đổi)
                 string? latestResultKey = null;
                 int totalQuestions = 0;
                 var latestTestQuery = "SELECT TOP 1 R.ResultKey, T.TotalQuestion FROM ResultOfUserForTest R JOIN Test T ON R.TestKey = T.TestKey WHERE R.MemberKey = @MemberKey ORDER BY R.StartTime DESC;";
@@ -342,42 +394,43 @@ namespace TNS_TOEICTest.Models
                     }
                 }
 
-                // SỬA LỖI SQL TẠI ĐÂY
                 var errorQuery = @"
-            -- Bước 1: Tạo CTE hợp nhất tất cả câu hỏi và câu trả lời, THÊM CỘT 'Part' THỦ CÔNG
             WITH AllQuestionsAndAnswers AS (
-                SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '1' AS Part FROM TEC_Part1_Question Q JOIN TEC_Part1_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
-                SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '2' AS Part FROM TEC_Part2_Question Q JOIN TEC_Part2_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
-                SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '3' AS Part FROM TEC_Part3_Question Q JOIN TEC_Part3_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
-                SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '4' AS Part FROM TEC_Part4_Question Q JOIN TEC_Part4_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
-                SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '5' AS Part FROM TEC_Part5_Question Q JOIN TEC_Part5_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
-                SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '6' AS Part FROM TEC_Part6_Question Q JOIN TEC_Part6_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
-                SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '7' AS Part FROM TEC_Part7_Question Q JOIN TEC_Part7_Answer A ON Q.QuestionKey = A.QuestionKey
-            )
-            -- Bước 2: Truy vấn chính
-            SELECT 
-                UE.ErrorDate, ET.ErrorDescription, GT.TopicName AS GrammarTopicName, VT.TopicName AS VocabularyTopicName,
-                QuestionInfo.QuestionText, 
-                UserSelectedAnswer.AnswerText AS UserAnswer, 
-                CorrectAnswer.AnswerText AS CorrectAnswer,
-                QuestionInfo.Explanation,
-                UA.TimeSpent, UA.NumberOfAnswerChanges,
-                QuestionInfo.Part -- Cột Part giờ đã tồn tại
-            FROM UsersError UE
-            JOIN UserAnswers UA ON UE.ResultKey = UA.ResultKey AND UE.AnswerKey = UA.SelectAnswerKey
-            JOIN (SELECT DISTINCT QuestionKey, QuestionText, Explanation, Part FROM AllQuestionsAndAnswers) AS QuestionInfo ON UA.QuestionKey = QuestionInfo.QuestionKey
-            JOIN AllQuestionsAndAnswers AS UserSelectedAnswer ON UA.SelectAnswerKey = UserSelectedAnswer.AnswerKey
-            JOIN AllQuestionsAndAnswers AS CorrectAnswer ON UA.QuestionKey = CorrectAnswer.QuestionKey AND CorrectAnswer.AnswerCorrect = 1
-            LEFT JOIN ErrorTypes ET ON UE.ErrorType = ET.ErrorTypeID
-            LEFT JOIN GrammarTopics GT ON UE.GrammarTopic = GT.GrammarTopicID
-            LEFT JOIN VocabularyTopics VT ON UE.VocabularyTopic = VT.VocabularyTopicID
-            {WHERE_CLAUSE}
-            {ORDER_AND_LIMIT};";
+            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '1' AS Part FROM TEC_Part1_Question Q JOIN TEC_Part1_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
+            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '2' AS Part FROM TEC_Part2_Question Q JOIN TEC_Part2_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
+            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '3' AS Part FROM TEC_Part3_Question Q JOIN TEC_Part3_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
+            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '4' AS Part FROM TEC_Part4_Question Q JOIN TEC_Part4_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
+            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '5' AS Part FROM TEC_Part5_Question Q JOIN TEC_Part5_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
+            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '6' AS Part FROM TEC_Part6_Question Q JOIN TEC_Part6_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
+            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '7' AS Part FROM TEC_Part7_Question Q JOIN TEC_Part7_Answer A ON Q.QuestionKey = A.QuestionKey
+        )
+        SELECT 
+            UE.ErrorDate, ET.ErrorDescription, 
+            GT.TopicName AS GrammarTopicName, 
+            VT.TopicName AS VocabularyTopicName,
+            CAT.CategoryName AS CategoryTopicName,
+            QuestionInfo.QuestionText, 
+            UserSelectedAnswer.AnswerText AS UserAnswer, 
+            CorrectAnswer.AnswerText AS CorrectAnswer,
+            QuestionInfo.Explanation,
+            UA.TimeSpent, UA.NumberOfAnswerChanges,
+            QuestionInfo.Part
+        FROM UsersError UE
+        JOIN UserAnswers UA ON UE.ResultKey = UA.ResultKey AND UE.AnswerKey = UA.SelectAnswerKey
+        JOIN (SELECT DISTINCT QuestionKey, QuestionText, Explanation, Part FROM AllQuestionsAndAnswers) AS QuestionInfo ON UA.QuestionKey = QuestionInfo.QuestionKey
+        JOIN AllQuestionsAndAnswers AS UserSelectedAnswer ON UA.SelectAnswerKey = UserSelectedAnswer.AnswerKey
+        JOIN AllQuestionsAndAnswers AS CorrectAnswer ON UA.QuestionKey = CorrectAnswer.QuestionKey AND CorrectAnswer.AnswerCorrect = 1
+        LEFT JOIN ErrorTypes ET ON UE.ErrorType = ET.ErrorTypeID
+        LEFT JOIN GrammarTopics GT ON UE.GrammarTopic = GT.GrammarTopicID
+        LEFT JOIN VocabularyTopics VT ON UE.VocabularyTopic = VT.VocabularyTopicID
+        LEFT JOIN TEC_Category CAT ON UE.CategoryTopic = CAT.CategoryKey
+        {WHERE_CLAUSE}
+        {ORDER_AND_LIMIT};";
 
                 var finalErrorQuery = "";
                 var errorCommand = new SqlCommand();
                 errorCommand.Connection = connection;
-                errorCommand.Parameters.AddWithValue("@MemberKey", memberKey);
+                errorCommand.Parameters.AddWithValue("@MemberKeyParam", memberKey);
 
                 if (!string.IsNullOrEmpty(latestResultKey) && totalQuestions >= 100)
                 {
@@ -389,10 +442,10 @@ namespace TNS_TOEICTest.Models
                 }
                 else
                 {
-                    contextBuilder.AppendLine($"--- Detailed Error Analysis (Last 30 Errors) ---");
+                    contextBuilder.AppendLine($"--- Detailed Error Analysis (Last 150 Errors) ---");
                     finalErrorQuery = errorQuery
-                        .Replace("{WHERE_CLAUSE}", "WHERE UE.UserKey = @MemberKey AND UA.IsCorrect = 0")
-                        .Replace("{ORDER_AND_LIMIT}", "ORDER BY UE.ErrorDate DESC OFFSET 0 ROWS FETCH NEXT 30 ROWS ONLY");
+                        .Replace("{WHERE_CLAUSE}", "WHERE UE.UserKey = @MemberKeyParam AND UA.IsCorrect = 0")
+                        .Replace("{ORDER_AND_LIMIT}", "ORDER BY UE.ErrorDate DESC OFFSET 0 ROWS FETCH NEXT 150 ROWS ONLY");
                 }
 
                 errorCommand.CommandText = finalErrorQuery;
@@ -408,7 +461,7 @@ namespace TNS_TOEICTest.Models
                             contextBuilder.AppendLine($"  - Your Answer: '{reader["UserAnswer"]}'");
                             contextBuilder.AppendLine($"  - Correct Answer: '{reader["CorrectAnswer"]}'");
                             contextBuilder.AppendLine($"  - Error Type: {reader["ErrorDescription"]}");
-                            contextBuilder.AppendLine($"  - Topics: {reader["GrammarTopicName"]}, {reader["VocabularyTopicName"]}");
+                            contextBuilder.AppendLine($"  - Topics: Category '{reader["CategoryTopicName"]}', Grammar '{reader["GrammarTopicName"]}', Vocabulary '{reader["VocabularyTopicName"]}'");
                             contextBuilder.AppendLine($"  - Behavior: Time spent was {reader["TimeSpent"]}s, changed answer {reader["NumberOfAnswerChanges"]} times.");
                             contextBuilder.AppendLine($"  - Explanation: {reader["Explanation"]}");
                         }
@@ -418,11 +471,67 @@ namespace TNS_TOEICTest.Models
                         }
                     }
                 }
+
+
             }
 
             return contextBuilder.ToString();
         }
+        /// <summary>
+        /// Tải 10 phản hồi (feedback) gần đây nhất của học viên.
+        /// </summary>
+        /// <param name="memberKey">Mã của học viên.</param>
+        /// <returns>Một chuỗi chứa thông tin về các feedback gần đây.</returns>
+        public static async Task<string> LoadRecentFeedbacksAsync(string memberKey)
+        {
+            var feedbackBuilder = new StringBuilder();
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                // Câu truy vấn này sẽ lấy 10 feedback gần nhất và JOIN với câu hỏi tương ứng
+                var query = @"
+            WITH AllQuestions AS (
+                SELECT QuestionKey, QuestionText, '1' AS Part FROM TEC_Part1_Question UNION ALL
+                SELECT QuestionKey, QuestionText, '2' AS Part FROM TEC_Part2_Question UNION ALL
+                SELECT QuestionKey, QuestionText, '3' AS Part FROM TEC_Part3_Question UNION ALL
+                SELECT QuestionKey, QuestionText, '4' AS Part FROM TEC_Part4_Question UNION ALL
+                SELECT QuestionKey, QuestionText, '5' AS Part FROM TEC_Part5_Question UNION ALL
+                SELECT QuestionKey, QuestionText, '6' AS Part FROM TEC_Part6_Question UNION ALL
+                SELECT QuestionKey, QuestionText, '7' AS Part FROM TEC_Part7_Question
+            )
+            SELECT TOP 10
+                FB.FeedbackText,
+                FB.CreatedOn,
+                FB.Part,
+                Q.QuestionText
+            FROM QuestionFeedbacks FB
+            LEFT JOIN AllQuestions Q ON FB.QuestionKey = Q.QuestionKey
+            WHERE FB.MemberKey = @MemberKey
+            ORDER BY FB.CreatedOn DESC;";
 
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@MemberKey", memberKey);
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        int feedbackCount = 1;
+                        while (await reader.ReadAsync())
+                        {
+                            feedbackBuilder.AppendLine($"[Feedback #{feedbackCount++} - Part {reader["Part"]} - Date: {((DateTime)reader["CreatedOn"]):yyyy-MM-dd}]");
+                            feedbackBuilder.AppendLine($"  - Regarding Question: '{reader["QuestionText"]}'");
+                            feedbackBuilder.AppendLine($"  - Student's Feedback: \"{reader["FeedbackText"]}\"");
+                        }
+
+                        // Nếu không có feedback nào thì trả về một chuỗi rỗng
+                        if (feedbackCount == 1)
+                        {
+                            return string.Empty;
+                        }
+                    }
+                }
+            }
+            return feedbackBuilder.ToString();
+        }
 
 
     }
