@@ -2,6 +2,7 @@
 using Microsoft.Data.SqlClient;
 
 using System.Text;
+using static Google.Api.Gax.Grpc.Gcp.AffinityConfig.Types;
 
 namespace TNS_TOEICTest.Models
 {
@@ -139,12 +140,13 @@ namespace TNS_TOEICTest.Models
             {
                 await connection.OpenAsync();
                 var conversationId = Guid.NewGuid();
-                var createQuery = "INSERT INTO ConversationsWithAI (ConversationAIID, UserID, Title) OUTPUT INSERTED.ConversationAIID VALUES (@ConversationAIID, @UserID, @Title)";
+                var createQuery = "INSERT INTO ConversationsWithAI (ConversationAIID, UserID, Title, StartedAt) OUTPUT INSERTED.ConversationAIID VALUES (@ConversationAIID, @UserID, @Title,@StartedAt)";
                 using (var createCommand = new SqlCommand(createQuery, connection))
                 {
                     createCommand.Parameters.AddWithValue("@ConversationAIID", conversationId);
                     createCommand.Parameters.AddWithValue("@UserID", userId);
                     createCommand.Parameters.AddWithValue("@Title", "New Chat");
+                    createCommand.Parameters.AddWithValue("@StartedAt", DateTime.UtcNow);
                     // Thực thi và trả về ID vừa được tạo
                     return (Guid)await createCommand.ExecuteScalarAsync();
                 }

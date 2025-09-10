@@ -463,10 +463,31 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 
  
+    function updateInputAreaVisibility() {
+        const messageInputArea = document.getElementById('messageInputArea');
+        if (!messageInputArea) return;
 
+        // SỬA LỖI: Sử dụng đúng tên thuộc tính "IsAdminChannel"
+        const isAdminChannel = window.currentConversationDetails && window.currentConversationDetails.IsAdminChannel;
+
+        // Ẩn khu vực nhập liệu nếu là kênh admin, ngược lại thì hiện
+        messageInputArea.style.display = isAdminChannel ? 'none' : 'block';
+    }
     function updateIconsVisibility() {
+        const iconCall = document.getElementById("iconCall");
+        const iconVideo = document.getElementById("iconVideo");
         const blockIcon = document.getElementById("iconBlock");
         const settingIcon = document.getElementById("iconSetting");
+
+        // SỬA LỖI: Sử dụng đúng tên thuộc tính "IsAdminChannel"
+        if (window.currentConversationDetails && window.currentConversationDetails.IsAdminChannel) {
+            if (iconCall) iconCall.style.display = "none";
+            if (iconVideo) iconVideo.style.display = "none";
+            if (blockIcon) blockIcon.style.display = "none";
+            if (settingIcon) settingIcon.style.display = "none";
+            return;
+        }
+
         if (blockIcon && settingIcon) {
             if (currentConversationType === "Private") {
                 blockIcon.style.display = "inline-block";
@@ -625,58 +646,48 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Tệp: chat.js
 
-    // TÌM VÀ THAY THẾ TOÀN BỘ HÀM NÀY
     async function selectContact(contact) {
-        console.log("[selectContact] Selecting new contact:", contact);
+       
 
-        // Gán các biến toàn cục ngay lập tức và chắc chắn
         currentConversationKey = contact.ConversationKey || null;
         currentUserKey = contact.UserKey || null;
         currentUserType = contact.UserType || null;
         currentConversationType = contact.ConversationType || (contact.UserKey ? 'Private' : null);
 
-        // Xóa tin nhắn cũ và reset trạng thái
         messageList.innerHTML = "";
         allMessages = [];
         skip = 0;
 
-        // Cập nhật header
         headerAvatar.src = contact.Avatar || '/images/avatar/default-avatar.jpg';
         headerName.textContent = contact.Name || "Unknown";
         chatHeaderInfo.style.display = "flex";
 
-        // Xử lý currentConversationDetails
         if (currentConversationKey) {
-            // Cuộc hội thoại đã tồn tại
             const conversationDetails = window.allConversations.find(c => String(c.ConversationKey) === String(currentConversationKey));
             if (conversationDetails) {
-                window.currentConversationDetails = { ...conversationDetails }; // Tạo một bản sao để đảm bảo an toàn
-
-                // --- BẮT ĐẦU SỬA LỖI: Tạo Participants nếu thiếu ---
+                window.currentConversationDetails = { ...conversationDetails };
                 if (window.currentConversationDetails.ConversationType === 'Private' && currentUserKey) {
                     window.currentConversationDetails.Participants = [
-                        { UserKey: memberKey },      // Người dùng hiện tại
-                        { UserKey: currentUserKey }  // Đối tác trò chuyện
+                        { UserKey: memberKey },
+                        { UserKey: currentUserKey }
                     ];
-                    console.log("[BlockFix] Manually constructed Participants for existing contact.");
                 }
-                // --- KẾT THÚC SỬA LỖI ---
             }
             await loadMessages(currentConversationKey, false, skip);
         } else {
-            // Người lạ, tạo đối tượng tạm thời đã có sẵn Participants
             window.currentConversationDetails = {
                 ConversationKey: null,
                 ConversationType: 'Private',
                 DisplayName: contact.Name,
                 Avatar: contact.Avatar,
                 Participants: [{ UserKey: memberKey }, { UserKey: currentUserKey }],
-                IsBanned: false // Giả định chưa bị ban
+                IsBanned: false,
+                // SỬA LỖI: Sử dụng đúng tên thuộc tính "IsAdminChannel"
+                IsAdminChannel: false
             };
             console.log("[selectContact] Created temporary conversation details for new contact.");
         }
 
-        // Logic cập nhật giao diện chung
         searchInput.value = "";
         searchResults.classList.remove("show");
         conversationListContainer.classList.remove("focused");
@@ -689,67 +700,72 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         updatePinnedSection();
         updateIconsVisibility();
+        updateInputAreaVisibility();
         chatInput.focus();
     }
 
-    // Tệp: chat.js
-
-    // TÌM VÀ THAY THẾ TOÀN BỘ HÀM NÀY
     function addConversationClickListeners() {
         document.querySelectorAll(".conversation-item").forEach(item => {
             item.addEventListener("click", async (e) => {
                 e.preventDefault();
-
-                const isAdminChannel = item.getAttribute("data-is-admin-channel") === 'true';
-                currentConversationIsAdminChannel = isAdminChannel;
-
-                const inputContainer = document.querySelector('.input-container-sticky');
-                const callIcons = document.getElementById('iconCall')?.parentElement;
-                const blockIcon = document.getElementById('iconBlock');
-                const settingIcon = document.getElementById('iconSetting');
-
-                if (isAdminChannel) {
-                    if (inputContainer) inputContainer.style.display = 'none';
-                    if (callIcons) callIcons.style.display = 'none';
-                    if (blockIcon) blockIcon.style.display = 'none';
-                    if (settingIcon) settingIcon.style.display = 'none';
-                } else {
-                    if (inputContainer) inputContainer.style.display = 'block';
-                    if (callIcons) callIcons.style.display = 'flex';
-                    const convType = item.getAttribute("data-conversation-type");
-                    if (blockIcon) blockIcon.style.display = (convType === "Private") ? 'inline-flex' : 'none';
-                    if (settingIcon) settingIcon.style.display = (convType === "Group") ? 'inline-flex' : 'none';
-                }
-
                 const conversationKey = item.getAttribute("data-conversation-key");
-                const userKey = item.getAttribute("data-user-key") || null;
+                const userKey = item.getAttribute("data-user-key") || null; // Key của đối phương
                 const userType = item.getAttribute("data-user-type") || null;
                 const conversationType = item.getAttribute("data-conversation-type") || null;
 
+                // Đánh dấu đã đọc
                 const badge = item.querySelector(".badge");
                 if (badge) {
-                    badge.remove();
-                    fetch(`/api/conversations/markAsRead/${conversationKey}`, { method: 'POST', credentials: 'include' });
+                    const unreadCountVal = parseInt(badge.textContent, 10);
+                    if (unreadCountVal > 0) {
+                        badge.remove();
+                        try {
+                            const totalBadge = document.getElementById("unreadCount");
+                            let currentTotal = parseInt(totalBadge.textContent, 10) || 0;
+                            currentTotal -= unreadCountVal;
+                            updateUnreadCount(Math.max(0, currentTotal));
+                        } catch (err) { }
+                        fetch(`/api/conversations/markAsRead/${conversationKey}`, { method: 'POST', credentials: 'include' });
+                    }
                 }
 
+                // --- BẮT ĐẦU SỬA LỖI: ĐẢM BẢO currentConversationDetails CÓ PARTICIPANTS ---
+                if (!window.allConversations) {
+                    console.error("CRITICAL: Conversation list (window.allConversations) is not available!");
+                    showNotification("Error: Conversation list not loaded.", "error");
+                    return;
+                }
                 const conversationDetails = window.allConversations.find(c => String(c.ConversationKey) === String(conversationKey));
-                if (!conversationDetails) return;
 
-                // Sửa lỗi "DATA NOT READY": Luôn đảm bảo có mảng Participants cho các cuộc hội thoại 1-1
-                if (conversationDetails.ConversationType === 'Private' && userKey) {
-                    conversationDetails.Participants = [{ UserKey: memberKey }, { UserKey: userKey }];
+                if (!conversationDetails) {
+                    console.error(`Could not find details for conversationKey: ${conversationKey}`);
+                    return;
                 }
-                window.currentConversationDetails = { ...conversationDetails };
 
+                window.currentConversationDetails = { ...conversationDetails }; // Tạo bản sao
+
+                if (conversationType === "Private" && userKey) {
+                    window.currentConversationDetails.Participants = [
+                        { UserKey: memberKey }, // Người dùng hiện tại
+                        { UserKey: userKey }    // Đối tác trò chuyện
+                    ];
+                    console.log("[BlockFix] Manually constructed Participants for private chat.");
+                }
+                // --- KẾT THÚC SỬA LỖI ---
+
+                // Gán các biến toàn cục khác
                 currentConversationKey = conversationKey;
                 currentUserKey = userKey;
                 currentUserType = userType;
                 currentConversationType = conversationType;
 
-                headerAvatar.src = item.querySelector("img").src;
-                headerName.textContent = item.querySelector("p.fw-bold").textContent;
+                // Cập nhật header
+                const conv = item.closest("li").querySelector(".conversation-item");
+                headerAvatar.src = conv.querySelector("img").src;
+                headerName.textContent = conv.querySelector("p.fw-bold").textContent;
                 chatHeaderInfo.style.display = "flex";
 
+                // Cập nhật giao diện
                 document.querySelectorAll(".conversation-item").forEach(i => i.parentElement.classList.remove("active"));
                 item.parentElement.classList.add("active");
 
@@ -760,9 +776,28 @@ document.addEventListener("DOMContentLoaded", async () => {
                 updatePinnedSection();
                 loadMessages(currentConversationKey, false, skip);
 
-                if (!isAdminChannel && currentConversationType === "Private" && currentUserKey) {
-                    attachIconListeners();
+                // ===== BẮT ĐẦU PHẦN SỬA LỖI CHÍNH =====
+                // LUÔN đợi lấy trạng thái block xong TRƯỚC KHI hiển thị icon
+                if (currentConversationType === "Private" && currentUserKey) {
+                    try {
+                        const response = await fetch(`/api/conversations/GetBanStatus?conversationKey=${conversationKey}&targetUserKey=${currentUserKey}`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            // Cập nhật trạng thái block vào biến global để updateIconsVisibility() đọc được
+                            if (data.success && window.currentConversationDetails) {
+                                window.currentConversationDetails.IsBanned = data.isBanned;
+                            }
+                        }
+                    } catch (err) {
+                        console.error("[GetBanStatus] Error fetching ban status:", err);
+                    }
                 }
+
+                // DI CHUYỂN: Gọi hàm hiển thị icon xuống đây để đảm bảo nó chạy SAU KHI đã lấy được trạng thái block
+                updateIconsVisibility();
+                updateInputAreaVisibility();
+                chatInput.focus();
+                // ===== KẾT THÚC PHẦN SỬA LỖI CHÍNH =====
             });
         });
     }
@@ -1245,11 +1280,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (sendIcon) {
         sendIcon.addEventListener("click", async () => {
+            // FIX: 1. Kiểm tra nếu đang trong quá trình gửi thì không làm gì cả
+            if (sendIcon.classList.contains('sending')) return;
+
             const content = chatInput.value.trim();
             if (!content) {
                 showNotification("Please enter message content.", "error");
                 return; // Dừng lại nếu không có nội dung text
             }
+
+            // FIX: 2. Vô hiệu hóa nút gửi ngay lập tức để chặn gửi lần hai
+            sendIcon.classList.add('sending');
 
             // Lấy các biến trạng thái hiện tại
             let convKey = currentConversationKey;
@@ -1357,6 +1398,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                 console.error("[SendMessage] Error:", err.message);
                 showNotification(err.message, "error");
             } finally {
+                // FIX: 3. Luôn kích hoạt lại nút gửi sau khi xử lý xong (dù thành công hay lỗi)
+                sendIcon.classList.remove('sending');
                 chatInput.focus();
             }
         });

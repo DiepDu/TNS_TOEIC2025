@@ -980,6 +980,12 @@
             .chat-action-btn i {
                 font-size: 1.2rem; /* Tăng kích thước icon */
             }
+
+            .chat-action-btn.sending {
+                opacity: 0.5;
+                pointer-events: none; /* Ngăn không cho click vào */
+                cursor: wait;
+            }
 </style>
 </head>
 <body>
@@ -1018,7 +1024,7 @@
                             <div class="message-list-container" id="messageListContainer">
                                 <ul id="messageList" class="list-unstyled"></ul>
                             </div>
-                            <div class="input-container-sticky">
+                            <div class="input-container-sticky" id="messageInputArea">
                                 <div id="reply-preview-container" class="preview-container"></div>
                                 <div id="file-preview-container" class="preview-container"></div>
 
