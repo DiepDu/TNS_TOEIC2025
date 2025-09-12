@@ -67,6 +67,8 @@ namespace TNS_TOEICTest.Models
             return conversations;
         }
 
+        // File: Models/ChatWithAIAccessData.cs
+
         public static async Task<Dictionary<string, object>> GetInitialChatDataAsync(string userId)
         {
             var initialData = new Dictionary<string, object>();
@@ -77,15 +79,14 @@ namespace TNS_TOEICTest.Models
             {
                 await connection.OpenAsync();
 
-                // Bước 1: Tìm cuộc trò chuyện gần đây nhất của người dùng
+                // Bước 1: Tìm cuộc trò chuyện gần đây nhất (không đổi)
                 var convoQuery = @"
-                    SELECT TOP 1 ConversationAIID, Title, StartedAt 
-                    FROM ConversationsWithAI 
-                    WHERE UserID = @UserID 
-                    ORDER BY StartedAt DESC;";
+            SELECT TOP 1 ConversationAIID, Title, StartedAt 
+            FROM ConversationsWithAI 
+            WHERE UserID = @UserID 
+            ORDER BY StartedAt DESC;";
 
                 Guid? latestConversationId = null;
-
                 using (var convoCommand = new SqlCommand(convoQuery, connection))
                 {
                     convoCommand.Parameters.AddWithValue("@UserID", userId);
@@ -104,14 +105,14 @@ namespace TNS_TOEICTest.Models
                     }
                 }
 
-                // Bước 2: Nếu tìm thấy, lấy các tin nhắn gần nhất của cuộc trò chuyện đó
+                // Bước 2: Lấy 50 tin nhắn gần nhất của cuộc trò chuyện đó
                 if (latestConversationId.HasValue)
                 {
                     var messagesQuery = @"
-                        SELECT TOP 50 MessageAIID, SenderRole, Content, Timestamp
-                        FROM MessageWithAI
-                        WHERE ConversationAIID = @ConversationAIID
-                        ORDER BY Timestamp ASC;"; // ASC để hiển thị đúng thứ tự trong chat
+                SELECT TOP 50 MessageAIID, SenderRole, Content, Timestamp
+                FROM MessageWithAI
+                WHERE ConversationAIID = @ConversationAIID
+                ORDER BY Timestamp DESC;"; // <-- SỬA TỪ ASC THÀNH DESC ĐỂ LẤY TIN NHẮN MỚI NHẤT
 
                     using (var messagesCommand = new SqlCommand(messagesQuery, connection))
                     {
@@ -121,12 +122,12 @@ namespace TNS_TOEICTest.Models
                             while (await reader.ReadAsync())
                             {
                                 var message = new Dictionary<string, object>
-                                {
-                                    { "MessageAIID", reader["MessageAIID"] },
-                                    { "SenderRole", reader["SenderRole"] },
-                                    { "Content", reader["Content"] },
-                                    { "Timestamp", reader["Timestamp"] }
-                                };
+                        {
+                            { "MessageAIID", reader["MessageAIID"] },
+                            { "SenderRole", reader["SenderRole"] },
+                            { "Content", reader["Content"] },
+                            { "Timestamp", reader["Timestamp"] }
+                        };
                                 messages.Add(message);
                             }
                         }

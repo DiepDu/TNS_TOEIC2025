@@ -18,14 +18,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // === STATE MANAGEMENT ===
     let currentConversationId = null;
-    let isScreenAnalysisOn = false;
     let attachedFiles = [];
     const MAX_FILES = 3;
     const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10 MB
     const MAX_DOC_SIZE = 5 * 1024 * 1024;   // 5 MB
     window.isInitialDataLoaded = false;
     const initialInputHeight = messageInput.scrollHeight;
-
+    let messagesLoadedCount = 0; // Đếm số tin nhắn đã tải
+    let isLoadingMore = false;  
     // === CORE FUNCTIONS ===
     const createMessageElement = (content, sender) => {
         const messageDiv = document.createElement("div");
@@ -95,7 +95,47 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         return true;
     };
+    // File: wwwroot/js/chatbot_ai.js
 
+    // === HÀM MỚI ĐỂ TẢI THÊM TIN NHẮN ===
+    const loadMoreMessages = async () => {
+        if (isLoadingMore || !currentConversationId) return; // Nếu đang tải hoặc không có conversationId thì không làm gì cả
+
+        isLoadingMore = true;
+        const loader = document.createElement('div');
+        loader.className = 'ai-history-loader';
+        chatBody.prepend(loader); // Thêm loader lên đầu
+
+        try {
+            const response = await fetch(`/api/ChatWithAI/GetMoreMessages?conversationId=${currentConversationId}&skipCount=${messagesLoadedCount}`);
+            if (!response.ok) throw new Error("Failed to load more messages.");
+
+            const olderMessages = await response.json();
+
+            // Ghi lại chiều cao cũ của khung chat để giữ đúng vị trí cuộn
+            const oldScrollHeight = chatBody.scrollHeight;
+
+            if (olderMessages.length > 0) {
+                olderMessages.forEach(msg => {
+                    const sender = msg.SenderRole.toLowerCase() === 'user' ? 'user' : 'bot';
+                    const messageElement = createMessageElement(msg.Content, sender);
+                    chatBody.prepend(messageElement); // Thêm tin nhắn cũ lên đầu
+                });
+                messagesLoadedCount += olderMessages.length; // Cập nhật số lượng đã tải
+
+                // Giữ nguyên vị trí cuộn sau khi thêm tin nhắn mới
+                chatBody.scrollTop = chatBody.scrollHeight - oldScrollHeight;
+            } else {
+                // Không còn tin nhắn cũ để tải
+                console.log("No more messages to load.");
+            }
+        } catch (error) {
+            console.error("Error loading more messages:", error);
+        } finally {
+            loader.remove(); // Luôn xóa loader sau khi hoàn tất
+            isLoadingMore = false;
+        }
+    };
     const createFilePreview = (file) => {
         const fileId = "file-" + Date.now() + Math.random();
         const previewWrapper = document.createElement("div");
@@ -125,15 +165,24 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await response.json();
             chatBody.innerHTML = '';
             if (data.conversation) {
-                currentConversationId = data.conversation.ConversationAIID; // Đã sửa
-                chatbotPopup.dataset.conversationId = data.conversation.ConversationAIID; // Đã sửa
+                currentConversationId = data.conversation.ConversationAIID;
+                chatbotPopup.dataset.conversationId = data.conversation.ConversationAIID;
+
+                // Vì backend trả về 50 tin nhắn mới nhất (thứ tự ngược),
+                // chúng ta cần đảo ngược lại mảng để hiển thị đúng.
+                data.messages.reverse();
+
                 data.messages.forEach(msg => {
                     const sender = msg.SenderRole.toLowerCase() === 'user' ? 'user' : 'bot';
                     chatBody.appendChild(createMessageElement(msg.Content, sender));
                 });
+                // Khởi tạo bộ đếm tin nhắn đã tải
+                messagesLoadedCount = data.messages.length;
             } else {
                 chatbotPopup.dataset.conversationId = '';
                 chatBody.appendChild(createMessageElement("Hello! I am Mr.TOEIC, your personal AI tutor. How can I help you today?", 'bot'));
+                // Reset bộ đếm nếu không có cuộc hội thoại nào
+                messagesLoadedCount = 0;
             }
             scrollToBottom();
         } catch (error) {
@@ -186,6 +235,7 @@ document.addEventListener("DOMContentLoaded", () => {
         chatBody.innerHTML = '<div class="ai-history-loader"></div>';
         chatbotPopup.classList.remove("show-history");
         try {
+            // GetMoreMessages mặc định tải 100 tin nhắn đầu tiên
             const response = await fetch(`/api/ChatWithAI/GetMoreMessages?conversationId=${conversationId}&skipCount=0`);
             if (!response.ok) throw new Error("Failed to load conversation.");
             const messages = await response.json();
@@ -194,6 +244,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 const sender = msg.SenderRole.toLowerCase() === 'user' ? 'user' : 'bot';
                 chatBody.appendChild(createMessageElement(msg.Content, sender));
             });
+
+            // Khởi tạo bộ đếm tin nhắn khi chọn một cuộc hội thoại khác
+            messagesLoadedCount = messages.length;
+
             scrollToBottom();
             document.querySelectorAll('.ai-conversation-item').forEach(item => {
                 item.classList.toggle('active', item.dataset.id === conversationId);
@@ -237,6 +291,10 @@ document.addEventListener("DOMContentLoaded", () => {
         chatBody.innerHTML = '';
         chatBody.appendChild(createMessageElement("New chat started! How can I assist you?", 'bot'));
         chatbotPopup.classList.remove("show-history");
+
+        // Reset bộ đếm tin nhắn khi tạo chat mới
+        messagesLoadedCount = 0;
+
         messageInput.focus();
     };
     const handleDeleteConversation = async (conversationId, convoDiv) => {
@@ -277,6 +335,7 @@ document.addEventListener("DOMContentLoaded", () => {
             userMessageHTML += `<br><small style='opacity: 0.8;'><i>(${attachedFiles.length} file(s) attached)</i></small>`;
         }
         chatBody.appendChild(createMessageElement(userMessageHTML, 'user'));
+
         messageInput.value = '';
         messageInput.style.height = `${initialInputHeight}px`;
         scrollToBottom();
@@ -303,8 +362,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const payload = {
                 ConversationId: conversationIdForRequest,
                 Message: messageText,
-                Files: filePayloads,
-                ScreenData: isScreenAnalysisOn ? "Screen analysis is ON." : null
+                Files: filePayloads
+                // Đã xóa ScreenData
             };
 
             const response = await fetch('/api/ChatWithAI/HandleMemberChat', {
@@ -336,6 +395,13 @@ document.addEventListener("DOMContentLoaded", () => {
         scrollToBottom();
     };
 
+    chatBody.addEventListener('scroll', () => {
+        // Nếu người dùng cuộn lên đến đỉnh
+        if (chatBody.scrollTop === 0 && !isLoadingMore) {
+            loadMoreMessages();
+        }
+    });
+
     // === EVENT LISTENERS ===
     chatbotToggler.addEventListener("click", () => {
         const isOpening = !document.body.classList.contains("show-ai-chatbot");
@@ -361,18 +427,5 @@ document.addEventListener("DOMContentLoaded", () => {
     messageInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
     fileUploadBtn.addEventListener("click", () => fileInput.click());
     fileInput.addEventListener("change", (e) => { if (e.target.files.length > 0) { handleFileSelection(e.target.files); } });
-    screenAnalysisBtn.addEventListener("click", () => {
-        isScreenAnalysisOn = !isScreenAnalysisOn;
-        screenAnalysisBtn.classList.toggle("active", isScreenAnalysisOn);
-        Swal.fire({
-            title: `Screen Analysis ${isScreenAnalysisOn ? 'ON' : 'OFF'}`,
-            text: isScreenAnalysisOn ? 'I will now analyze the content on your screen with your next message.' : 'I will no longer analyze your screen content.',
-            icon: 'info',
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            timer: 3000,
-            timerProgressBar: true,
-        });
-    });
+ 
 });

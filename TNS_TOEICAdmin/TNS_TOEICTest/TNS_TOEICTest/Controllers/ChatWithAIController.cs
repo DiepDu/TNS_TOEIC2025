@@ -177,7 +177,7 @@ namespace TNS_TOEICTest.Controllers
                 }
                 string recentFeedbacks = await ChatWithAIAccessData.LoadRecentFeedbacksAsync(memberId);
                 var chatHistoryForPrompt = await ChatWithAIAccessData.GetMessageHistoryForApiAsync(data.ConversationId);
-                string textPrompt = _promptService.BuildPromptForMember(backgroundData, recentFeedbacks, chatHistoryForPrompt, data.Message, data.ScreenData);
+                string textPrompt = _promptService.BuildPromptForMember(backgroundData, recentFeedbacks, chatHistoryForPrompt, data.Message);
 
                 var parts = new List<object>();
                 var extractedTextFromFiles = new StringBuilder();
@@ -218,7 +218,7 @@ namespace TNS_TOEICTest.Controllers
                 if (extractedTextFromFiles.Length > 0) { textPrompt += extractedTextFromFiles.ToString(); }
                 parts.Insert(0, new { text = textPrompt });
 
-                var apiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={apiKey}";
+                var apiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={apiKey}";
                 var payload = new { contents = new[] { new { parts } } };
                 string botMessage;
 

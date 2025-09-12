@@ -1,6 +1,7 @@
 ﻿using Google.Cloud.AIPlatform.V1;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 
@@ -12,10 +13,13 @@ namespace TNS_TOEICTest.Services
             string backgroundData,
              string recentFeedbacks,
             IEnumerable<Content> chatHistory,
-            string currentUserMessage,
-            string? screenData = null)
+            string currentUserMessage)
         {
             var promptBuilder = new StringBuilder();
+            TimeZoneInfo vietnamTimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+            DateTime vietnamTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, vietnamTimeZone);
+            string formattedVietnamTime = vietnamTime.ToString("'Thứ' dddd, HH:mm:ss 'ngày' dd/MM/yyyy '(GMT+7)'", new CultureInfo("vi-VN"));
+
 
             // === 1. SỬ DỤNG THẺ CẤU TRÚC CHO CÁC CHỈ THỊ CỐT LÕI ===
             promptBuilder.AppendLine("<core_instructions>");
@@ -24,6 +28,7 @@ namespace TNS_TOEICTest.Services
             promptBuilder.AppendLine("**INTERACTION CONTEXT:**");
             promptBuilder.AppendLine("- Your Position: You are chatting with a student via a chat window directly on the practice website. The student might be reviewing their results or reading study materials.");
             promptBuilder.AppendLine("- Your Data Access: You have access to the student's academic profile, recent score data, recent errors, and their latest feedback/questions about specific test items.");
+            promptBuilder.AppendLine($"- Current Time: {formattedVietnamTime}");
             promptBuilder.AppendLine();
             promptBuilder.AppendLine("**YOUR PRIMARY MISSIONS:**");
             promptBuilder.AppendLine("1. Personalized Tutoring: Your most important mission is to use the provided data—including student information, the screen the student is currently viewing (if available), and chat history (the last 10 exchanges)—as a foundation for reasoning, thinking, and providing the most logical answer to the student's current question. Answer what they ask based on the data you have; do not provide redundant or rambling information unless they ask for it.");
@@ -64,15 +69,7 @@ namespace TNS_TOEICTest.Services
             promptBuilder.AppendLine("</conversation_history>");
             promptBuilder.AppendLine();
 
-            // === 4. SỬ DỤNG THẺ CẤU TRÚC CHO DỮ LIỆU MÀN HÌNH ===
-            if (!string.IsNullOrEmpty(screenData))
-            {
-                promptBuilder.AppendLine("<screen_context>");
-                promptBuilder.AppendLine("The user is looking at a screen with the following information. Use this context to answer the question accurately.");
-                promptBuilder.AppendLine(screenData);
-                promptBuilder.AppendLine("</screen_context>");
-                promptBuilder.AppendLine();
-            }
+        
 
             // === 5. CÂU HỎI MỚI VÀ MỆNH LỆNH CUỐI CÙNG ===
             promptBuilder.AppendLine("<user_new_question>");
