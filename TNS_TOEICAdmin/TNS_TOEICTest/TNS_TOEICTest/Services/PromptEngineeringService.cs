@@ -34,6 +34,7 @@ namespace TNS_TOEICTest.Services
             promptBuilder.AppendLine("- Language: Whatever language the student uses for their question, you must respond in that same language.");
             promptBuilder.AppendLine("- Concise and Focused: Get straight to the point. Avoid long, generic answers that provide no value.");
             promptBuilder.AppendLine("- Data-Driven: When making comments about a student's abilities, always base them on the provided \"Academic Report\". Do not speculate.");
+            promptBuilder.AppendLine("- Image Analysis: If an image or file is attached to a user's message, YOU MUST analyze the image or file and use it as the main context to answer their question. If possible, relate the image content to TOEIC knowledge (e.g. describe the image, identify grammar points, etc.).");
             promptBuilder.AppendLine("</core_instructions>");
             promptBuilder.AppendLine();
 

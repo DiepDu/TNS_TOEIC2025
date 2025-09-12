@@ -17,26 +17,25 @@ namespace TNS_TOEICTest.Models
             {
                 await connection.OpenAsync();
 
-                // Câu lệnh SQL này sẽ lấy các cuộc hội thoại và tin nhắn cuối cùng của mỗi cuộc hội thoại đó.
                 var query = @"
-                    WITH LastMessages AS (
-                        SELECT 
-                            ConversationAIID, 
-                            Content,
-                            Timestamp,
-                            ROW_NUMBER() OVER(PARTITION BY ConversationAIID ORDER BY Timestamp DESC) as rn
-                        FROM MessageWithAI
-                    )
-                    SELECT 
-                        c.ConversationAIID,
-                        c.UserID,
-                        c.Title,
-                        c.StartedAt,
-                        lm.Content AS LastMessage
-                    FROM ConversationsWithAI c
-                    LEFT JOIN LastMessages lm ON c.ConversationAIID = lm.ConversationAIID AND lm.rn = 1
-                    WHERE c.UserID = @UserID
-                    ORDER BY COALESCE(lm.Timestamp, c.StartedAt) DESC;";
+            WITH LastMessages AS (
+                SELECT 
+                    ConversationAIID, 
+                    Content,
+                    Timestamp,
+                    ROW_NUMBER() OVER(PARTITION BY ConversationAIID ORDER BY Timestamp DESC) as rn
+                FROM MessageWithAI
+            )
+            SELECT 
+                c.ConversationAIID,
+                c.UserID,
+                c.Title,
+                c.StartedAt,
+                lm.Content AS LastMessage
+            FROM ConversationsWithAI c
+            LEFT JOIN LastMessages lm ON c.ConversationAIID = lm.ConversationAIID AND lm.rn = 1
+            WHERE c.UserID = @UserID
+            ORDER BY COALESCE(lm.Timestamp, c.StartedAt) DESC;";
 
                 using (var command = new SqlCommand(query, connection))
                 {
@@ -46,14 +45,20 @@ namespace TNS_TOEICTest.Models
                     {
                         while (await reader.ReadAsync())
                         {
+                            // === SỬA ĐỔI TẠI ĐÂY ===
+                            var startedAt = (DateTime)reader["StartedAt"];
+                            var title = reader["Title"] == DBNull.Value || string.IsNullOrEmpty(reader["Title"].ToString())
+                                ? startedAt.ToString("yyyy-MM-dd HH:mm") // Nếu Title trống, dùng ngày tạo
+                                : reader["Title"].ToString();
+
                             var conversation = new Dictionary<string, object>
-                            {
-                                { "ConversationAIID", reader["ConversationAIID"] },
-                                { "UserID", reader["UserID"] },
-                                { "Title", reader["Title"] == DBNull.Value ? "New Chat" : reader["Title"] },
-                                { "StartedAt", reader["StartedAt"] },
-                                { "LastMessage", reader["LastMessage"] == DBNull.Value ? "No messages yet." : reader["LastMessage"] }
-                            };
+                    {
+                        { "ConversationAIID", reader["ConversationAIID"] },
+                        { "UserID", reader["UserID"] },
+                        { "Title", title }, // Sử dụng biến title đã được xử lý
+                        { "StartedAt", startedAt },
+                        { "LastMessage", reader["LastMessage"] == DBNull.Value ? "No messages yet." : reader["LastMessage"] }
+                    };
                             conversations.Add(conversation);
                         }
                     }
@@ -134,21 +139,62 @@ namespace TNS_TOEICTest.Models
 
             return initialData;
         }
-        public static async Task<Guid> CreateConversationAsync(string userId)
+        // ĐÂY LÀ CODE MỚI ĐÃ SỬA LỖI
+        public static async Task<Guid> CreateNewConversationAsync(string memberKey)
+        {
+            var newConversationId = Guid.NewGuid();
+            // Tiêu đề mặc định có thể để trống hoặc đặt theo ý bạn
+            var title = "New Conversation";
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                // Sửa "MemberKey" thành "UserID" để khớp với các hàm khác
+                var query = "INSERT INTO ConversationsWithAI (ConversationAIID, UserID, Title, StartedAt) VALUES (@ConversationAIID, @UserID, @Title, @StartedAt);";
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@ConversationAIID", newConversationId);
+                    command.Parameters.AddWithValue("@UserID", memberKey); // Sửa tham số thành @UserID
+                    command.Parameters.AddWithValue("@Title", title);
+                    command.Parameters.AddWithValue("@StartedAt", DateTime.Now);
+                    await command.ExecuteNonQueryAsync();
+                }
+            }
+            return newConversationId;
+        }
+
+        /// <summary>
+        /// Xóa một cuộc hội thoại và tất cả tin nhắn liên quan.
+        /// </summary>
+        public static async Task DeleteConversationAsync(Guid conversationId)
         {
             using (var connection = new SqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
-                var conversationId = Guid.NewGuid();
-                var createQuery = "INSERT INTO ConversationsWithAI (ConversationAIID, UserID, Title, StartedAt) OUTPUT INSERTED.ConversationAIID VALUES (@ConversationAIID, @UserID, @Title,@StartedAt)";
-                using (var createCommand = new SqlCommand(createQuery, connection))
+                // Do có ON DELETE CASCADE, chỉ cần xóa trong bảng ConversationsWithAI
+                var query = "DELETE FROM ConversationsWithAI WHERE ConversationAIID = @ConversationAIID; DELETE FROM MessageWithAI WHERE ConversationAIID = @ConversationAIID";
+                using (var command = new SqlCommand(query, connection))
                 {
-                    createCommand.Parameters.AddWithValue("@ConversationAIID", conversationId);
-                    createCommand.Parameters.AddWithValue("@UserID", userId);
-                    createCommand.Parameters.AddWithValue("@Title", "New Chat");
-                    createCommand.Parameters.AddWithValue("@StartedAt", DateTime.UtcNow);
-                    // Thực thi và trả về ID vừa được tạo
-                    return (Guid)await createCommand.ExecuteScalarAsync();
+                    command.Parameters.AddWithValue("@ConversationAIID", conversationId);
+                    await command.ExecuteNonQueryAsync();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Đổi tên (cập nhật Tiêu đề) của một cuộc hội thoại.
+        /// </summary>
+        public static async Task RenameConversationAsync(Guid conversationId, string newTitle)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                var query = "UPDATE ConversationsWithAI SET Title = @NewTitle WHERE ConversationAIID = @ConversationAIID;";
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@NewTitle", newTitle);
+                    command.Parameters.AddWithValue("@ConversationAIID", conversationId);
+                    await command.ExecuteNonQueryAsync();
                 }
             }
         }

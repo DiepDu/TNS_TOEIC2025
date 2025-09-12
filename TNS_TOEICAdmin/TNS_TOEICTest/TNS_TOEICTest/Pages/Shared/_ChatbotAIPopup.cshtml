@@ -1,14 +1,10 @@
-﻿<!-- =================================================================
-     HTML & CSS CHO CHATBOT AI - ĐẶT TRONG MỘT FILE PARTIAL VIEW RIÊNG
-     ================================================================= -->
-
-<!-- Nút bấm để mở Chatbot AI -->
+﻿
 <button id="ai-chatbot-toggler" class="ai-chat-bubble">
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path><path d="M5 3v4"></path><path d="M19 17v4"></path><path d="M3 5h4"></path><path d="M17 19h4"></path></svg>
 </button>
 
 <!-- Khung Popup của Chatbot -->
-<div class="ai-chatbot-popup">
+<div class="ai-chatbot-popup" data-conversation-id="">
     <!-- Sidebar Lịch sử Chat - Mặc định ẩn -->
     <div class="ai-history-sidebar">
         <button id="ai-new-chat-btn">
@@ -38,16 +34,21 @@
         </div>
 
         <div class="ai-chat-footer">
+            <div id="ai-file-preview-container"></div>
+
             <form id="ai-chat-form" class="ai-chat-form">
                 <textarea id="ai-message-input" placeholder="Ask Mr.TOEIC anything..." required></textarea>
                 <div class="ai-chat-controls">
-                    <input type="file" id="ai-file-input" hidden>
+                    <input type="file" id="ai-file-input" hidden multiple accept="image/*,.pdf,.txt,.docx">
+
                     <button type="button" id="ai-file-upload-btn" title="Attach file">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
                     </button>
+
                     <button type="button" id="ai-screen-analysis-btn" class="toggle-btn" title="Toggle screen content analysis">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                     </button>
+
                     <button type="submit" id="ai-send-message-btn" title="Send message">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" x2="11" y1="2" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                     </button>
@@ -345,5 +346,147 @@
     @@keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
+    }
+
+    .ai-conversation-item {
+        position: relative; /* Cần thiết để định vị các nút */
+        display: flex; /* Sắp xếp lại để chứa các nút */
+        align-items: center;
+        gap: 10px;
+    }
+
+    .ai-conversation-content {
+        flex-grow: 1;
+        overflow: hidden; /* Ngăn nội dung tràn ra ngoài */
+    }
+
+    .ai-conversation-actions {
+        display: none; /* Ẩn mặc định */
+        flex-shrink: 0;
+    }
+
+    .ai-conversation-item:hover .ai-conversation-actions {
+        display: flex; /* Hiện khi di chuột vào item */
+        gap: 5px;
+    }
+
+    .ai-conversation-actions button {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 50%;
+    }
+
+        .ai-conversation-actions button:hover {
+            background-color: #c9d2de;
+        }
+
+    /* Bổ sung style cho trạng thái sửa tên */
+    .ai-conversation-item.renaming .ai-conversation-content {
+        display: none; /* Ẩn tiêu đề cũ khi đang sửa */
+    }
+
+    .rename-container {
+        display: none; /* Ẩn mặc định */
+        flex-grow: 1;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .ai-conversation-item.renaming .rename-container {
+        display: flex; /* Hiện ra khi đang sửa */
+    }
+
+    .rename-container input {
+        width: 100%;
+        flex-grow: 1;
+        border: 1px solid var(--ai-primary-color);
+        border-radius: 5px;
+        padding: 8px;
+    }
+
+    .rename-container button {
+        background: none;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        cursor: pointer;
+        padding: 4px 8px;
+    }
+
+    #ai-file-preview-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 0 0 8px 0;
+        max-height: 120px;
+        overflow-y: auto;
+        border-bottom: 1px solid var(--ai-border-color); /* Thêm đường kẻ phân cách */
+        margin-bottom: 8px; /* Thêm khoảng cách với ô input */
+    }
+
+    .ai-file-preview-item {
+        position: relative;
+        border: 1px solid var(--ai-border-color);
+        border-radius: 8px;
+        padding: 5px;
+        background: #f8f9fa;
+        display: flex;
+        align-items: center;
+        max-width: 150px;
+    }
+
+        .ai-file-preview-item .preview-content {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            overflow: hidden;
+        }
+
+        .ai-file-preview-item img, .ai-file-preview-item video {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .ai-file-preview-item .file-icon {
+            font-size: 24px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ai-file-preview-item .file-name {
+            font-size: 0.8rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 80px;
+        }
+
+    .remove-file-btn {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #6c757d;
+        color: white;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        line-height: 1;
+        z-index: 1;
+    }
+
+    .audio-preview {
+        display: none; /* Ẩn trình phát audio mặc định */
     }
 </style>
