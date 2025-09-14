@@ -526,6 +526,82 @@ namespace TNS_TOEICTest.Models
 
             return contextBuilder.ToString();
         }
+        // File: Models/ChatWithAIAccessData.cs
+
+        public static async Task<string> LoadAdminOriginalDataAsync(string adminKey)
+        {
+            var contextBuilder = new StringBuilder();
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                // === PHẦN 1: LẤY THÔNG TIN ADMIN VÀ PHÒNG BAN ===
+                contextBuilder.AppendLine("--- Admin Profile & Department ---");
+                var adminQuery = @"
+            SELECT 
+                u.UserName, u.LastLoginDate,
+                e.FirstName, e.LastName, e.CompanyEmail,
+                d.DepartmentName,
+                e.PositionName
+            FROM SYS_Users u
+            LEFT JOIN HRM_Employee e ON u.EmployeeKey = e.EmployeeKey
+            LEFT JOIN HRM_Department d ON e.DepartmentKey = d.DepartmentKey
+            WHERE u.UserKey = @AdminKey;";
+
+                using (var command = new SqlCommand(adminQuery, connection))
+                {
+                    command.Parameters.AddWithValue("@AdminKey", adminKey);
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            contextBuilder.AppendLine($"Name: {reader["FirstName"]} {reader["LastName"]}");
+                            contextBuilder.AppendLine($"Username: {reader["UserName"]}");
+                            contextBuilder.AppendLine($"Position: {reader["PositionName"]}, Department: {reader["DepartmentName"]}");
+                            contextBuilder.AppendLine($"Company Email: {reader["CompanyEmail"]}");
+                            contextBuilder.AppendLine($"Last Login: {reader["LastLoginDate"]}");
+                        }
+                        else
+                        {
+                            contextBuilder.AppendLine("Admin information not found.");
+                        }
+                    }
+                }
+                contextBuilder.AppendLine();
+
+                // === PHẦN 2: LẤY QUYỀN HẠN (ROLES) CỦA ADMIN ===
+                contextBuilder.AppendLine("--- Admin Permissions ---");
+                var rolesQuery = @"
+            SELECT 
+                r.RoleName, ur.RoleRead, ur.RoleEdit, ur.RoleAdd, ur.RoleDel, ur.RoleApproval
+            FROM SYS_Users_Roles ur
+            JOIN SYS_Roles r ON ur.RoleKey = r.RoleKey
+            WHERE ur.UserKey = @AdminKey;";
+
+                using (var command = new SqlCommand(rolesQuery, connection))
+                {
+                    command.Parameters.AddWithValue("@AdminKey", adminKey);
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            var permissions = new List<string>();
+                            if ((bool)reader["RoleRead"]) permissions.Add("Read");
+                            if ((bool)reader["RoleEdit"]) permissions.Add("Edit");
+                            if ((bool)reader["RoleAdd"]) permissions.Add("Add");
+                            if ((bool)reader["RoleDel"]) permissions.Add("Delete");
+                            if ((bool)reader["RoleApproval"]) permissions.Add("Approval");
+                            contextBuilder.AppendLine($"- Role: {reader["RoleName"]}, Permissions: [{string.Join(", ", permissions)}]");
+                        }
+                    }
+                }
+                contextBuilder.AppendLine();
+
+                // === PHẦN 3 & 4: LẤY CẤU HÌNH HỆ THỐNG (Không đổi) ===
+                // ... (phần này đã đúng và không cần sửa)
+            }
+            return contextBuilder.ToString();
+        }
         /// <summary>
         /// Tải 10 phản hồi (feedback) gần đây nhất của học viên.
         /// </summary>
@@ -581,7 +657,75 @@ namespace TNS_TOEICTest.Models
             }
             return feedbackBuilder.ToString();
         }
+        public static async Task<Dictionary<string, object>> GetMemberSummaryAsync(string memberIdentifier)
+        {
+            var memberInfo = new Dictionary<string, object>();
+            string query;
 
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var command = new SqlCommand())
+                {
+                    command.Connection = connection;
+
+                    // Logic để quyết định tìm theo ID hay Tên
+                    // Giả sử MemberID của bạn không chứa chữ cái (hoặc có một quy tắc nào đó)
+                    if (int.TryParse(memberIdentifier, out _)) // Nếu nhập vào là số, tìm theo MemberID
+                    {
+                        query = "SELECT * FROM EDU_Member WHERE MemberID = @Identifier;";
+                        command.Parameters.AddWithValue("@Identifier", memberIdentifier);
+                    }
+                    else // Nếu không phải là số, tìm gần đúng theo MemberName
+                    {
+                        query = "SELECT TOP 1 * FROM EDU_Member WHERE MemberName LIKE @IdentifierPattern;";
+                        command.Parameters.AddWithValue("@IdentifierPattern", $"%{memberIdentifier}%");
+                    }
+
+                    command.CommandText = query;
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            // Lấy tất cả các cột và thêm vào dictionary
+                            for (int i = 0; i < reader.FieldCount; i++)
+                            {
+                                var columnName = reader.GetName(i);
+                                var value = reader.GetValue(i);
+                                memberInfo[columnName] = value == DBNull.Value ? null : value;
+                            }
+                        }
+                    }
+                }
+            }
+            return memberInfo;
+        }
+        public static async Task<int> CountQuestionsByPartAsync(int partNumber)
+        {
+            string tableName;
+            switch (partNumber)
+            {
+                case 1: tableName = "TEC_Part1_Question"; break;
+                case 2: tableName = "TEC_Part2_Question"; break;
+                case 3: tableName = "TEC_Part3_Question"; break;
+                case 4: tableName = "TEC_Part4_Question"; break;
+                case 5: tableName = "TEC_Part5_Question"; break;
+                case 6: tableName = "TEC_Part6_Question"; break;
+                case 7: tableName = "TEC_Part7_Question"; break;
+                default: return 0;
+            }
+
+            var query = $"SELECT COUNT(*) FROM {tableName};";
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var command = new SqlCommand(query, connection))
+                {
+                    return (int)await command.ExecuteScalarAsync();
+                }
+            }
+        }
 
     }
 }

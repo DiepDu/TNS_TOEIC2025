@@ -58,10 +58,10 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
-app.UseCors("AllowChat");
+
 
 app.UseRouting();
-
+app.UseCors("AllowChat");
 app.UseAuthentication();
 app.UseAuthorization();
 

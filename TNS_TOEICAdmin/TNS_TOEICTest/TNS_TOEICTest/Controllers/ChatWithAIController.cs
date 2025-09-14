@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using DocumentFormat.OpenXml.Packaging;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Security.Claims;
 using System.Text;
@@ -7,15 +9,6 @@ using TNS.Member;
 using TNS_TOEICTest.Models;
 using TNS_TOEICTest.Services;
 using UglyToad.PdfPig;
-using UglyToad.PdfPig.Content;
-using DocumentFormat.OpenXml.Packaging;
-using System.Collections.Generic;
-using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
-using Microsoft.AspNetCore.Http;
 
 namespace TNS_TOEICTest.Controllers
 {
@@ -35,36 +28,71 @@ namespace TNS_TOEICTest.Controllers
             _httpContextAccessor = httpContextAccessor;
             _cache = memoryCache;
         }
+        private string GetTargetMemberKey(string? userKeyFromRequest)
+        {
+            // Ưu tiên key được gửi lên từ request (dành cho Admin)
+            if (!string.IsNullOrEmpty(userKeyFromRequest))
+            {
+                return userKeyFromRequest;
+            }
+
+            // Nếu không có, lấy key từ cookie (dành cho Member tự chat)
+            var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
+            if (memberCookie == null) return null;
+
+            var memberLogin = new MemberLogin_Info(memberCookie);
+            return memberLogin.MemberKey;
+        }
+
+        // File: Controllers/ChatWithAIController.cs
+
         [HttpGet("GetInitialData")]
-        public async Task<IActionResult> GetInitialData()
+        public async Task<IActionResult> GetInitialData([FromQuery] string? userKey = null)
         {
             try
             {
-                var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
-                if (memberCookie == null) return Unauthorized("User principal not found.");
+                string cacheKey;
+                string backgroundData;
 
-                var memberLogin = new MemberLogin_Info(memberCookie);
-                var currentMemberKey = memberLogin.MemberKey;
-
-                if (string.IsNullOrEmpty(currentMemberKey))
+                // KIỂM TRA XEM ĐÂY LÀ REQUEST TỪ ADMIN HAY MEMBER
+                if (!string.IsNullOrEmpty(userKey))
                 {
-                    return Unauthorized("Member not authenticated.");
-                }
-                // === LOGIC MỚI: CHỦ ĐỘNG CACHING DỮ LIỆU NỀN ===
-                string cacheKey = $"ChatBackgroundData_{currentMemberKey}";
-                // Lần đầu mở chat, chúng ta sẽ tải dữ liệu nền và lưu vào cache
-                // để các lần gửi tin nhắn sau có thể dùng ngay mà không cần tải lại.
-                if (!_cache.TryGetValue(cacheKey, out _))
-                {
-                    var backgroundData = await ChatWithAIAccessData.LoadMemberOriginalDataAsync(currentMemberKey);
-                    var cacheEntryOptions = new MemoryCacheEntryOptions()
-                        .SetSlidingExpiration(TimeSpan.FromMinutes(15));
-                    _cache.Set(cacheKey, backgroundData, cacheEntryOptions);
-                }
-                // ===============================================
+                    // === LUỒNG XỬ LÝ CHO ADMIN ===
+                    var adminKey = GetTargetMemberKey(userKey);
+                    if (string.IsNullOrEmpty(adminKey)) return Unauthorized("Admin key not found.");
 
-                var initialData = await ChatWithAIAccessData.GetInitialChatDataAsync(currentMemberKey);
-                return Ok(initialData);
+                    cacheKey = $"ChatBackgroundData_Admin_{adminKey}";
+                    if (!_cache.TryGetValue(cacheKey, out backgroundData))
+                    {
+                        // Gọi hàm mới dành cho Admin
+                        backgroundData = await ChatWithAIAccessData.LoadAdminOriginalDataAsync(adminKey);
+                        var cacheEntryOptions = new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromMinutes(15));
+                        _cache.Set(cacheKey, backgroundData, cacheEntryOptions);
+                    }
+
+                    // Lấy lịch sử chat của Admin
+                    var initialData = await ChatWithAIAccessData.GetInitialChatDataAsync(adminKey);
+                    return Ok(initialData);
+                }
+                else
+                {
+                    // === LUỒNG XỬ LÝ CHO MEMBER (NHƯ CŨ) ===
+                    var memberKey = GetTargetMemberKey(null);
+                    if (string.IsNullOrEmpty(memberKey)) return Unauthorized("Member key not found.");
+
+                    cacheKey = $"ChatBackgroundData_Member_{memberKey}";
+                    if (!_cache.TryGetValue(cacheKey, out backgroundData))
+                    {
+                        // Gọi hàm cũ dành cho Member
+                        backgroundData = await ChatWithAIAccessData.LoadMemberOriginalDataAsync(memberKey);
+                        var cacheEntryOptions = new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromMinutes(15));
+                        _cache.Set(cacheKey, backgroundData, cacheEntryOptions);
+                    }
+
+                    // Lấy lịch sử chat của Member
+                    var initialData = await ChatWithAIAccessData.GetInitialChatDataAsync(memberKey);
+                    return Ok(initialData);
+                }
             }
             catch (Exception ex)
             {
@@ -72,28 +100,22 @@ namespace TNS_TOEICTest.Controllers
                 return StatusCode(500, "An internal server error occurred.");
             }
         }
-        [HttpPost("CreateNewConversation")] 
-        public async Task<IActionResult> CreateNewConversation()
+        [HttpPost("CreateNewConversation")]
+        // THAY ĐỔI: Nhận một object chứa userKey tùy chọn từ body
+        public async Task<IActionResult> CreateNewConversation([FromBody] UserKeyRequest? request)
         {
             try
-            {              
-                var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
-                if (memberCookie == null)
-                {
-                    return Unauthorized(new { success = false, message = "Could not retrieve user principal." });
-                }
-                var memberLogin = new MemberLogin_Info(memberCookie);
-                var currentMemberKey = memberLogin.MemberKey;
+            {
+                // THAY ĐỔI: Sử dụng hàm helper
+                var targetMemberKey = GetTargetMemberKey(request?.UserKey);
 
-                if (string.IsNullOrEmpty(currentMemberKey))
+                if (string.IsNullOrEmpty(targetMemberKey))
                 {
-                    return Unauthorized(new { success = false, message = "Member not authenticated." });
+                    return Unauthorized(new { success = false, message = "Member/User key could not be determined." });
                 }
 
-                // === Bước 2: Gọi hàm AccessData để tạo một bản ghi mới trong CSDL ===
-                var newConversationId = await ChatWithAIAccessData.CreateNewConversationAsync(currentMemberKey);
+                var newConversationId = await ChatWithAIAccessData.CreateNewConversationAsync(targetMemberKey);
 
-                // === Bước 3: Trả về ID của cuộc hội thoại vừa được tạo ===
                 return Ok(new { success = true, conversationId = newConversationId });
             }
             catch (Exception ex)
@@ -102,6 +124,7 @@ namespace TNS_TOEICTest.Controllers
                 return StatusCode(500, new { success = false, message = "An internal server error occurred while creating conversation." });
             }
         }
+
         [HttpGet("GetMoreMessages")]
         public async Task<IActionResult> GetMoreMessages(Guid conversationId, int skipCount)
         {
@@ -125,22 +148,20 @@ namespace TNS_TOEICTest.Controllers
         /// API Endpoint để lấy danh sách tóm tắt tất cả các cuộc hội thoại.
         /// </summary>
         [HttpGet("GetAllConversations")]
-        public async Task<IActionResult> GetAllConversations()
+        // THAY ĐỔI: Thêm tham số userKey tùy chọn từ URL (query string)
+        public async Task<IActionResult> GetAllConversations([FromQuery] string? userKey = null)
         {
             try
             {
-                var memberCookie = _httpContextAccessor.HttpContext?.User as ClaimsPrincipal;
-                if (memberCookie == null) return Unauthorized("User principal not found.");
+                // THAY ĐỔI: Sử dụng hàm helper
+                var targetMemberKey = GetTargetMemberKey(userKey);
 
-                var memberLogin = new MemberLogin_Info(memberCookie);
-                var currentMemberKey = memberLogin.MemberKey;
-
-                if (string.IsNullOrEmpty(currentMemberKey))
+                if (string.IsNullOrEmpty(targetMemberKey))
                 {
-                    return Unauthorized("Member not authenticated.");
+                    return Unauthorized("Member/User key could not be determined.");
                 }
 
-                var conversations = await ChatWithAIAccessData.GetConversationsWithAIAsync(currentMemberKey);
+                var conversations = await ChatWithAIAccessData.GetConversationsWithAIAsync(targetMemberKey);
                 return Ok(conversations);
             }
             catch (Exception ex)
@@ -157,25 +178,23 @@ namespace TNS_TOEICTest.Controllers
                 if (data == null || data.ConversationId == Guid.Empty)
                     return BadRequest(new { success = false, message = "Invalid request data." });
 
-                var memberCookie = _httpContextAccessor.HttpContext.User as ClaimsPrincipal;
-                var memberLogin = new MemberLogin_Info(memberCookie);
-                var memberId = memberLogin.MemberKey;
-                if (string.IsNullOrEmpty(memberId))
-                    return Unauthorized(new { success = false, message = "User not authenticated." });
+                var targetMemberKey = GetTargetMemberKey(data.UserKey);
+                if (string.IsNullOrEmpty(targetMemberKey))
+                    return Unauthorized(new { success = false, message = "Member/User key could not be determined." });
+
 
                 var apiKey = _configuration["GeminiApiKey"];
                 if (string.IsNullOrEmpty(apiKey))
                     return StatusCode(500, new { success = false, message = "AI service not configured." });
 
                 await ChatWithAIAccessData.SaveMessageAsync(data.ConversationId, "user", data.Message);
-
-                var cacheKey = $"MemberData_{memberId}";
+                var cacheKey = $"MemberData_{targetMemberKey}";
                 if (!_cache.TryGetValue(cacheKey, out string backgroundData))
                 {
-                    backgroundData = await ChatWithAIAccessData.LoadMemberOriginalDataAsync(memberId);
+                    backgroundData = await ChatWithAIAccessData.LoadMemberOriginalDataAsync(targetMemberKey);
                     _cache.Set(cacheKey, backgroundData, new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromMinutes(30)));
                 }
-                string recentFeedbacks = await ChatWithAIAccessData.LoadRecentFeedbacksAsync(memberId);
+                string recentFeedbacks = await ChatWithAIAccessData.LoadRecentFeedbacksAsync(targetMemberKey);
                 var chatHistoryForPrompt = await ChatWithAIAccessData.GetMessageHistoryForApiAsync(data.ConversationId);
                 string textPrompt = _promptService.BuildPromptForMember(backgroundData, recentFeedbacks, chatHistoryForPrompt, data.Message);
 
@@ -247,6 +266,148 @@ namespace TNS_TOEICTest.Controllers
                 return StatusCode(500, new { success = false, message = $"An internal server error occurred: {ex.Message}" });
             }
         }
+
+
+
+
+        // File: Controllers/ChatWithAIController.cs
+
+        // File: Controllers/ChatWithAIController.cs
+
+        // File: Controllers/ChatWithAIController.cs
+
+        [HttpPost("HandleAdminChat")]
+        public async Task<IActionResult> HandleAdminChat([FromBody] ChatRequest data)
+        {
+            try
+            {
+                var adminKey = GetTargetMemberKey(data.UserKey);
+                if (string.IsNullOrEmpty(adminKey))
+                    return Unauthorized(new { success = false, message = "Admin key not found." });
+
+                var apiKey = _configuration["GeminiApiKey"];
+                if (string.IsNullOrEmpty(apiKey))
+                    return StatusCode(500, new { success = false, message = "API key is not configured." });
+
+                // --- B1: Chuẩn bị dữ liệu ---
+                var backgroundData = await ChatWithAIAccessData.LoadAdminOriginalDataAsync(adminKey);
+                var chatHistory = await ChatWithAIAccessData.GetMessageHistoryForApiAsync(data.ConversationId);
+                string initialPrompt = _promptService.BuildPromptForAdmin(backgroundData, chatHistory, data.Message);
+
+                var tools = new List<GeminiTool>
+        {
+            new GeminiTool
+            {
+                FunctionDeclarations = new List<GeminiFunctionDeclaration>
+                {
+                    new GeminiFunctionDeclaration
+                    {
+                        Name = "get_member_summary",
+                        Description = "Get a full profile of a member using their exact MemberID or a partial MemberName.",
+                        Parameters = new GeminiSchema
+                        {
+                            Properties = new Dictionary<string, GeminiSchemaProperty>
+                            {
+                                { "member_identifier", new GeminiSchemaProperty { Type = "STRING", Description = "The exact MemberID or a part of the MemberName." } }
+                            },
+                            Required = new List<string> { "member_identifier" }
+                        }
+                    },
+                    new GeminiFunctionDeclaration
+                    {
+                        Name = "count_questions_by_part",
+                        Description = "Count the total number of questions for a specific TOEIC part.",
+                        Parameters = new GeminiSchema
+                        {
+                            Properties = new Dictionary<string, GeminiSchemaProperty>
+                            {
+                                { "part_number", new GeminiSchemaProperty { Type = "NUMBER", Description = "The part number (1 through 7)." } }
+                            },
+                            Required = new List<string> { "part_number" }
+                        }
+                    }
+                }
+            }
+        };
+
+                var apiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={apiKey}";
+                string finalAnswer = null;
+
+                // --- B2: Loop xử lý ---
+                var contentsList = new List<object>
+        {
+            new { role = "user", parts = new[] { new { text = initialPrompt } } }
+        };
+
+                while (true)
+                {
+                    JObject responseJson;
+                    using (var client = new HttpClient())
+                    {
+                        var payload = new { contents = contentsList, tools };
+                        var httpContent = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");
+                        var httpResponse = await client.PostAsync(apiUrl, httpContent);
+                        if (!httpResponse.IsSuccessStatusCode)
+                        {
+                            var errorContent = await httpResponse.Content.ReadAsStringAsync();
+                            throw new Exception($"API call failed: {errorContent}");
+                        }
+                        var jsonResponse = await httpResponse.Content.ReadAsStringAsync();
+                        responseJson = JObject.Parse(jsonResponse);
+                    }
+
+                    var candidate = responseJson["candidates"]?[0];
+                    var functionCallPart = candidate?["content"]?["parts"]?.FirstOrDefault(p => p["functionCall"] != null);
+
+                    if (functionCallPart != null)
+                    {
+                        // --- Có functionCall ---
+                        var functionCall = functionCallPart["functionCall"];
+                        var functionName = functionCall["name"].ToString();
+                        var args = functionCall["args"];
+                        object functionResult = null;
+
+                        if (functionName == "get_member_summary")
+                        {
+                            var identifier = args["member_identifier"].ToString();
+                            functionResult = await ChatWithAIAccessData.GetMemberSummaryAsync(identifier);
+                        }
+                        else if (functionName == "count_questions_by_part")
+                        {
+                            var partNumber = (int)args["part_number"];
+                            functionResult = new { total = await ChatWithAIAccessData.CountQuestionsByPartAsync(partNumber) };
+                        }
+
+                        // Gửi kết quả function cho AI để nó reasoning tiếp
+                        var functionResponsePartObj = new
+                        {
+                            functionResponse = new { name = functionName, response = functionResult }
+                        };
+
+                        contentsList.Add(candidate["content"]); // add original function call
+                        contentsList.Add(new { role = "user", parts = new[] { functionResponsePartObj } });
+                    }
+                    else
+                    {
+                        // --- Không còn functionCall, lấy câu trả lời cuối ---
+                        finalAnswer = candidate?["content"]?["parts"]?[0]?["text"]?.ToString();
+                        break;
+                    }
+                }
+
+                // --- B3: Lưu vào DB và trả về ---
+                await ChatWithAIAccessData.SaveMessageAsync(data.ConversationId, "user", data.Message);
+                await ChatWithAIAccessData.SaveMessageAsync(data.ConversationId, "AI", finalAnswer);
+
+                return Ok(new { success = true, message = finalAnswer ?? "Sorry, I couldn't process the request." });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[HandleAdminChat Error]: {ex}");
+                return StatusCode(500, new { success = false, message = $"An error occurred: {ex.Message}" });
+            }
+        }
+
         [HttpDelete("DeleteConversation/{conversationId}")]
         public async Task<IActionResult> DeleteConversation(Guid conversationId)
         {
@@ -279,8 +440,9 @@ namespace TNS_TOEICTest.Controllers
         {
             public Guid ConversationId { get; set; }
             public string Message { get; set; }
-            public string? ScreenData { get; set; }
+            // THAY ĐỔI: Đã xóa ScreenData không còn dùng
             public List<FileAttachmentDto>? Files { get; set; }
+            public string? UserKey { get; set; } // THAY ĐỔI: Thêm UserKey
         }
         public class FileAttachmentDto
         {
@@ -292,6 +454,43 @@ namespace TNS_TOEICTest.Controllers
         {
             public Guid ConversationId { get; set; }
             public string NewTitle { get; set; }
+        }
+        public class UserKeyRequest
+        {
+            public string? UserKey { get; set; }
+        }
+        public class GeminiTool
+        {
+            [JsonProperty("function_declarations")]
+            public List<GeminiFunctionDeclaration> FunctionDeclarations { get; set; }
+        }
+
+        public class GeminiFunctionDeclaration
+        {
+            [JsonProperty("name")]
+            public string Name { get; set; }
+            [JsonProperty("description")]
+            public string Description { get; set; }
+            [JsonProperty("parameters")]
+            public GeminiSchema Parameters { get; set; }
+        }
+
+        public class GeminiSchema
+        {
+            [JsonProperty("type")]
+            public string Type { get; set; } = "OBJECT";
+            [JsonProperty("properties")]
+            public Dictionary<string, GeminiSchemaProperty> Properties { get; set; }
+            [JsonProperty("required")]
+            public List<string> Required { get; set; }
+        }
+
+        public class GeminiSchemaProperty
+        {
+            [JsonProperty("type")]
+            public string Type { get; set; }
+            [JsonProperty("description")]
+            public string Description { get; set; }
         }
     }
 }

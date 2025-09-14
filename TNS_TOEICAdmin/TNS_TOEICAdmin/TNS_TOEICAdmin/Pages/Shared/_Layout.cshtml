@@ -775,6 +775,7 @@
 
         <!-- Thêm render file _FeedbackPopup.cshtml -->
         @await Html.PartialAsync("~/Pages/Shared/Partials/_FeedbackPopup.cshtml")
+        @await Html.PartialAsync("~/Pages/Shared/Partials/_ChatbotAIPopup.cshtml")
     </div>
 
     <script src="~/lib/jquery/jquery.min.js"></script>
@@ -785,7 +786,8 @@
     <script src="~/lib/datatables/js/dataTables.min.js"></script>
     <script src="~/lib/chart/chart.umd.min.js"></script>
     <script src="~/lib/signalr/dist/browser/signalr.min.js"></script>
-    <script src="~/js/feedbackPopup.js"></script> 
+    <script src="~/js/feedbackPopup.js"></script>
+    <script src="~/js/chatbot_admin.js"></script>
     <script>
         $(document).ready(function () {
             function debounce(func, wait) {

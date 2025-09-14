@@ -1,4 +1,5 @@
 ﻿using Google.Cloud.AIPlatform.V1;
+using Google.Protobuf.WellKnownTypes;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -82,5 +83,57 @@ namespace TNS_TOEICTest.Services
 
             return promptBuilder.ToString();
         }
-    }
+
+        // File: Services/PromptEngineeringService.cs
+
+        public string BuildPromptForAdmin(
+              string adminBackgroundData,
+              IEnumerable<Content> chatHistory,
+              string currentUserMessage)
+        {
+            var promptBuilder = new StringBuilder();
+            var vietnamTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time"));
+            string formattedVietnamTime = vietnamTime.ToString("'Thứ' dddd, HH:mm:ss 'ngày' dd/MM/yyyy '(GMT+7)'", new CultureInfo("vi-VN"));
+
+            promptBuilder.AppendLine("<core_instructions>");
+            promptBuilder.AppendLine("You are a professional AI Admin Assistant. Your mission is to help administrators by querying data from the database.");
+            promptBuilder.AppendLine($"- Current Time: {formattedVietnamTime}");
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine("**FUNCTION CALLING RULES:**");
+            promptBuilder.AppendLine("When the admin asks for data, you MUST respond ONLY with a JSON object in the format: {\"functionCall\": {\"name\": \"function_name\", \"args\": {\"arg_name\": \"value\"}}}");
+            promptBuilder.AppendLine("Do not add any other text outside of this JSON object.");
+            promptBuilder.AppendLine("The available functions are:");
+            promptBuilder.AppendLine("1. `get_member_summary`: Get a member's profile. Arguments: {\"member_identifier\": \"<member_id_or_name>\"}");
+            promptBuilder.AppendLine("2. `count_questions_by_part`: Count questions in a TOEIC part. Arguments: {\"part_number\": <part_number>}");
+
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine("**MULTI-CALL RULE:**");
+            promptBuilder.AppendLine("- If the admin asks for the *total number of questions across the whole bank*, you MUST call `count_questions_by_part` for each part (1 through 7).");
+            promptBuilder.AppendLine("- After you receive the results for each part, you MUST sum them together and provide the final total.");
+            promptBuilder.AppendLine("- Therefore, you may need to call the same function multiple times in sequence before giving the final answer.");
+            promptBuilder.AppendLine("</core_instructions>");
+            promptBuilder.AppendLine();
+
+            promptBuilder.AppendLine("<admin_profile>");
+            promptBuilder.AppendLine(adminBackgroundData);
+            promptBuilder.AppendLine("</admin_profile>");
+            promptBuilder.AppendLine();
+
+            promptBuilder.AppendLine("<conversation_history>");
+            foreach (var message in chatHistory)
+            {
+                var textPart = message.Parts?.FirstOrDefault()?.Text ?? "";
+                promptBuilder.AppendLine($"<{message.Role.ToLower()}>{textPart}</{message.Role.ToLower()}>");
+            }
+            promptBuilder.AppendLine("</conversation_history>");
+            promptBuilder.AppendLine();
+
+            promptBuilder.AppendLine("<admin_new_question>");
+            promptBuilder.AppendLine(currentUserMessage);
+            promptBuilder.AppendLine("</admin_new_question>");
+
+            return promptBuilder.ToString();
+        }
+    
+}
 }
