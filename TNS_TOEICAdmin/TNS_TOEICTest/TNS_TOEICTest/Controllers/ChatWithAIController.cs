@@ -270,11 +270,6 @@ namespace TNS_TOEICTest.Controllers
 
 
 
-        // File: Controllers/ChatWithAIController.cs
-
-        // File: Controllers/ChatWithAIController.cs
-
-        // File: Controllers/ChatWithAIController.cs
 
         [HttpPost("HandleAdminChat")]
         public async Task<IActionResult> HandleAdminChat([FromBody] ChatRequest data)
@@ -313,17 +308,15 @@ namespace TNS_TOEICTest.Controllers
                             Required = new List<string> { "member_identifier" }
                         }
                     },
-                    new GeminiFunctionDeclaration
+                   new GeminiFunctionDeclaration
                     {
-                        Name = "count_questions_by_part",
-                        Description = "Count the total number of questions for a specific TOEIC part.",
+                        Name = "GetQuestionCounts", // <-- Tên mới
+                        Description = "Counts and categorizes all questions in the question bank.", // <-- Mô tả mới
                         Parameters = new GeminiSchema
                         {
-                            Properties = new Dictionary<string, GeminiSchemaProperty>
-                            {
-                                { "part_number", new GeminiSchemaProperty { Type = "NUMBER", Description = "The part number (1 through 7)." } }
-                            },
-                            Required = new List<string> { "part_number" }
+                            // Tham số rỗng vì hàm mới không cần tham số
+                            Properties = new Dictionary<string, GeminiSchemaProperty> { },
+                            Required = new List<string> { }
                         }
                     }
                 }
@@ -372,17 +365,17 @@ namespace TNS_TOEICTest.Controllers
                             var identifier = args["member_identifier"].ToString();
                             functionResult = await ChatWithAIAccessData.GetMemberSummaryAsync(identifier);
                         }
-                        else if (functionName == "count_questions_by_part")
+                        else if (functionName == "GetQuestionCounts") // <-- Kiểm tra tên hàm mới
                         {
-                            var partNumber = (int)args["part_number"];
-                            functionResult = new { total = await ChatWithAIAccessData.CountQuestionsByPartAsync(partNumber) };
+                            // Gọi hàm mới không cần tham số và lấy kết quả dictionary
+                            functionResult = await ChatWithAIAccessData.GetQuestionCountsAsync();
                         }
 
-                        // Gửi kết quả function cho AI để nó reasoning tiếp
                         var functionResponsePartObj = new
                         {
                             functionResponse = new { name = functionName, response = functionResult }
                         };
+
 
                         contentsList.Add(candidate["content"]); // add original function call
                         contentsList.Add(new { role = "user", parts = new[] { functionResponsePartObj } });

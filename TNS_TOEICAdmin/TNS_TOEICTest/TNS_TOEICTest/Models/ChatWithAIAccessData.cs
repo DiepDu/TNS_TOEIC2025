@@ -1,8 +1,8 @@
 ﻿using Google.Cloud.AIPlatform.V1;
 using Microsoft.Data.SqlClient;
-
+using System.Text.RegularExpressions;
 using System.Text;
-using static Google.Api.Gax.Grpc.Gcp.AffinityConfig.Types;
+
 
 namespace TNS_TOEICTest.Models
 {
@@ -661,6 +661,7 @@ namespace TNS_TOEICTest.Models
         {
             var memberInfo = new Dictionary<string, object>();
             string query;
+            string emailPattern = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
 
             using (var connection = new SqlConnection(_connectionString))
             {
@@ -669,16 +670,15 @@ namespace TNS_TOEICTest.Models
                 {
                     command.Connection = connection;
 
-                    // Logic để quyết định tìm theo ID hay Tên
-                    // Giả sử MemberID của bạn không chứa chữ cái (hoặc có một quy tắc nào đó)
-                    if (int.TryParse(memberIdentifier, out _)) // Nếu nhập vào là số, tìm theo MemberID
+                    if (Regex.IsMatch(memberIdentifier, emailPattern, RegexOptions.IgnoreCase))
                     {
                         query = "SELECT * FROM EDU_Member WHERE MemberID = @Identifier;";
                         command.Parameters.AddWithValue("@Identifier", memberIdentifier);
                     }
-                    else // Nếu không phải là số, tìm gần đúng theo MemberName
+                    else
                     {
-                        query = "SELECT TOP 1 * FROM EDU_Member WHERE MemberName LIKE @IdentifierPattern;";
+                        // THAY ĐỔI NẰM Ở ĐÂY
+                        query = "SELECT TOP 1 * FROM EDU_Member WHERE MemberName COLLATE Vietnamese_CI_AI LIKE @IdentifierPattern COLLATE Vietnamese_CI_AI;";
                         command.Parameters.AddWithValue("@IdentifierPattern", $"%{memberIdentifier}%");
                     }
 
@@ -688,7 +688,6 @@ namespace TNS_TOEICTest.Models
                     {
                         if (await reader.ReadAsync())
                         {
-                            // Lấy tất cả các cột và thêm vào dictionary
                             for (int i = 0; i < reader.FieldCount; i++)
                             {
                                 var columnName = reader.GetName(i);
@@ -701,30 +700,66 @@ namespace TNS_TOEICTest.Models
             }
             return memberInfo;
         }
-        public static async Task<int> CountQuestionsByPartAsync(int partNumber)
+        public static async Task<Dictionary<string, object>> GetQuestionCountsAsync()
         {
-            string tableName;
-            switch (partNumber)
-            {
-                case 1: tableName = "TEC_Part1_Question"; break;
-                case 2: tableName = "TEC_Part2_Question"; break;
-                case 3: tableName = "TEC_Part3_Question"; break;
-                case 4: tableName = "TEC_Part4_Question"; break;
-                case 5: tableName = "TEC_Part5_Question"; break;
-                case 6: tableName = "TEC_Part6_Question"; break;
-                case 7: tableName = "TEC_Part7_Question"; break;
-                default: return 0;
-            }
+            var counts = new Dictionary<string, object>();
 
-            var query = $"SELECT COUNT(*) FROM {tableName};";
+            // Giả định rằng câu hỏi cha có cột 'Parent' là NULL hoặc 0.
+            // Bạn có thể cần điều chỉnh điều kiện này cho đúng với cấu trúc DB của mình.
+            string query = @"
+        SELECT 'Part1' AS Part, COUNT(*) AS QuestionCount FROM TEC_Part1_Question UNION ALL
+        SELECT 'Part2' AS Part, COUNT(*) AS QuestionCount FROM TEC_Part2_Question UNION ALL
+        SELECT 'Part5' AS Part, COUNT(*) AS QuestionCount FROM TEC_Part5_Question UNION ALL
+
+        -- Đếm câu hỏi cha (Passages) cho Part 3
+        SELECT 'Part3_Passages' AS Part, COUNT(*) FROM TEC_Part3_Question WHERE Parent IS NULL UNION ALL
+        -- Đếm câu hỏi con cho Part 3
+        SELECT 'Part3_Questions' AS Part, COUNT(*) FROM TEC_Part3_Question WHERE Parent IS NOT NULL UNION ALL
+
+        -- Đếm câu hỏi cha (Passages) cho Part 4
+        SELECT 'Part4_Passages' AS Part, COUNT(*) FROM TEC_Part4_Question WHERE Parent IS NULL UNION ALL
+        -- Đếm câu hỏi con cho Part 4
+        SELECT 'Part4_Questions' AS Part, COUNT(*) FROM TEC_Part4_Question WHERE Parent IS NOT NULL UNION ALL
+
+        -- Đếm câu hỏi cha (Passages) cho Part 6
+        SELECT 'Part6_Passages' AS Part, COUNT(*) FROM TEC_Part6_Question WHERE Parent IS NULL UNION ALL
+        -- Đếm câu hỏi con cho Part 6
+        SELECT 'Part6_Questions' AS Part, COUNT(*) FROM TEC_Part6_Question WHERE Parent IS NOT NULL UNION ALL
+
+        -- Đếm câu hỏi cha (Passages) cho Part 7
+        SELECT 'Part7_Passages' AS Part, COUNT(*) FROM TEC_Part7_Question WHERE Parent IS NULL UNION ALL
+        -- Đếm câu hỏi con cho Part 7
+        SELECT 'Part7_Questions' AS Part, COUNT(*) FROM TEC_Part7_Question WHERE Parent IS NOT NULL;
+    ";
+
             using (var connection = new SqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
                 using (var command = new SqlCommand(query, connection))
                 {
-                    return (int)await command.ExecuteScalarAsync();
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            counts[reader.GetString(0)] = reader.GetInt32(1);
+                        }
+                    }
                 }
             }
+
+            // Tính toán tổng số câu hỏi thực tế (không tính các passages)
+            int totalQuestions = 0;
+            totalQuestions += counts.ContainsKey("Part1") ? (int)counts["Part1"] : 0;
+            totalQuestions += counts.ContainsKey("Part2") ? (int)counts["Part2"] : 0;
+            totalQuestions += counts.ContainsKey("Part5") ? (int)counts["Part5"] : 0;
+            totalQuestions += counts.ContainsKey("Part3_Questions") ? (int)counts["Part3_Questions"] : 0;
+            totalQuestions += counts.ContainsKey("Part4_Questions") ? (int)counts["Part4_Questions"] : 0;
+            totalQuestions += counts.ContainsKey("Part6_Questions") ? (int)counts["Part6_Questions"] : 0;
+            totalQuestions += counts.ContainsKey("Part7_Questions") ? (int)counts["Part7_Questions"] : 0;
+
+            counts["Total_Actual_Questions"] = totalQuestions;
+
+            return counts;
         }
 
     }
