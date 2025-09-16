@@ -526,16 +526,12 @@ namespace TNS_TOEICTest.Models
 
             return contextBuilder.ToString();
         }
-        // File: Models/ChatWithAIAccessData.cs
-
         public static async Task<string> LoadAdminOriginalDataAsync(string adminKey)
         {
             var contextBuilder = new StringBuilder();
             using (var connection = new SqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
-
-                // === PHẦN 1: LẤY THÔNG TIN ADMIN VÀ PHÒNG BAN ===
                 contextBuilder.AppendLine("--- Admin Profile & Department ---");
                 var adminQuery = @"
             SELECT 
@@ -597,8 +593,43 @@ namespace TNS_TOEICTest.Models
                 }
                 contextBuilder.AppendLine();
 
-                // === PHẦN 3 & 4: LẤY CẤU HÌNH HỆ THỐNG (Không đổi) ===
-                // ... (phần này đã đúng và không cần sửa)
+                var toeicConfigQuery = "SELECT TOP 1 * FROM TOEICConfiguration;";
+                using (var command = new SqlCommand(toeicConfigQuery, connection))
+                {
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            contextBuilder.AppendLine("Number of questions per part:");
+                            contextBuilder.AppendLine($"  - Part 1: {reader["NumberOfPart1"]}, Part 2: {reader["NumberOfPart2"]}, Part 3: {reader["NumberOfPart3"]}, Part 4: {reader["NumberOfPart4"]}");
+                            contextBuilder.AppendLine($"  - Part 5: {reader["NumberOfPart5"]}, Part 6: {reader["NumberOfPart6"]}, Part 7: {reader["NumberOfPart7"]}");
+                            contextBuilder.AppendLine($"Total Duration: {reader["Duration"]} minutes");
+                        }
+                    }
+                }
+                contextBuilder.AppendLine();
+
+                // --- Truy vấn bảng SkillLevelDistribution ---
+                contextBuilder.AppendLine("Skill Level Distribution (%):");
+                var skillDistQuery = "SELECT Part, SkillLevel1, SkillLevel2, SkillLevel3, SkillLevel4, SkillLevel5 FROM SkillLevelDistribution ORDER BY Part;";
+                using (var command = new SqlCommand(skillDistQuery, connection))
+                {
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            contextBuilder.AppendLine(
+                                $"  - Part {reader["Part"]}: [" +
+                                $"Level 1: {reader["SkillLevel1"]}%, " +
+                                $"Level 2: {reader["SkillLevel2"]}%, " +
+                                $"Level 3: {reader["SkillLevel3"]}%, " +
+                                $"Level 4: {reader["SkillLevel4"]}%, " +
+                                $"Level 5: {reader["SkillLevel5"]}%]"
+                            );
+                        }
+                    }
+                }
+                contextBuilder.AppendLine();
             }
             return contextBuilder.ToString();
         }
@@ -660,42 +691,238 @@ namespace TNS_TOEICTest.Models
         public static async Task<Dictionary<string, object>> GetMemberSummaryAsync(string memberIdentifier)
         {
             var memberInfo = new Dictionary<string, object>();
-            string query;
             string emailPattern = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
 
             using (var connection = new SqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
-                using (var command = new SqlCommand())
+
+                // === BƯỚC 1: TÌM KIẾM THÀNH VIÊN ===
+                string initialQuery;
+                var initialCommand = new SqlCommand();
+                initialCommand.Connection = connection;
+
+                if (Regex.IsMatch(memberIdentifier, emailPattern, RegexOptions.IgnoreCase))
                 {
-                    command.Connection = connection;
+                    initialQuery = "SELECT * FROM EDU_Member WHERE MemberID = @Identifier;";
+                    initialCommand.Parameters.AddWithValue("@Identifier", memberIdentifier);
+                }
+                else
+                {
+                    initialQuery = "SELECT TOP 1 * FROM EDU_Member WHERE MemberName COLLATE Vietnamese_CI_AI LIKE @IdentifierPattern COLLATE Vietnamese_CI_AI;";
+                    initialCommand.Parameters.AddWithValue("@IdentifierPattern", $"%{memberIdentifier}%");
+                }
+                initialCommand.CommandText = initialQuery;
 
-                    if (Regex.IsMatch(memberIdentifier, emailPattern, RegexOptions.IgnoreCase))
-                    {
-                        query = "SELECT * FROM EDU_Member WHERE MemberID = @Identifier;";
-                        command.Parameters.AddWithValue("@Identifier", memberIdentifier);
-                    }
-                    else
-                    {
-                        // THAY ĐỔI NẰM Ở ĐÂY
-                        query = "SELECT TOP 1 * FROM EDU_Member WHERE MemberName COLLATE Vietnamese_CI_AI LIKE @IdentifierPattern COLLATE Vietnamese_CI_AI;";
-                        command.Parameters.AddWithValue("@IdentifierPattern", $"%{memberIdentifier}%");
-                    }
+                string? memberKey = null;
 
-                    command.CommandText = query;
-
-                    using (var reader = await command.ExecuteReaderAsync())
+                using (initialCommand)
+                {
+                    using (var reader = await initialCommand.ExecuteReaderAsync())
                     {
                         if (await reader.ReadAsync())
                         {
+                            // Lấy thông tin cơ bản
                             for (int i = 0; i < reader.FieldCount; i++)
                             {
                                 var columnName = reader.GetName(i);
                                 var value = reader.GetValue(i);
                                 memberInfo[columnName] = value == DBNull.Value ? null : value;
                             }
+                            memberKey = memberInfo.ContainsKey("MemberKey") ? memberInfo["MemberKey"].ToString() : null;
                         }
                     }
+                }
+
+                // NẾU TÌM THẤY THÀNH VIÊN, TIẾN HÀNH PHÂN TÍCH SÂU
+                if (!string.IsNullOrEmpty(memberKey))
+                {
+                    // === PHẦN 2: PHÂN TÍCH TỔNG QUAN HIỆU SUẤT ===
+                    var allResultsQuery = "SELECT TestScore FROM ResultOfUserForTest WHERE MemberKey = @MemberKey AND TestScore IS NOT NULL ORDER BY StartTime ASC;";
+                    var allScores = new List<int>();
+                    using (var command = new SqlCommand(allResultsQuery, connection))
+                    {
+                        command.Parameters.AddWithValue("@MemberKey", memberKey);
+                        using (var reader = await command.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                allScores.Add(Convert.ToInt32(reader["TestScore"]));
+                            }
+                        }
+                    }
+
+                    var performanceSummary = new Dictionary<string, object>();
+                    if (allScores.Count > 0)
+                    {
+                        performanceSummary["HighestScore"] = allScores.Max();
+                        performanceSummary["LowestScore"] = allScores.Min();
+                        performanceSummary["AverageScore"] = $"{allScores.Average():F0} (trên {allScores.Count} bài)";
+
+                        if (allScores.Count >= 3)
+                        {
+                            var firstThreeAvg = allScores.Take(3).Average();
+                            var lastThreeAvg = allScores.Skip(allScores.Count - 3).Average();
+                            string trend = lastThreeAvg > firstThreeAvg + 10 ? "Clearly Upward" : (lastThreeAvg < firstThreeAvg - 10 ? "Clearly Downward" : "Stable");
+                            performanceSummary["LongTermTrend"] = trend;
+
+                            double avg = allScores.Average();
+                            double sumOfSquares = allScores.Sum(score => Math.Pow(score - avg, 2));
+                            double stdDev = Math.Sqrt(sumOfSquares / allScores.Count);
+                            string stability = stdDev < 50 ? "Very Stable" : (stdDev < 100 ? "Relatively Stable" : "Unstable");
+                            performanceSummary["PerformanceStability"] = $"{stability} (Std. Dev: {stdDev:F1})";
+                            performanceSummary["RecentPerformanceStatus"] = lastThreeAvg > avg ? "Improving" : "Below Average";
+                        }
+                    }
+                    else
+                    {
+                        performanceSummary["Status"] = "No test results found.";
+                    }
+                    memberInfo["PerformanceSummary"] = performanceSummary;
+
+
+                    // === PHẦN 3: PHÂN TÍCH HÀNH VI LÀM BÀI ===
+                    var behaviorSummary = new Dictionary<string, object>();
+                    var behaviorQuery = @"
+                SELECT AVG(CAST(ua.TimeSpent AS FLOAT)) AS AvgTime, AVG(CAST(ua.NumberOfAnswerChanges AS FLOAT)) AS AvgChanges
+                FROM UserAnswers ua
+                WHERE ua.ResultKey IN (SELECT TOP 10 ResultKey FROM ResultOfUserForTest WHERE MemberKey = @MemberKey ORDER BY StartTime DESC);";
+                    using (var command = new SqlCommand(behaviorQuery, connection))
+                    {
+                        command.Parameters.AddWithValue("@MemberKey", memberKey);
+                        using (var reader = await command.ExecuteReaderAsync())
+                        {
+                            if (await reader.ReadAsync() && reader["AvgTime"] != DBNull.Value)
+                            {
+                                behaviorSummary["AvgTimePerQuestion_Last10Tests"] = $"{Convert.ToDouble(reader["AvgTime"]):F1} seconds";
+                                behaviorSummary["AvgAnswerChanges_Last10Tests"] = $"{Convert.ToDouble(reader["AvgChanges"]):F2}";
+                            }
+                        }
+                    }
+
+                    var completionTimeQuery = @"
+                SELECT TOP 5 R.[Time] FROM ResultOfUserForTest R
+                JOIN Test T ON R.TestKey = T.TestKey
+                WHERE R.MemberKey = @MemberKey AND T.TotalQuestion >= 100 AND R.[Time] IS NOT NULL ORDER BY R.StartTime DESC;";
+                    var completionTimesInMinutes = new List<double>();
+                    using (var command = new SqlCommand(completionTimeQuery, connection))
+                    {
+                        command.Parameters.AddWithValue("@MemberKey", memberKey);
+                        using (var reader = await command.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                if (double.TryParse(reader["Time"].ToString(), out double time))
+                                {
+                                    completionTimesInMinutes.Add(time);
+                                }
+                            }
+                        }
+                    }
+
+                    if (completionTimesInMinutes.Any())
+                    {
+                        behaviorSummary["AvgFullTestCompletionTime"] = $"{completionTimesInMinutes.Average():F0} minutes";
+                    }
+                    memberInfo["BehaviorAnalysis"] = behaviorSummary;
+
+
+                    // === PHẦN 4: PHÂN TÍCH LỖI SAI CHI TIẾT ===
+                    var errorAnalysisBuilder = new StringBuilder();
+                    string? latestResultKey = null;
+                    int totalQuestions = 0;
+                    var latestTestQuery = "SELECT TOP 1 R.ResultKey, T.TotalQuestion FROM ResultOfUserForTest R JOIN Test T ON R.TestKey = T.TestKey WHERE R.MemberKey = @MemberKey ORDER BY R.StartTime DESC;";
+                    using (var latestTestCmd = new SqlCommand(latestTestQuery, connection))
+                    {
+                        latestTestCmd.Parameters.AddWithValue("@MemberKey", memberKey);
+                        using (var reader = await latestTestCmd.ExecuteReaderAsync())
+                        {
+                            if (await reader.ReadAsync())
+                            {
+                                latestResultKey = reader["ResultKey"].ToString();
+                                totalQuestions = reader["TotalQuestion"] == DBNull.Value ? 0 : Convert.ToInt32(reader["TotalQuestion"]);
+                            }
+                        }
+                    }
+
+                    var errorQuery = @"
+            WITH AllQuestionsAndAnswers AS (
+            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '1' AS Part FROM TEC_Part1_Question Q JOIN TEC_Part1_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
+            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '2' AS Part FROM TEC_Part2_Question Q JOIN TEC_Part2_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
+            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '3' AS Part FROM TEC_Part3_Question Q JOIN TEC_Part3_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
+            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '4' AS Part FROM TEC_Part4_Question Q JOIN TEC_Part4_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
+            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '5' AS Part FROM TEC_Part5_Question Q JOIN TEC_Part5_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
+            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '6' AS Part FROM TEC_Part6_Question Q JOIN TEC_Part6_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
+            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '7' AS Part FROM TEC_Part7_Question Q JOIN TEC_Part7_Answer A ON Q.QuestionKey = A.QuestionKey
+            )
+            SELECT 
+                UE.ErrorDate, ET.ErrorDescription, 
+                GT.TopicName AS GrammarTopicName, 
+                VT.TopicName AS VocabularyTopicName,
+                CAT.CategoryName AS CategoryTopicName,
+                QuestionInfo.QuestionText, 
+                UserSelectedAnswer.AnswerText AS UserAnswer, 
+                CorrectAnswer.AnswerText AS CorrectAnswer,
+                QuestionInfo.Explanation,
+                UA.TimeSpent, UA.NumberOfAnswerChanges,
+                QuestionInfo.Part
+            FROM UsersError UE
+            JOIN UserAnswers UA ON UE.ResultKey = UA.ResultKey AND UE.AnswerKey = UA.SelectAnswerKey
+            JOIN (SELECT DISTINCT QuestionKey, QuestionText, Explanation, Part FROM AllQuestionsAndAnswers) AS QuestionInfo ON UA.QuestionKey = QuestionInfo.QuestionKey
+            JOIN AllQuestionsAndAnswers AS UserSelectedAnswer ON UA.SelectAnswerKey = UserSelectedAnswer.AnswerKey
+            JOIN AllQuestionsAndAnswers AS CorrectAnswer ON UA.QuestionKey = CorrectAnswer.QuestionKey AND CorrectAnswer.AnswerCorrect = 1
+            LEFT JOIN ErrorTypes ET ON UE.ErrorType = ET.ErrorTypeID
+            LEFT JOIN GrammarTopics GT ON UE.GrammarTopic = GT.GrammarTopicID
+            LEFT JOIN VocabularyTopics VT ON UE.VocabularyTopic = VT.VocabularyTopicID
+            LEFT JOIN TEC_Category CAT ON UE.CategoryTopic = CAT.CategoryKey
+            {WHERE_CLAUSE}
+            {ORDER_AND_LIMIT};";
+
+                    var finalErrorQuery = "";
+                    var errorCommand = new SqlCommand();
+                    errorCommand.Connection = connection;
+                    errorCommand.Parameters.AddWithValue("@MemberKeyParam", memberKey);
+
+                    if (!string.IsNullOrEmpty(latestResultKey) && totalQuestions >= 100)
+                    {
+                        errorAnalysisBuilder.AppendLine($"--- Detailed Error Analysis (From Latest Full Test) ---");
+                        finalErrorQuery = errorQuery
+                            .Replace("{WHERE_CLAUSE}", "WHERE UE.ResultKey = @ResultKey AND UA.IsCorrect = 0")
+                            .Replace("{ORDER_AND_LIMIT}", "ORDER BY UE.ErrorDate DESC");
+                        errorCommand.Parameters.AddWithValue("@ResultKey", latestResultKey);
+                    }
+                    else
+                    {
+                        errorAnalysisBuilder.AppendLine($"--- Detailed Error Analysis (Last 150 Errors) ---");
+                        finalErrorQuery = errorQuery
+                            .Replace("{WHERE_CLAUSE}", "WHERE UE.UserKey = @MemberKeyParam AND UA.IsCorrect = 0")
+                            .Replace("{ORDER_AND_LIMIT}", "ORDER BY UE.ErrorDate DESC OFFSET 0 ROWS FETCH NEXT 150 ROWS ONLY");
+                    }
+
+                    errorCommand.CommandText = finalErrorQuery;
+                    using (errorCommand)
+                    {
+                        using (var reader = await errorCommand.ExecuteReaderAsync())
+                        {
+                            int errorCount = 1;
+                            while (await reader.ReadAsync())
+                            {
+                                errorAnalysisBuilder.AppendLine($"[Error #{errorCount++} - Part {reader["Part"]}]");
+                                errorAnalysisBuilder.AppendLine($"  - Question: {reader["QuestionText"]}");
+                                errorAnalysisBuilder.AppendLine($"  - Your Answer: '{reader["UserAnswer"]}'");
+                                errorAnalysisBuilder.AppendLine($"  - Correct Answer: '{reader["CorrectAnswer"]}'");
+                                errorAnalysisBuilder.AppendLine($"  - Error Type: {reader["ErrorDescription"]}");
+                                errorAnalysisBuilder.AppendLine($"  - Topics: Category '{reader["CategoryTopicName"]}', Grammar '{reader["GrammarTopicName"]}', Vocabulary '{reader["VocabularyTopicName"]}'");
+                                errorAnalysisBuilder.AppendLine($"  - Behavior: Time spent was {reader["TimeSpent"]}s, changed answer {reader["NumberOfAnswerChanges"]} times.");
+                                errorAnalysisBuilder.AppendLine($"  - Explanation: {reader["Explanation"]}");
+                            }
+                            if (errorCount == 1)
+                            {
+                                errorAnalysisBuilder.AppendLine("No specific errors found to analyze.");
+                            }
+                        }
+                    }
+                    memberInfo["DetailedErrorAnalysis"] = errorAnalysisBuilder.ToString();
                 }
             }
             return memberInfo;
