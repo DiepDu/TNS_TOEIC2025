@@ -988,6 +988,289 @@ namespace TNS_TOEICTest.Models
 
             return counts;
         }
+        public static async Task<List<Dictionary<string, object>>> FindMembersByCriteriaAsync(
+    string score_condition = null, string last_login_before = null, int? min_tests_completed = null,
+    string sort_by = "LastLoginDate", int limit = 10)
+        {
+            var members = new List<Dictionary<string, object>>();
+            var queryBuilder = new StringBuilder();
+            var parameters = new Dictionary<string, object>();
+
+            // Xây dựng câu truy vấn phức tạp với CTE để tổng hợp dữ liệu trước khi lọc
+            queryBuilder.Append(@"
+        ;WITH MemberStats AS (
+            SELECT
+                M.MemberKey,
+                M.MemberName,
+                M.MemberID,
+                M.LastLoginDate,
+                COUNT(R.ResultKey) AS TestCount,
+                MAX(R.TestScore) AS HighestScore,
+                AVG(R.TestScore) AS AverageScore
+            FROM EDU_Member M
+            LEFT JOIN ResultOfUserForTest R ON M.MemberKey = R.MemberKey
+            GROUP BY M.MemberKey, M.MemberName, M.MemberID, M.LastLoginDate
+        )
+        SELECT * FROM MemberStats
+        WHERE 1=1 ");
+
+            if (!string.IsNullOrEmpty(score_condition))
+            {
+                // Phân tích điều kiện điểm số (ví dụ: "> 800", "<= 500")
+                var match = Regex.Match(score_condition, @"([><=]+)\s*(\d+)");
+                if (match.Success)
+                {
+                    queryBuilder.Append($"AND AverageScore {match.Groups[1].Value} @Score ");
+                    parameters["@Score"] = int.Parse(match.Groups[2].Value);
+                }
+            }
+
+            if (!string.IsNullOrEmpty(last_login_before) && DateTime.TryParse(last_login_before, out var loginDate))
+            {
+                queryBuilder.Append("AND LastLoginDate < @LastLoginDate ");
+                parameters["@LastLoginDate"] = loginDate;
+            }
+
+            if (min_tests_completed.HasValue)
+            {
+                queryBuilder.Append("AND TestCount >= @MinTestsCompleted ");
+                parameters["@MinTestsCompleted"] = min_tests_completed.Value;
+            }
+
+            switch (sort_by?.ToLower())
+            {
+                case "highest_score":
+                    queryBuilder.Append("ORDER BY HighestScore DESC");
+                    break;
+                default:
+                    queryBuilder.Append("ORDER BY LastLoginDate DESC");
+                    break;
+            }
+
+            queryBuilder.Append(" OFFSET 0 ROWS FETCH NEXT @Limit ROWS ONLY;");
+            parameters["@Limit"] = limit;
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var command = new SqlCommand(queryBuilder.ToString(), connection))
+                {
+                    foreach (var p in parameters)
+                    {
+                        command.Parameters.AddWithValue(p.Key, p.Value);
+                    }
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            var member = new Dictionary<string, object>();
+                            for (int i = 0; i < reader.FieldCount; i++)
+                            {
+                                member[reader.GetName(i)] = reader.GetValue(i) == DBNull.Value ? null : reader.GetValue(i);
+                            }
+                            members.Add(member);
+                        }
+                    }
+                }
+            }
+            return members;
+        }
+        public static async Task<List<Dictionary<string, object>>> FindQuestionsByCriteriaAsync(
+         int? part = null, string correct_rate_condition = null, string topic_name = null,
+         bool? has_anomaly = null, int? min_feedback_count = null, int limit = 10)
+        {
+            var questions = new List<Dictionary<string, object>>();
+            var queryBuilder = new StringBuilder();
+            var parameters = new Dictionary<string, object>();
+
+            // Sử dụng CTE để gộp tất cả các bảng câu hỏi thành một
+            queryBuilder.Append(@"
+        ;WITH AllQuestions AS (
+            SELECT QuestionKey, QuestionText, CorrectRate, FeedbackCount, SkillLevel, Anomaly, '1' AS Part, GrammarTopic, VocabularyTopic FROM TEC_Part1_Question UNION ALL
+            SELECT QuestionKey, QuestionText, CorrectRate, FeedbackCount, SkillLevel, Anomaly, '2' AS Part, GrammarTopic, VocabularyTopic FROM TEC_Part2_Question UNION ALL
+            SELECT QuestionKey, QuestionText, CorrectRate, FeedbackCount, SkillLevel, Anomaly, '3' AS Part, GrammarTopic, VocabularyTopic FROM TEC_Part3_Question UNION ALL
+            SELECT QuestionKey, QuestionText, CorrectRate, FeedbackCount, SkillLevel, Anomaly, '4' AS Part, GrammarTopic, VocabularyTopic FROM TEC_Part4_Question UNION ALL
+            SELECT QuestionKey, QuestionText, CorrectRate, FeedbackCount, SkillLevel, Anomaly, '5' AS Part, GrammarTopic, VocabularyTopic FROM TEC_Part5_Question UNION ALL
+            SELECT QuestionKey, QuestionText, CorrectRate, FeedbackCount, SkillLevel, Anomaly, '6' AS Part, GrammarTopic, VocabularyTopic FROM TEC_Part6_Question UNION ALL
+            SELECT QuestionKey, QuestionText, CorrectRate, FeedbackCount, SkillLevel, Anomaly, '7' AS Part, GrammarTopic, VocabularyTopic FROM TEC_Part7_Question
+        )
+        SELECT Q.*, GT.TopicName as GrammarTopicName, VT.TopicName as VocabularyTopicName
+        FROM AllQuestions Q
+        LEFT JOIN GrammarTopics GT ON Q.GrammarTopic = GT.GrammarTopicID
+        LEFT JOIN VocabularyTopics VT ON Q.VocabularyTopic = VT.VocabularyTopicID
+        WHERE 1=1 ");
+
+            if (part.HasValue)
+            {
+                queryBuilder.Append("AND Q.Part = @Part ");
+                parameters["@Part"] = part.Value.ToString();
+            }
+
+            if (has_anomaly.HasValue)
+            {
+                queryBuilder.Append("AND Q.Anomaly = @HasAnomaly ");
+                parameters["@HasAnomaly"] = has_anomaly.Value;
+            }
+
+            if (min_feedback_count.HasValue)
+            {
+                queryBuilder.Append("AND Q.FeedbackCount >= @MinFeedbackCount ");
+                parameters["@MinFeedbackCount"] = min_feedback_count.Value;
+            }
+
+            if (!string.IsNullOrEmpty(topic_name))
+            {
+                queryBuilder.Append("AND (GT.TopicName LIKE @TopicName OR VT.TopicName LIKE @TopicName) ");
+                parameters["@TopicName"] = $"%{topic_name}%";
+            }
+
+            if (!string.IsNullOrEmpty(correct_rate_condition))
+            {
+                // Tách toán tử so sánh (>, <, =) và phần giá trị
+                var match = Regex.Match(correct_rate_condition, @"([><=]+)\s*(.+)");
+                if (match.Success)
+                {
+                    string op = match.Groups[1].Value;
+                    string valueStr = match.Groups[2].Value;
+                    float targetValue;
+
+                    // Kiểm tra nếu giá trị có chứa ký tự '%'
+                    if (valueStr.Contains("%"))
+                    {
+                        // Loại bỏ ký tự '%' và chia cho 100 để ra tỷ lệ 0-1
+                        valueStr = valueStr.Replace("%", "").Trim();
+                        if (float.TryParse(valueStr, out targetValue))
+                        {
+                            targetValue /= 100.0f;
+                        }
+                        else { /* Bỏ qua nếu không phải là số hợp lệ */ }
+                    }
+                    else
+                    {
+                        // Nếu không có '%', coi nó là số thập phân bình thường
+                        float.TryParse(valueStr, out targetValue);
+                    }
+
+                    queryBuilder.Append($"AND Q.CorrectRate {op} @CorrectRate ");
+                    parameters["@CorrectRate"] = targetValue;
+                }
+            }
+
+            // Thêm logic sắp xếp thông minh
+            var orderByClause = new StringBuilder("ORDER BY ");
+            if (!string.IsNullOrEmpty(correct_rate_condition))
+            {
+                // Nếu tìm câu khó (tỷ lệ thấp), ưu tiên sắp xếp theo tỷ lệ đúng TĂNG DẦN
+                orderByClause.Append("Q.CorrectRate ASC, ");
+            }
+            if (min_feedback_count.HasValue)
+            {
+                // Nếu tìm câu nhiều feedback, ưu tiên sắp xếp theo feedback GIẢM DẦN
+                orderByClause.Append("Q.FeedbackCount DESC, ");
+            }
+            // Sắp xếp mặc định để đảm bảo kết quả nhất quán
+            orderByClause.Append("Q.Part ASC, Q.QuestionKey ASC ");
+            queryBuilder.Append(orderByClause.ToString());
+
+            // Di chuyển mệnh đề giới hạn số lượng xuống cuối cùng để áp dụng sau khi đã sắp xếp
+            queryBuilder.Append("OFFSET 0 ROWS FETCH NEXT @Limit ROWS ONLY;");
+            parameters["@Limit"] = limit;
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var command = new SqlCommand(queryBuilder.ToString(), connection))
+                {
+                    foreach (var p in parameters)
+                    {
+                        command.Parameters.AddWithValue(p.Key, p.Value);
+                    }
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            var question = new Dictionary<string, object>();
+                            for (int i = 0; i < reader.FieldCount; i++)
+                            {
+                                question[reader.GetName(i)] = reader.GetValue(i) == DBNull.Value ? null : reader.GetValue(i);
+                            }
+                            questions.Add(question);
+                        }
+                    }
+                }
+            }
+            return questions;
+        }
+        public static async Task<List<Dictionary<string, object>>> GetUnresolvedFeedbacksAsync(int limit = 10)
+        {
+            var feedbacks = new List<Dictionary<string, object>>();
+            var query = @"
+        SELECT TOP (@Limit) 
+            F.FeedbackText, 
+            F.QuestionKey, 
+            M.MemberName, 
+            F.CreatedOn
+        FROM QuestionFeedbacks F
+        LEFT JOIN EDU_Member M ON F.MemberKey = M.MemberKey
+        WHERE F.Status = 0 OR F.Status IS NULL
+        ORDER BY F.CreatedOn DESC;";
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@Limit", limit);
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            var feedback = new Dictionary<string, object>();
+                            for (int i = 0; i < reader.FieldCount; i++)
+                            {
+                                feedback[reader.GetName(i)] = reader.GetValue(i) == DBNull.Value ? null : reader.GetValue(i);
+                            }
+                            feedbacks.Add(feedback);
+                        }
+                    }
+                }
+            }
+            return feedbacks;
+        }
+        public static async Task<Dictionary<string, object>> GetSystemActivitySummaryAsync(DateTime startDate, DateTime endDate)
+        {
+            var summary = new Dictionary<string, object>();
+            var query = @"
+        SELECT
+            (SELECT COUNT(*) FROM EDU_Member WHERE CreatedOn BETWEEN @StartDate AND @EndDate) AS NewMembersCount,
+            (SELECT COUNT(*) FROM ResultOfUserForTest WHERE EndTime BETWEEN @StartDate AND @EndDate) AS CompletedTestsCount,
+            (SELECT AVG(CAST(TestScore AS FLOAT)) FROM ResultOfUserForTest WHERE EndTime BETWEEN @StartDate AND @EndDate) AS AverageScoreInPeriod;
+    ";
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@StartDate", startDate);
+                    command.Parameters.AddWithValue("@EndDate", endDate);
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            for (int i = 0; i < reader.FieldCount; i++)
+                            {
+                                summary[reader.GetName(i)] = reader.GetValue(i) == DBNull.Value ? null : reader.GetValue(i);
+                            }
+                        }
+                    }
+                }
+            }
+            return summary;
+        }
 
     }
 }

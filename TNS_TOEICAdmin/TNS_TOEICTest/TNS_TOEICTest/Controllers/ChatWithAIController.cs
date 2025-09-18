@@ -318,6 +318,65 @@ namespace TNS_TOEICTest.Controllers
                             Properties = new Dictionary<string, GeminiSchemaProperty> { },
                             Required = new List<string> { }
                         }
+                    },
+                    new GeminiFunctionDeclaration
+                    {
+                        Name = "find_members_by_criteria",
+                        Description = "Searches for members based on performance or activity criteria.",
+                        Parameters = new GeminiSchema
+                        {
+                            Properties = new Dictionary<string, GeminiSchemaProperty>
+                            {
+                                { "score_condition", new GeminiSchemaProperty { Type = "STRING", Description = "Filter by average score, e.g., '> 800' or '<= 500'." } },
+                                { "last_login_before", new GeminiSchemaProperty { Type = "STRING", Description = "Filter by last login date, format 'yyyy-mm-dd'." } },
+                                { "min_tests_completed", new GeminiSchemaProperty { Type = "NUMBER", Description = "Minimum number of tests completed." } },
+                                { "sort_by", new GeminiSchemaProperty { Type = "STRING", Description = "Sort results by 'highest_score' or 'last_login'." } },
+                                { "limit", new GeminiSchemaProperty { Type = "NUMBER", Description = "Max number of members to return." } }
+                            }
+                        }
+                    },
+                    new GeminiFunctionDeclaration
+                    {
+                        Name = "find_questions_by_criteria",
+                        Description = "Finds questions in the bank based on their properties.",
+                        Parameters = new GeminiSchema
+                        {
+                            Properties = new Dictionary<string, GeminiSchemaProperty>
+                            {
+                                { "part", new GeminiSchemaProperty { Type = "NUMBER", Description = "The TOEIC part number (1-7)." } },
+                                { "correct_rate_condition", new GeminiSchemaProperty { Type = "STRING", Description = "Filter by correct answer rate, e.g., '< 0.3' for hard questions." } },
+                                { "topic_name", new GeminiSchemaProperty { Type = "STRING", Description = "Filter by a grammar or vocabulary topic name." } },
+                                { "has_anomaly", new GeminiSchemaProperty { Type = "BOOLEAN", Description = "Filter for questions marked as anomalous." } },
+                                { "min_feedback_count", new GeminiSchemaProperty { Type = "NUMBER", Description = "Minimum number of user feedbacks." } },
+                                { "limit", new GeminiSchemaProperty { Type = "NUMBER", Description = "Max number of questions to return." } }
+                            }
+                        }
+                    },
+                    new GeminiFunctionDeclaration
+                    {
+                        Name = "get_unresolved_feedbacks",
+                        Description = "Retrieves the latest unresolved user feedbacks about questions.",
+                        Parameters = new GeminiSchema
+                        {
+                            Properties = new Dictionary<string, GeminiSchemaProperty>
+                            {
+                                { "limit", new GeminiSchemaProperty { Type = "NUMBER", Description = "Max number of feedbacks to return." } }
+                            }
+                        }
+                    },
+                    new GeminiFunctionDeclaration
+                    {
+                        Name = "get_system_activity_summary",
+                        Description = "Provides a summary of system activity over a date range.",
+                        Parameters = new GeminiSchema
+                        {
+                            Properties = new Dictionary<string, GeminiSchemaProperty>
+                            {
+                                { "start_date", new GeminiSchemaProperty { Type = "STRING", Description = "The start date in 'yyyy-mm-dd' format." } },
+                                { "end_date", new GeminiSchemaProperty { Type = "STRING", Description = "The end date in 'yyyy-mm-dd' format." } }
+                            },
+                            Required = new List<string> { "start_date", "end_date" }
+                        }
                     }
                 }
             }
@@ -370,10 +429,46 @@ namespace TNS_TOEICTest.Controllers
                             // Gọi hàm mới không cần tham số và lấy kết quả dictionary
                             functionResult = await ChatWithAIAccessData.GetQuestionCountsAsync();
                         }
-
+                        else if (functionName == "find_members_by_criteria")
+                        {
+                            functionResult = await ChatWithAIAccessData.FindMembersByCriteriaAsync(
+                                args["score_condition"]?.ToString(),
+                                args["last_login_before"]?.ToString(),
+                                args["min_tests_completed"]?.ToObject<int?>(),
+                                args["sort_by"]?.ToString() ?? "LastLoginDate",
+                                args["limit"]?.ToObject<int?>() ?? 10
+                            );
+                        }
+                        else if (functionName == "find_questions_by_criteria")
+                        {
+                            functionResult = await ChatWithAIAccessData.FindQuestionsByCriteriaAsync(
+                                args["part"]?.ToObject<int?>(),
+                                args["correct_rate_condition"]?.ToString(),
+                                args["topic_name"]?.ToString(),
+                                args["has_anomaly"]?.ToObject<bool?>(),
+                                args["min_feedback_count"]?.ToObject<int?>(),
+                                args["limit"]?.ToObject<int?>() ?? 10
+                            );
+                        }
+                        else if (functionName == "get_unresolved_feedbacks")
+                        {
+                            functionResult = await ChatWithAIAccessData.GetUnresolvedFeedbacksAsync(
+                                args["limit"]?.ToObject<int?>() ?? 10
+                            );
+                        }
+                        else if (functionName == "get_system_activity_summary")
+                        {
+                            var startDate = DateTime.Parse(args["start_date"].ToString());
+                            var endDate = DateTime.Parse(args["end_date"].ToString());
+                            functionResult = await ChatWithAIAccessData.GetSystemActivitySummaryAsync(startDate, endDate);
+                        }
                         var functionResponsePartObj = new
                         {
-                            functionResponse = new { name = functionName, response = functionResult }
+                            functionResponse = new
+                            {
+                                name = functionName,
+                                response = new { result = functionResult } // <-- Gói kết quả vào trong một đối tượng mới
+                            }
                         };
 
 

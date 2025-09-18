@@ -87,9 +87,9 @@ namespace TNS_TOEICTest.Services
         // File: Services/PromptEngineeringService.cs
 
         public string BuildPromptForAdmin(
-          string adminBackgroundData,
-          IEnumerable<Content> chatHistory,
-          string currentUserMessage)
+       string adminBackgroundData,
+       IEnumerable<Content> chatHistory,
+       string currentUserMessage)
         {
             var promptBuilder = new StringBuilder();
             var vietnamTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time"));
@@ -112,22 +112,37 @@ namespace TNS_TOEICTest.Services
 
             promptBuilder.AppendLine("    ");
             promptBuilder.AppendLine("    <function_calling_rules>");
-
-            // =========================================================================
-            // === QUY TẮC GÁC CỔNG ĐÃ ĐƯỢC CẬP NHẬT THEO ĐÚNG Ý BẠN ===
-            // =========================================================================
             promptBuilder.AppendLine("        ");
             promptBuilder.AppendLine("        Your first step is to analyze the user's intent. If the user is having a general conversation, making a greeting, asking about your persona, or asking for knowledge you already possess, you MUST answer directly without using a tool.");
             promptBuilder.AppendLine("        You MUST use a tool ONLY when answering the question is impossible without information that can only be found within the system's private database (such as specific member data or question bank statistics).");
-
             promptBuilder.AppendLine("        When tool use is necessary, the function call request MUST be a single JSON object in the following format:");
             promptBuilder.AppendLine("        {\"functionCall\": {\"name\": \"function_name\", \"args\": {\"argument_name\": \"value\"}}}");
+
+            // =========================================================================
+            // === DANH SÁCH CÔNG CỤ ĐÃ ĐƯỢC BỔ SUNG ===
+            // =========================================================================
             promptBuilder.AppendLine("        **Available Tools:**");
-            promptBuilder.AppendLine("        1. `get_member_summary`: Retrieves the detailed profile of a member.");
+            promptBuilder.AppendLine("        1. `get_member_summary`: Retrieves the detailed analysis profile of a single member.");
             promptBuilder.AppendLine("           - Arguments: {\"member_identifier\": \"<MemberID (email) or MemberName>\"}");
             promptBuilder.AppendLine("        2. `GetQuestionCounts`: Counts and categorizes all questions in the question bank.");
             promptBuilder.AppendLine("           - Arguments: None.");
-            promptBuilder.AppendLine("           - Returns: A dictionary object containing detailed counts of regular questions and parent/child questions for each Part.");
+
+            promptBuilder.AppendLine("        // --- NEW TOOL 3 ---");
+            promptBuilder.AppendLine("        3. `find_members_by_criteria`: Searches for members based on performance or activity criteria.");
+            promptBuilder.AppendLine("           - Arguments: {\"score_condition\": \"<e.g., '> 800' or '<= 500'>\", \"last_login_before\": \"<yyyy-mm-dd>\", \"min_tests_completed\": <int>, \"sort_by\": \"<'highest_score' or 'last_login'>\", \"limit\": <int>}");
+
+            promptBuilder.AppendLine("        // --- NEW TOOL 4 ---");
+            promptBuilder.AppendLine("        4. `find_questions_by_criteria`: Finds questions in the bank based on their properties.");
+            promptBuilder.AppendLine("           - Arguments: {\"part\": <1-7>, \"correct_rate_condition\": \"<e.g., '< 0.3'>\", \"topic_name\": \"<grammar or vocab topic>\", \"has_anomaly\": <true/false>, \"min_feedback_count\": <int>, \"limit\": <int>}");
+
+            promptBuilder.AppendLine("        // --- NEW TOOL 5 ---");
+            promptBuilder.AppendLine("        5. `get_unresolved_feedbacks`: Retrieves the latest unresolved user feedbacks about questions.");
+            promptBuilder.AppendLine("           - Arguments: {\"limit\": <int>}");
+
+            promptBuilder.AppendLine("        // --- NEW TOOL 6 ---");
+            promptBuilder.AppendLine("        6. `get_system_activity_summary`: Provides a summary of system activity over a date range.");
+            promptBuilder.AppendLine("           - Arguments: {\"start_date\": \"<yyyy-mm-dd>\", \"end_date\": \"<yyyy-mm-dd>\"}");
+
             promptBuilder.AppendLine("    </function_calling_rules>");
 
             promptBuilder.AppendLine("    ");
