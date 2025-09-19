@@ -41,6 +41,13 @@ namespace TNS_TOEICTest.Services
             promptBuilder.AppendLine("- Concise and Focused: Get straight to the point. Avoid long, generic answers that provide no value.");
             promptBuilder.AppendLine("- Data-Driven: When making comments about a student's abilities, always base them on the provided \"Academic Report\". Do not speculate.");
             promptBuilder.AppendLine("- Image Analysis: If an image or file is attached to a user's message, YOU MUST analyze the image or file and use it as the main context to answer their question. If possible, relate the image content to TOEIC knowledge (e.g. describe the image, identify grammar points, etc.).");
+            promptBuilder.AppendLine("- Formatting: You MUST use Markdown for formatting your responses to improve readability. Use headings (e.g., `## Title`), bold (`**text**`), italics (`*text*`), bullet points (`- ` or `* `), and numbered lists (`1. `) whenever appropriate.");
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine("**AVAILABLE TOOLS:**");
+            promptBuilder.AppendLine("You have access to specialized tools to answer student questions. You MUST use a tool when the student's question requires specific data from the system.");
+            promptBuilder.AppendLine("1. `get_test_analysis_by_date`: Use this when the student asks to review or analyze a specific test they took on a certain date. Argument: {\"test_date\": \"<yyyy-mm-dd>\"}");
+            promptBuilder.AppendLine("2. `find_my_incorrect_questions_by_topic`: Use this when the student wants to review questions they answered incorrectly on a specific topic (e.g., 'show me my mistakes with prepositions'). Arguments: {\"topic_name\": \"<topic>\", \"limit\": <number_of_questions>}");
+
             promptBuilder.AppendLine("</core_instructions>");
             promptBuilder.AppendLine();
 
@@ -133,7 +140,7 @@ namespace TNS_TOEICTest.Services
 
             promptBuilder.AppendLine("        // --- NEW TOOL 4 ---");
             promptBuilder.AppendLine("        4. `find_questions_by_criteria`: Finds questions in the bank based on their properties.");
-            promptBuilder.AppendLine("           - Arguments: {\"part\": <1-7>, \"correct_rate_condition\": \"<e.g., '< 0.3'>\", \"topic_name\": \"<grammar or vocab topic>\", \"has_anomaly\": <true/false>, \"min_feedback_count\": <int>, \"limit\": <int>}");
+            promptBuilder.AppendLine("           - Arguments: {\"part\": <1-7>, \"correct_rate_condition\": \"<e.g., '< 30' for 0-100 scale>\", \"topic_name\": \"<grammar or vocab topic>\", \"has_anomaly\": <true/false>, \"min_feedback_count\": <int>, \"limit\": <int>}");
 
             promptBuilder.AppendLine("        // --- NEW TOOL 5 ---");
             promptBuilder.AppendLine("        5. `get_unresolved_feedbacks`: Retrieves the latest unresolved user feedbacks about questions.");
@@ -153,6 +160,7 @@ namespace TNS_TOEICTest.Services
             promptBuilder.AppendLine("        - **Multi-turn Calling:** You can make multiple sequential function calls until you have enough data to form a complete answer.");
             promptBuilder.AppendLine("        - **Language Matching:** You MUST respond in the same language the admin uses (Vietnamese/English).");
             promptBuilder.AppendLine("        - **Sanity Check:** Before issuing a function call, do a final check: Does this tool DIRECTLY and LOGICALLY answer the user's most recent question? If not, DO NOT use the tool and answer conversationally instead.");
+            promptBuilder.AppendLine("        - **Formatting:** You MUST use Markdown for formatting your responses to improve readability. Use headings (e.g., `## Title`), bold (`**text**`), italics (`*text*`), bullet points (`- ` or `* `), and numbered lists (`1. `) whenever appropriate. Use code blocks (```) for code snippets.");
             promptBuilder.AppendLine("    </interaction_principles>");
 
             promptBuilder.AppendLine("</core_instructions>");

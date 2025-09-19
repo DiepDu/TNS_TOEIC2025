@@ -170,6 +170,7 @@ namespace TNS_TOEICTest.Controllers
                 return StatusCode(500, "An internal server error occurred.");
             }
         }
+       
         [HttpPost("HandleMemberChat")]
         public async Task<IActionResult> HandleMemberChat([FromBody] ChatRequest data)
         {
@@ -178,92 +179,135 @@ namespace TNS_TOEICTest.Controllers
                 if (data == null || data.ConversationId == Guid.Empty)
                     return BadRequest(new { success = false, message = "Invalid request data." });
 
-                var targetMemberKey = GetTargetMemberKey(data.UserKey);
-                if (string.IsNullOrEmpty(targetMemberKey))
-                    return Unauthorized(new { success = false, message = "Member/User key could not be determined." });
-
+                var memberKey = GetTargetMemberKey(data.UserKey);
+                if (string.IsNullOrEmpty(memberKey))
+                    return Unauthorized(new { success = false, message = "Member key could not be determined." });
 
                 var apiKey = _configuration["GeminiApiKey"];
                 if (string.IsNullOrEmpty(apiKey))
                     return StatusCode(500, new { success = false, message = "AI service not configured." });
 
-                await ChatWithAIAccessData.SaveMessageAsync(data.ConversationId, "user", data.Message);
-                var cacheKey = $"MemberData_{targetMemberKey}";
+                var cacheKey = $"ChatBackgroundData_Member_{memberKey}";
                 if (!_cache.TryGetValue(cacheKey, out string backgroundData))
                 {
-                    backgroundData = await ChatWithAIAccessData.LoadMemberOriginalDataAsync(targetMemberKey);
+                    backgroundData = await ChatWithAIAccessData.LoadMemberOriginalDataAsync(memberKey);
                     _cache.Set(cacheKey, backgroundData, new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromMinutes(30)));
                 }
-                string recentFeedbacks = await ChatWithAIAccessData.LoadRecentFeedbacksAsync(targetMemberKey);
+                string recentFeedbacks = await ChatWithAIAccessData.LoadRecentFeedbacksAsync(memberKey);
                 var chatHistoryForPrompt = await ChatWithAIAccessData.GetMessageHistoryForApiAsync(data.ConversationId);
-                string textPrompt = _promptService.BuildPromptForMember(backgroundData, recentFeedbacks, chatHistoryForPrompt, data.Message);
+                string initialPrompt = _promptService.BuildPromptForMember(backgroundData, recentFeedbacks, chatHistoryForPrompt, data.Message);
 
-                var parts = new List<object>();
-                var extractedTextFromFiles = new StringBuilder();
-
-                if (data.Files != null && data.Files.Any())
-                {
-                    foreach (var file in data.Files)
-                    {
-                        // Chuyển đổi Base64 ngược lại thành byte array
-                        var fileBytes = Convert.FromBase64String(file.Base64Data);
-
-                        if (file.MimeType.StartsWith("image/"))
-                        {
-                            parts.Add(new { inline_data = new { mime_type = file.MimeType, data = file.Base64Data } });
+                // === BƯỚC 1: CẬP NHẬT KHAI BÁO TOOL ===
+                var tools = new List<GeminiTool> {
+            new GeminiTool {
+                FunctionDeclarations = new List<GeminiFunctionDeclaration> {
+                    new GeminiFunctionDeclaration {
+                        Name = "get_test_analysis_by_date",
+                        Description = "Retrieves a detailed error analysis for a test completed on a specific date.",
+                        Parameters = new GeminiSchema {
+                            Properties = new Dictionary<string, GeminiSchemaProperty> {
+                                { "test_date", new GeminiSchemaProperty { Type = "STRING", Description = "The date of the test to analyze, in 'yyyy-mm-dd' format." } }
+                            },
+                            Required = new List<string> { "test_date" }
                         }
-                        else
-                        {
-                            string fileText = "";
-                            using var memoryStream = new MemoryStream(fileBytes);
-                            if (file.MimeType == "application/pdf")
-                            {
-                                using (var doc = PdfDocument.Open(memoryStream)) { fileText = string.Join("\n", doc.GetPages().Select(p => p.Text)); }
-                            }
-                            else if (file.MimeType.StartsWith("text/plain"))
-                            {
-                                memoryStream.Position = 0;
-                                using var reader = new StreamReader(memoryStream); fileText = await reader.ReadToEndAsync();
-                            }
-                            else if (file.MimeType.Contains("wordprocessingml"))
-                            {
-                                using (var doc = WordprocessingDocument.Open(memoryStream, false)) { fileText = doc.MainDocumentPart.Document.Body.InnerText; }
-                            }
-                            if (!string.IsNullOrEmpty(fileText)) { extractedTextFromFiles.AppendLine($"\n\n--- CONTENT FROM FILE: {file.FileName} ---\n{fileText}"); }
+                    },
+                    new GeminiFunctionDeclaration {
+                        Name = "find_my_incorrect_questions_by_topic",
+                        Description = "Finds questions the user answered incorrectly related to a specific grammar or vocabulary topic.",
+                        Parameters = new GeminiSchema {
+                            Properties = new Dictionary<string, GeminiSchemaProperty> {
+                                { "topic_name", new GeminiSchemaProperty { Type = "STRING", Description = "The name of the topic to search for (e.g., 'prepositions', 'tenses')." } },
+                                { "limit", new GeminiSchemaProperty { Type = "NUMBER", Description = "The maximum number of questions to return. Defaults to 5." } }
+                            },
+                            Required = new List<string> { "topic_name" }
                         }
                     }
                 }
-
-                if (extractedTextFromFiles.Length > 0) { textPrompt += extractedTextFromFiles.ToString(); }
-                parts.Insert(0, new { text = textPrompt });
+            }
+        };
 
                 var apiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={apiKey}";
-                var payload = new { contents = new[] { new { parts } } };
-                string botMessage;
+                string finalAnswer = null;
+                var contentsList = new List<object> {
+            new { role = "user", parts = new[] { new { text = initialPrompt } } }
+        };
 
-                using (var client = new HttpClient())
+                while (true)
                 {
-                    var jsonPayload = Newtonsoft.Json.JsonConvert.SerializeObject(payload);
-                    var httpContent = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
-                    var httpResponse = await client.PostAsync(apiUrl, httpContent);
-                    if (httpResponse.IsSuccessStatusCode)
+                    JObject responseJson;
+                    using (var client = new HttpClient())
                     {
+                        var payload = new { contents = contentsList, tools };
+                        var httpContent = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");
+                        var httpResponse = await client.PostAsync(apiUrl, httpContent);
+                        if (!httpResponse.IsSuccessStatusCode)
+                        {
+                            var errorContent = await httpResponse.Content.ReadAsStringAsync();
+                            throw new Exception($"API call failed: {errorContent}");
+                        }
                         var jsonResponse = await httpResponse.Content.ReadAsStringAsync();
-                        var parsedResponse = JObject.Parse(jsonResponse);
-                        botMessage = parsedResponse["candidates"]?[0]?["content"]?["parts"]?[0]?["text"]?.ToString() ?? "Sorry, I received an empty response.";
+                        responseJson = JObject.Parse(jsonResponse);
+                    }
+
+                    var candidate = responseJson["candidates"]?[0];
+                    var functionCallPart = candidate?["content"]?["parts"]?.FirstOrDefault(p => p["functionCall"] != null);
+
+                    if (functionCallPart != null)
+                    {
+                        var functionCall = functionCallPart["functionCall"];
+                        var functionName = functionCall["name"].ToString();
+                        var args = functionCall["args"];
+                        object functionResult = null;
+
+                        // === BƯỚC 2: THÊM LOGIC GỌI HÀM MỚI ===
+                        if (functionName == "get_test_analysis_by_date")
+                        {
+                            if (DateTime.TryParse(args["test_date"].ToString(), out var testDate))
+                            {
+                                functionResult = await ChatWithAIAccessData.GetTestAnalysisByDateAsync(memberKey, testDate);
+                            }
+                            else
+                            {
+                                functionResult = "Ngày không hợp lệ. Vui lòng sử dụng định dạng yyyy-mm-dd.";
+                            }
+                        }
+                        else if (functionName == "find_my_incorrect_questions_by_topic")
+                        {
+                            functionResult = await ChatWithAIAccessData.FindMyIncorrectQuestionsByTopicAsync(
+                                memberKey,
+                                args["topic_name"].ToString(),
+                                args["limit"]?.ToObject<int?>() ?? 5
+                            );
+                        }
+
+                        var functionResponsePartObj = new
+                        {
+                            functionResponse = new
+                            {
+                                name = functionName,
+                                response = new { result = functionResult }
+                            }
+                        };
+
+                        contentsList.Add(candidate["content"]);
+                        contentsList.Add(new { role = "user", parts = new[] { functionResponsePartObj } });
                     }
                     else
                     {
-                        botMessage = "I'm having trouble connecting to my brain right now. Please try again in a moment.";
+                        finalAnswer = candidate?["content"]?["parts"]?[0]?["text"]?.ToString();
+                        break;
                     }
                 }
 
-                await ChatWithAIAccessData.SaveMessageAsync(data.ConversationId, "AI", botMessage);
-                return Ok(new { success = true, message = botMessage });
+                await ChatWithAIAccessData.SaveMessageAsync(data.ConversationId, "user", data.Message);
+                await ChatWithAIAccessData.SaveMessageAsync(data.ConversationId, "AI", finalAnswer);
+
+                return Ok(new { success = true, message = finalAnswer ?? "Sorry, I couldn't process the request." });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { success = false, message = $"An internal server error occurred: {ex.Message}" });
+                Console.WriteLine($"[HandleMemberChat Error]: {ex}");
+                return StatusCode(500, new { success = false, message = $"An error occurred: {ex.Message}" });
             }
         }
 
@@ -319,39 +363,27 @@ namespace TNS_TOEICTest.Controllers
                             Required = new List<string> { }
                         }
                     },
-                    new GeminiFunctionDeclaration
-                    {
-                        Name = "find_members_by_criteria",
-                        Description = "Searches for members based on performance or activity criteria.",
-                        Parameters = new GeminiSchema
-                        {
-                            Properties = new Dictionary<string, GeminiSchemaProperty>
-                            {
-                                { "score_condition", new GeminiSchemaProperty { Type = "STRING", Description = "Filter by average score, e.g., '> 800' or '<= 500'." } },
-                                { "last_login_before", new GeminiSchemaProperty { Type = "STRING", Description = "Filter by last login date, format 'yyyy-mm-dd'." } },
-                                { "min_tests_completed", new GeminiSchemaProperty { Type = "NUMBER", Description = "Minimum number of tests completed." } },
-                                { "sort_by", new GeminiSchemaProperty { Type = "STRING", Description = "Sort results by 'highest_score' or 'last_login'." } },
-                                { "limit", new GeminiSchemaProperty { Type = "NUMBER", Description = "Max number of members to return." } }
-                            }
-                        }
-                    },
-                    new GeminiFunctionDeclaration
-                    {
-                        Name = "find_questions_by_criteria",
-                        Description = "Finds questions in the bank based on their properties.",
-                        Parameters = new GeminiSchema
-                        {
-                            Properties = new Dictionary<string, GeminiSchemaProperty>
-                            {
-                                { "part", new GeminiSchemaProperty { Type = "NUMBER", Description = "The TOEIC part number (1-7)." } },
-                                { "correct_rate_condition", new GeminiSchemaProperty { Type = "STRING", Description = "Filter by correct answer rate, e.g., '< 0.3' for hard questions." } },
-                                { "topic_name", new GeminiSchemaProperty { Type = "STRING", Description = "Filter by a grammar or vocabulary topic name." } },
-                                { "has_anomaly", new GeminiSchemaProperty { Type = "BOOLEAN", Description = "Filter for questions marked as anomalous." } },
-                                { "min_feedback_count", new GeminiSchemaProperty { Type = "NUMBER", Description = "Minimum number of user feedbacks." } },
-                                { "limit", new GeminiSchemaProperty { Type = "NUMBER", Description = "Max number of questions to return." } }
-                            }
-                        }
-                    },
+               // ...
+new GeminiFunctionDeclaration
+{
+    Name = "find_questions_by_criteria",
+    Description = "Finds questions in the bank based on their properties.",
+    Parameters = new GeminiSchema
+    {
+        Properties = new Dictionary<string, GeminiSchemaProperty>
+        {
+            { "part", new GeminiSchemaProperty { Type = "NUMBER", Description = "The TOEIC part number (1-7)." } },
+            // === SỬA DÒNG MÔ TẢ NÀY ===
+            { "correct_rate_condition", new GeminiSchemaProperty { Type = "STRING", Description = "Filter by correct answer rate (0-100 scale), e.g., '< 30' for hard questions or '> 80' for easy ones." } },
+            { "topic_name", new GeminiSchemaProperty { Type = "STRING", Description = "Filter by a grammar or vocabulary topic name." } },
+            { "has_anomaly", new GeminiSchemaProperty { Type = "BOOLEAN", Description = "Filter for questions marked as anomalous." } },
+            { "min_feedback_count", new GeminiSchemaProperty { Type = "NUMBER", Description = "Minimum number of user feedbacks." } },
+            { "sort_by", new GeminiSchemaProperty { Type = "STRING", Description = "Sorts results. Use 'CorrectRate_ASC' for easiest, 'CorrectRate_DESC' for hardest, 'FeedbackCount_DESC' for most feedback." } },
+            { "limit", new GeminiSchemaProperty { Type = "NUMBER", Description = "Max number of questions to return." } }
+        }
+    }
+},
+// ...
                     new GeminiFunctionDeclaration
                     {
                         Name = "get_unresolved_feedbacks",
@@ -413,6 +445,8 @@ namespace TNS_TOEICTest.Controllers
 
                     if (functionCallPart != null)
                     {
+                        Console.WriteLine($"[DEBUG] Gemini Function Call: {functionCallPart.ToString()}");
+
                         // --- Có functionCall ---
                         var functionCall = functionCallPart["functionCall"];
                         var functionName = functionCall["name"].ToString();
@@ -441,13 +475,15 @@ namespace TNS_TOEICTest.Controllers
                         }
                         else if (functionName == "find_questions_by_criteria")
                         {
+                            // === ĐOẠN CODE ĐÃ SỬA LỖI ===
                             functionResult = await ChatWithAIAccessData.FindQuestionsByCriteriaAsync(
                                 args["part"]?.ToObject<int?>(),
                                 args["correct_rate_condition"]?.ToString(),
                                 args["topic_name"]?.ToString(),
                                 args["has_anomaly"]?.ToObject<bool?>(),
                                 args["min_feedback_count"]?.ToObject<int?>(),
-                                args["limit"]?.ToObject<int?>() ?? 10
+                                args["sort_by"]?.ToString(), // Tham số thứ 6 (string)
+                                args["limit"]?.ToObject<int?>() ?? 10 // Tham số thứ 7 (int)
                             );
                         }
                         else if (functionName == "get_unresolved_feedbacks")

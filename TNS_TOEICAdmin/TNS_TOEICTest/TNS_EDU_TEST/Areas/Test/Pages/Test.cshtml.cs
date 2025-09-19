@@ -7,6 +7,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Caching.Memory;
 using System.Web;
 using TNS_EDU_TEST.Areas.Test.Models;
 
@@ -16,6 +17,13 @@ namespace TNS_EDU_TEST.Areas.Test.Pages
     [Authorize]
     public class TestModel : PageModel
     {
+        private readonly IMemoryCache _cache;
+
+        public TestModel(IMemoryCache memoryCache) // Constructor để inject IMemoryCache
+        {
+            _cache = memoryCache;
+        }
+
         public Guid TestKey { get; set; }
         public Guid ResultKey { get; set; }
         public TimeSpan TimeRemaining { get; set; }
@@ -173,7 +181,8 @@ namespace TNS_EDU_TEST.Areas.Test.Pages
                     // Nếu không lấy được TestScore, có thể ghi log hoặc trả về cảnh báo
                     return new JsonResult(new { success = false, message = "Could not retrieve test score" }) { StatusCode = 500 };
                 }
-
+                var cacheKey = $"ChatBackgroundData_Member_{userKey}";
+                _cache.Remove(cacheKey);
                 return new JsonResult(new { success = true }) { StatusCode = 200 };
             }
             catch (Exception ex)

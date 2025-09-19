@@ -1,7 +1,9 @@
-﻿using Google.Cloud.AIPlatform.V1;
+﻿using DocumentFormat.OpenXml.Drawing.Charts;
+using DocumentFormat.OpenXml.Math;
+using Google.Cloud.AIPlatform.V1;
 using Microsoft.Data.SqlClient;
-using System.Text.RegularExpressions;
 using System.Text;
+using System.Text.RegularExpressions;
 
 
 namespace TNS_TOEICTest.Models
@@ -300,8 +302,7 @@ namespace TNS_TOEICTest.Models
             {
                 await connection.OpenAsync();
 
-                // === PHẦN 1: LẤY HỒ SƠ CÁ NHÂN (Giữ nguyên) ===
-                // ... (Code không đổi)
+                // === PHẦN 1: LẤY HỒ SƠ CÁ NHÂN ===
                 var memberQuery = "SELECT MemberName, Gender, YearOld, ToeicScoreStudy, ToeicScoreExam FROM EDU_Member WHERE MemberKey = @MemberKey;";
                 using (var command = new SqlCommand(memberQuery, connection))
                 {
@@ -312,18 +313,31 @@ namespace TNS_TOEICTest.Models
                         {
                             contextBuilder.AppendLine("--- Student Profile ---");
                             contextBuilder.AppendLine($"Name: {reader["MemberName"]}");
-                            contextBuilder.AppendLine($"Gender: {reader["Gender"]}, Age: {reader["YearOld"]}");
+
+                            // Sửa lại phần Gender
+                            string gender = "Not Specified";
+                            if (reader["Gender"] != DBNull.Value)
+                            {
+                                var genderValue = reader["Gender"].ToString();
+                                if (genderValue == "0") gender = "Female";
+                                else if (genderValue == "1") gender = "Male";
+                            }
+
+                            int age = 0;
+                            if (reader["YearOld"] != DBNull.Value)
+                                age = DateTime.Now.Year - Convert.ToInt32(reader["YearOld"]);
+
+                            contextBuilder.AppendLine($"Gender: {gender}, Age: {age} (Born in {reader["YearOld"]})");
                             contextBuilder.AppendLine($"Latest Practice Score (Part-by-part): {reader["ToeicScoreStudy"]}");
                             contextBuilder.AppendLine($"Latest Full Test Score: {reader["ToeicScoreExam"]}");
                             contextBuilder.AppendLine();
                         }
+
                     }
                 }
 
-
-                // === PHẦN 2: TÓM TẮT HIỆU SUẤT TOÀN DIỆN (Giữ nguyên) ===
-                // ... (Code không đổi)
-                var allResultsQuery = "SELECT TestScore FROM ResultOfUserForTest WHERE MemberKey = @MemberKey AND TestScore IS NOT NULL ORDER BY StartTime ASC;"; // Lấy toàn bộ, sắp xếp từ cũ đến mới
+                // === PHẦN 2: TÓM TẮT HIỆU SUẤT TOÀN DIỆN ===
+                var allResultsQuery = "SELECT TestScore FROM ResultOfUserForTest WHERE MemberKey = @MemberKey AND TestScore IS NOT NULL ORDER BY StartTime ASC;";
                 var allScores = new List<int>();
                 using (var command = new SqlCommand(allResultsQuery, connection))
                 {
@@ -367,8 +381,7 @@ namespace TNS_TOEICTest.Models
                 }
                 contextBuilder.AppendLine();
 
-
-                // === PHẦN 3: PHÂN TÍCH HÀNH VI LÀM BÀI (ĐÃ SỬA LẠI) ===
+                // === PHẦN 3: PHÂN TÍCH HÀNH VI LÀM BÀI ===
                 contextBuilder.AppendLine("--- Test-taking Behavior Analysis ---");
                 var behaviorQuery = @"
             SELECT 
@@ -389,7 +402,6 @@ namespace TNS_TOEICTest.Models
                     }
                 }
 
-                // ĐÃ SỬA: Lấy thời gian từ cột [Time]
                 var completionTimeQuery = @"
             SELECT TOP 5 R.[Time]
             FROM ResultOfUserForTest R
@@ -404,7 +416,6 @@ namespace TNS_TOEICTest.Models
                     {
                         while (await reader.ReadAsync())
                         {
-                            // Cột Time là nvarchar, cần Parse sang số. Giả định là số phút.
                             if (double.TryParse(reader["Time"].ToString(), out double time))
                             {
                                 completionTimesInMinutes.Add(time);
@@ -424,9 +435,7 @@ namespace TNS_TOEICTest.Models
                 }
                 contextBuilder.AppendLine();
 
-
-                // === PHẦN 4: PHÂN TÍCH LỖI SAI CHI TIẾT (Giữ nguyên như lần nâng cấp trước) ===
-                // ... (Code không đổi)
+                // === PHẦN 4: PHÂN TÍCH LỖI SAI CHI TIẾT ===
                 string? latestResultKey = null;
                 int totalQuestions = 0;
                 var latestTestQuery = "SELECT TOP 1 R.ResultKey, T.TotalQuestion FROM ResultOfUserForTest R JOIN Test T ON R.TestKey = T.TestKey WHERE R.MemberKey = @MemberKey ORDER BY R.StartTime DESC;";
@@ -444,7 +453,7 @@ namespace TNS_TOEICTest.Models
                 }
 
                 var errorQuery = @"
-            WITH AllQuestionsAndAnswers AS (
+        WITH AllQuestionsAndAnswers AS (
             SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '1' AS Part FROM TEC_Part1_Question Q JOIN TEC_Part1_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
             SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '2' AS Part FROM TEC_Part2_Question Q JOIN TEC_Part2_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
             SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '3' AS Part FROM TEC_Part3_Question Q JOIN TEC_Part3_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
@@ -520,10 +529,7 @@ namespace TNS_TOEICTest.Models
                         }
                     }
                 }
-
-
             }
-
             return contextBuilder.ToString();
         }
         public static async Task<string> LoadAdminOriginalDataAsync(string adminKey)
@@ -989,31 +995,35 @@ namespace TNS_TOEICTest.Models
             return counts;
         }
         public static async Task<List<Dictionary<string, object>>> FindMembersByCriteriaAsync(
-    string score_condition = null, string last_login_before = null, int? min_tests_completed = null,
-    string sort_by = "LastLoginDate", int limit = 10)
+         string score_condition = null,
+         string last_login_before = null,
+         int? min_tests_completed = null,
+         string sort_by = "LastLoginDate",
+         int limit = 10)
         {
             var members = new List<Dictionary<string, object>>();
             var queryBuilder = new StringBuilder();
             var parameters = new Dictionary<string, object>();
 
-            // Xây dựng câu truy vấn phức tạp với CTE để tổng hợp dữ liệu trước khi lọc
+            // Sử dụng CTE để tổng hợp dữ liệu trước khi lọc và sắp xếp
             queryBuilder.Append(@"
-        ;WITH MemberStats AS (
-            SELECT
-                M.MemberKey,
-                M.MemberName,
-                M.MemberID,
-                M.LastLoginDate,
-                COUNT(R.ResultKey) AS TestCount,
-                MAX(R.TestScore) AS HighestScore,
-                AVG(R.TestScore) AS AverageScore
-            FROM EDU_Member M
-            LEFT JOIN ResultOfUserForTest R ON M.MemberKey = R.MemberKey
-            GROUP BY M.MemberKey, M.MemberName, M.MemberID, M.LastLoginDate
-        )
-        SELECT * FROM MemberStats
-        WHERE 1=1 ");
+;WITH MemberStats AS (
+    SELECT
+        M.MemberKey,
+        M.MemberName,
+        M.MemberID,
+        M.LastLoginDate,
+        COUNT(R.ResultKey) AS TestCount,
+        MAX(R.TestScore) AS HighestScore,
+        AVG(CAST(R.TestScore AS FLOAT)) AS AverageScore -- Đảm bảo tính toán AVG trên số thực
+    FROM EDU_Member M
+    LEFT JOIN ResultOfUserForTest R ON M.MemberKey = R.MemberKey
+    GROUP BY M.MemberKey, M.MemberName, M.MemberID, M.LastLoginDate
+)
+SELECT * FROM MemberStats
+WHERE 1=1 ");
 
+            // Xây dựng mệnh đề WHERE động
             if (!string.IsNullOrEmpty(score_condition))
             {
                 // Phân tích điều kiện điểm số (ví dụ: "> 800", "<= 500")
@@ -1037,19 +1047,29 @@ namespace TNS_TOEICTest.Models
                 parameters["@MinTestsCompleted"] = min_tests_completed.Value;
             }
 
+            // Xây dựng mệnh đề ORDER BY
+            queryBuilder.Append("ORDER BY ");
             switch (sort_by?.ToLower())
             {
                 case "highest_score":
-                    queryBuilder.Append("ORDER BY HighestScore DESC");
+                    queryBuilder.Append("HighestScore DESC");
+                    break;
+                case "average_score":
+                    queryBuilder.Append("AverageScore DESC");
+                    break;
+                case "test_count":
+                    queryBuilder.Append("TestCount DESC");
                     break;
                 default:
-                    queryBuilder.Append("ORDER BY LastLoginDate DESC");
+                    queryBuilder.Append("LastLoginDate DESC");
                     break;
             }
 
+            // Thêm phân trang
             queryBuilder.Append(" OFFSET 0 ROWS FETCH NEXT @Limit ROWS ONLY;");
             parameters["@Limit"] = limit;
 
+            // Thực thi truy vấn
             using (var connection = new SqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
@@ -1076,104 +1096,104 @@ namespace TNS_TOEICTest.Models
             }
             return members;
         }
+
+
         public static async Task<List<Dictionary<string, object>>> FindQuestionsByCriteriaAsync(
-         int? part = null, string correct_rate_condition = null, string topic_name = null,
-         bool? has_anomaly = null, int? min_feedback_count = null, int limit = 10)
+        int? part = null,
+        string correct_rate_condition = null,
+        string topic_name = null,
+        bool? has_anomaly = null,
+        int? min_feedback_count = null,
+        string sortBy = null,
+        int limit = 10)
         {
             var questions = new List<Dictionary<string, object>>();
             var queryBuilder = new StringBuilder();
             var parameters = new Dictionary<string, object>();
 
-            // Sử dụng CTE để gộp tất cả các bảng câu hỏi thành một
+            // Phần CTE và SELECT ban đầu không thay đổi
             queryBuilder.Append(@"
-        ;WITH AllQuestions AS (
-            SELECT QuestionKey, QuestionText, CorrectRate, FeedbackCount, SkillLevel, Anomaly, '1' AS Part, GrammarTopic, VocabularyTopic FROM TEC_Part1_Question UNION ALL
-            SELECT QuestionKey, QuestionText, CorrectRate, FeedbackCount, SkillLevel, Anomaly, '2' AS Part, GrammarTopic, VocabularyTopic FROM TEC_Part2_Question UNION ALL
-            SELECT QuestionKey, QuestionText, CorrectRate, FeedbackCount, SkillLevel, Anomaly, '3' AS Part, GrammarTopic, VocabularyTopic FROM TEC_Part3_Question UNION ALL
-            SELECT QuestionKey, QuestionText, CorrectRate, FeedbackCount, SkillLevel, Anomaly, '4' AS Part, GrammarTopic, VocabularyTopic FROM TEC_Part4_Question UNION ALL
-            SELECT QuestionKey, QuestionText, CorrectRate, FeedbackCount, SkillLevel, Anomaly, '5' AS Part, GrammarTopic, VocabularyTopic FROM TEC_Part5_Question UNION ALL
-            SELECT QuestionKey, QuestionText, CorrectRate, FeedbackCount, SkillLevel, Anomaly, '6' AS Part, GrammarTopic, VocabularyTopic FROM TEC_Part6_Question UNION ALL
-            SELECT QuestionKey, QuestionText, CorrectRate, FeedbackCount, SkillLevel, Anomaly, '7' AS Part, GrammarTopic, VocabularyTopic FROM TEC_Part7_Question
-        )
-        SELECT Q.*, GT.TopicName as GrammarTopicName, VT.TopicName as VocabularyTopicName
-        FROM AllQuestions Q
-        LEFT JOIN GrammarTopics GT ON Q.GrammarTopic = GT.GrammarTopicID
-        LEFT JOIN VocabularyTopics VT ON Q.VocabularyTopic = VT.VocabularyTopicID
-        WHERE 1=1 ");
+;WITH AllQuestions AS (
+    SELECT QuestionKey, QuestionText, CorrectRate, FeedbackCount, SkillLevel, Anomaly, '1' AS Part, GrammarTopic, VocabularyTopic FROM TEC_Part1_Question UNION ALL
+    SELECT QuestionKey, QuestionText, CorrectRate, FeedbackCount, SkillLevel, Anomaly, '2' AS Part, GrammarTopic, VocabularyTopic FROM TEC_Part2_Question UNION ALL
+    SELECT QuestionKey, QuestionText, CorrectRate, FeedbackCount, SkillLevel, Anomaly, '3' AS Part, GrammarTopic, VocabularyTopic FROM TEC_Part3_Question UNION ALL
+    SELECT QuestionKey, QuestionText, CorrectRate, FeedbackCount, SkillLevel, Anomaly, '4' AS Part, GrammarTopic, VocabularyTopic FROM TEC_Part4_Question UNION ALL
+    SELECT QuestionKey, QuestionText, CorrectRate, FeedbackCount, SkillLevel, Anomaly, '5' AS Part, GrammarTopic, VocabularyTopic FROM TEC_Part5_Question UNION ALL
+    SELECT QuestionKey, QuestionText, CorrectRate, FeedbackCount, SkillLevel, Anomaly, '6' AS Part, GrammarTopic, VocabularyTopic FROM TEC_Part6_Question UNION ALL
+    SELECT QuestionKey, QuestionText, CorrectRate, FeedbackCount, SkillLevel, Anomaly, '7' AS Part, GrammarTopic, VocabularyTopic FROM TEC_Part7_Question
+)
+SELECT Q.*, GT.TopicName as GrammarTopicName, VT.TopicName as VocabularyTopicName
+FROM AllQuestions Q
+LEFT JOIN GrammarTopics GT ON Q.GrammarTopic = GT.GrammarTopicID
+LEFT JOIN VocabularyTopics VT ON Q.VocabularyTopic = VT.VocabularyTopicID
+WHERE 1=1 ");
 
+            // Phần xây dựng mệnh đề WHERE
             if (part.HasValue)
             {
                 queryBuilder.Append("AND Q.Part = @Part ");
                 parameters["@Part"] = part.Value.ToString();
             }
-
             if (has_anomaly.HasValue)
             {
                 queryBuilder.Append("AND Q.Anomaly = @HasAnomaly ");
                 parameters["@HasAnomaly"] = has_anomaly.Value;
             }
-
             if (min_feedback_count.HasValue)
             {
                 queryBuilder.Append("AND Q.FeedbackCount >= @MinFeedbackCount ");
                 parameters["@MinFeedbackCount"] = min_feedback_count.Value;
             }
-
             if (!string.IsNullOrEmpty(topic_name))
             {
                 queryBuilder.Append("AND (GT.TopicName LIKE @TopicName OR VT.TopicName LIKE @TopicName) ");
                 parameters["@TopicName"] = $"%{topic_name}%";
             }
 
+            // === PHẦN SỬA LỖI LOGIC QUAN TRỌNG ===
             if (!string.IsNullOrEmpty(correct_rate_condition))
             {
-                // Tách toán tử so sánh (>, <, =) và phần giá trị
                 var match = Regex.Match(correct_rate_condition, @"([><=]+)\s*(.+)");
                 if (match.Success)
                 {
                     string op = match.Groups[1].Value;
-                    string valueStr = match.Groups[2].Value;
-                    float targetValue;
+                    string valueStr = match.Groups[2].Value.Replace("%", "").Trim();
 
-                    // Kiểm tra nếu giá trị có chứa ký tự '%'
-                    if (valueStr.Contains("%"))
+                    if (float.TryParse(valueStr, out float targetValue))
                     {
-                        // Loại bỏ ký tự '%' và chia cho 100 để ra tỷ lệ 0-1
-                        valueStr = valueStr.Replace("%", "").Trim();
-                        if (float.TryParse(valueStr, out targetValue))
-                        {
-                            targetValue /= 100.0f;
-                        }
-                        else { /* Bỏ qua nếu không phải là số hợp lệ */ }
+                        // ĐÃ XÓA BỎ HOÀN TOÀN KHỐI LỆNH `if (correct_rate_condition.Contains("%"))`
+                        // Giờ đây hàm sẽ so sánh trực tiếp với giá trị phần trăm (ví dụ: 30, 80)
+                        queryBuilder.Append($"AND Q.CorrectRate IS NOT NULL AND Q.CorrectRate {op} @CorrectRate ");
+                        parameters["@CorrectRate"] = targetValue;
                     }
-                    else
-                    {
-                        // Nếu không có '%', coi nó là số thập phân bình thường
-                        float.TryParse(valueStr, out targetValue);
-                    }
-
-                    queryBuilder.Append($"AND Q.CorrectRate {op} @CorrectRate ");
-                    parameters["@CorrectRate"] = targetValue;
                 }
             }
 
-            // Thêm logic sắp xếp thông minh
-            var orderByClause = new StringBuilder("ORDER BY ");
-            if (!string.IsNullOrEmpty(correct_rate_condition))
+            // Phần ORDER BY và phân trang không đổi
+            queryBuilder.Append("ORDER BY ");
+            if (!string.IsNullOrEmpty(sortBy))
             {
-                // Nếu tìm câu khó (tỷ lệ thấp), ưu tiên sắp xếp theo tỷ lệ đúng TĂNG DẦN
-                orderByClause.Append("Q.CorrectRate ASC, ");
+                switch (sortBy.ToUpper())
+                {
+                    case "CORRECTRATE_ASC":
+                        queryBuilder.Append("Q.CorrectRate ASC, Q.QuestionKey ASC ");
+                        break;
+                    case "CORRECTRATE_DESC":
+                        queryBuilder.Append("Q.CorrectRate DESC, Q.QuestionKey ASC ");
+                        break;
+                    case "FEEDBACKCOUNT_DESC":
+                        queryBuilder.Append("Q.FeedbackCount DESC, Q.QuestionKey ASC ");
+                        break;
+                    default:
+                        queryBuilder.Append("Q.Part ASC, Q.QuestionKey ASC ");
+                        break;
+                }
             }
-            if (min_feedback_count.HasValue)
+            else
             {
-                // Nếu tìm câu nhiều feedback, ưu tiên sắp xếp theo feedback GIẢM DẦN
-                orderByClause.Append("Q.FeedbackCount DESC, ");
+                queryBuilder.Append("Q.Part ASC, Q.QuestionKey ASC ");
             }
-            // Sắp xếp mặc định để đảm bảo kết quả nhất quán
-            orderByClause.Append("Q.Part ASC, Q.QuestionKey ASC ");
-            queryBuilder.Append(orderByClause.ToString());
 
-            // Di chuyển mệnh đề giới hạn số lượng xuống cuối cùng để áp dụng sau khi đã sắp xếp
             queryBuilder.Append("OFFSET 0 ROWS FETCH NEXT @Limit ROWS ONLY;");
             parameters["@Limit"] = limit;
 
@@ -1186,7 +1206,6 @@ namespace TNS_TOEICTest.Models
                     {
                         command.Parameters.AddWithValue(p.Key, p.Value);
                     }
-
                     using (var reader = await command.ExecuteReaderAsync())
                     {
                         while (await reader.ReadAsync())
@@ -1271,6 +1290,165 @@ namespace TNS_TOEICTest.Models
             }
             return summary;
         }
+        // Thêm hàm này vào file ChatWithAIAccessData.cs
+        // XÓA HÀM GetTestAnalysisByDateAsync CŨ VÀ THAY BẰNG HÀM MỚI NÀY
+        public static async Task<string> GetTestAnalysisByDateAsync(string memberKey, DateTime testDate)
+        {
+            var analysisBuilder = new StringBuilder();
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
 
+                // B1: Tìm bài test gần nhất vào ngày được chỉ định và lấy thông tin tổng quan
+                string? resultKey = null;
+                var testInfoQuery = @"
+            SELECT TOP 1 
+                R.ResultKey, 
+                T.TestName,
+                R.TestScore,
+                R.ListeningScore,
+                R.ReadingScore,
+                R.[Time] AS CompletionTime,
+                (SELECT COUNT(*) FROM UserAnswers UA WHERE UA.ResultKey = R.ResultKey AND UA.IsCorrect = 1 AND UA.Part BETWEEN 1 AND 4) AS CorrectListening,
+                (SELECT COUNT(*) FROM UserAnswers UA WHERE UA.ResultKey = R.ResultKey AND UA.IsCorrect = 1 AND UA.Part BETWEEN 5 AND 7) AS CorrectReading
+            FROM ResultOfUserForTest R
+            JOIN Test T ON R.TestKey = T.TestKey
+            WHERE R.MemberKey = @MemberKey AND CAST(R.EndTime AS DATE) = @TestDate AND R.TestScore IS NOT NULL
+            ORDER BY R.EndTime DESC;";
+
+                using (var findCmd = new SqlCommand(testInfoQuery, connection))
+                {
+                    findCmd.Parameters.AddWithValue("@MemberKey", memberKey);
+                    findCmd.Parameters.AddWithValue("@TestDate", testDate.Date);
+                    using (var reader = await findCmd.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            resultKey = reader["ResultKey"].ToString();
+                            analysisBuilder.AppendLine($"--- Phân tích bài thi '{reader["TestName"]}' (Ngày: {testDate:dd/MM/yyyy}) ---");
+                            analysisBuilder.AppendLine($"## I. Kết quả tổng quan");
+                            analysisBuilder.AppendLine($"- **Tổng điểm:** {reader["TestScore"]}/990");
+                            analysisBuilder.AppendLine($"- **Điểm Nghe (Listening):** {reader["ListeningScore"]}/495 (Đúng {reader["CorrectListening"]}/100 câu)");
+                            analysisBuilder.AppendLine($"- **Điểm Đọc (Reading):** {reader["ReadingScore"]}/495 (Đúng {reader["CorrectReading"]}/100 câu)");
+                            analysisBuilder.AppendLine($"- **Thời gian hoàn thành:** {reader["CompletionTime"]} phút");
+                            analysisBuilder.AppendLine();
+                        }
+                    }
+                }
+
+                if (string.IsNullOrEmpty(resultKey))
+                {
+                    return $"Không tìm thấy bài thi nào đã hoàn thành vào ngày {testDate:dd/MM/yyyy}.";
+                }
+
+                // B2: Phân tích lỗi sai chi tiết (giữ nguyên logic cũ nhưng thêm vào sau phần tổng quan)
+                analysisBuilder.AppendLine($"## II. Phân tích lỗi sai chi tiết");
+                var errorQuery = @"
+        WITH AllQuestionsAndAnswers AS (
+            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '1' AS Part FROM TEC_Part1_Question Q JOIN TEC_Part1_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
+            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '2' AS Part FROM TEC_Part2_Question Q JOIN TEC_Part2_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
+            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '3' AS Part FROM TEC_Part3_Question Q JOIN TEC_Part3_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
+            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '4' AS Part FROM TEC_Part4_Question Q JOIN TEC_Part4_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
+            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '5' AS Part FROM TEC_Part5_Question Q JOIN TEC_Part5_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
+            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '6' AS Part FROM TEC_Part6_Question Q JOIN TEC_Part6_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
+            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '7' AS Part FROM TEC_Part7_Question Q JOIN TEC_Part7_Answer A ON Q.QuestionKey = A.QuestionKey
+        )
+        SELECT 
+            ET.ErrorDescription, GT.TopicName AS GrammarTopicName, VT.TopicName AS VocabularyTopicName,
+            QuestionInfo.QuestionText, UserSelectedAnswer.AnswerText AS UserAnswer, CorrectAnswer.AnswerText AS CorrectAnswer,
+            QuestionInfo.Explanation, QuestionInfo.Part
+        FROM UsersError UE
+        JOIN UserAnswers UA ON UE.ResultKey = UA.ResultKey AND UE.AnswerKey = UA.SelectAnswerKey
+        JOIN (SELECT DISTINCT QuestionKey, QuestionText, Explanation, Part FROM AllQuestionsAndAnswers) AS QuestionInfo ON UA.QuestionKey = QuestionInfo.QuestionKey
+        JOIN AllQuestionsAndAnswers AS UserSelectedAnswer ON UA.SelectAnswerKey = UserSelectedAnswer.AnswerKey
+        JOIN AllQuestionsAndAnswers AS CorrectAnswer ON UA.QuestionKey = CorrectAnswer.QuestionKey AND CorrectAnswer.AnswerCorrect = 1
+        LEFT JOIN ErrorTypes ET ON UE.ErrorType = ET.ErrorTypeID
+        LEFT JOIN GrammarTopics GT ON UE.GrammarTopic = GT.GrammarTopicID
+        LEFT JOIN VocabularyTopics VT ON UE.VocabularyTopic = VT.VocabularyTopicID
+        WHERE UE.ResultKey = @ResultKey
+        ORDER BY cast(QuestionInfo.Part as int), NEWID();"; // Sắp xếp theo Part
+
+                using (var errorCommand = new SqlCommand(errorQuery, connection))
+                {
+                    errorCommand.Parameters.AddWithValue("@ResultKey", resultKey);
+                    using (var reader = await errorCommand.ExecuteReaderAsync())
+                    {
+                        int errorCount = 1;
+                        while (await reader.ReadAsync())
+                        {
+                            analysisBuilder.AppendLine($"- **Lỗi #{errorCount++} (Part {reader["Part"]})**");
+                            analysisBuilder.AppendLine($"  - **Câu hỏi:** {reader["QuestionText"]}");
+                            analysisBuilder.AppendLine($"  - **Bạn đã chọn:** '{reader["UserAnswer"]}'");
+                            analysisBuilder.AppendLine($"  - **Đáp án đúng:** '{reader["CorrectAnswer"]}'");
+                            analysisBuilder.AppendLine($"  - **Chủ đề:** Ngữ pháp '{reader["GrammarTopicName"]}', Từ vựng '{reader["VocabularyTopicName"]}'");
+                            analysisBuilder.AppendLine($"  - **Giải thích:** {reader["Explanation"]}");
+                        }
+                        if (errorCount == 1)
+                        {
+                            analysisBuilder.AppendLine("Bài thi này không có lỗi sai nào được ghi nhận. Rất tốt!");
+                        }
+                    }
+                }
+            }
+            return analysisBuilder.ToString();
+        }
+        public static async Task<object> FindMyIncorrectQuestionsByTopicAsync(string memberKey, string topicName, int limit = 5)
+        {
+            var incorrectQuestions = new List<object>();
+            var query = @"
+    WITH AllQuestionsAndAnswers AS (
+        SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '1' AS Part, Q.GrammarTopic, Q.VocabularyTopic FROM TEC_Part1_Question Q JOIN TEC_Part1_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
+        SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '2' AS Part, Q.GrammarTopic, Q.VocabularyTopic FROM TEC_Part2_Question Q JOIN TEC_Part2_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
+        SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '3' AS Part, Q.GrammarTopic, Q.VocabularyTopic FROM TEC_Part3_Question Q JOIN TEC_Part3_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
+        SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '4' AS Part, Q.GrammarTopic, Q.VocabularyTopic FROM TEC_Part4_Question Q JOIN TEC_Part4_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
+        SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '5' AS Part, Q.GrammarTopic, Q.VocabularyTopic FROM TEC_Part5_Question Q JOIN TEC_Part5_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
+        SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '6' AS Part, Q.GrammarTopic, Q.VocabularyTopic FROM TEC_Part6_Question Q JOIN TEC_Part6_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
+        SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '7' AS Part, Q.GrammarTopic, Q.VocabularyTopic FROM TEC_Part7_Question Q JOIN TEC_Part7_Answer A ON Q.QuestionKey = A.QuestionKey
+    )
+    SELECT TOP (@Limit)
+        QuestionInfo.Part,
+        QuestionInfo.QuestionText,
+        UserSelectedAnswer.AnswerText AS UserAnswer,
+        CorrectAnswer.AnswerText AS CorrectAnswer,
+        QuestionInfo.Explanation
+    FROM UsersError UE
+    JOIN UserAnswers UA ON UE.ResultKey = UA.ResultKey AND UE.AnswerKey = UA.SelectAnswerKey
+    JOIN (
+        SELECT DISTINCT q.QuestionKey, q.QuestionText, q.Explanation, q.Part, gt.TopicName as GrammarTopicName, vt.TopicName as VocabularyTopicName
+        FROM AllQuestionsAndAnswers q
+        LEFT JOIN GrammarTopics gt on q.GrammarTopic = gt.GrammarTopicID
+        LEFT JOIN VocabularyTopics vt on q.VocabularyTopic = vt.VocabularyTopicID
+    ) AS QuestionInfo ON UA.QuestionKey = QuestionInfo.QuestionKey
+    JOIN AllQuestionsAndAnswers AS UserSelectedAnswer ON UA.SelectAnswerKey = UserSelectedAnswer.AnswerKey
+    JOIN AllQuestionsAndAnswers AS CorrectAnswer ON UA.QuestionKey = CorrectAnswer.QuestionKey AND CorrectAnswer.AnswerCorrect = 1
+    WHERE UE.UserKey = @MemberKey AND (QuestionInfo.GrammarTopicName LIKE @TopicNamePattern OR QuestionInfo.VocabularyTopicName LIKE @TopicNamePattern)
+    ORDER BY UE.ErrorDate DESC;";
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@MemberKey", memberKey);
+                    command.Parameters.AddWithValue("@TopicNamePattern", $"%{topicName}%");
+                    command.Parameters.AddWithValue("@Limit", limit);
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            incorrectQuestions.Add(new
+                            {
+                                Part = reader["Part"],
+                                Question = reader["QuestionText"],
+                                YourAnswer = reader["UserAnswer"],
+                                CorrectAnswer = reader["CorrectAnswer"],
+                                Explanation = reader["Explanation"]
+                            });
+                        }
+                    }
+                }
+            }
+            return incorrectQuestions;
+        }
     }
 }

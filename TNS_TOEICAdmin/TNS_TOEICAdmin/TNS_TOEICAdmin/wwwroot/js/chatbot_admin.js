@@ -67,7 +67,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const createMessageElement = (content, sender) => {
         const messageDiv = document.createElement("div");
         messageDiv.classList.add("ai-message", `${sender}-message`);
-        messageDiv.innerHTML = `<div class="ai-message-text">${content}</div>`;
+
+        // === SỬA LỖI TẠI ĐÂY ===
+        // Dòng này hoạt động như một tấm lưới an toàn:
+        // Nếu 'content' là null hoặc undefined, nó sẽ được chuyển thành một chuỗi rỗng ""
+        const safeContent = content || "";
+
+        const contentHtml = (sender === 'bot')
+            ? marked.parse(safeContent) // Luôn dùng safeContent để đảm bảo không bị lỗi
+            : safeContent;
+
+        messageDiv.innerHTML = `<div class="ai-message-text">${contentHtml}</div>`;
         return messageDiv;
     };
     const showThinkingIndicator = () => {

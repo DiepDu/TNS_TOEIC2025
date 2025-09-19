@@ -58,7 +58,7 @@
 
 <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
     :root {
         --ai-primary-color: #007bff;
@@ -98,16 +98,16 @@
     .ai-chat-bubble svg {
         transition: opacity 0.2s, transform 0.2s;
     }
-   
+
     /* Khung Chat Popup */
     .ai-chatbot-popup {
         position: fixed;
         bottom: 100px;
         right: 20px;
-        width: 420px;
-        max-width: 90vw;
-        height: 70vh;
-        max-height: 600px;
+        width: 450px;
+        max-width: 95vw;
+        height: 75vh;
+        max-height: 700px;
         background: var(--ai-bg-color);
         border-radius: 15px;
         box-shadow: 0 10px 30px rgba(0,0,0,0.2);
@@ -115,17 +115,19 @@
         flex-direction: column;
         overflow: hidden;
         z-index: 1000;
+        /* === CÁC THUỘC TÍNH QUAN TRỌNG ĐỂ ẨN ĐI BAN ĐẦU === */
         transform: scale(0.5);
         opacity: 0;
-        pointer-events: none;
+        pointer-events: none; /* <-- Rất quan trọng, ngăn tương tác khi bị ẩn */
         transform-origin: bottom right;
         transition: transform 0.3s ease-out, opacity 0.3s ease-out;
     }
 
     body.show-ai-chatbot .ai-chatbot-popup {
+        /* === CÁC THUỘC TÍNH ĐỂ HIỆN RA KHI CÓ CLASS 'show-ai-chatbot' === */
         transform: scale(1);
         opacity: 1;
-        pointer-events: auto;
+        pointer-events: auto; /* <-- Rất quan trọng, cho phép tương tác khi hiện ra */
     }
 
     /* Sidebar Lịch sử Chat */
@@ -178,20 +180,23 @@
     .ai-conversation-item:hover, .ai-conversation-item.active {
         background-color: #dee2e6;
     }
-    .ai-conversation-item .title {
-        font-weight: 600;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    .ai-conversation-item .last-message {
-        font-size: 0.85rem;
-        color: var(--ai-light-text);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        margin-top: 4px;
-    }
+
+        .ai-conversation-item .title {
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 0.9rem; /* Added: Make title smaller */
+        }
+
+        .ai-conversation-item .last-message {
+            font-size: 0.75rem; /* Changed: Make last message smaller */
+            color: var(--ai-light-text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 2px; /* Changed: Reduce space */
+        }
 
     /* Khung Chat chính */
     .ai-chat-main {
@@ -249,10 +254,12 @@
         gap: 10px;
         max-width: 85%;
     }
+
     .ai-message-text {
-        padding: 10px 15px;
+        padding: 8px 12px; /* Changed: Reduce padding */
         border-radius: 18px;
         word-wrap: break-word;
+        font-size: 0.95rem; /* Added: Set base font size */
     }
     .user-message {
         align-self: flex-end;
@@ -487,5 +494,51 @@
         display: none; /* Ẩn trình phát audio mặc định */
     }
 
+    .ai-message-text h1, .ai-message-text h2, .ai-message-text h3 {
+        margin-top: 10px;
+        margin-bottom: 5px;
+    }
+
+    .ai-message-text p {
+        margin-bottom: 8px; /* Thêm khoảng cách giữa các đoạn văn */
+    }
+
+    .ai-message-text ul, .ai-message-text ol {
+        padding-left: 20px; /* Thụt lề cho danh sách */
+        margin-bottom: 8px;
+    }
+
+    .ai-message-text li {
+        margin-bottom: 4px; /* Khoảng cách giữa các mục trong danh sách */
+    }
+
+    .ai-message-text strong {
+        font-weight: 600; /* Làm cho chữ đậm nổi bật hơn */
+    }
+
+    .ai-message-text code {
+        background-color: #f0f0f0;
+        padding: 2px 4px;
+        border-radius: 4px;
+        font-family: monospace;
+    }
+
+    .bot-message .ai-message-text code {
+        background-color: #dcdcdc; /* Màu nền code trong tin nhắn của bot */
+    }
+
+    .ai-message-text pre {
+        background-color: #2d2d2d;
+        color: #f8f8f2;
+        padding: 10px;
+        border-radius: 8px;
+        overflow-x: auto; /* Thêm thanh cuộn ngang nếu code quá dài */
+        margin-bottom: 8px;
+    }
+
+        .ai-message-text pre code {
+            background-color: transparent;
+            padding: 0;
+        }
 
 </style>
