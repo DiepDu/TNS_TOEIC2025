@@ -64,6 +64,12 @@
     let debounceTimers = {};
     let sidebarState = 0; // Biến theo dõi trạng thái: 0 - ẩn cả hai, 1 - hiển thị sidebar-left, 2 - hiển thị sidebar-right
 
+            const handleBeforeUnload = (event) => {
+            // Đây là cách chuẩn để kích hoạt hộp thoại xác nhận của trình duyệt
+            event.preventDefault();
+            event.returnValue = ''; // Dòng này là bắt buộc cho một số trình duyệt
+        };
+
     function debounce(func, wait) {
         return function (...args) {
             const questionKey = args[0];
@@ -576,7 +582,8 @@
                     const data = await response.json();
                     if (response.ok && data.success) {
                         // Cập nhật URL để truyền cả testKey và resultKey
-                        window.location.href = `/Test/ResultTest?testKey=${testKey}&resultKey=${resultKey}`;
+                             window.removeEventListener('beforeunload', handleBeforeUnload);
+                            window.location.href = `/Test/ResultTest?testKey=${testKey}&resultKey=${resultKey}`;
                     } else {
                         alert('Error submitting test: ' + (data.message || 'Unknown error'));
                     }
@@ -593,6 +600,7 @@
             'Exit Test',
             'Are you sure you want to exit the test? Your progress may not be saved.',
             () => {
+                    window.removeEventListener('beforeunload', handleBeforeUnload);
                 window.location.href = '/Test/Ready';
             }
         );
@@ -627,7 +635,8 @@
     }
 
     window.onload = async function () {
-        await loadFlaggedQuestions();
+             window.addEventListener('beforeunload', handleBeforeUnload);
+            await loadFlaggedQuestions();
         startTimer();
         renderContent();
         updateQuestionList();

@@ -469,9 +469,10 @@ body {
     }
 
 .question-text {
-    font-size: 1.2rem;
+    font-size: 0.9rem; /* Giảm cỡ chữ (1rem ~ 16px), dễ đọc hơn */
+    line-height: 1.6; /* Thêm khoảng cách dòng, CỰC KỲ QUAN TRỌNG */
+    color: #333; /* Màu chữ đen dịu mắt hơn */
     font-weight: normal;
-    color: #000;
     margin-bottom: 20px;
     background: none;
     -webkit-background-clip: initial;
@@ -485,6 +486,9 @@ body {
     gap: 10px;
 }
 
+.part3-left .question-text {
+    text-align: left;
+}
 .answer-option {
     display: flex;
     align-items: center;
@@ -513,6 +517,7 @@ body {
         color: #333;
         margin: 0;
         gap: 2px;
+        pointer-events: none;
     }
 
     .answer-option .label-text {
@@ -560,11 +565,38 @@ body {
     flex: 1;
 }
 
+/* Thay thế cho class .part3-left cũ */
 .part3-left {
+    flex: 1;
     text-align: center;
-    border-right: 2px solid #B3E5FC; /* Đường kẻ chia dọc */
-    padding-right: 20px; /* Khoảng cách giữa đường kẻ và nội dung */
+    border-right: 2px solid #B3E5FC;
+    padding-right: 20px;
+    /* --- BỔ SUNG CÁC DÒNG SAU --- */
+    max-height: calc(100vh - 120px); /* Giới hạn chiều cao tối đa */
+    overflow-y: auto; /* Tự động thêm thanh cuộn khi cần */
+    padding-left: 10px; /* Thêm chút đệm bên trái cho cân đối */
+    /* Hiệu ứng mờ dần ở cạnh trên và dưới cho đẹp */
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%);
 }
+    /* Thêm vào cuối file Test.css */
+    .part3-left::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .part3-left::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+
+    .part3-left::-webkit-scrollbar-thumb {
+        background: #B3E5FC;
+        border-radius: 10px;
+    }
+
+        .part3-left::-webkit-scrollbar-thumb:hover {
+            background: #81D4FA;
+        }
 
 .part3-right {
     display: flex;
