@@ -201,16 +201,19 @@ namespace TNS_TOEICTest.Controllers
                 var tools = new List<GeminiTool> {
             new GeminiTool {
                 FunctionDeclarations = new List<GeminiFunctionDeclaration> {
-                    new GeminiFunctionDeclaration {
-                        Name = "get_test_analysis_by_date",
-                        Description = "Retrieves a detailed error analysis for a test completed on a specific date.",
-                        Parameters = new GeminiSchema {
-                            Properties = new Dictionary<string, GeminiSchemaProperty> {
-                                { "test_date", new GeminiSchemaProperty { Type = "STRING", Description = "The date of the test to analyze, in 'yyyy-mm-dd' format." } }
-                            },
-                            Required = new List<string> { "test_date" }
-                        }
-                    },
+                 new GeminiFunctionDeclaration {
+    Name = "get_test_analysis_by_date",
+    Description = "Retrieves a detailed error analysis for a specific test taken on a given date. Can filter by exact score or time if multiple tests exist.",
+    Parameters = new GeminiSchema {
+        Properties = new Dictionary<string, GeminiSchemaProperty> {
+            { "test_date", new GeminiSchemaProperty { Type = "STRING", Description = "The date of the test to analyze, in 'yyyy-mm-dd' format." } },
+            { "exact_score", new GeminiSchemaProperty { Type = "NUMBER", Description = "Optional: Exact test score to select the test." } },
+            { "exact_time", new GeminiSchemaProperty { Type = "STRING", Description = "Optional: Exact time (HH:mm) to select the test closest to this time." } }
+        },
+        Required = new List<string> { "test_date" }
+    }
+},
+
                     new GeminiFunctionDeclaration {
                         Name = "find_my_incorrect_questions_by_topic",
                         Description = "Finds questions the user answered incorrectly related to a specific grammar or vocabulary topic.",
@@ -264,13 +267,19 @@ namespace TNS_TOEICTest.Controllers
                         {
                             if (DateTime.TryParse(args["test_date"].ToString(), out var testDate))
                             {
-                                functionResult = await ChatWithAIAccessData.GetTestAnalysisByDateAsync(memberKey, testDate);
+                                int? score = args["exact_score"]?.ToObject<int?>();
+                                TimeSpan? time = null;
+                                if (args["exact_time"] != null && TimeSpan.TryParse(args["exact_time"].ToString(), out var parsedTime))
+                                    time = parsedTime;
+
+                                functionResult = await ChatWithAIAccessData.GetTestAnalysisByDateAsync(memberKey, testDate, score, time);
                             }
                             else
                             {
                                 functionResult = "Ngày không hợp lệ. Vui lòng sử dụng định dạng yyyy-mm-dd.";
                             }
                         }
+
                         else if (functionName == "find_my_incorrect_questions_by_topic")
                         {
                             functionResult = await ChatWithAIAccessData.FindMyIncorrectQuestionsByTopicAsync(

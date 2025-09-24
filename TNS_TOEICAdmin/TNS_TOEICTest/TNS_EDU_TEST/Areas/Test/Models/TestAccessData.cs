@@ -67,51 +67,52 @@ namespace TNS_EDU_TEST.Areas.Test.Models
             LEFT JOIN (
                 SELECT QuestionKey, QuestionText, QuestionImage, QuestionVoice, Parent
                 FROM [TEC_Part1_Question] WHERE RecordStatus != 99
-                UNION
+                UNION ALL
                 SELECT QuestionKey, QuestionText, QuestionImage, QuestionVoice, Parent
                 FROM [TEC_Part2_Question] WHERE RecordStatus != 99
-                UNION
+                UNION ALL
                 SELECT QuestionKey, QuestionText, QuestionImage, QuestionVoice, Parent
                 FROM [TEC_Part3_Question] WHERE RecordStatus != 99
-                UNION
+                UNION ALL
                 SELECT QuestionKey, QuestionText, QuestionImage, QuestionVoice, Parent
                 FROM [TEC_Part4_Question] WHERE RecordStatus != 99
-                UNION
+                UNION ALL
                 SELECT QuestionKey, QuestionText, QuestionImage, QuestionVoice, Parent
                 FROM [TEC_Part5_Question] WHERE RecordStatus != 99
-                UNION
+                UNION ALL
                 SELECT QuestionKey, QuestionText, QuestionImage, QuestionVoice, Parent
                 FROM [TEC_Part6_Question] WHERE RecordStatus != 99
-                UNION
+                UNION ALL
                 SELECT QuestionKey, QuestionText, QuestionImage, QuestionVoice, Parent
                 FROM [TEC_Part7_Question] WHERE RecordStatus != 99
             ) q ON c.QuestionKey = q.QuestionKey
             LEFT JOIN (
                 SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect
                 FROM [TEC_Part1_Answer] WHERE RecordStatus != 99
-                UNION
+                UNION ALL
                 SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect
                 FROM [TEC_Part2_Answer] WHERE RecordStatus != 99
-                UNION
+                UNION ALL
                 SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect
                 FROM [TEC_Part3_Answer] WHERE RecordStatus != 99
-                UNION
+                UNION ALL
                 SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect
                 FROM [TEC_Part4_Answer] WHERE RecordStatus != 99
-                UNION
+                UNION ALL
                 SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect
                 FROM [TEC_Part5_Answer] WHERE RecordStatus != 99
-                UNION
+                UNION ALL
                 SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect
                 FROM [TEC_Part6_Answer] WHERE RecordStatus != 99
-                UNION
+                UNION ALL
                 SELECT AnswerKey, QuestionKey, AnswerText, AnswerImage, AnswerVoice, AnswerCorrect
                 FROM [TEC_Part7_Answer] WHERE RecordStatus != 99
             ) a ON c.QuestionKey = a.QuestionKey
             LEFT JOIN [UserAnswers] u ON c.ResultKey = u.ResultKey AND c.QuestionKey = u.QuestionKey
             WHERE c.ResultKey = @ResultKey AND c.TestKey = @TestKey
-            ORDER BY c.[Order], CASE WHEN q.Parent IS NULL THEN 0 ELSE 1 END"; // Sắp xếp theo Order, ưu tiên câu hỏi cha
+            ORDER BY c.[Order], CASE WHEN q.Parent IS NULL THEN 0 ELSE 1 END";
 
+                // Phần xử lý dữ liệu phía dưới giữ nguyên không đổi
                 var questionsDict = new Dictionary<Guid, TestQuestion>();
                 var allQuestions = new List<TestQuestion>();
 
@@ -133,7 +134,7 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                                 {
                                     QuestionKey = questionKey,
                                     Part = part,
-                                    Order = reader.IsDBNull(4) ? null : (float?)reader.GetDouble(4), // Đổi thành int? nếu cột Order là int
+                                    Order = reader.IsDBNull(4) ? null : (float?)reader.GetDouble(4),
                                     QuestionText = reader.IsDBNull(5) ? null : reader.GetString(5),
                                     QuestionImage = reader.IsDBNull(6) ? null : reader.GetString(6),
                                     QuestionVoice = reader.IsDBNull(7) ? null : reader.GetString(7),
@@ -174,26 +175,7 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                             .ToList();
                     }
                 }
-
-                // Sắp xếp resultQuestions theo Order
                 resultQuestions.Sort((a, b) => a.Order.Value.CompareTo(b.Order.Value));
-
-                // Debug chi tiết
-                Console.WriteLine($"Total questions from SQL: {allQuestions.Count}");
-                foreach (var q in allQuestions)
-                {
-                    Console.WriteLine($"QuestionKey={q.QuestionKey}, Part={q.Part}, Parent={q.Parent ?? Guid.Empty}, Order={q.Order}");
-                }
-                Console.WriteLine($"Total parent questions returned: {resultQuestions.Count}");
-                foreach (var q in resultQuestions)
-                {
-                    Console.WriteLine($"Parent QuestionKey={q.QuestionKey}, Part={q.Part}, Order={q.Order}, ChildrenCount={q.Children.Count}");
-                    foreach (var child in q.Children)
-                    {
-                        Console.WriteLine($"  Child QuestionKey={child.QuestionKey}, Part={child.Part}, Order={child.Order}");
-                    }
-                }
-
                 return (endTime, resultQuestions);
             }
         }

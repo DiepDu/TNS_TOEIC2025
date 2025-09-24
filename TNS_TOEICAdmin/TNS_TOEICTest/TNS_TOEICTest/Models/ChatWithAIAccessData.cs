@@ -2,6 +2,8 @@
 using DocumentFormat.OpenXml.Math;
 using Google.Cloud.AIPlatform.V1;
 using Microsoft.Data.SqlClient;
+using Newtonsoft.Json;
+using System.Data;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -295,243 +297,460 @@ namespace TNS_TOEICTest.Models
             messages.Reverse();
             return messages;
         }
+
+
+
         public static async Task<string> LoadMemberOriginalDataAsync(string memberKey)
         {
-            var contextBuilder = new StringBuilder();
-            using (var connection = new SqlConnection(_connectionString))
+            var report = new Dictionary<string, object>();
+            try
             {
-                await connection.OpenAsync();
-
-                // === PHẦN 1: LẤY HỒ SƠ CÁ NHÂN ===
-                var memberQuery = "SELECT MemberName, Gender, YearOld, ToeicScoreStudy, ToeicScoreExam FROM EDU_Member WHERE MemberKey = @MemberKey;";
-                using (var command = new SqlCommand(memberQuery, connection))
+                using (var connection = new SqlConnection(_connectionString))
                 {
-                    command.Parameters.AddWithValue("@MemberKey", memberKey);
-                    using (var reader = await command.ExecuteReaderAsync())
-                    {
-                        if (await reader.ReadAsync())
-                        {
-                            contextBuilder.AppendLine("--- Student Profile ---");
-                            contextBuilder.AppendLine($"Name: {reader["MemberName"]}");
+                    await connection.OpenAsync();
 
-                            // Sửa lại phần Gender
-                            string gender = "Not Specified";
-                            if (reader["Gender"] != DBNull.Value)
-                            {
-                                var genderValue = reader["Gender"].ToString();
-                                if (genderValue == "0") gender = "Female";
-                                else if (genderValue == "1") gender = "Male";
-                            }
+                    // --- 1) MEMBER PROFILE ---
+                    var memberProfile = await GetMemberProfileAsync(connection, memberKey);
+                    report["memberProfile"] = memberProfile != null
+       ? (object)memberProfile
+       : new { message = "Member not found" };
 
-                            int age = 0;
-                            if (reader["YearOld"] != DBNull.Value)
-                                age = DateTime.Now.Year - Convert.ToInt32(reader["YearOld"]);
 
-                            contextBuilder.AppendLine($"Gender: {gender}, Age: {age} (Born in {reader["YearOld"]})");
-                            contextBuilder.AppendLine($"Latest Practice Score (Part-by-part): {reader["ToeicScoreStudy"]}");
-                            contextBuilder.AppendLine($"Latest Full Test Score: {reader["ToeicScoreExam"]}");
-                            contextBuilder.AppendLine();
-                        }
+                    // --- 2) ALL TESTS (most recent first) ---
+                    var allResults = await GetAllResultsForMemberAsync(connection, memberKey);
+                    report["allResultsCount"] = allResults.Count;
+                    report["recentResults"] = allResults.Take(20).ToList();
 
-                    }
-                }
+                    // --- 3) FULL TESTS SUMMARY (last 5 full tests) ---
+                    var lastFullTests = allResults
+                        .Where(r => r.TotalQuestion >= 100 && r.TestScore != null)
+                        .Take(5)
+                        .ToList();
+                    report["lastFullTests"] = lastFullTests;
 
-                // === PHẦN 2: TÓM TẮT HIỆU SUẤT TOÀN DIỆN ===
-                var allResultsQuery = "SELECT TestScore FROM ResultOfUserForTest WHERE MemberKey = @MemberKey AND TestScore IS NOT NULL ORDER BY StartTime ASC;";
-                var allScores = new List<int>();
-                using (var command = new SqlCommand(allResultsQuery, connection))
-                {
-                    command.Parameters.AddWithValue("@MemberKey", memberKey);
-                    using (var reader = await command.ExecuteReaderAsync())
-                    {
-                        while (await reader.ReadAsync())
-                        {
-                            allScores.Add(Convert.ToInt32(reader["TestScore"]));
-                        }
-                    }
-                }
+                    // Score statistics & trend
+                    report["scoreStatistics"] = ComputeScoreStatistics(
+                        allResults.Where(r => r.TestScore.HasValue).Select(r => r.TestScore!.Value).ToList()
+                    );
+                    report["scoreTrend"] = ComputeScoreTrend(
+                        lastFullTests.Where(r => r.TestScore.HasValue).Select(r => r.TestScore!.Value).ToList()
+                    );
 
-                contextBuilder.AppendLine("--- Comprehensive Performance Summary ---");
-                if (allScores.Count > 0)
-                {
-                    contextBuilder.AppendLine($"Highest Score: {allScores.Max()}");
-                    contextBuilder.AppendLine($"Lowest Score: {allScores.Min()}");
-                    contextBuilder.AppendLine($"Average Score (all {allScores.Count} tests): {allScores.Average():F0}");
+                    // --- 4) BEHAVIOR ANALYSIS ---
+                    var recentResultKeys = allResults.Select(r => r.ResultKey).Take(20).ToList();
+                    var userAnswers = await GetUserAnswersByResultKeysAsync(connection, recentResultKeys);
+                    report["behavior"] = AnalyzeBehavior(userAnswers);
 
-                    if (allScores.Count >= 3)
-                    {
-                        var firstThreeAvg = allScores.Take(3).Average();
-                        var lastThreeAvg = allScores.Skip(allScores.Count - 3).Average();
-                        string trend = lastThreeAvg > firstThreeAvg + 10 ? "Clearly Upward" : (lastThreeAvg < firstThreeAvg - 10 ? "Clearly Downward" : "Stable");
-                        contextBuilder.AppendLine($"Long-term Trend: {trend}");
+                    // --- 5) ERROR ANALYSIS ---
+                    var userErrors = await GetUserErrorsAsync(connection, memberKey, limit: 150);
+                    report["errorAnalysis"] = AnalyzeErrors(userErrors);
 
-                        double avg = allScores.Average();
-                        double sumOfSquares = allScores.Sum(score => Math.Pow(score - avg, 2));
-                        double stdDev = Math.Sqrt(sumOfSquares / allScores.Count);
-                        string stability = stdDev < 50 ? "Very Stable" : (stdDev < 100 ? "Relatively Stable" : "Unstable");
-                        contextBuilder.AppendLine($"Performance Stability: {stability} (Std. Deviation: {stdDev:F1})");
+                    // --- 6) RECENT MISTAKES DETAILED (10 gần nhất) ---
+                    var mistakes = await GetRecentMistakesDetailedAsync(connection, memberKey, 10);
+                    report["recentMistakesDetailed"] = mistakes;
 
-                        string recentStatus = lastThreeAvg > avg ? "Improving" : "Below Average";
-                        contextBuilder.AppendLine($"Recent Performance Status: {recentStatus}");
-                    }
-                }
-                else
-                {
-                    contextBuilder.AppendLine("No test results found.");
-                }
-                contextBuilder.AppendLine();
-
-                // === PHẦN 3: PHÂN TÍCH HÀNH VI LÀM BÀI ===
-                contextBuilder.AppendLine("--- Test-taking Behavior Analysis ---");
-                var behaviorQuery = @"
-            SELECT 
-                AVG(CAST(ua.TimeSpent AS FLOAT)) AS AvgTime, 
-                AVG(CAST(ua.NumberOfAnswerChanges AS FLOAT)) AS AvgChanges
-            FROM UserAnswers ua
-            WHERE ua.ResultKey IN (SELECT TOP 10 ResultKey FROM ResultOfUserForTest WHERE MemberKey = @MemberKey ORDER BY StartTime DESC);";
-                using (var command = new SqlCommand(behaviorQuery, connection))
-                {
-                    command.Parameters.AddWithValue("@MemberKey", memberKey);
-                    using (var reader = await command.ExecuteReaderAsync())
-                    {
-                        if (await reader.ReadAsync() && reader["AvgTime"] != DBNull.Value)
-                        {
-                            contextBuilder.AppendLine($"- Average time per question (last 10 tests): {Convert.ToDouble(reader["AvgTime"]):F1} seconds");
-                            contextBuilder.AppendLine($"- Average answer changes (last 10 tests): {Convert.ToDouble(reader["AvgChanges"]):F2}");
-                        }
-                    }
-                }
-
-                var completionTimeQuery = @"
-            SELECT TOP 5 R.[Time]
-            FROM ResultOfUserForTest R
-            JOIN Test T ON R.TestKey = T.TestKey
-            WHERE R.MemberKey = @MemberKey AND T.TotalQuestion >= 100 AND R.[Time] IS NOT NULL
-            ORDER BY R.StartTime DESC;";
-                var completionTimesInMinutes = new List<double>();
-                using (var command = new SqlCommand(completionTimeQuery, connection))
-                {
-                    command.Parameters.AddWithValue("@MemberKey", memberKey);
-                    using (var reader = await command.ExecuteReaderAsync())
-                    {
-                        while (await reader.ReadAsync())
-                        {
-                            if (double.TryParse(reader["Time"].ToString(), out double time))
-                            {
-                                completionTimesInMinutes.Add(time);
-                            }
-                        }
-                    }
-                }
-
-                if (completionTimesInMinutes.Any())
-                {
-                    contextBuilder.AppendLine("- Completion Times for recent Full Tests:");
-                    for (int i = 0; i < completionTimesInMinutes.Count; i++)
-                    {
-                        contextBuilder.AppendLine($"  - Test {i + 1}: {completionTimesInMinutes[i]:F0} minutes");
-                    }
-                    contextBuilder.AppendLine($"- Average Full Test Completion Time: {completionTimesInMinutes.Average():F0} minutes");
-                }
-                contextBuilder.AppendLine();
-
-                // === PHẦN 4: PHÂN TÍCH LỖI SAI CHI TIẾT ===
-                string? latestResultKey = null;
-                int totalQuestions = 0;
-                var latestTestQuery = "SELECT TOP 1 R.ResultKey, T.TotalQuestion FROM ResultOfUserForTest R JOIN Test T ON R.TestKey = T.TestKey WHERE R.MemberKey = @MemberKey ORDER BY R.StartTime DESC;";
-                using (var latestTestCmd = new SqlCommand(latestTestQuery, connection))
-                {
-                    latestTestCmd.Parameters.AddWithValue("@MemberKey", memberKey);
-                    using (var reader = await latestTestCmd.ExecuteReaderAsync())
-                    {
-                        if (await reader.ReadAsync())
-                        {
-                            latestResultKey = reader["ResultKey"].ToString();
-                            totalQuestions = reader["TotalQuestion"] == DBNull.Value ? 0 : Convert.ToInt32(reader["TotalQuestion"]);
-                        }
-                    }
-                }
-
-                var errorQuery = @"
-        WITH AllQuestionsAndAnswers AS (
-            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '1' AS Part FROM TEC_Part1_Question Q JOIN TEC_Part1_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
-            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '2' AS Part FROM TEC_Part2_Question Q JOIN TEC_Part2_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
-            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '3' AS Part FROM TEC_Part3_Question Q JOIN TEC_Part3_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
-            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '4' AS Part FROM TEC_Part4_Question Q JOIN TEC_Part4_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
-            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '5' AS Part FROM TEC_Part5_Question Q JOIN TEC_Part5_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
-            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '6' AS Part FROM TEC_Part6_Question Q JOIN TEC_Part6_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
-            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '7' AS Part FROM TEC_Part7_Question Q JOIN TEC_Part7_Answer A ON Q.QuestionKey = A.QuestionKey
-        )
-        SELECT 
-            UE.ErrorDate, ET.ErrorDescription, 
-            GT.TopicName AS GrammarTopicName, 
-            VT.TopicName AS VocabularyTopicName,
-            CAT.CategoryName AS CategoryTopicName,
-            QuestionInfo.QuestionText, 
-            UserSelectedAnswer.AnswerText AS UserAnswer, 
-            CorrectAnswer.AnswerText AS CorrectAnswer,
-            QuestionInfo.Explanation,
-            UA.TimeSpent, UA.NumberOfAnswerChanges,
-            QuestionInfo.Part
-        FROM UsersError UE
-        JOIN UserAnswers UA ON UE.ResultKey = UA.ResultKey AND UE.AnswerKey = UA.SelectAnswerKey
-        JOIN (SELECT DISTINCT QuestionKey, QuestionText, Explanation, Part FROM AllQuestionsAndAnswers) AS QuestionInfo ON UA.QuestionKey = QuestionInfo.QuestionKey
-        JOIN AllQuestionsAndAnswers AS UserSelectedAnswer ON UA.SelectAnswerKey = UserSelectedAnswer.AnswerKey
-        JOIN AllQuestionsAndAnswers AS CorrectAnswer ON UA.QuestionKey = CorrectAnswer.QuestionKey AND CorrectAnswer.AnswerCorrect = 1
-        LEFT JOIN ErrorTypes ET ON UE.ErrorType = ET.ErrorTypeID
-        LEFT JOIN GrammarTopics GT ON UE.GrammarTopic = GT.GrammarTopicID
-        LEFT JOIN VocabularyTopics VT ON UE.VocabularyTopic = VT.VocabularyTopicID
-        LEFT JOIN TEC_Category CAT ON UE.CategoryTopic = CAT.CategoryKey
-        {WHERE_CLAUSE}
-        {ORDER_AND_LIMIT};";
-
-                var finalErrorQuery = "";
-                var errorCommand = new SqlCommand();
-                errorCommand.Connection = connection;
-                errorCommand.Parameters.AddWithValue("@MemberKeyParam", memberKey);
-
-                if (!string.IsNullOrEmpty(latestResultKey) && totalQuestions >= 100)
-                {
-                    contextBuilder.AppendLine($"--- Detailed Error Analysis (From Latest Full Test) ---");
-                    finalErrorQuery = errorQuery
-                        .Replace("{WHERE_CLAUSE}", "WHERE UE.ResultKey = @ResultKey AND UA.IsCorrect = 0")
-                        .Replace("{ORDER_AND_LIMIT}", "ORDER BY UE.ErrorDate DESC");
-                    errorCommand.Parameters.AddWithValue("@ResultKey", latestResultKey);
-                }
-                else
-                {
-                    contextBuilder.AppendLine($"--- Detailed Error Analysis (Last 150 Errors) ---");
-                    finalErrorQuery = errorQuery
-                        .Replace("{WHERE_CLAUSE}", "WHERE UE.UserKey = @MemberKeyParam AND UA.IsCorrect = 0")
-                        .Replace("{ORDER_AND_LIMIT}", "ORDER BY UE.ErrorDate DESC OFFSET 0 ROWS FETCH NEXT 150 ROWS ONLY");
-                }
-
-                errorCommand.CommandText = finalErrorQuery;
-                using (errorCommand)
-                {
-                    using (var reader = await errorCommand.ExecuteReaderAsync())
-                    {
-                        int errorCount = 1;
-                        while (await reader.ReadAsync())
-                        {
-                            contextBuilder.AppendLine($"[Error #{errorCount++} - Part {reader["Part"]}]");
-                            contextBuilder.AppendLine($"  - Question: {reader["QuestionText"]}");
-                            contextBuilder.AppendLine($"  - Your Answer: '{reader["UserAnswer"]}'");
-                            contextBuilder.AppendLine($"  - Correct Answer: '{reader["CorrectAnswer"]}'");
-                            contextBuilder.AppendLine($"  - Error Type: {reader["ErrorDescription"]}");
-                            contextBuilder.AppendLine($"  - Topics: Category '{reader["CategoryTopicName"]}', Grammar '{reader["GrammarTopicName"]}', Vocabulary '{reader["VocabularyTopicName"]}'");
-                            contextBuilder.AppendLine($"  - Behavior: Time spent was {reader["TimeSpent"]}s, changed answer {reader["NumberOfAnswerChanges"]} times.");
-                            contextBuilder.AppendLine($"  - Explanation: {reader["Explanation"]}");
-                        }
-                        if (errorCount == 1)
-                        {
-                            contextBuilder.AppendLine("No specific errors found to analyze.");
-                        }
-                    }
+                    // --- 7) NOTES ---
+                    var notes = new List<string>();
+                    if (!recentResultKeys.Any()) notes.Add("Not enough tests to analyze behavior. Recommend user takes more tests.");
+                    if (!userAnswers.Any()) notes.Add("No per-question data (UserAnswers) available in recent tests.");
+                    report["notes"] = notes;
                 }
             }
-            return contextBuilder.ToString();
+            catch (Exception ex)
+            {
+                var err = new { error = ex.Message, stack = ex.StackTrace?.Split('\n')?.Take(5) };
+                report["fatal"] = err;
+            }
+
+            return JsonConvert.SerializeObject(report, Newtonsoft.Json.Formatting.Indented);
         }
+
+        // ===================== DTO CLASSES =====================
+        public class MemberProfileDto
+        {
+            public string MemberName { get; set; }
+            public string Gender { get; set; }
+            public int? BirthYear { get; set; }
+            public int? Age { get; set; }
+            public int? ToeicScoreStudy { get; set; }
+            public int? ToeicScoreExam { get; set; }
+            public DateTime? LastLoginDate { get; set; }
+            public DateTime? CreatedOn { get; set; }
+        }
+
+        public class ResultRow
+        {
+            public Guid ResultKey { get; set; }
+            public Guid TestKey { get; set; }
+            public DateTime? StartTime { get; set; }
+            public DateTime? EndTime { get; set; }
+            public int? ListeningScore { get; set; }
+            public int? ReadingScore { get; set; }
+            public int? TestScore { get; set; }
+            public int? Time { get; set; }
+            public int? TotalQuestion { get; set; }
+        }
+
+        public class UserAnswerRow
+        {
+            public Guid UAnswerKey { get; set; }
+            public Guid ResultKey { get; set; }
+            public Guid QuestionKey { get; set; }
+            public Guid? SelectAnswerKey { get; set; }
+            public bool IsCorrect { get; set; }
+            public int TimeSpent { get; set; }
+            public DateTime AnswerTime { get; set; }
+            public int NumberOfAnswerChanges { get; set; }
+            public int Part { get; set; }
+        }
+
+        public class UserErrorRow
+        {
+            public Guid ErrorKey { get; set; }
+            public Guid AnswerKey { get; set; }
+            public Guid UserKey { get; set; }
+            public Guid ResultKey { get; set; }
+            public string ErrorTypeName { get; set; }
+            public string GrammarTopicName { get; set; }
+            public string VocabularyTopicName { get; set; }
+            public DateTime? ErrorDate { get; set; }
+            public int? Part { get; set; }
+            public int? SkillLevel { get; set; }
+        }
+
+        public class MistakeDetailDto
+        {
+            public int Part { get; set; }
+            public Guid QuestionKey { get; set; }
+            public Guid ResultKey { get; set; }
+            public DateTime AnswerTime { get; set; }
+            public int TimeSpent { get; set; }
+            public int NumberOfAnswerChanges { get; set; }
+            public string SelectedAnswer { get; set; }
+            public string CorrectAnswer { get; set; }
+            public string QuestionText { get; set; }
+            public string Explanation { get; set; }
+        }
+
+        // ===================== HELPERS =====================
+
+        private static async Task<MemberProfileDto?> GetMemberProfileAsync(SqlConnection conn, string memberKey)
+        {
+            var q = @"SELECT MemberName, Gender, YearOld, ToeicScoreStudy, ToeicScoreExam, LastLoginDate, CreatedOn
+                  FROM EDU_Member WHERE MemberKey = @MemberKey";
+            using var cmd = new SqlCommand(q, conn);
+            cmd.Parameters.AddWithValue("@MemberKey", memberKey);
+            using var r = await cmd.ExecuteReaderAsync();
+            if (await r.ReadAsync())
+            {
+                string gender = "Not Specified";
+                if (r["Gender"] != DBNull.Value)
+                {
+                    var g = Convert.ToInt32(r["Gender"]);
+                    gender = g == 1 ? "Male" : g == 0 ? "Female" : "Not Specified";
+                }
+                int? birthYear = r["YearOld"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["YearOld"]);
+                int? age = birthYear.HasValue ? (DateTime.Now.Year - birthYear.Value) : null;
+
+                return new MemberProfileDto
+                {
+                    MemberName = r["MemberName"]?.ToString(),
+                    Gender = gender,
+                    BirthYear = birthYear,
+                    Age = age,
+                    ToeicScoreStudy = r["ToeicScoreStudy"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["ToeicScoreStudy"]),
+                    ToeicScoreExam = r["ToeicScoreExam"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["ToeicScoreExam"]),
+                    LastLoginDate = r["LastLoginDate"] == DBNull.Value ? null : (DateTime?)Convert.ToDateTime(r["LastLoginDate"]),
+                    CreatedOn = r["CreatedOn"] == DBNull.Value ? null : (DateTime?)Convert.ToDateTime(r["CreatedOn"])
+                };
+            }
+            return null;
+        }
+
+        private static async Task<List<ResultRow>> GetAllResultsForMemberAsync(SqlConnection conn, string memberKey)
+        {
+            var list = new List<ResultRow>();
+            var q = @"
+            SELECT r.ResultKey, r.TestKey, r.StartTime, r.EndTime, r.ListeningScore, r.ReadingScore, r.TestScore, r.Time, t.TotalQuestion
+            FROM ResultOfUserForTest r
+            LEFT JOIN Test t ON r.TestKey = t.TestKey
+            WHERE r.MemberKey = @MemberKey
+            ORDER BY r.StartTime DESC";
+            using var cmd = new SqlCommand(q, conn);
+            cmd.Parameters.AddWithValue("@MemberKey", memberKey);
+            using var r = await cmd.ExecuteReaderAsync();
+            while (await r.ReadAsync())
+            {
+                list.Add(new ResultRow
+                {
+                    ResultKey = r.GetGuid(r.GetOrdinal("ResultKey")),
+                    TestKey = r.GetGuid(r.GetOrdinal("TestKey")),
+                    StartTime = r["StartTime"] == DBNull.Value ? null : (DateTime?)Convert.ToDateTime(r["StartTime"]),
+                    EndTime = r["EndTime"] == DBNull.Value ? null : (DateTime?)Convert.ToDateTime(r["EndTime"]),
+                    ListeningScore = r["ListeningScore"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["ListeningScore"]),
+                    ReadingScore = r["ReadingScore"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["ReadingScore"]),
+                    TestScore = r["TestScore"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["TestScore"]),
+                    Time = r["Time"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["Time"]),
+                    TotalQuestion = r["TotalQuestion"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["TotalQuestion"])
+                });
+            }
+            return list;
+        }
+
+        private static async Task<List<UserAnswerRow>> GetUserAnswersByResultKeysAsync(SqlConnection conn, List<Guid> resultKeys)
+        {
+            var answers = new List<UserAnswerRow>();
+            if (resultKeys == null || resultKeys.Count == 0) return answers;
+
+            var paramNames = resultKeys.Select((g, idx) => $"@r{idx}").ToList();
+            var inClause = string.Join(", ", paramNames);
+            var q = $@"SELECT UAnswerKey, ResultKey, QuestionKey, SelectAnswerKey, IsCorrect, TimeSpent, AnswerTime, NumberOfAnswerChanges, Part
+                   FROM UserAnswers
+                   WHERE ResultKey IN ({inClause})
+                   ORDER BY AnswerTime DESC";
+
+            using var cmd = new SqlCommand(q, conn);
+            for (int i = 0; i < resultKeys.Count; i++)
+                cmd.Parameters.AddWithValue(paramNames[i], resultKeys[i]);
+
+            using var r = await cmd.ExecuteReaderAsync();
+            while (await r.ReadAsync())
+            {
+                answers.Add(new UserAnswerRow
+                {
+                    UAnswerKey = r.GetGuid(r.GetOrdinal("UAnswerKey")),
+                    ResultKey = r.GetGuid(r.GetOrdinal("ResultKey")),
+                    QuestionKey = r.GetGuid(r.GetOrdinal("QuestionKey")),
+                    SelectAnswerKey = r["SelectAnswerKey"] == DBNull.Value ? (Guid?)null : r.GetGuid(r.GetOrdinal("SelectAnswerKey")),
+                    IsCorrect = Convert.ToBoolean(r["IsCorrect"]),
+                    TimeSpent = Convert.ToInt32(r["TimeSpent"]),
+                    AnswerTime = Convert.ToDateTime(r["AnswerTime"]),
+                    NumberOfAnswerChanges = Convert.ToInt32(r["NumberOfAnswerChanges"]),
+                    Part = Convert.ToInt32(r["Part"])
+                });
+            }
+            return answers;
+        }
+
+        private static async Task<List<UserErrorRow>> GetUserErrorsAsync(SqlConnection conn, string memberKey, int limit = 150)
+        {
+            var list = new List<UserErrorRow>();
+            var q = @"
+            SELECT TOP (@Limit) UE.ErrorKey, UE.AnswerKey, UE.UserKey, UE.ResultKey, UE.ErrorDate, UE.Part, UE.SkillLevel,
+                   ET.ErrorDescription, GT.TopicName as GrammarTopicName, VT.TopicName as VocabularyTopicName
+            FROM UsersError UE
+            LEFT JOIN ErrorTypes ET ON UE.ErrorType = ET.ErrorTypeID
+            LEFT JOIN GrammarTopics GT ON UE.GrammarTopic = GT.GrammarTopicID
+            LEFT JOIN VocabularyTopics VT ON UE.VocabularyTopic = VT.VocabularyTopicID
+            WHERE UE.UserKey = @UserKey
+            ORDER BY UE.ErrorDate DESC";
+            using var cmd = new SqlCommand(q, conn);
+            cmd.Parameters.AddWithValue("@Limit", limit);
+            cmd.Parameters.AddWithValue("@UserKey", memberKey);
+            using var r = await cmd.ExecuteReaderAsync();
+            while (await r.ReadAsync())
+            {
+                list.Add(new UserErrorRow
+                {
+                    ErrorKey = r.GetGuid(r.GetOrdinal("ErrorKey")),
+                    AnswerKey = r.GetGuid(r.GetOrdinal("AnswerKey")),
+                    UserKey = r.GetGuid(r.GetOrdinal("UserKey")),
+                    ResultKey = r.GetGuid(r.GetOrdinal("ResultKey")),
+                    ErrorDate = r["ErrorDate"] == DBNull.Value ? null : (DateTime?)Convert.ToDateTime(r["ErrorDate"]),
+                    Part = r["Part"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["Part"]),
+                    SkillLevel = r["SkillLevel"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["SkillLevel"]),
+                    ErrorTypeName = r["ErrorDescription"]?.ToString(),
+                    GrammarTopicName = r["GrammarTopicName"]?.ToString(),
+                    VocabularyTopicName = r["VocabularyTopicName"]?.ToString()
+                });
+            }
+            return list;
+        }
+
+        private static async Task<List<MistakeDetailDto>> GetRecentMistakesDetailedAsync(SqlConnection conn, string memberKey, int limit)
+        {
+            var mistakes = new List<MistakeDetailDto>();
+            string q = @"
+            SELECT TOP (@Limit) ua.UAnswerKey, ua.ResultKey, ua.QuestionKey, ua.SelectAnswerKey, ua.Part, ua.TimeSpent,
+                   ua.NumberOfAnswerChanges, ua.AnswerTime
+            FROM UserAnswers ua
+            INNER JOIN ResultOfUserForTest r ON ua.ResultKey = r.ResultKey
+            WHERE r.MemberKey = @MemberKey AND ua.IsCorrect = 0
+            ORDER BY ua.AnswerTime DESC";
+
+            using var cmd = new SqlCommand(q, conn);
+            cmd.Parameters.AddWithValue("@Limit", limit);
+            cmd.Parameters.AddWithValue("@MemberKey", memberKey);
+
+            using var reader = await cmd.ExecuteReaderAsync();
+            var temp = new List<UserAnswerRow>();
+            while (await reader.ReadAsync())
+            {
+                temp.Add(new UserAnswerRow
+                {
+                    UAnswerKey = reader.GetGuid(reader.GetOrdinal("UAnswerKey")),
+                    ResultKey = reader.GetGuid(reader.GetOrdinal("ResultKey")),
+                    QuestionKey = reader.GetGuid(reader.GetOrdinal("QuestionKey")),
+                    SelectAnswerKey = reader["SelectAnswerKey"] == DBNull.Value ? (Guid?)null : reader.GetGuid(reader.GetOrdinal("SelectAnswerKey")),
+                    Part = Convert.ToInt32(reader["Part"]),
+                    TimeSpent = Convert.ToInt32(reader["TimeSpent"]),
+                    NumberOfAnswerChanges = Convert.ToInt32(reader["NumberOfAnswerChanges"]),
+                    AnswerTime = Convert.ToDateTime(reader["AnswerTime"]),
+                    IsCorrect = false
+                });
+            }
+
+            foreach (var ua in temp)
+            {
+                string qTable = $"TEC_Part{ua.Part}_Question";
+                string aTable = $"TEC_Part{ua.Part}_Answer";
+
+                string detailSql = $@"
+                SELECT q.QuestionText, q.Explanation,
+                       sa.AnswerText AS SelectedAnswer,
+                       ca.AnswerText AS CorrectAnswer
+                FROM {qTable} q
+                LEFT JOIN {aTable} sa ON sa.AnswerKey = @SelectAnswerKey
+                LEFT JOIN {aTable} ca ON ca.QuestionKey = q.QuestionKey AND ca.AnswerCorrect = 1
+                WHERE q.QuestionKey = @QuestionKey";
+
+                using var qCmd = new SqlCommand(detailSql, conn);
+                qCmd.Parameters.AddWithValue("@QuestionKey", ua.QuestionKey);
+                qCmd.Parameters.AddWithValue("@SelectAnswerKey", (object)ua.SelectAnswerKey ?? DBNull.Value);
+
+                using var qReader = await qCmd.ExecuteReaderAsync();
+                if (await qReader.ReadAsync())
+                {
+                    mistakes.Add(new MistakeDetailDto
+                    {
+                        Part = ua.Part,
+                        QuestionKey = ua.QuestionKey,
+                        ResultKey = ua.ResultKey,
+                        AnswerTime = ua.AnswerTime,
+                        TimeSpent = ua.TimeSpent,
+                        NumberOfAnswerChanges = ua.NumberOfAnswerChanges,
+                        SelectedAnswer = qReader["SelectedAnswer"]?.ToString(),
+                        CorrectAnswer = qReader["CorrectAnswer"]?.ToString(),
+                        QuestionText = qReader["QuestionText"]?.ToString(),
+                        Explanation = qReader["Explanation"]?.ToString()
+                    });
+                }
+            }
+            return mistakes;
+        }
+
+        // ===================== ANALYSIS METHODS =====================
+        private static Dictionary<string, object> AnalyzeBehavior(List<UserAnswerRow> answers)
+        {
+            var res = new Dictionary<string, object>();
+            if (answers == null || answers.Count == 0)
+            {
+                res["message"] = "No user answer data available.";
+                return res;
+            }
+
+            double avgTime = answers.Average(a => a.TimeSpent);
+            double avgChanges = answers.Average(a => a.NumberOfAnswerChanges);
+            double correctRate = answers.Average(a => a.IsCorrect ? 1.0 : 0.0) * 100.0;
+            res["overall"] = new
+            {
+                totalAnswers = answers.Count,
+                avgTimePerQuestionSeconds = Math.Round(avgTime, 2),
+                avgNumberOfAnswerChanges = Math.Round(avgChanges, 2),
+                overallCorrectRatePercent = Math.Round(correctRate, 2)
+            };
+
+            var byPart = answers.GroupBy(a => a.Part)
+                .Select(g => new {
+                    Part = g.Key,
+                    QuestionCount = g.Count(),
+                    AvgTimeSeconds = Math.Round(g.Average(x => x.TimeSpent), 2),
+                    CorrectRatePercent = Math.Round(g.Average(x => x.IsCorrect ? 1.0 : 0.0) * 100.0, 2),
+                    AvgNumberOfAnswerChanges = Math.Round(g.Average(x => x.NumberOfAnswerChanges), 2)
+                }).ToList();
+
+            res["byPart"] = byPart;
+
+            return res;
+        }
+
+        private static object AnalyzeErrors(List<UserErrorRow> errors)
+        {
+            var res = new Dictionary<string, object>();
+            if (errors == null || errors.Count == 0)
+            {
+                res["message"] = "No recorded errors for this user.";
+                return res;
+            }
+
+            var grammarGroups = errors.Where(e => !string.IsNullOrEmpty(e.GrammarTopicName))
+                .GroupBy(e => e.GrammarTopicName)
+                .Select(g => new { Topic = g.Key, Count = g.Count() })
+                .OrderByDescending(x => x.Count).Take(10).ToList();
+
+            var vocabGroups = errors.Where(e => !string.IsNullOrEmpty(e.VocabularyTopicName))
+                .GroupBy(e => e.VocabularyTopicName)
+                .Select(g => new { Topic = g.Key, Count = g.Count() })
+                .OrderByDescending(x => x.Count).Take(10).ToList();
+
+            var errorTypeGroups = errors.Where(e => !string.IsNullOrEmpty(e.ErrorTypeName))
+                .GroupBy(e => e.ErrorTypeName)
+                .Select(g => new { ErrorType = g.Key, Count = g.Count() })
+                .OrderByDescending(x => x.Count).Take(10).ToList();
+
+            res["totalErrorsCollected"] = errors.Count;
+            res["topGrammarTopics"] = grammarGroups;
+            res["topVocabularyTopics"] = vocabGroups;
+            res["topErrorTypes"] = errorTypeGroups;
+            res["latestErrorsSample"] = errors.Take(20).ToList();
+
+            return res;
+        }
+
+        private static Dictionary<string, object> ComputeScoreStatistics(List<int> scores)
+        {
+            var res = new Dictionary<string, object>();
+            if (scores == null || scores.Count == 0)
+            {
+                res["message"] = "No scores available.";
+                return res;
+            }
+            res["count"] = scores.Count;
+            res["max"] = scores.Max();
+            res["min"] = scores.Min();
+            res["avg"] = Math.Round(scores.Average(), 2);
+
+            double mean = scores.Average();
+            double variance = scores.Average(d => Math.Pow(d - mean, 2));
+            res["stddev"] = Math.Round(Math.Sqrt(variance), 2);
+
+            res["improvementAbsolute"] = scores.Last() - scores.First();
+
+            return res;
+        }
+
+        private static object ComputeScoreTrend(List<int> recentScores)
+        {
+            if (recentScores == null || recentScores.Count == 0) return new { message = "No score history" };
+            if (recentScores.Count == 1) return new { message = "Only one recent score available", score = recentScores.First() };
+
+            int improved = 0, declined = 0, same = 0;
+            for (int i = 1; i < recentScores.Count; i++)
+            {
+                if (recentScores[i] > recentScores[i - 1]) improved++;
+                else if (recentScores[i] < recentScores[i - 1]) declined++;
+                else same++;
+            }
+            string summary = improved > declined
+                ? $"Mostly improving ({improved} improving vs {declined} declining) in recent {recentScores.Count} tests."
+                : declined > improved
+                    ? $"Mostly declining ({declined} declining vs {improved} improving) in recent {recentScores.Count} tests."
+                    : $"Mixed trend: {improved} improving, {declined} declining, {same} same.";
+
+            return new { recentCount = recentScores.Count, improvedCount = improved, declinedCount = declined, sameCount = same, summary };
+        }
+
+
         public static async Task<string> LoadAdminOriginalDataAsync(string adminKey)
         {
             var contextBuilder = new StringBuilder();
@@ -1292,85 +1511,124 @@ WHERE 1=1 ");
         }
         // Thêm hàm này vào file ChatWithAIAccessData.cs
         // XÓA HÀM GetTestAnalysisByDateAsync CŨ VÀ THAY BẰNG HÀM MỚI NÀY
-        public static async Task<string> GetTestAnalysisByDateAsync(string memberKey, DateTime testDate)
+        public static async Task<string> GetTestAnalysisByDateAsync(
+     string memberKey,
+     DateTime testDate,
+     int? exactScore = null,
+     TimeSpan? exactTime = null)
         {
             var analysisBuilder = new StringBuilder();
             using (var connection = new SqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
 
-                // B1: Tìm bài test gần nhất vào ngày được chỉ định và lấy thông tin tổng quan
-                string? resultKey = null;
-                var testInfoQuery = @"
-            SELECT TOP 1 
+                // B1: Lấy danh sách các bài test trong ngày
+                var tests = new List<(string ResultKey, string TestName, int TestScore, int ListeningScore, int ReadingScore, int CompletionTime, DateTime EndTime, int CorrectListening, int CorrectReading)>();
+
+                var query = @"
+            SELECT 
                 R.ResultKey, 
                 T.TestName,
                 R.TestScore,
                 R.ListeningScore,
                 R.ReadingScore,
                 R.[Time] AS CompletionTime,
+                R.EndTime,
                 (SELECT COUNT(*) FROM UserAnswers UA WHERE UA.ResultKey = R.ResultKey AND UA.IsCorrect = 1 AND UA.Part BETWEEN 1 AND 4) AS CorrectListening,
                 (SELECT COUNT(*) FROM UserAnswers UA WHERE UA.ResultKey = R.ResultKey AND UA.IsCorrect = 1 AND UA.Part BETWEEN 5 AND 7) AS CorrectReading
             FROM ResultOfUserForTest R
             JOIN Test T ON R.TestKey = T.TestKey
-            WHERE R.MemberKey = @MemberKey AND CAST(R.EndTime AS DATE) = @TestDate AND R.TestScore IS NOT NULL
+            WHERE R.MemberKey = @MemberKey 
+              AND CAST(R.EndTime AS DATE) = @TestDate
+              AND R.TestScore IS NOT NULL
             ORDER BY R.EndTime DESC;";
 
-                using (var findCmd = new SqlCommand(testInfoQuery, connection))
+                using (var cmd = new SqlCommand(query, connection))
                 {
-                    findCmd.Parameters.AddWithValue("@MemberKey", memberKey);
-                    findCmd.Parameters.AddWithValue("@TestDate", testDate.Date);
-                    using (var reader = await findCmd.ExecuteReaderAsync())
+                    cmd.Parameters.AddWithValue("@MemberKey", memberKey);
+                    cmd.Parameters.AddWithValue("@TestDate", testDate.Date);
+
+                    using (var reader = await cmd.ExecuteReaderAsync())
                     {
-                        if (await reader.ReadAsync())
+                        while (await reader.ReadAsync())
                         {
-                            resultKey = reader["ResultKey"].ToString();
-                            analysisBuilder.AppendLine($"--- Phân tích bài thi '{reader["TestName"]}' (Ngày: {testDate:dd/MM/yyyy}) ---");
-                            analysisBuilder.AppendLine($"## I. Kết quả tổng quan");
-                            analysisBuilder.AppendLine($"- **Tổng điểm:** {reader["TestScore"]}/990");
-                            analysisBuilder.AppendLine($"- **Điểm Nghe (Listening):** {reader["ListeningScore"]}/495 (Đúng {reader["CorrectListening"]}/100 câu)");
-                            analysisBuilder.AppendLine($"- **Điểm Đọc (Reading):** {reader["ReadingScore"]}/495 (Đúng {reader["CorrectReading"]}/100 câu)");
-                            analysisBuilder.AppendLine($"- **Thời gian hoàn thành:** {reader["CompletionTime"]} phút");
-                            analysisBuilder.AppendLine();
+                            tests.Add((
+                                reader["ResultKey"].ToString(),
+                                reader["TestName"].ToString(),
+                                Convert.ToInt32(reader["TestScore"]),
+                                Convert.ToInt32(reader["ListeningScore"]),
+                                Convert.ToInt32(reader["ReadingScore"]),
+                                Convert.ToInt32(reader["CompletionTime"]),
+                                Convert.ToDateTime(reader["EndTime"]),
+                                Convert.ToInt32(reader["CorrectListening"]),
+                                Convert.ToInt32(reader["CorrectReading"])
+                            ));
                         }
                     }
                 }
 
-                if (string.IsNullOrEmpty(resultKey))
-                {
+                if (!tests.Any())
                     return $"Không tìm thấy bài thi nào đã hoàn thành vào ngày {testDate:dd/MM/yyyy}.";
+
+                // B2: Chọn bài thi theo logic ưu tiên
+                (string ResultKey, string TestName, int TestScore, int ListeningScore, int ReadingScore, int CompletionTime, DateTime EndTime, int CorrectListening, int CorrectReading) selectedTest;
+
+                if (exactScore.HasValue)
+                {
+                    selectedTest = tests.FirstOrDefault(t => t.TestScore == exactScore.Value);
+                    if (selectedTest.ResultKey == null)
+                        return $"Không tìm thấy bài thi có điểm {exactScore.Value} vào ngày {testDate:dd/MM/yyyy}.";
+                }
+                else if (exactTime.HasValue)
+                {
+                    selectedTest = tests
+                        .OrderBy(t => Math.Abs((t.EndTime.TimeOfDay - exactTime.Value).Ticks))
+                        .First();
+                }
+                else
+                {
+                    selectedTest = tests.First(); // gần nhất
                 }
 
-                // B2: Phân tích lỗi sai chi tiết (giữ nguyên logic cũ nhưng thêm vào sau phần tổng quan)
+                // B3: In thông tin tổng quan
+                analysisBuilder.AppendLine($"--- Phân tích bài thi '{selectedTest.TestName}' (Ngày: {testDate:dd/MM/yyyy}, Kết thúc: {selectedTest.EndTime:HH:mm}) ---");
+                analysisBuilder.AppendLine($"## I. Kết quả tổng quan");
+                analysisBuilder.AppendLine($"- **Tổng điểm:** {selectedTest.TestScore}/990");
+                analysisBuilder.AppendLine($"- **Điểm Nghe (Listening):** {selectedTest.ListeningScore}/495 (Đúng {selectedTest.CorrectListening}/100 câu)");
+                analysisBuilder.AppendLine($"- **Điểm Đọc (Reading):** {selectedTest.ReadingScore}/495 (Đúng {selectedTest.CorrectReading}/100 câu)");
+                analysisBuilder.AppendLine($"- **Thời gian hoàn thành:** {selectedTest.CompletionTime} phút");
+                analysisBuilder.AppendLine();
+
+                // B4: Phân tích lỗi sai
                 analysisBuilder.AppendLine($"## II. Phân tích lỗi sai chi tiết");
                 var errorQuery = @"
-        WITH AllQuestionsAndAnswers AS (
-            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '1' AS Part FROM TEC_Part1_Question Q JOIN TEC_Part1_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
-            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '2' AS Part FROM TEC_Part2_Question Q JOIN TEC_Part2_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
-            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '3' AS Part FROM TEC_Part3_Question Q JOIN TEC_Part3_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
-            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '4' AS Part FROM TEC_Part4_Question Q JOIN TEC_Part4_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
-            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '5' AS Part FROM TEC_Part5_Question Q JOIN TEC_Part5_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
-            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '6' AS Part FROM TEC_Part6_Question Q JOIN TEC_Part6_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
-            SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '7' AS Part FROM TEC_Part7_Question Q JOIN TEC_Part7_Answer A ON Q.QuestionKey = A.QuestionKey
-        )
-        SELECT 
-            ET.ErrorDescription, GT.TopicName AS GrammarTopicName, VT.TopicName AS VocabularyTopicName,
-            QuestionInfo.QuestionText, UserSelectedAnswer.AnswerText AS UserAnswer, CorrectAnswer.AnswerText AS CorrectAnswer,
-            QuestionInfo.Explanation, QuestionInfo.Part
-        FROM UsersError UE
-        JOIN UserAnswers UA ON UE.ResultKey = UA.ResultKey AND UE.AnswerKey = UA.SelectAnswerKey
-        JOIN (SELECT DISTINCT QuestionKey, QuestionText, Explanation, Part FROM AllQuestionsAndAnswers) AS QuestionInfo ON UA.QuestionKey = QuestionInfo.QuestionKey
-        JOIN AllQuestionsAndAnswers AS UserSelectedAnswer ON UA.SelectAnswerKey = UserSelectedAnswer.AnswerKey
-        JOIN AllQuestionsAndAnswers AS CorrectAnswer ON UA.QuestionKey = CorrectAnswer.QuestionKey AND CorrectAnswer.AnswerCorrect = 1
-        LEFT JOIN ErrorTypes ET ON UE.ErrorType = ET.ErrorTypeID
-        LEFT JOIN GrammarTopics GT ON UE.GrammarTopic = GT.GrammarTopicID
-        LEFT JOIN VocabularyTopics VT ON UE.VocabularyTopic = VT.VocabularyTopicID
-        WHERE UE.ResultKey = @ResultKey
-        ORDER BY cast(QuestionInfo.Part as int), NEWID();"; // Sắp xếp theo Part
+            WITH AllQuestionsAndAnswers AS (
+                SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '1' AS Part FROM TEC_Part1_Question Q JOIN TEC_Part1_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
+                SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '2' AS Part FROM TEC_Part2_Question Q JOIN TEC_Part2_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
+                SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '3' AS Part FROM TEC_Part3_Question Q JOIN TEC_Part3_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
+                SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '4' AS Part FROM TEC_Part4_Question Q JOIN TEC_Part4_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
+                SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '5' AS Part FROM TEC_Part5_Question Q JOIN TEC_Part5_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
+                SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '6' AS Part FROM TEC_Part6_Question Q JOIN TEC_Part6_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
+                SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '7' AS Part FROM TEC_Part7_Question Q JOIN TEC_Part7_Answer A ON Q.QuestionKey = A.QuestionKey
+            )
+            SELECT 
+                ET.ErrorDescription, GT.TopicName AS GrammarTopicName, VT.TopicName AS VocabularyTopicName,
+                QuestionInfo.QuestionText, UserSelectedAnswer.AnswerText AS UserAnswer, CorrectAnswer.AnswerText AS CorrectAnswer,
+                QuestionInfo.Explanation, QuestionInfo.Part
+            FROM UsersError UE
+            JOIN UserAnswers UA ON UE.ResultKey = UA.ResultKey AND UE.AnswerKey = UA.SelectAnswerKey
+            JOIN (SELECT DISTINCT QuestionKey, QuestionText, Explanation, Part FROM AllQuestionsAndAnswers) AS QuestionInfo ON UA.QuestionKey = QuestionInfo.QuestionKey
+            JOIN AllQuestionsAndAnswers AS UserSelectedAnswer ON UA.SelectAnswerKey = UserSelectedAnswer.AnswerKey
+            JOIN AllQuestionsAndAnswers AS CorrectAnswer ON UA.QuestionKey = CorrectAnswer.QuestionKey AND CorrectAnswer.AnswerCorrect = 1
+            LEFT JOIN ErrorTypes ET ON UE.ErrorType = ET.ErrorTypeID
+            LEFT JOIN GrammarTopics GT ON UE.GrammarTopic = GT.GrammarTopicID
+            LEFT JOIN VocabularyTopics VT ON UE.VocabularyTopic = VT.VocabularyTopicID
+            WHERE UE.ResultKey = @ResultKey
+            ORDER BY cast(QuestionInfo.Part as int), NEWID();";
 
                 using (var errorCommand = new SqlCommand(errorQuery, connection))
                 {
-                    errorCommand.Parameters.AddWithValue("@ResultKey", resultKey);
+                    errorCommand.Parameters.AddWithValue("@ResultKey", selectedTest.ResultKey);
                     using (var reader = await errorCommand.ExecuteReaderAsync())
                     {
                         int errorCount = 1;
@@ -1390,65 +1648,267 @@ WHERE 1=1 ");
                     }
                 }
             }
+
             return analysisBuilder.ToString();
         }
-        public static async Task<object> FindMyIncorrectQuestionsByTopicAsync(string memberKey, string topicName, int limit = 5)
-        {
-            var incorrectQuestions = new List<object>();
-            var query = @"
-    WITH AllQuestionsAndAnswers AS (
-        SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '1' AS Part, Q.GrammarTopic, Q.VocabularyTopic FROM TEC_Part1_Question Q JOIN TEC_Part1_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
-        SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '2' AS Part, Q.GrammarTopic, Q.VocabularyTopic FROM TEC_Part2_Question Q JOIN TEC_Part2_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
-        SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '3' AS Part, Q.GrammarTopic, Q.VocabularyTopic FROM TEC_Part3_Question Q JOIN TEC_Part3_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
-        SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '4' AS Part, Q.GrammarTopic, Q.VocabularyTopic FROM TEC_Part4_Question Q JOIN TEC_Part4_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
-        SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '5' AS Part, Q.GrammarTopic, Q.VocabularyTopic FROM TEC_Part5_Question Q JOIN TEC_Part5_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
-        SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '6' AS Part, Q.GrammarTopic, Q.VocabularyTopic FROM TEC_Part6_Question Q JOIN TEC_Part6_Answer A ON Q.QuestionKey = A.QuestionKey UNION ALL
-        SELECT Q.QuestionKey, Q.QuestionText, Q.Explanation, A.AnswerKey, A.AnswerText, A.AnswerCorrect, '7' AS Part, Q.GrammarTopic, Q.VocabularyTopic FROM TEC_Part7_Question Q JOIN TEC_Part7_Answer A ON Q.QuestionKey = A.QuestionKey
-    )
-    SELECT TOP (@Limit)
-        QuestionInfo.Part,
-        QuestionInfo.QuestionText,
-        UserSelectedAnswer.AnswerText AS UserAnswer,
-        CorrectAnswer.AnswerText AS CorrectAnswer,
-        QuestionInfo.Explanation
-    FROM UsersError UE
-    JOIN UserAnswers UA ON UE.ResultKey = UA.ResultKey AND UE.AnswerKey = UA.SelectAnswerKey
-    JOIN (
-        SELECT DISTINCT q.QuestionKey, q.QuestionText, q.Explanation, q.Part, gt.TopicName as GrammarTopicName, vt.TopicName as VocabularyTopicName
-        FROM AllQuestionsAndAnswers q
-        LEFT JOIN GrammarTopics gt on q.GrammarTopic = gt.GrammarTopicID
-        LEFT JOIN VocabularyTopics vt on q.VocabularyTopic = vt.VocabularyTopicID
-    ) AS QuestionInfo ON UA.QuestionKey = QuestionInfo.QuestionKey
-    JOIN AllQuestionsAndAnswers AS UserSelectedAnswer ON UA.SelectAnswerKey = UserSelectedAnswer.AnswerKey
-    JOIN AllQuestionsAndAnswers AS CorrectAnswer ON UA.QuestionKey = CorrectAnswer.QuestionKey AND CorrectAnswer.AnswerCorrect = 1
-    WHERE UE.UserKey = @MemberKey AND (QuestionInfo.GrammarTopicName LIKE @TopicNamePattern OR QuestionInfo.VocabularyTopicName LIKE @TopicNamePattern)
-    ORDER BY UE.ErrorDate DESC;";
 
-            using (var connection = new SqlConnection(_connectionString))
+        public static async Task<List<IncorrectDetailDto>> FindMyIncorrectQuestionsByTopicAsync(string memberKey, string topicName, int limit = 10)
+        {
+            var results = new List<IncorrectDetailDto>();
+            try
             {
-                await connection.OpenAsync();
-                using (var command = new SqlCommand(query, connection))
+                using (var conn = new SqlConnection(_connectionString))
                 {
-                    command.Parameters.AddWithValue("@MemberKey", memberKey);
-                    command.Parameters.AddWithValue("@TopicNamePattern", $"%{topicName}%");
-                    command.Parameters.AddWithValue("@Limit", limit);
-                    using (var reader = await command.ExecuteReaderAsync())
+                    await conn.OpenAsync();
+
+                    // We join UserAnswers -> ResultOfUserForTest (to filter by MemberKey) -> unioned question meta, filter by grammar/vocab topic name LIKE pattern
+                    var query = @"
+WITH Q AS (
+ SELECT QuestionKey, QuestionText, Explanation, 1 AS Part, GrammarTopic, VocabularyTopic FROM TEC_Part1_Question
+ UNION ALL SELECT QuestionKey, QuestionText, Explanation, 2 AS Part, GrammarTopic, VocabularyTopic FROM TEC_Part2_Question
+ UNION ALL SELECT QuestionKey, QuestionText, Explanation, 3 AS Part, GrammarTopic, VocabularyTopic FROM TEC_Part3_Question
+ UNION ALL SELECT QuestionKey, QuestionText, Explanation, 4 AS Part, GrammarTopic, VocabularyTopic FROM TEC_Part4_Question
+ UNION ALL SELECT QuestionKey, QuestionText, Explanation, 5 AS Part, GrammarTopic, VocabularyTopic FROM TEC_Part5_Question
+ UNION ALL SELECT QuestionKey, QuestionText, Explanation, 6 AS Part, GrammarTopic, VocabularyTopic FROM TEC_Part6_Question
+ UNION ALL SELECT QuestionKey, QuestionText, Explanation, 7 AS Part, GrammarTopic, VocabularyTopic FROM TEC_Part7_Question
+)
+SELECT TOP (@Limit)
+    UA.UAnswerKey, UA.ResultKey, UA.QuestionKey, UA.SelectAnswerKey, UA.IsCorrect, UA.TimeSpent, UA.AnswerTime, UA.NumberOfAnswerChanges, UA.Part,
+    Q.QuestionText, Q.Explanation, GT.TopicName AS GrammarTopicName, VT.TopicName AS VocabularyTopicName
+FROM UserAnswers UA
+JOIN ResultOfUserForTest R ON UA.ResultKey = R.ResultKey AND R.MemberKey = @MemberKey
+LEFT JOIN Q ON UA.QuestionKey = Q.QuestionKey
+LEFT JOIN GrammarTopics GT ON Q.GrammarTopic = GT.GrammarTopicID
+LEFT JOIN VocabularyTopics VT ON Q.VocabularyTopic = VT.VocabularyTopicID
+WHERE UA.IsCorrect = 0 AND (GT.TopicName LIKE @Pattern OR VT.TopicName LIKE @Pattern)
+ORDER BY UA.AnswerTime DESC;
+";
+
+                    using (var cmd = new SqlCommand(query, conn))
                     {
-                        while (await reader.ReadAsync())
+                        cmd.Parameters.AddWithValue("@Limit", limit);
+                        cmd.Parameters.AddWithValue("@MemberKey", memberKey);
+                        cmd.Parameters.AddWithValue("@Pattern", $"%{topicName}%");
+                        var uaRows = new List<UserAnswerRow>();
+                        using (var rdr = await cmd.ExecuteReaderAsync())
                         {
-                            incorrectQuestions.Add(new
+                            while (await rdr.ReadAsync())
                             {
-                                Part = reader["Part"],
-                                Question = reader["QuestionText"],
-                                YourAnswer = reader["UserAnswer"],
-                                CorrectAnswer = reader["CorrectAnswer"],
-                                Explanation = reader["Explanation"]
-                            });
+                                uaRows.Add(new UserAnswerRow
+                                {
+                                    UAnswerKey = rdr.GetGuid(rdr.GetOrdinal("UAnswerKey")),
+                                    ResultKey = rdr.GetGuid(rdr.GetOrdinal("ResultKey")),
+                                    QuestionKey = rdr.GetGuid(rdr.GetOrdinal("QuestionKey")),
+                                    SelectAnswerKey = rdr["SelectAnswerKey"] == DBNull.Value ? (Guid?)null : rdr.GetGuid(rdr.GetOrdinal("SelectAnswerKey")),
+                                    IsCorrect = Convert.ToBoolean(rdr["IsCorrect"]),
+                                    TimeSpent = Convert.ToInt32(rdr["TimeSpent"]),
+                                    AnswerTime = Convert.ToDateTime(rdr["AnswerTime"]),
+                                    NumberOfAnswerChanges = Convert.ToInt32(rdr["NumberOfAnswerChanges"]),
+                                    Part = Convert.ToInt32(rdr["Part"])
+                                });
+
+                                // Build a temporary object list of question meta in parallel (we can query texts later)
+                                results.Add(new IncorrectDetailDto
+                                {
+                                    UAnswerKey = rdr.GetGuid(rdr.GetOrdinal("UAnswerKey")),
+                                    ResultKey = rdr.GetGuid(rdr.GetOrdinal("ResultKey")),
+                                    QuestionKey = rdr.GetGuid(rdr.GetOrdinal("QuestionKey")),
+                                    Part = rdr["Part"] == DBNull.Value ? 0 : Convert.ToInt32(rdr["Part"]),
+                                    QuestionText = rdr["QuestionText"] == DBNull.Value ? "" : rdr["QuestionText"].ToString() ?? "",
+                                    Explanation = rdr["Explanation"] == DBNull.Value ? "" : rdr["Explanation"].ToString() ?? "",
+                                    TimeSpentSeconds = rdr["TimeSpent"] == DBNull.Value ? 0 : Convert.ToInt32(rdr["TimeSpent"]),
+                                    AnswerTime = rdr["AnswerTime"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(rdr["AnswerTime"]),
+                                    NumberOfAnswerChanges = rdr["NumberOfAnswerChanges"] == DBNull.Value ? 0 : Convert.ToInt32(rdr["NumberOfAnswerChanges"]),
+                                    GrammarTopic = rdr["GrammarTopicName"] == DBNull.Value ? "" : rdr["GrammarTopicName"].ToString() ?? "",
+                                    VocabularyTopic = rdr["VocabularyTopicName"] == DBNull.Value ? "" : rdr["VocabularyTopicName"].ToString() ?? ""
+                                });
+                            }
+                        }
+
+                        // Fetch selected answer texts and correct answers for the collected question/selectAnswer keys
+                        var qKeys = results.Select(x => x.QuestionKey).Distinct().ToList();
+                        var selAnsKeys = results.Where(x => !string.IsNullOrEmpty(x.SelectedAnswerText) == false) // we don't have selected text yet
+                                             .Select(x => uaRows.FirstOrDefault(u => u.UAnswerKey == x.UAnswerKey)?.SelectAnswerKey)
+                                             .Where(g => g.HasValue)
+                                             .Select(g => g!.Value)
+                                             .Distinct()
+                                             .ToList();
+
+                        // get selected answer texts
+                        var answerTextByAnswerKey = new Dictionary<Guid, string>();
+                        if (selAnsKeys.Any())
+                        {
+                            using (var cmd2 = new SqlCommand("", conn))
+                            {
+                                var union = @"
+SELECT AnswerKey, AnswerText FROM TEC_Part1_Answer WHERE AnswerKey IN ({0})
+UNION ALL SELECT AnswerKey, AnswerText FROM TEC_Part2_Answer WHERE AnswerKey IN ({0})
+UNION ALL SELECT AnswerKey, AnswerText FROM TEC_Part3_Answer WHERE AnswerKey IN ({0})
+UNION ALL SELECT AnswerKey, AnswerText FROM TEC_Part4_Answer WHERE AnswerKey IN ({0})
+UNION ALL SELECT AnswerKey, AnswerText FROM TEC_Part5_Answer WHERE AnswerKey IN ({0})
+UNION ALL SELECT AnswerKey, AnswerText FROM TEC_Part6_Answer WHERE AnswerKey IN ({0})
+UNION ALL SELECT AnswerKey, AnswerText FROM TEC_Part7_Answer WHERE AnswerKey IN ({0});";
+                                var inClause = BuildInParameterList(cmd2, selAnsKeys, "sa");
+                                cmd2.CommandText = string.Format(union, inClause);
+                                using (var rdr = await cmd2.ExecuteReaderAsync())
+                                {
+                                    while (await rdr.ReadAsync())
+                                    {
+                                        var ak = rdr.GetGuid(0);
+                                        var at = rdr["AnswerText"] == DBNull.Value ? "" : rdr["AnswerText"].ToString() ?? "";
+                                        if (!answerTextByAnswerKey.ContainsKey(ak)) answerTextByAnswerKey[ak] = at;
+                                    }
+                                }
+                            }
+                        }
+
+                        // get correct answers by question
+                        var correctAnswerByQuestionKey = new Dictionary<Guid, string>();
+                        if (qKeys.Any())
+                        {
+                            using (var cmd3 = new SqlCommand("", conn))
+                            {
+                                var union = @"
+SELECT A.QuestionKey, A.AnswerText FROM TEC_Part1_Answer A WHERE A.AnswerCorrect = 1 AND A.QuestionKey IN ({0})
+UNION ALL SELECT A.QuestionKey, A.AnswerText FROM TEC_Part2_Answer A WHERE A.AnswerCorrect = 1 AND A.QuestionKey IN ({0})
+UNION ALL SELECT A.QuestionKey, A.AnswerText FROM TEC_Part3_Answer A WHERE A.AnswerCorrect = 1 AND A.QuestionKey IN ({0})
+UNION ALL SELECT A.QuestionKey, A.AnswerText FROM TEC_Part4_Answer A WHERE A.AnswerCorrect = 1 AND A.QuestionKey IN ({0})
+UNION ALL SELECT A.QuestionKey, A.AnswerText FROM TEC_Part5_Answer A WHERE A.AnswerCorrect = 1 AND A.QuestionKey IN ({0})
+UNION ALL SELECT A.QuestionKey, A.AnswerText FROM TEC_Part6_Answer A WHERE A.AnswerCorrect = 1 AND A.QuestionKey IN ({0})
+UNION ALL SELECT A.QuestionKey, A.AnswerText FROM TEC_Part7_Answer A WHERE A.AnswerCorrect = 1 AND A.QuestionKey IN ({0});";
+                                var inClause = BuildInParameterList(cmd3, qKeys, "cq");
+                                cmd3.CommandText = string.Format(union, inClause);
+                                using (var rdr = await cmd3.ExecuteReaderAsync())
+                                {
+                                    while (await rdr.ReadAsync())
+                                    {
+                                        var qk = rdr.GetGuid(0);
+                                        var at = rdr["AnswerText"] == DBNull.Value ? "" : rdr["AnswerText"].ToString() ?? "";
+                                        if (!correctAnswerByQuestionKey.ContainsKey(qk)) correctAnswerByQuestionKey[qk] = at;
+                                    }
+                                }
+                            }
+                        }
+
+                        // fill selected + correct answer texts into results
+                        for (int i = 0; i < results.Count; i++)
+                        {
+                            var r = results[i];
+                            var uaRow = uaRows.FirstOrDefault(u => u.UAnswerKey == r.UAnswerKey);
+                            if (uaRow != null && uaRow.SelectAnswerKey.HasValue)
+                            {
+                                if (answerTextByAnswerKey.TryGetValue(uaRow.SelectAnswerKey.Value, out var st))
+                                    r.SelectedAnswerText = st;
+                            }
+                            if (correctAnswerByQuestionKey.TryGetValue(r.QuestionKey, out var ct))
+                                r.CorrectAnswerText = ct;
+                        }
+
+                        // Optionally fetch UsersError mapping to fill ErrorType for each (if exist)
+                        using (var cmd4 = new SqlCommand(@"
+SELECT UE.AnswerKey, ISNULL(ET.ErrorDescription,'') AS ErrorDescription
+FROM UsersError UE
+LEFT JOIN ErrorTypes ET ON UE.ErrorType = ET.ErrorTypeID
+WHERE UE.UserKey = @MemberKey
+", conn))
+                        {
+                            cmd4.Parameters.AddWithValue("@MemberKey", memberKey);
+                            var errMap = new Dictionary<Guid, string>();
+                            using (var rdr = await cmd4.ExecuteReaderAsync())
+                            {
+                                while (await rdr.ReadAsync())
+                                {
+                                    var ak = rdr["AnswerKey"] == DBNull.Value ? Guid.Empty : rdr.GetGuid(0);
+                                    if (ak != Guid.Empty && !errMap.ContainsKey(ak))
+                                        errMap[ak] = rdr["ErrorDescription"]?.ToString() ?? "";
+                                }
+                            }
+                            // apply
+                            foreach (var r in results)
+                            {
+                                var uaRow = uaRows.FirstOrDefault(u => u.UAnswerKey == r.UAnswerKey);
+                                if (uaRow != null && uaRow.SelectAnswerKey.HasValue && errMap.ContainsKey(uaRow.SelectAnswerKey.Value))
+                                {
+                                    r.ErrorType = errMap[uaRow.SelectAnswerKey.Value];
+                                }
+                            }
                         }
                     }
+
+                    return results;
                 }
             }
-            return incorrectQuestions;
+            catch (Exception ex)
+            {
+                // return empty list if failure (controller/tool will get empty result), but log real error in server logs
+                return results;
+            }
         }
+        #region Helpers
+        private static string BuildInParameterList(SqlCommand cmd, List<Guid> guids, string baseName)
+        {
+            // returns e.g. "@p0, @p1, @p2"
+            var names = new List<string>();
+            for (int i = 0; i < guids.Count; i++)
+            {
+                var p = $"@{baseName}{i}";
+                cmd.Parameters.Add(p, SqlDbType.UniqueIdentifier).Value = guids[i];
+                names.Add(p);
+            }
+            return names.Count > 0 ? string.Join(", ", names) : "NULL";
+        }
+        private static double StdDev(IEnumerable<double> values)
+        {
+            var arr = values.ToArray();
+            if (arr.Length <= 1) return 0;
+            var mean = arr.Average();
+            var variance = arr.Average(v => Math.Pow(v - mean, 2));
+            return Math.Sqrt(variance);
+        }
+        #endregion
     }
+    #region DTOs
+    public class TestInfoDto
+    {
+        public Guid ResultKey { get; set; }
+        public string TestName { get; set; } = "";
+        public int? TestScore { get; set; }
+        public int? ListeningScore { get; set; }
+        public int? ReadingScore { get; set; }
+        public int? CompletionTimeMinutes { get; set; }
+        public int CorrectListening { get; set; }
+        public int CorrectReading { get; set; }
+        public DateTime? StartTime { get; set; }
+        public DateTime? EndTime { get; set; }
+    }
+
+    public class PerPartStatDto
+    {
+        public int Part { get; set; }
+        public int QuestionCount { get; set; }
+        public double AvgTimeSeconds { get; set; }
+        public double StdDevTimeSeconds { get; set; }
+        public int TotalTimeSeconds { get; set; }
+        public double AvgNumberOfAnswerChanges { get; set; }
+        public double CorrectRatePercent { get; set; }
+    }
+
+    public class IncorrectDetailDto
+    {
+        public Guid UAnswerKey { get; set; }
+        public Guid ResultKey { get; set; }
+        public Guid QuestionKey { get; set; }
+        public int Part { get; set; }
+        public string QuestionText { get; set; } = "";
+        public string SelectedAnswerText { get; set; } = "";
+        public string CorrectAnswerText { get; set; } = "";
+        public string Explanation { get; set; } = "";
+        public int TimeSpentSeconds { get; set; }
+        public DateTime AnswerTime { get; set; }
+        public int NumberOfAnswerChanges { get; set; }
+        public string GrammarTopic { get; set; } = "";
+        public string VocabularyTopic { get; set; } = "";
+        public string ErrorType { get; set; } = "";
+    }
+    #endregion
 }

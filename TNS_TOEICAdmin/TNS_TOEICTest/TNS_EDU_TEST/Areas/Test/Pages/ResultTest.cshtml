@@ -872,7 +872,43 @@
                 font-size: 0.9rem;
             }
         }
+        /* DÁN ĐOẠN CODE NÀY VÀO THẺ <style> CỦA FILE ResultTest.cshtml */
 
+        /* --- Cải thiện đoạn văn và thêm thanh cuộn cho Part 6, 7 --- */
+        .part3-left {
+            max-height: calc(100vh - 80px); /* Giới hạn chiều cao */
+            overflow-y: auto; /* Thêm thanh cuộn khi cần */
+            padding-left: 10px; /* Thêm đệm trái */
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%);
+            mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%);
+        }
+
+            /* --- Căn lề trái và chỉnh font cho chữ trong đoạn văn --- */
+            .part3-left .question-text {
+                text-align: left;
+                font-size: 1rem;
+                line-height: 1.6;
+                color: #333;
+            }
+
+            /* --- Style cho thanh cuộn --- */
+            .part3-left::-webkit-scrollbar {
+                width: 8px;
+            }
+
+            .part3-left::-webkit-scrollbar-track {
+                background: #f1f1f1;
+                border-radius: 10px;
+            }
+
+            .part3-left::-webkit-scrollbar-thumb {
+                background: #B3E5FC;
+                border-radius: 10px;
+            }
+
+                .part3-left::-webkit-scrollbar-thumb:hover {
+                    background: #81D4FA;
+                }
         @@media (max-width: 480px) {
             .report-modal {
                 width: 90%;

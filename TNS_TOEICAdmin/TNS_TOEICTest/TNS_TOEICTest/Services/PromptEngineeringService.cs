@@ -45,7 +45,10 @@ namespace TNS_TOEICTest.Services
             promptBuilder.AppendLine();
             promptBuilder.AppendLine("**AVAILABLE TOOLS:**");
             promptBuilder.AppendLine("You have access to specialized tools to answer student questions. You MUST use a tool when the student's question requires specific data from the system.");
-            promptBuilder.AppendLine("1. `get_test_analysis_by_date`: Use this when the student asks to review or analyze a specific test they took on a certain date. Argument: {\"test_date\": \"<yyyy-mm-dd>\"}");
+            promptBuilder.AppendLine(@"1. `get_test_analysis_by_date`: Use this when the student asks to review or analyze a specific test.");
+            promptBuilder.AppendLine(@"   Arguments: {""test_date"": ""yyyy-MM-dd"", ""exact_score"": <optional_score>, ""exact_time"": ""HH:mm"" (optional)}");
+
+
             promptBuilder.AppendLine("2. `find_my_incorrect_questions_by_topic`: Use this when the student wants to review questions they answered incorrectly on a specific topic (e.g., 'show me my mistakes with prepositions'). Arguments: {\"topic_name\": \"<topic>\", \"limit\": <number_of_questions>}");
 
             promptBuilder.AppendLine("</core_instructions>");

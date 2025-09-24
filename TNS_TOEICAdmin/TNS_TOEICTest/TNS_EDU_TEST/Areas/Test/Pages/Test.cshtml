@@ -307,6 +307,7 @@
         element.classList.add('active');
         renderContent();
         updateQuestionList();
+                document.querySelector('.main-content').scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function renderSimplePart(container) {
@@ -524,7 +525,8 @@
         displayedQuestions.forEach((q, index) => {
             const isSelected = q.userAnswerKey && q.userAnswerKey !== '';
             const isFlagged = flaggedQuestions.has(q.questionKey);
-            html += `<a href="#" class="question-circle ${isSelected ? 'selected' : ''} ${isFlagged ? 'flagged' : ''}" onclick="scrollToQuestion('${q.questionKey}')">${q.order || 'N/A'}</a>`;
+                 
+        html += `<a href="#" class="question-circle ${isSelected ? 'selected' : ''} ${isFlagged ? 'flagged' : ''}" data-key="${q.questionKey}">${q.order || 'N/A'}</a>`;
         });
         listContainer.innerHTML = html;
         updateProgressCircle();
@@ -647,40 +649,87 @@
                 q.children.forEach(child => initializeQuestionState(child.questionKey, child.part));
             }
         });
+              
+        document.getElementById('question-list').addEventListener('click', function(event) {
+            if (event.target.classList.contains('question-circle')) {
+                event.preventDefault();
+                const questionKey = event.target.getAttribute('data-key');
+                if (questionKey) {
+                    scrollToQuestion(questionKey);
+                }
+            }
+        });
     };
 
-    document.addEventListener('keydown', (event) => {
-        if (event.key >= '1' && event.key <= '7') {
-            const part = parseInt(event.key);
-            const partBtn = document.querySelector(`.part-btn[data-part="${part}"]`);
-            if (partBtn) {
-                switchPart(part, partBtn);
-            }
-        }
-
-        if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
-            event.preventDefault();
-            const questionCircles = Array.from(document.querySelectorAll('.question-circle'));
-            if (questionCircles.length === 0) return;
-
-            let currentQuestion = questionCircles.find(circle => circle.classList.contains('active'));
-            let currentIndex = currentQuestion ? questionCircles.indexOf(currentQuestion) : 0;
-
-            if (event.key === 'ArrowUp' && currentIndex > 0) {
-                currentIndex--;
-            } else if (event.key === 'ArrowDown' && currentIndex < questionCircles.length - 1) {
-                currentIndex++;
+                 // Thay thế hoàn toàn cho addEventListener('keydown', ...) cũ
+        document.addEventListener('keydown', (event) => {
+            // Xử lý phím số để chuyển Part (giữ nguyên)
+            if (event.key >= '1' && event.key <= '7') {
+                const part = parseInt(event.key);
+                const partBtn = document.querySelector(`.part-btn[data-part="${part}"]`);
+                if (partBtn) {
+                    switchPart(part, partBtn);
+                }
             }
 
-            const nextQuestion = questionCircles[currentIndex];
-            if (nextQuestion) {
-                questionCircles.forEach(circle => circle.classList.remove('active'));
-                nextQuestion.classList.add('active');
-                const questionKey = nextQuestion.getAttribute('onclick').match(/'([^']+)'/)[1];
-                scrollToQuestion(questionKey);
+            // Logic điều hướng bằng mũi tên - Phiên bản cuối cùng, đáng tin cậy
+            if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+                event.preventDefault();
+
+                // 1. Lấy TẤT CẢ các câu hỏi đang hiển thị trong nội dung chính. Đây là "nguồn sự thật".
+                const questionsOnPage = Array.from(document.querySelectorAll('.question-container, .sub-question'));
+                if (questionsOnPage.length < 2) return; // Không cần điều hướng nếu có ít hơn 2 câu
+
+                // 2. Xác định câu hỏi hiện tại (vẫn dùng phương pháp tâm màn hình)
+                const viewportCenter = window.innerHeight / 2;
+                let currentQuestionOnPage = null;
+                let minDistanceToCenter = Infinity;
+
+                questionsOnPage.forEach(q => {
+                    const rect = q.getBoundingClientRect();
+                    const questionCenter = rect.top + (rect.height / 2);
+                    const distance = Math.abs(questionCenter - viewportCenter);
+
+                    if (distance < minDistanceToCenter) {
+                        minDistanceToCenter = distance;
+                        currentQuestionOnPage = q;
+                    }
+                });
+
+                if (!currentQuestionOnPage) return;
+
+                // 3. Tìm VỊ TRÍ (index) của câu hỏi hiện tại TRONG danh sách câu hỏi nội dung chính.
+                const currentIndex = questionsOnPage.indexOf(currentQuestionOnPage);
+                if (currentIndex === -1) return;
+
+                // 4. Xác định câu hỏi tiếp theo BẰNG CÁCH lấy phần tử trước/sau trong chính danh sách đó.
+                let nextIndex = currentIndex;
+                if (event.key === 'ArrowUp' && currentIndex > 0) {
+                    nextIndex--;
+                } else if (event.key === 'ArrowDown' && currentIndex < questionsOnPage.length - 1) {
+                    nextIndex++;
+                }
+
+                // 5. Cuộn đến câu hỏi tiếp theo.
+                const nextQuestionOnPage = questionsOnPage[nextIndex];
+                if (nextQuestionOnPage && nextQuestionOnPage !== currentQuestionOnPage) {
+                    nextQuestionOnPage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                    // 6. (Phụ) Cập nhật vòng tròn active ở sidebar cho đẹp.
+                    const nextKey = nextQuestionOnPage.getAttribute('data-question-key');
+                    if (nextKey) {
+                        const questionCircles = Array.from(document.querySelectorAll('.question-circle'));
+                        questionCircles.forEach(circle => {
+                            if (circle.getAttribute('data-key') === nextKey) {
+                                circle.classList.add('active');
+                            } else {
+                                circle.classList.remove('active');
+                            }
+                        });
+                    }
+                }
             }
-        }
-    });
+        });
 
     function getTotalQuestions() {
         let total = 0;
