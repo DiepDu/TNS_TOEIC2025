@@ -11,6 +11,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TNS_Member", "..\..\TNS_Lib
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TNS_EDU_TEST", "..\TNS_EDU_TEST\TNS_EDU_TEST.csproj", "{30BA7E08-B627-4F80-BFA0-AE4257A6797B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TNS_EDU_STUDY", "..\TNS_EDU_STUDY\TNS_EDU_STUDY.csproj", "{CEB34504-6436-4E37-BB91-F3267A19B467}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{30BA7E08-B627-4F80-BFA0-AE4257A6797B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{30BA7E08-B627-4F80-BFA0-AE4257A6797B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{30BA7E08-B627-4F80-BFA0-AE4257A6797B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CEB34504-6436-4E37-BB91-F3267A19B467}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CEB34504-6436-4E37-BB91-F3267A19B467}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CEB34504-6436-4E37-BB91-F3267A19B467}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CEB34504-6436-4E37-BB91-F3267A19B467}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

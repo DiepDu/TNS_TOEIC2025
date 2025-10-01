@@ -82,12 +82,17 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
 
             try
             {
-                QuestionListDataAccess.UpdateStatistics();
-                return new JsonResult(new { status = "OK", message = "Cập nhật thống kê thành công!" });
+                // Gọi hàm cập nhật độ khó
+                QuestionListDataAccess.UpdateDifficulty();
+                // Gọi hàm phân tích bất thường
+                QuestionListDataAccess.UpdateAnomaly();
+
+                return new JsonResult(new { status = "OK", message = "Cập nhật thống kê (Độ khó & Bất thường) thành công!" });
             }
             catch (Exception ex)
             {
-                return new JsonResult(new { status = "ERROR", message = ex.Message });
+                // Ghi lại lỗi chi tiết hơn nếu cần (ví dụ: vào một file log)
+                return new JsonResult(new { status = "ERROR", message = "Đã xảy ra lỗi trong quá trình cập nhật: " + ex.Message });
             }
         }
 

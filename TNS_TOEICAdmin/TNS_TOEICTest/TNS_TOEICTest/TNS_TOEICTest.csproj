@@ -17,6 +17,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\..\TNS_Lib\TNS_DBConnection\TNS_DBConnection.csproj" />
 		<ProjectReference Include="..\..\TNS_Lib\TNS_Member\TNS_Member.csproj" />
+		<ProjectReference Include="..\TNS_EDU_STUDY\TNS_EDU_STUDY.csproj" />
 		<ProjectReference Include="..\TNS_EDU_TEST\TNS_EDU_TEST.csproj" />
 	</ItemGroup>
 

@@ -37,12 +37,12 @@ namespace TNS_TOEICPart6.Areas.TOEICPart6.Pages
         #endregion
 
         public string QuestionKey;
-        public IActionResult OnGet(string Key)
+        public IActionResult OnGet(string QuestionKey)
         {
             CheckAuth();
-            if (UserLogin.Role.IsRead)
+            if (UserLogin.Role.IsRead || IsFullAdmin)
             {
-                QuestionKey = Key;
+                this.QuestionKey = QuestionKey;
                 return Page();
             }
             else
@@ -51,6 +51,7 @@ namespace TNS_TOEICPart6.Areas.TOEICPart6.Pages
                 return Page();
             }
         }
+
         public IActionResult OnPostLoadData([FromBody] ItemRequest request)
         {
             CheckAuth();
