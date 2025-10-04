@@ -23,7 +23,7 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                     SELECT TOP 1 r.TestKey, r.ResultKey, r.TestScore
                     FROM ResultOfUserForTest r
                     INNER JOIN [Test] t ON r.TestKey = t.TestKey
-                    WHERE r.MemberKey = @MemberKey
+                    WHERE r.MemberKey = @MemberKey AND r.EndTime IS NOT NULL
                     ORDER BY t.CreatedOn DESC";
 
                 using (var cmd = new SqlCommand(sql, conn))

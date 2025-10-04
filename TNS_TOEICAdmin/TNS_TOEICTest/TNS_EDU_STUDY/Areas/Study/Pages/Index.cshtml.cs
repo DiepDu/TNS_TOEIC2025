@@ -45,18 +45,17 @@ namespace TNS_EDU_STUDY.Areas.Study.Pages
 
                 if (existingTestKey.HasValue && existingResultKey.HasValue)
                 {
-                    // *** SỬA LỖI ĐIỀU HƯỚNG TẠI ĐÂY ***
-                    // If an unfinished session exists, redirect the user to the Study page with all required parameters.
-                    return RedirectToPage("/Study", new
+
+                    return RedirectToPage("/Study", new // <-- Dùng Tên Trang là "/Study"
                     {
-                        area = "Study",
+                        area = "Study", 
                         testKey = existingTestKey.ToString(),
                         resultKey = existingResultKey.ToString(),
                         selectedPart = SelectedPart
                     });
                 }
 
-                // --- If no unfinished session is found, create a new one ---
+               
 
                 // 3. Get configuration for the selected Part
                 var (config, distribution) = await IndexAccessData.GetPartConfiguration(SelectedPart);
@@ -82,7 +81,7 @@ namespace TNS_EDU_STUDY.Areas.Study.Pages
 
                 // *** SỬA LỖI ĐIỀU HƯỚNG TẠI ĐÂY ***
                 // 7. Redirect the user to the new Study page with the new keys and part info
-                return RedirectToPage("/Study", new
+                return RedirectToPage("/Study", new // <-- Dùng Tên Trang là "/Study"
                 {
                     area = "Study",
                     testKey = newTestKey.ToString(),

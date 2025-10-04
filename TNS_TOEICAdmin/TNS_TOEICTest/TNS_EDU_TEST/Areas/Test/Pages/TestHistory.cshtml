@@ -41,10 +41,10 @@
             {
                 <tr>
                     <td>@item.TestName</td>
-                    <td>@item.CreatedOn.ToString("dd/MM/yyyy")</td>
+                    <td>@string.Format("{0:dd/MM/yyyy}", item.CreatedOn)</td>
                     <td>@item.MemberName</td>
-                    <td>@item.StartTime.ToString("HH:mm")</td>
-                    <td>@item.EndTime.ToString("HH:mm")</td>
+                    <td>@string.Format("{0:HH:mm}", item.StartTime)</td>
+                    <td>@string.Format("{0:HH:mm}", item.EndTime)</td>
                     <td>@item.Time phút</td>
                     <td>@item.ListeningScore</td>
                     <td>@item.ReadingScore</td>

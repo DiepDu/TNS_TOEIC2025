@@ -49,20 +49,37 @@ namespace TNS_TOEICTest.Models
                     {
                         while (await reader.ReadAsync())
                         {
-                            // === SỬA ĐỔI TẠI ĐÂY ===
-                            var startedAt = (DateTime)reader["StartedAt"];
-                            var title = reader["Title"] == DBNull.Value || string.IsNullOrEmpty(reader["Title"].ToString())
-                                ? startedAt.ToString("yyyy-MM-dd HH:mm") // Nếu Title trống, dùng ngày tạo
-                                : reader["Title"].ToString();
+                            // === ĐOẠN CODE ĐÃ SỬA ===
 
+                            // 1. Đọc StartedAt một cách an toàn, cho phép giá trị null
+                            DateTime? startedAt = reader["StartedAt"] == DBNull.Value
+                                ? (DateTime?)null
+                                : (DateTime)reader["StartedAt"];
+
+                            // 2. Xử lý Title một cách an toàn, kiểm tra xem startedAt có giá trị không
+                            string title;
+                            if (reader["Title"] == DBNull.Value || string.IsNullOrEmpty(reader["Title"].ToString()))
+                            {
+                                // Nếu Title trống, dùng ngày tạo (nếu có), nếu không thì dùng tiêu đề mặc định
+                                title = startedAt.HasValue
+                                    ? startedAt.Value.ToString("yyyy-MM-dd HH:mm")
+                                    : "Cuộc hội thoại mới";
+                            }
+                            else
+                            {
+                                title = reader["Title"].ToString();
+                            }
+
+                            // 3. Tạo dictionary với giá trị startedAt có thể là null
                             var conversation = new Dictionary<string, object>
-                    {
-                        { "ConversationAIID", reader["ConversationAIID"] },
-                        { "UserID", reader["UserID"] },
-                        { "Title", title }, // Sử dụng biến title đã được xử lý
-                        { "StartedAt", startedAt },
-                        { "LastMessage", reader["LastMessage"] == DBNull.Value ? "No messages yet." : reader["LastMessage"] }
-                    };
+    {
+        { "ConversationAIID", reader["ConversationAIID"] },
+        { "UserID", reader["UserID"] },
+        { "Title", title },
+        // Chỗ này quan trọng: startedAt có thể là DateTime hoặc null
+        { "StartedAt", startedAt },
+        { "LastMessage", reader["LastMessage"] == DBNull.Value ? "Chưa có tin nhắn." : reader["LastMessage"] }
+    };
                             conversations.Add(conversation);
                         }
                     }
@@ -1509,8 +1526,7 @@ WHERE 1=1 ");
             }
             return summary;
         }
-        // Thêm hàm này vào file ChatWithAIAccessData.cs
-        // XÓA HÀM GetTestAnalysisByDateAsync CŨ VÀ THAY BẰNG HÀM MỚI NÀY
+       
         public static async Task<string> GetTestAnalysisByDateAsync(
      string memberKey,
      DateTime testDate,

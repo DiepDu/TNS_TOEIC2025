@@ -101,7 +101,6 @@ namespace TNS_TOEICTest.Controllers
             }
         }
         [HttpPost("CreateNewConversation")]
-        // THAY ĐỔI: Nhận một object chứa userKey tùy chọn từ body
         public async Task<IActionResult> CreateNewConversation([FromBody] UserKeyRequest? request)
         {
             try

@@ -49,14 +49,14 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                             items.Add(new TestHistoryItem
                             {
                                 TestName = reader["TestName"].ToString(),
-                                CreatedOn = Convert.ToDateTime(reader["CreatedOn"]),
+                                CreatedOn = reader["CreatedOn"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(reader["CreatedOn"]),
                                 MemberName = reader["MemberName"].ToString(),
-                                StartTime = Convert.ToDateTime(reader["StartTime"]),
-                                EndTime = Convert.ToDateTime(reader["EndTime"]),
-                                Time = reader["Time"] == DBNull.Value ? null : Convert.ToInt32(reader["Time"]),
-                                ListeningScore = reader["ListeningScore"] == DBNull.Value ? null : Convert.ToInt32(reader["ListeningScore"]),
-                                ReadingScore = reader["ReadingScore"] == DBNull.Value ? null : Convert.ToInt32(reader["ReadingScore"]),
-                                TestScore = reader["TestScore"] == DBNull.Value ? null : Convert.ToInt32(reader["TestScore"]),
+                                StartTime = reader["StartTime"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(reader["StartTime"]),
+                                EndTime = reader["EndTime"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(reader["EndTime"]),
+                                Time = reader["Time"] == DBNull.Value ? (int?)null : Convert.ToInt32(reader["Time"]),
+                                ListeningScore = reader["ListeningScore"] == DBNull.Value ? (int?)null : Convert.ToInt32(reader["ListeningScore"]),
+                                ReadingScore = reader["ReadingScore"] == DBNull.Value ? (int?)null : Convert.ToInt32(reader["ReadingScore"]),
+                                TestScore = reader["TestScore"] == DBNull.Value ? (int?)null : Convert.ToInt32(reader["TestScore"]),
                                 TestKey = reader["TestKey"].ToString(),
                                 ResultKey = reader["ResultKey"].ToString()
                             });
@@ -70,10 +70,10 @@ namespace TNS_EDU_TEST.Areas.Test.Models
         public class TestHistoryItem
         {
             public string TestName { get; set; }
-            public DateTime CreatedOn { get; set; }
+            public DateTime? CreatedOn { get; set; }
             public string MemberName { get; set; }
-            public DateTime StartTime { get; set; }
-            public DateTime EndTime { get; set; }
+            public DateTime? StartTime { get; set; }
+            public DateTime? EndTime { get; set; }
             public int? Time { get; set; }  // Số phút làm bài
             public int? ListeningScore { get; set; }
             public int? ReadingScore { get; set; }

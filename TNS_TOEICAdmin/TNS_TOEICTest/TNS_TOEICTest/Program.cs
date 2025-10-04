@@ -27,6 +27,7 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizeAreaPage("Test", "/Test");
     options.Conventions.AddAreaPageRoute("Test", "/Test", "Test/Test");
     options.Conventions.AddAreaPageRoute("Test", "/ResultTest", "Test/ResultTest");
+    options.Conventions.AuthorizeAreaPage("Study", "/Study");
 });
 builder.Services.AddSingleton<CreateAccountAccessData>();
 builder.Services.AddSingleton<ProfileAccessData>();
