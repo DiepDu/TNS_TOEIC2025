@@ -5,6 +5,8 @@
 }
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.0.1/chartjs-plugin-zoom.min.js"></script>
 
 <h1 class="test-history-title">TOEIC Test History</h1>
 
@@ -322,7 +324,24 @@
                         titleFont: { family: 'Poppins', size: 14 },
                         bodyFont: { family: 'Poppins', size: 12 },
                         callbacks: { label: context => `${context.dataset.label}: ${context.raw}` }
-                    }
+                    },
+                             zoom: {
+            pan: {
+                enabled: true, // Cho phép kéo/trượt
+                mode: 'x',     // Chỉ kéo theo trục X (trục ngày thi)
+            },
+            zoom: {
+                wheel: {
+                    enabled: true, // Cho phép zoom bằng con lăn chuột
+                },
+                pinch: {
+                    enabled: true // Cho phép zoom bằng 2 ngón tay trên màn hình cảm ứng
+                },
+                mode: 'x', // Chỉ zoom theo trục X
+            }
+        }
+        
+    
                 },
                 scales: {
                     x: {
