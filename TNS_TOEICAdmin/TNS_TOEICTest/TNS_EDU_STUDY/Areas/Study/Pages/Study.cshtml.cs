@@ -60,7 +60,28 @@ namespace TNS_EDU_STUDY.Areas.Study.Pages
             {
                 return RedirectToPage("/Index");
             }
+            if (sessionData.Status == 99)
+            {
+                // Lấy memberKey của người dùng hiện tại để tính điểm
+                var memberKeyClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(memberKeyClaim) || !Guid.TryParse(memberKeyClaim, out Guid memberKeyGuid))
+                {
+                    // Nếu không có thông tin user, không thể tính điểm -> quay về trang chủ
+                    return RedirectToPage("/Index");
+                }
 
+                // Gọi hàm tính điểm và cập nhật kết quả
+                await StudyAccessData.SubmitStudySession(ResultKey, memberKeyGuid);
+
+                // Chuyển hướng đến trang ResultStudy như yêu cầu
+                // Lưu ý: Đảm bảo bạn có trang tên là "ResultStudy" trong Area "Study"
+                return RedirectToPage("/Study/ResultStudy", new
+                {
+                    TestKey,
+                    ResultKey,
+                    PartSelect = this.SelectedPart
+                });
+            }
             // 2. KIỂM TRA ĐIỀU KIỆN HOÀN THÀNH TỪ DỮ LIỆU VỪA LẤY
             // Lệnh gọi hàm không tồn tại đã được xóa bỏ
             if (sessionData.TestScore.HasValue) // Kiểm tra xem TestScore có giá trị không
@@ -72,7 +93,8 @@ namespace TNS_EDU_STUDY.Areas.Study.Pages
             // 3. Nếu chưa hoàn thành, tiếp tục xử lý như bình thường
             long totalDurationSeconds = sessionData.Duration * 60;
             long timeSpentSeconds = sessionData.TimeSpent * 60;
-           
+            TimeRemaining = TimeSpan.FromSeconds(totalDurationSeconds - timeSpentSeconds);
+
 
             // Xử lý JSON an toàn (Đảm bảo bạn đã thêm lại logic này)
             var jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
@@ -125,14 +147,14 @@ namespace TNS_EDU_STUDY.Areas.Study.Pages
 
         #region Handlers Đặc Thù Của Chức Năng Study
 
-        [HttpPost("Study/UpdateTimeSpent")] // Route được cập nhật cho Study
+        [HttpPost("Study/UpdateTimeSpent")] 
         public async Task<IActionResult> OnPostUpdateTimeSpentAsync([FromBody] UpdateTimeRequestDto dto)
         {
             if (!Guid.TryParse(dto.ResultKey, out var resultKeyGuid)) return BadRequest();
             try
             {
-                // Cập nhật tổng thời gian đã làm (tính bằng phút)
-                //await StudyAccessData.UpdateTimeSpent(resultKeyGuid, dto.TotalMinutesSpent);
+
+                await StudyAccessData.UpdateTimeSpent(resultKeyGuid);
                 return new JsonResult(new { success = true });
             }
             catch { return new JsonResult(new { success = false }) { StatusCode = 500 }; }
@@ -182,7 +204,6 @@ namespace TNS_EDU_STUDY.Areas.Study.Pages
         public class UpdateTimeRequestDto
         {
             public string ResultKey { get; set; }
-            public int TotalMinutesSpent { get; set; }
         }
 
         public class SubmitStudyDto

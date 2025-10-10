@@ -13,6 +13,7 @@ namespace TNS_EDU_STUDY.Areas.Study.Models
         public int TimeSpent { get; set; } 
         public List<TestQuestion> Questions { get; set; }
         public int? TestScore { get; set; }
+        public int Status { get; set; }
     }
 
     public static class StudyAccessData
@@ -26,9 +27,9 @@ namespace TNS_EDU_STUDY.Areas.Study.Models
             {
                 await conn.OpenAsync();
 
-                // SỬA LẠI CÂU SQL NÀY ĐỂ LẤY THÊM "r.TestScore"
+                // 1. SỬA CÂU SQL ĐỂ LẤY THÊM "r.Status"
                 string timeSql = @"
-                    SELECT t.Duration, r.Time, r.TestScore 
+                    SELECT t.Duration, r.Time, r.TestScore, r.Status 
                     FROM [dbo].[Test] t JOIN [dbo].[ResultOfUserForTest] r ON t.TestKey = r.TestKey
                     WHERE r.ResultKey = @ResultKey AND t.TestKey = @TestKey";
 
@@ -42,15 +43,22 @@ namespace TNS_EDU_STUDY.Areas.Study.Models
                         {
                             sessionData.Duration = reader.GetInt32(0);
                             sessionData.TimeSpent = reader.IsDBNull(1) ? 0 : reader.GetInt32(1);
-                            // GÁN GIÁ TRỊ CHO TestScore
                             sessionData.TestScore = reader.IsDBNull(2) ? (int?)null : reader.GetInt32(2);
+                            sessionData.Status = reader.GetInt32(3); // GÁN GIÁ TRỊ CHO Status
                         }
                         else { return null; }
                     }
                 }
 
+                // Nếu status là 99, không cần lấy câu hỏi, trả về luôn để PageModel xử lý
+                if (sessionData.Status == 99)
+                {
+                    return sessionData;
+                }
+
                 string questionTable = $"[dbo].[TEC_Part{part}_Question]";
                 string answerTable = $"[dbo].[TEC_Part{part}_Answer]";
+                // 2. THÊM ĐIỀU KIỆN "a.RecordStatus != 99" VÀO LEFT JOIN
                 string sql = $@"
                     SELECT 
                         c.QuestionKey, c.Part, c.[Order],
@@ -59,7 +67,7 @@ namespace TNS_EDU_STUDY.Areas.Study.Models
                         u.SelectAnswerKey
                     FROM [ContentOfTest] c
                     LEFT JOIN {questionTable} q ON c.QuestionKey = q.QuestionKey
-                    LEFT JOIN {answerTable} a ON q.QuestionKey = a.QuestionKey
+                    LEFT JOIN {answerTable} a ON q.QuestionKey = a.QuestionKey AND a.RecordStatus != 99
                     LEFT JOIN [UserAnswers] u ON c.ResultKey = u.ResultKey AND c.QuestionKey = u.QuestionKey
                     WHERE c.ResultKey = @ResultKey AND c.TestKey = @TestKey AND c.Part = @Part
                     ORDER BY c.[Order], q.Ranking, a.Ranking";
@@ -81,7 +89,9 @@ namespace TNS_EDU_STUDY.Areas.Study.Models
                             {
                                 var question = new TestQuestion
                                 {
-                                    QuestionKey = questionKey, Part = reader.GetInt32(1), Order = (float)reader.GetDouble(2),
+                                    QuestionKey = questionKey,
+                                    Part = reader.GetInt32(1),
+                                    Order = (float)reader.GetDouble(2),
                                     QuestionText = reader.IsDBNull(3) ? null : reader.GetString(3),
                                     QuestionImage = reader.IsDBNull(4) ? null : reader.GetString(4),
                                     QuestionVoice = reader.IsDBNull(5) ? null : reader.GetString(5),
@@ -95,17 +105,20 @@ namespace TNS_EDU_STUDY.Areas.Study.Models
                             }
                             if (!reader.IsDBNull(8))
                             {
-                                questionsDict[questionKey].Answers.Add(new TestAnswer {
-                                    AnswerKey = reader.GetGuid(8), QuestionKey = questionKey,
+                                questionsDict[questionKey].Answers.Add(new TestAnswer
+                                {
+                                    AnswerKey = reader.GetGuid(8),
+                                    QuestionKey = questionKey,
                                     AnswerText = reader.IsDBNull(9) ? null : reader.GetString(9),
-                                    AnswerCorrect = reader.GetBoolean(10), Ranking = reader.IsDBNull(11) ? 0 : reader.GetInt32(11)
+                                    AnswerCorrect = reader.GetBoolean(10),
+                                    Ranking = reader.IsDBNull(11) ? 0 : reader.GetInt32(11)
                                 });
                             }
                         }
                     }
                 }
-                
-                foreach(var q in allQuestions) q.Answers = q.Answers.OrderBy(a => a.Ranking).ToList();
+
+                foreach (var q in allQuestions) q.Answers = q.Answers.OrderBy(a => a.Ranking).ToList();
                 var resultQuestions = new List<TestQuestion>();
                 foreach (var question in allQuestions.OrderBy(q => q.Order))
                 {
@@ -119,6 +132,7 @@ namespace TNS_EDU_STUDY.Areas.Study.Models
                 return sessionData;
             }
         }
+
 
         public static async Task UpdateTimeSpent(Guid resultKey)
         {

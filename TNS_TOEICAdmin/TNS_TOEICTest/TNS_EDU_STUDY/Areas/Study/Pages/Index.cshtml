@@ -4,179 +4,251 @@
     Layout = "_Layout";
 }
 
-
-
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
 <style>
+    /* ----- General Design ----- */
     body {
-        background: linear-gradient(135deg, #e0f7fa, #fff9c4);
+        background-color: #f8f9fa;
+        font-family: 'Poppins', sans-serif; /* Adding Poppins font for a better look */
     }
 
-    .study-container {
-        max-width: 900px;
-        margin: 40px auto;
-        padding: 40px;
-        background-color: #ffffff;
-        border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    .study-page-container {
+        max-width: 1100px;
+        margin: 50px auto;
+        padding: 20px;
+        animation: fadeIn 0.8s ease-in-out;
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* ----- Header/Hero Section ----- */
+    .study-header {
         text-align: center;
+        margin-bottom: 60px;
     }
 
     .study-title {
-        font-size: 2.5rem;
+        font-size: 3rem;
         font-weight: 700;
-        color: #00796b;
-        margin-bottom: 20px;
+        background: linear-gradient(90deg, #00796b, #4db6ac);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 15px;
     }
 
     .study-description {
-        font-size: 1.1rem;
-        color: #555;
-        margin-bottom: 40px;
+        font-size: 1.15rem;
+        color: #666;
+        max-width: 700px;
+        margin: 0 auto;
     }
 
+    /* ----- Skill Groups ----- */
+    .skill-group {
+        margin-bottom: 50px;
+    }
+
+    .skill-title {
+        font-size: 1.8rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 25px;
+        padding-bottom: 10px;
+        border-bottom: 3px solid #00796b;
+        display: inline-block;
+    }
+
+    /* ----- Part Selection Grid ----- */
     .part-selection-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 20px;
-        margin-bottom: 40px;
+        gap: 25px;
     }
 
+    /* 4-column grid for Listening group */
+    .grid-listening {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    /* 3-column grid for Reading group */
+    .grid-reading {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    /* ----- Part Selection Card ----- */
     .part-card {
-        background-color: #f1f8e9;
-        border: 2px solid transparent;
+        background-color: #ffffff;
+        border: 1px solid #e0e0e0;
         border-radius: 15px;
-        padding: 20px;
+        padding: 25px;
         cursor: pointer;
         transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
     }
 
-    .part-card:hover {
-        transform: translateY(-10px);
-        box-shadow: 0 15px 25px rgba(0, 121, 107, 0.15);
-        border-color: #81c784;
-    }
+        .part-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px rgba(0, 121, 107, 0.15);
+            border-color: #4db6ac;
+        }
 
-    .part-card.selected {
-        border-color: #4caf50;
-        background-color: #dcedc8;
-        box-shadow: 0 8px 20px rgba(76, 175, 80, 0.2);
-    }
+        .part-card.selected {
+            border-color: #00796b;
+            background-color: #e8f5e9;
+            box-shadow: 0 0 0 3px #81c784, 0 8px 20px rgba(76, 175, 80, 0.2);
+            transform: scale(1.05);
+        }
 
     .part-card-icon {
         font-size: 3rem;
-        color: #4caf50;
+        color: #00796b;
         margin-bottom: 15px;
+        transition: color 0.3s ease;
+    }
+
+    .part-card.selected .part-card-icon {
+        color: #388e3c;
     }
 
     .part-card-title {
         font-size: 1.5rem;
         font-weight: 600;
+        color: #333;
+        margin-bottom: 5px;
+    }
+
+    .part-card.selected .part-card-title {
         color: #388e3c;
     }
 
+    .part-card-desc {
+        font-size: 0.9rem;
+        color: #777;
+    }
+
+    /* ----- Start Button ----- */
+    .start-button-container {
+        text-align: center;
+        margin-top: 20px;
+    }
+
     .start-study-btn {
-        background: linear-gradient(45deg, #66bb6a, #43a047);
+        background: linear-gradient(45deg, #26a69a, #00897b);
         color: white;
-        padding: 15px 40px;
+        padding: 15px 45px;
         border: none;
         border-radius: 50px;
         font-size: 1.2rem;
         font-weight: 600;
         cursor: pointer;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 4px 20px rgba(0, 121, 107, 0.3);
         opacity: 0.5;
         pointer-events: none;
+        transform: scale(0.95);
     }
 
-    .start-study-btn.active {
-        opacity: 1;
-        pointer-events: auto;
-    }
+        .start-study-btn.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: scale(1);
+        }
 
-    .start-study-btn:hover:not(:disabled) {
-        transform: translateY(-3px);
-        box-shadow: 0 7px 20px rgba(76, 175, 80, 0.4);
-    }
+        .start-study-btn:hover.active {
+            transform: scale(1.05);
+            box-shadow: 0 7px 25px rgba(0, 121, 107, 0.4);
+        }
 
-    .start-study-btn:disabled {
-        cursor: not-allowed;
-    }
+        .start-study-btn i {
+            margin-right: 10px;
+        }
 
-    #selectedPartInput {
-        display: none;
-    }
 </style>
 
-<div class="study-container">
-    <h1 class="study-title">Luyện tập TOEIC theo từng Part</h1>
-    <p class="study-description">Chọn một Part bạn muốn luyện tập bên dưới. Hệ thống sẽ tạo một bài thi riêng cho Part đó để giúp bạn cải thiện kỹ năng.</p>
+<div class="study-page-container">
+    <div class="study-header">
+        <h1 class="study-title">TOEIC Practice by Part</h1>
+        <p class="study-description">Choose a part you want to practice below. The system will create a dedicated test for that part to help you improve your skills.</p>
+    </div>
 
     <form method="post">
-        <div class="part-selection-grid" id="part-selection-grid">
-            <!-- Part 1 -->
-            <div class="part-card" data-part="1" onclick="selectPart(1, this)">
-                <div class="part-card-icon"><i class="fas fa-camera"></i></div>
-                <div class="part-card-title">Part 1</div>
+        <div class="skill-group">
+            <h2 class="skill-title">Listening Comprehension</h2>
+            <div class="part-selection-grid grid-listening">
+                <div class="part-card" data-part="1" onclick="selectPart(1, this)">
+                    <div class="part-card-icon"><i class="fas fa-camera"></i></div>
+                    <div class="part-card-title">Part 1</div>
+                    <p class="part-card-desc">Photographs</p>
+                </div>
+                <div class="part-card" data-part="2" onclick="selectPart(2, this)">
+                    <div class="part-card-icon"><i class="fas fa-question-circle"></i></div>
+                    <div class="part-card-title">Part 2</div>
+                    <p class="part-card-desc">Question-Response</p>
+                </div>
+                <div class="part-card" data-part="3" onclick="selectPart(3, this)">
+                    <div class="part-card-icon"><i class="fas fa-comments"></i></div>
+                    <div class="part-card-title">Part 3</div>
+                    <p class="part-card-desc">Conversations</p>
+                </div>
+                <div class="part-card" data-part="4" onclick="selectPart(4, this)">
+                    <div class="part-card-icon"><i class="fas fa-bullhorn"></i></div>
+                    <div class="part-card-title">Part 4</div>
+                    <p class="part-card-desc">Talks</p>
+                </div>
             </div>
-            <!-- Part 2 -->
-            <div class="part-card" data-part="2" onclick="selectPart(2, this)">
-                <div class="part-card-icon"><i class="fas fa-question-circle"></i></div>
-                <div class="part-card-title">Part 2</div>
-            </div>
-            <!-- Part 3 -->
-            <div class="part-card" data-part="3" onclick="selectPart(3, this)">
-                <div class="part-card-icon"><i class="fas fa-comments"></i></div>
-                <div class="part-card-title">Part 3</div>
-            </div>
-            <!-- Part 4 -->
-            <div class="part-card" data-part="4" onclick="selectPart(4, this)">
-                <div class="part-card-icon"><i class="fas fa-bullhorn"></i></div>
-                <div class="part-card-title">Part 4</div>
-            </div>
-            <!-- Part 5 -->
-            <div class="part-card" data-part="5" onclick="selectPart(5, this)">
-                <div class="part-card-icon"><i class="fas fa-edit"></i></div>
-                <div class="part-card-title">Part 5</div>
-            </div>
-            <!-- Part 6 -->
-            <div class="part-card" data-part="6" onclick="selectPart(6, this)">
-                <div class="part-card-icon"><i class="fas fa-file-alt"></i></div>
-                <div class="part-card-title">Part 6</div>
-            </div>
-            <!-- Part 7 -->
-            <div class="part-card" data-part="7" onclick="selectPart(7, this)">
-                <div class="part-card-icon"><i class="fas fa-newspaper"></i></div>
-                <div class="part-card-title">Part 7</div>
+        </div>
+
+        <div class="skill-group">
+            <h2 class="skill-title">Reading Comprehension</h2>
+            <div class="part-selection-grid grid-reading">
+                <div class="part-card" data-part="5" onclick="selectPart(5, this)">
+                    <div class="part-card-icon"><i class="fas fa-edit"></i></div>
+                    <div class="part-card-title">Part 5</div>
+                    <p class="part-card-desc">Incomplete Sentences</p>
+                </div>
+                <div class="part-card" data-part="6" onclick="selectPart(6, this)">
+                    <div class="part-card-icon"><i class="fas fa-file-alt"></i></div>
+                    <div class="part-card-title">Part 6</div>
+                    <p class="part-card-desc">Text Completion</p>
+                </div>
+                <div class="part-card" data-part="7" onclick="selectPart(7, this)">
+                    <div class="part-card-icon"><i class="fas fa-newspaper"></i></div>
+                    <div class="part-card-title">Part 7</div>
+                    <p class="part-card-desc">Reading Passages</p>
+                </div>
             </div>
         </div>
 
         <input type="hidden" id="selectedPartInput" name="selectedPart" asp-for="SelectedPart" />
-        
-        <button type="submit" class="start-study-btn" id="start-study-btn" disabled>
-            <i class="fas fa-play-circle"></i> Bắt đầu Luyện tập
-        </button>
+
+        <div class="start-button-container">
+            <button type="submit" class="start-study-btn" id="start-study-btn" disabled>
+                <i class="fas fa-play-circle"></i> Start Practice
+            </button>
+        </div>
     </form>
 </div>
 
 @section Scripts {
     <script>
+        // JavaScript logic remains the same
         function selectPart(partNumber, element) {
-            // Xóa class 'selected' khỏi tất cả các card
             document.querySelectorAll('.part-card').forEach(card => {
                 card.classList.remove('selected');
             });
-
-            // Thêm class 'selected' cho card được click
             element.classList.add('selected');
-
-            // Cập nhật giá trị cho input ẩn
             document.getElementById('selectedPartInput').value = partNumber;
-
-            // Kích hoạt nút bắt đầu
             const startButton = document.getElementById('start-study-btn');
             startButton.disabled = false;
             startButton.classList.add('active');

@@ -180,8 +180,10 @@
             if (currentPart <= 2 || currentPart === 5) {
                 displayedQuestions = questions.filter(q => q.parent === null);
             } else {
-                const parentQuestion = questions.find(q => q.parent === null);
-                displayedQuestions = parentQuestion ? (parentQuestion.children || []) : [];
+                   // 1. Dùng .filter để lấy TẤT CẢ các câu hỏi cha
+        const parentQuestions = questions.filter(q => q.parent === null);
+        // 2. Dùng .flatMap để tạo một danh sách duy nhất chứa TẤT CẢ câu hỏi con từ tất cả các câu cha
+        displayedQuestions = parentQuestions.flatMap(p => p.children || []);
             }
 
             const answeredCount = displayedQuestions.filter(q => q.userAnswerKey && q.userAnswerKey !== '').length;
@@ -234,11 +236,7 @@
             );
         }
 
-        // (Copy các hàm JS khác từ Test.cshtml vào đây: startTimer, renderSimplePart, renderComplexPart,
-        // selectAnswer, updateAnswer, toggleFlag, scrollToQuestion, showConfirmationModal,
-        // handleBeforeUnload, debounce, saveAnswer, initializeQuestionState, setupIntersectionObserver,
-        // checkStartTime, loadFlaggedQuestions, saveFlaggedQuestion, ...
-        // Lưu ý: Sửa lại các URL fetch nếu cần để trỏ đúng đến handler của trang Study)
+       
                   function debounce(func, wait) {
             let timeout;
             return function (...args) {
