@@ -104,51 +104,49 @@
         }
     }
 
-    function initializeQuestionState(questionKey, part) {
-        if (!questionStates[questionKey]) {
-            questionStates[questionKey] = {
-                isVisible: false,
-                hasInteracted: false,
-                startTime: null,
-                lastAnswerTime: null,
-                timeSpent: 0,
-                answerChanges: 0,
-                part: part
-            };
-        }
-    }
-
-    function setupIntersectionObserver() {
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                const questionKey = entry.target.getAttribute('data-question-key');
-                if (!questionStates[questionKey]) return;
-
-                if (entry.isIntersecting) {
-                    questionStates[questionKey].isVisible = true;
-                    checkStartTime(questionKey);
-                } else {
-                    questionStates[questionKey].isVisible = false;
-                }
-            });
-        }, {
-            threshold: 0.5
-        });
-
-        document.querySelectorAll('.question-container, .sub-question').forEach(element => {
-            const questionKey = element.getAttribute('data-question-key');
-            if (questionKey) {
-                observer.observe(element);
+           // Áp dụng cho cả Study.cshtml và Test.cshtml
+        function initializeQuestionState(questionKey, part) {
+            if (!questionStates[questionKey]) {
+                questionStates[questionKey] = {
+                    isVisible: false,
+                    startTime: null,
+                    lastVisibleTime: null, // <-- Đổi tên từ lastAnswerTime
+                    timeSpent: 0,
+                    answerChanges: 0,
+                    part: part
+                };
             }
-        });
-    }
-
-    function checkStartTime(questionKey) {
-        const state = questionStates[questionKey];
-        if (state.isVisible && state.hasInteracted && !state.startTime) {
-            state.startTime = Date.now();
         }
-    }
+
+                // Áp dụng cho cả Study.cshtml và Test.cshtml
+        function setupIntersectionObserver() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    const questionKey = entry.target.getAttribute('data-question-key');
+                    if (!questionKey || !questionStates[questionKey]) return;
+
+                    const state = questionStates[questionKey];
+
+                    if (entry.isIntersecting) {
+                        // KHI CÂU HỎI HIỆN RA: chỉ ghi lại thời điểm nó bắt đầu được nhìn thấy.
+                        state.lastVisibleTime = Date.now();
+                    } else {
+                        // KHI CÂU HỎI BIẾN MẤT: tính toán thời gian đã nhìn thấy và cộng dồn.
+                        if (state.lastVisibleTime) {
+                            const timeDiff = (Date.now() - state.lastVisibleTime) / 1000;
+                            state.timeSpent += timeDiff;
+                            state.lastVisibleTime = null; // Reset lại để lần sau tính tiếp
+                        }
+                    }
+                });
+            }, { threshold: 0.5 });
+
+            document.querySelectorAll('.question-container, .sub-question').forEach(element => {
+                const questionKey = element.getAttribute('data-question-key');
+                if (questionKey) observer.observe(element);
+            });
+        }
+
 
     async function loadFlaggedQuestions() {
         try {
@@ -203,85 +201,48 @@
         updateQuestionList();
     }
 
-    function selectAnswer(questionKey, answerKey) {
-        let question = questions.find(q => q.questionKey === questionKey);
-        if (!question) {
-            for (const parent of questions) {
-                if (parent.children) {
-                    question = parent.children.find(child => child.questionKey === questionKey);
-                    if (question) break;
+             
+        function selectAnswer(questionKey, answerKey) {
+            let question = questions.find(q => q.questionKey === questionKey);
+            if (!question) {
+                for (const parent of questions) {
+                    if (parent.children) {
+                        question = parent.children.find(child => child.questionKey === questionKey);
+                        if (question) break;
+                    }
                 }
             }
-        }
+            if (!question) return;
 
-        if (!question) {
-            console.error(`Question with key ${questionKey} not found.`);
-            return;
-        }
+            const radioButton = document.querySelector(`input[name="answer_${questionKey}"][value="${answerKey}"]`);
+            if (!radioButton) return;
 
-        const radioButton = document.querySelector(`input[name="answer_${questionKey}"][value="${answerKey}"]`);
-        if (!radioButton) return;
-
-        // Kiểm tra xem đáp án đã được chọn chưa
-        const isAlreadySelected = question.userAnswerKey === answerKey;
-
-        if (isAlreadySelected) {
-            // Bỏ chọn đáp án
-            radioButton.checked = false;
-            updateAnswer(questionKey, null); // Đặt userAnswerKey về null
-
+            const isAlreadySelected = question.userAnswerKey === answerKey;
             const state = questionStates[questionKey];
-            if (state && state.startTime) {
-                const currentTime = Date.now();
-                let timeDiff;
+            const currentTime = Date.now();
 
-                if (state.lastAnswerTime) {
-                    timeDiff = (currentTime - state.lastAnswerTime) / 1000;
-                    state.answerChanges += 1;
-                } else {
-                    timeDiff = (currentTime - state.startTime) / 1000;
-                }
-
+            // **LOGIC TÍNH TOÁN MỚI**
+            // 1. Tính toán và cộng nốt phần thời gian từ lúc câu hỏi hiện ra cho tới lúc click.
+            if (state.lastVisibleTime) {
+                const timeDiff = (currentTime - state.lastVisibleTime) / 1000;
                 state.timeSpent += timeDiff;
-                state.lastAnswerTime = currentTime;
-
-                // Gửi request với selectAnswerKey = null
-                debouncedSaveAnswer(
-                    questionKey,
-                    null, // Bỏ chọn
-                    Math.round(state.timeSpent),
-                    state.part
-                );
             }
-        } else {
-            // Chọn đáp án mới
-            radioButton.checked = true;
-            updateAnswer(questionKey, answerKey);
 
-            const state = questionStates[questionKey];
-            if (state && state.startTime) {
-                const currentTime = Date.now();
-                let timeDiff;
+            // 2. Cập nhật lại thời điểm cuối cùng, chuẩn bị cho lần tính toán tiếp theo.
+            state.lastVisibleTime = currentTime;
+            state.answerChanges += 1;
 
-                if (state.lastAnswerTime) {
-                    timeDiff = (currentTime - state.lastAnswerTime) / 1000;
-                    state.answerChanges += 1;
-                } else {
-                    timeDiff = (currentTime - state.startTime) / 1000;
-                }
-
-                state.timeSpent += timeDiff;
-                state.lastAnswerTime = currentTime;
-
-                debouncedSaveAnswer(
-                    questionKey,
-                    answerKey,
-                    Math.round(state.timeSpent),
-                    state.part
-                );
+            // Phần logic còn lại giữ nguyên
+            if (isAlreadySelected) { // Bỏ chọn
+                radioButton.checked = false;
+                updateAnswer(questionKey, null);
+                debouncedSaveAnswer(questionKey, null, Math.round(state.timeSpent), state.part);
+            } else { // Chọn mới
+                radioButton.checked = true;
+                updateAnswer(questionKey, answerKey);
+                debouncedSaveAnswer(questionKey, answerKey, Math.round(state.timeSpent), state.part);
             }
         }
-    }
 
     function startTimer() {
         const timerElement = document.getElementById('timer');
@@ -350,20 +311,7 @@
         });
         container.innerHTML = html;
 
-        document.querySelectorAll('.question-container, .sub-question').forEach(element => {
-            const questionKey = element.getAttribute('data-question-key');
-            if (questionKey) {
-                const answerOptions = element.querySelector('.answer-options');
-                if (answerOptions) {
-                    answerOptions.addEventListener('mouseover', () => {
-                        if (questionStates[questionKey]) {
-                            questionStates[questionKey].hasInteracted = true;
-                            checkStartTime(questionKey);
-                        }
-                    });
-                }
-            }
-        });
+     
 
         document.querySelectorAll('.flag-icon').forEach(flag => {
             flag.addEventListener('click', () => {
@@ -437,20 +385,7 @@
         });
         container.innerHTML = html;
 
-        document.querySelectorAll('.question-container, .sub-question').forEach(element => {
-            const questionKey = element.getAttribute('data-question-key');
-            if (questionKey) {
-                const answerOptions = element.querySelector('.answer-options');
-                if (answerOptions) {
-                    answerOptions.addEventListener('mouseover', () => {
-                        if (questionStates[questionKey]) {
-                            questionStates[questionKey].hasInteracted = true;
-                            checkStartTime(questionKey);
-                        }
-                    });
-                }
-            }
-        });
+      
 
         document.querySelectorAll('.flag-icon').forEach(flag => {
             flag.addEventListener('click', () => {

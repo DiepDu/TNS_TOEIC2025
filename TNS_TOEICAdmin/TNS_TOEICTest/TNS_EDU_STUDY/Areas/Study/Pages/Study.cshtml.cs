@@ -71,7 +71,7 @@ namespace TNS_EDU_STUDY.Areas.Study.Pages
                 }
 
                 // Gọi hàm tính điểm và cập nhật kết quả
-                await StudyAccessData.SubmitStudySession(ResultKey, memberKeyGuid);
+                await StudyAccessData.SubmitStudySession(ResultKey, memberKeyGuid, this.SelectedPart); 
 
                 // Chuyển hướng đến trang ResultStudy như yêu cầu
                 // Lưu ý: Đảm bảo bạn có trang tên là "ResultStudy" trong Area "Study"
@@ -96,10 +96,13 @@ namespace TNS_EDU_STUDY.Areas.Study.Pages
             TimeRemaining = TimeSpan.FromSeconds(totalDurationSeconds - timeSpentSeconds);
 
 
-            // Xử lý JSON an toàn (Đảm bảo bạn đã thêm lại logic này)
-            var jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-            string rawJson = JsonSerializer.Serialize(sessionData.Questions, jsonOptions);
-            QuestionsJson = HttpUtility.JavaScriptStringEncode(rawJson);
+           var jsonOptions = new JsonSerializerOptions
+{
+    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+    // Encoder này đảm bảo các ký tự được render an toàn trong thẻ <script>
+    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping 
+};
+QuestionsJson = JsonSerializer.Serialize(sessionData.Questions, jsonOptions);
 
             return Page();
         }
@@ -160,7 +163,7 @@ namespace TNS_EDU_STUDY.Areas.Study.Pages
             catch { return new JsonResult(new { success = false }) { StatusCode = 500 }; }
         }
 
-        [HttpPost("Study/SubmitStudy")] // Route được cập nhật cho Study
+        [HttpPost("Study/SubmitStudy")]
         public async Task<IActionResult> OnPostSubmitStudyAsync([FromBody] SubmitStudyDto dto)
         {
             var memberKey = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
@@ -170,9 +173,9 @@ namespace TNS_EDU_STUDY.Areas.Study.Pages
             }
             try
             {
-                await StudyAccessData.SubmitStudySession(resultKeyGuid, Guid.Parse(memberKey));
+                // --- TRUYỀN THÊM dto.SelectedPart VÀO HÀM GỌI ---
+                await StudyAccessData.SubmitStudySession(resultKeyGuid, Guid.Parse(memberKey), dto.SelectedPart);
 
-                // Xóa cache sau khi nộp bài, giống hệt TestModel
                 var cacheKey = $"ChatBackgroundData_Member_{memberKey}";
                 _cache.Remove(cacheKey);
 
@@ -183,7 +186,7 @@ namespace TNS_EDU_STUDY.Areas.Study.Pages
 
         #endregion
 
-        #region DTOs (Data Transfer Objects) - Tổ chức giống TestModel
+        #region DTOs (Data Transfer Objects) 
 
         public class FlaggedQuestionDto
         {
@@ -209,6 +212,7 @@ namespace TNS_EDU_STUDY.Areas.Study.Pages
         public class SubmitStudyDto
         {
             public string ResultKey { get; set; }
+            public int SelectedPart { get; set; }
         }
 
         #endregion

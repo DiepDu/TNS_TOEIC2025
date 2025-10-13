@@ -1,0 +1,689 @@
+﻿@page "/Study/ResultStudy"
+@model TNS_EDU_STUDY.Areas.Study.Pages.ResultStudyModel
+@{
+    Layout = "";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Result - @Model.StudyInfo.TestName</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        /* === BẮT ĐẦU CSS ĐẦY ĐỦ TỪ RESULTTEST.CSHTML === */
+        :root {
+            --primary-color: #00796b;
+            --secondary-color: #004d40;
+            --correct-bg: #e8f5e9;
+            --correct-border: #a5d6a7;
+            --incorrect-bg: #ffebee;
+            --incorrect-border: #ef9a9a;
+            --correct-text: #2e7d32;
+            --incorrect-text: #c62828;
+            --explanation-text: #5d4037;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .main-container {
+            display: flex;
+            height: 100%;
+        }
+
+        /* --- Sidebar Trái (Thông tin) --- */
+        .test-info-left {
+            width: 280px;
+            background-color: #fff;
+            border-right: 1px solid #e0e0e0;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+            .test-info-left h2 {
+                font-size: 1.5rem;
+                color: var(--primary-color);
+                margin-bottom: 25px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+
+        .test-info-item {
+            margin-bottom: 18px;
+        }
+
+        .test-info-label {
+            font-weight: 600;
+            color: #555;
+            display: block;
+            margin-bottom: 4px;
+            font-size: 0.9rem;
+        }
+
+        .test-info-value {
+            color: #333;
+        }
+
+        .score-display-study {
+            text-align: center;
+            margin: 20px 0 30px 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+        }
+
+            .score-display-study .test-info-label {
+                font-size: 1.1rem;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }
+
+            .score-display-study .test-info-value {
+                font-size: 3.5rem;
+                font-weight: 700;
+                line-height: 1;
+                color: var(--primary-color);
+            }
+
+            .score-display-study .percent-sign {
+                font-size: 1.8rem;
+                font-weight: 600;
+                margin-left: 4px;
+            }
+
+        .exit-btn {
+            width: 100%;
+            padding: 12px;
+            margin-top: 20px;
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+            .exit-btn:hover {
+                background-color: #5a6268;
+            }
+
+        /* --- Nội dung chính --- */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            background-color: #f4f7f9;
+        }
+
+        .main-content-wrapper {
+            padding: 25px;
+        }
+
+        /* --- Sidebar Phải (Danh sách câu hỏi) --- */
+        .sidebar-right {
+            width: 280px;
+            background-color: #fff;
+            border-left: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+        }
+
+            .sidebar-right h3 {
+                padding: 20px;
+                font-size: 1.2rem;
+                border-bottom: 1px solid #e0e0e0;
+            }
+
+        .part-section {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .question-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            margin: 5px;
+            border: 2px solid #ddd;
+        }
+
+            .question-circle.correct {
+                background-color: var(--correct-bg);
+                color: var(--correct-text);
+                border-color: var(--correct-text);
+            }
+
+            .question-circle.incorrect {
+                background-color: var(--incorrect-bg);
+                color: var(--incorrect-text);
+                border-color: var(--incorrect-text);
+            }
+
+        .progress-text-container {
+            padding: 20px;
+            border-top: 1px solid #e0e0e0;
+            text-align: center;
+        }
+
+        .progress-text {
+            font-weight: 600;
+        }
+
+        /* --- Khối câu hỏi --- */
+        .question-container, .part3-container {
+            margin-bottom: 25px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+            .question-container.correct, .sub-question.correct {
+                border-left: 5px solid var(--correct-text);
+            }
+
+            .question-container.incorrect, .sub-question.incorrect {
+                border-left: 5px solid var(--incorrect-text);
+            }
+
+            .question-container h2, .part3-left h2 {
+                padding: 20px;
+                font-size: 1.3rem;
+                border-bottom: 1px solid #f0f0f0;
+            }
+
+        .question-image, .question-audio, .question-text, .answer-options {
+            padding: 20px;
+        }
+
+        .question-text {
+            padding-top: 0;
+        }
+
+        .question-image {
+            max-width: 100%;
+            border-radius: 8px;
+        }
+
+        .question-audio {
+            width: 100%;
+        }
+
+        .answer-option {
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 2px solid #eee;
+        }
+
+            .answer-option.selected {
+                border-color: var(--incorrect-border);
+                background-color: var(--incorrect-bg); /* Highlight đỏ câu chọn sai */
+            }
+
+            .answer-option.correct-answer {
+                border-color: var(--correct-border);
+                background-color: var(--correct-bg); /* Luôn highlight xanh câu đúng */
+            }
+
+        .result-message {
+            padding: 12px 20px;
+            margin: 20px;
+            border-radius: 8px;
+            font-size: 1rem;
+            text-align: center;
+            font-weight: 600;
+        }
+
+            .result-message.correct {
+                background-color: var(--correct-bg);
+                color: var(--correct-text);
+            }
+
+            .result-message.incorrect {
+                background-color: var(--incorrect-bg);
+                color: var(--incorrect-text);
+            }
+
+        .explanation {
+            padding: 15px 20px;
+            margin: 20px;
+            background-color: #fffde7;
+            border-left: 4px solid #fbc02d;
+            font-size: 0.95rem;
+            color: #555;
+        }
+
+        .solution-label {
+            font-weight: bold;
+            color: #333;
+            display: block;
+            margin-top: 20px;
+            padding-left: 20px;
+            font-size: 1.1rem;
+        }
+
+        .report-btn {
+            display: block;
+            width: fit-content;
+            margin: 20px auto 0;
+            background: #f1f1f1;
+            border: 1px solid #ccc;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+            .report-btn:hover {
+                background: #e0e0e0;
+            }
+
+        .part3-container {
+            display: flex;
+        }
+
+        .part3-left, .part3-right {
+            padding: 20px;
+        }
+
+        .part3-left {
+            width: 50%;
+            border-right: 1px solid #f0f0f0;
+        }
+
+        .part3-right {
+            width: 50%;
+        }
+
+        .sub-question {
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+        }
+
+        /* Modal */
+        .modal-backdrop, .report-modal {
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1040;
+        }
+
+        .report-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 500px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 1050;
+        }
+
+            .report-modal.show {
+                display: block;
+            }
+
+        .modal-header, .modal-body, .modal-footer {
+            padding: 20px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .report-textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        .modal-footer {
+            text-align: right;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .cancel-btn {
+            background: #eee;
+        }
+
+        .send-btn {
+            background: var(--primary-color);
+            color: white;
+        }
+        /* === HẾT CSS === */
+    </style>
+</head>
+<body>
+    <div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999;"></div>
+    <div class="main-container">
+        <div class="test-info-left" id="test-info-left"></div>
+        <div class="main-content">
+            <div class="main-content-wrapper" id="main-content-wrapper"></div>
+        </div>
+        <div class="sidebar-right">
+            <h3>Questions</h3>
+            <div class="part-section" id="question-list"></div>
+            <div class="progress-text-container" id="progress-text-container">
+                <div class="progress-text" id="progress-text">0/0</div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop" id="reportModalBackdrop"></div>
+    <div class="report-modal" id="reportModal">
+        <div class="modal-header">Report Issue<button class="close-btn" onclick="closeReportModal()">×</button></div>
+        <div class="modal-body"><textarea class="report-textarea" id="reportText" placeholder="Enter your feedback..."></textarea></div>
+        <div class="modal-footer"><button class="modal-btn cancel-btn" onclick="closeReportModal()">Cancel</button><button class="modal-btn send-btn" onclick="sendReport()">Send</button></div>
+    </div>
+
+    <script>
+        const questions = @Html.Raw(Model.QuestionsJson);
+        const resultKey = '@Model.ResultKey';
+        const resourceBaseUrl = 'https://localhost:7078'; // Đã khắc phục lỗi media
+        const studyInfo = {
+            timeSpent: @Model.StudyInfo.TimeSpent,
+            maximumTime: @Model.StudyInfo.MaximumTime,
+            testName: '@Html.Raw(Model.StudyInfo.TestName)',
+            member: '@Html.Raw(Model.StudyInfo.MemberName)',
+            practiceScore: @Model.StudyInfo.PracticeScore, // Đã khắc phục lỗi điểm = 0
+            part: @Model.PartSelect
+        };
+
+        function getPartIcon(part) {
+            switch (part) {
+                case 1: return 'fa-camera';
+                case 2: return 'fa-question-circle';
+                case 3: return 'fa-comments';
+                case 4: return 'fa-bullhorn';
+                case 5: return 'fa-edit';
+                case 6: return 'fa-file-alt';
+                case 7: return 'fa-newspaper';
+                default: return 'fa-question';
+            }
+        }
+
+        function renderStudyInfo() {
+            const container = document.getElementById('test-info-left');
+            const iconClass = getPartIcon(studyInfo.part);
+            let html = `
+                <h2><i class="fas ${iconClass}"></i> ${studyInfo.testName}</h2>
+                <div class="score-display-study">
+                    <span class="test-info-label">Accuracy Score</span>
+                    <span class="test-info-value">${studyInfo.practiceScore}<span class="percent-sign">%</span></span>
+                </div>
+                <div class="test-info-item">
+                    <span class="test-info-label">Student:</span>
+                    <span class="test-info-value">${studyInfo.member}</span>
+                </div>
+                <div class="test-info-item">
+                    <span class="test-info-label">Time Spent:</span>
+                    <span class="test-info-value">${studyInfo.timeSpent} min</span>
+                </div>
+                <div class="test-info-item">
+                    <span class="test-info-label">Maximum Time:</span>
+                    <span class="test-info-value">${studyInfo.maximumTime} min</span>
+                </div>
+                <button class="exit-btn" onclick="exitResult()">Exit</button>
+            `;
+            container.innerHTML = html;
+        }
+
+        function renderContent() {
+            const container = document.getElementById('main-content-wrapper');
+            container.innerHTML = '';
+            questions.filter(q => q.parent === null).forEach(question => {
+                if (question.children && question.children.length > 0) {
+                    renderComplexPart(container, question);
+                } else {
+                    renderSimplePart(container, [question]);
+                }
+            });
+        }
+
+        function renderSimplePart(container, questionsToRender) {
+             questionsToRender.forEach(question => {
+                const isCorrect = question.isCorrect === true;
+                const isNotAnswered = !question.userAnswerKey;
+                const shouldShowExplanation = (isNotAnswered || !isCorrect) && question.explanation;
+
+                let html = `
+                    <div class="question-container ${isCorrect ? 'correct' : 'incorrect'}" data-question-key="${question.questionKey}">
+                        <h2>Question ${question.order}</h2>
+                        ${question.questionImage ? `<img src="${resourceBaseUrl}${question.questionImage}" class="question-image">` : ''}
+                        ${question.questionVoice ? `<audio controls class="question-audio"><source src="${resourceBaseUrl}${question.questionVoice}"></audio>` : ''}
+                        ${question.questionText ? `<div class="question-text">${question.questionText.replace(/\n/g, '<br>')}</div>` : ''}
+                        <div class="answer-options">
+                `;
+                question.answers.forEach((answer, idx) => {
+                    const label = String.fromCharCode(65 + idx);
+                    let optionClass = "answer-option";
+                    if(answer.answerKey === question.userAnswerKey && !answer.answerCorrect) optionClass += " selected";
+                    if(answer.answerCorrect) optionClass += " correct-answer";
+                    html += `<div class="${optionClass}"><label><span class="label-text">${label}</span>: <span class="answer-content">${answer.answerText || ''}</span></label></div>`;
+                });
+                html += `</div>
+                         <div class="result-message ${isCorrect ? 'correct' : 'incorrect'}">
+                            ${isCorrect ? 'You answered correctly' : (isNotAnswered ? 'You did not answer' : 'You answered incorrectly')}
+                         </div>
+                         ${shouldShowExplanation ? `<span class="solution-label">Solution:</span><div class="explanation">${question.explanation}</div>` : ''}
+                         <button class="report-btn" onclick="openReportModal('${question.questionKey}')"><i class="fas fa-flag"></i> Report</button>
+                         </div>`;
+                container.insertAdjacentHTML('beforeend', html);
+            });
+        }
+
+        function renderComplexPart(container, parent) {
+             let html = `
+                <div class="part3-container" id="${parent.questionKey}">
+                    <div class="part3-left">
+                        <h2>${parent.part <= 4 ? 'Conversation' : 'Reading'}</h2>
+                        ${parent.questionImage ? `<img src="${resourceBaseUrl}${parent.questionImage}" class="question-image">` : ''}
+                        ${parent.questionVoice ? `<audio controls class="question-audio"><source src="${resourceBaseUrl}${parent.questionVoice}"></audio>` : ''}
+                        ${parent.questionText ? `<div class="question-text">${parent.questionText.replace(/\n/g, '<br>')}</div>` : ''}
+                    </div>
+                    <div class="part3-right">
+            `;
+            parent.children.forEach(child => {
+                const isCorrect = child.isCorrect === true;
+                const isNotAnswered = !child.userAnswerKey;
+                const shouldShowExplanation = (isNotAnswered || !isCorrect) && child.explanation;
+
+                html += `<div class="sub-question ${isCorrect ? 'correct' : 'incorrect'}" data-question-key="${child.questionKey}">
+                            <h4>Question ${child.order}${child.questionText ? `: ${child.questionText}` : ''}</h4>
+                            <div class="answer-options">`;
+                child.answers.forEach((answer, idx) => {
+                    const label = String.fromCharCode(65 + idx);
+                    let optionClass = "answer-option";
+                    if(answer.answerKey === child.userAnswerKey && !answer.answerCorrect) optionClass += " selected";
+                    if(answer.answerCorrect) optionClass += " correct-answer";
+                    html += `<div class="${optionClass}"><label><span class="label-text">${label}</span>: <span class="answer-content">${answer.answerText || ''}</span></label></div>`;
+                });
+                html += `</div>
+                         <div class="result-message ${isCorrect ? 'correct' : 'incorrect'}">
+                            ${isCorrect ? 'You answered correctly' : (isNotAnswered ? 'You did not answer' : 'You answered incorrectly')}
+                         </div>
+                         ${shouldShowExplanation ? `<span class="solution-label">Solution:</span><div class="explanation">${child.explanation}</div>` : ''}
+                         <button class="report-btn" onclick="openReportModal('${child.questionKey}')"><i class="fas fa-flag"></i> Report</button>
+                         </div>`;
+            });
+            html += '</div></div>';
+            container.insertAdjacentHTML('beforeend', html);
+        }
+
+        function updateQuestionList() {
+            const listContainer = document.getElementById('question-list');
+            let html = '';
+            let displayedQuestions = questions.flatMap(q => (q.children && q.children.length > 0) ? q.children : (q.parent === null ? [q] : []));
+            displayedQuestions.sort((a, b) => a.order - b.order);
+
+            displayedQuestions.forEach(q => {
+                const isCorrect = q.isCorrect === true;
+                html += `<a href="#" class="question-circle ${q.userAnswerKey ? (isCorrect ? 'correct' : 'incorrect') : 'incorrect'}" onclick="scrollToQuestion('${q.parent || q.questionKey}', this)">${q.order}</a>`;
+            });
+            listContainer.innerHTML = html;
+            document.getElementById('progress-text').textContent = `${displayedQuestions.filter(q => q.userAnswerKey).length}/${displayedQuestions.length}`;
+        }
+
+        function scrollToQuestion(questionKey, circleElement) {
+            document.querySelectorAll('.question-circle').forEach(c => c.classList.remove('active'));
+            if(circleElement) circleElement.classList.add('active');
+
+            let element = document.querySelector(`[data-question-key="${questionKey}"]`);
+            if (element) {
+                const parentContainer = element.closest('.part3-container, .question-container');
+                if (parentContainer) {
+                    parentContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+        }
+
+        function exitResult() { window.location.href = '/Study'; }
+
+        // --- CÁC HÀM CÒN LẠI (MODAL, TOAST, SENDREPORT) GIỮ NGUYÊN ---
+        let currentReportKey = null;
+        function openReportModal(questionKey) {
+            currentReportKey = questionKey;
+            document.getElementById('reportModalBackdrop').style.display = 'block';
+            document.getElementById('reportModal').classList.add('show');
+        }
+
+        function closeReportModal() {
+            const modal = document.getElementById('reportModal');
+            modal.classList.add('hide');
+            setTimeout(() => {
+                modal.classList.remove('show', 'hide');
+                document.getElementById('reportModalBackdrop').style.display = 'none';
+                document.getElementById('reportText').value = '';
+                currentReportKey = null;
+            }, 300);
+        }
+
+        async function sendReport() {
+            const feedbackText = document.getElementById('reportText').value.trim();
+            if (!feedbackText) return showToast('Please enter your feedback.', 'warning');
+
+            let question = questions.flatMap(q => q.children || [q]).find(q => q.questionKey === currentReportKey);
+            if (!question) return showToast('Could not find question to report.', 'error');
+
+            const payload = {
+                ResultKey: resultKey,
+                QuestionKey: currentReportKey,
+                FeedbackText: feedbackText,
+                Part: question.part,
+                Parent: question.parent
+            };
+
+            try {
+                const response = await fetch('/Study/ResultStudy?handler=SubmitFeedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    showToast('Feedback sent successfully!', 'success');
+                    closeReportModal();
+                    const notifyPayload = {
+                        QuestionKey: currentReportKey,
+                        Part: question.part,
+                        Member: studyInfo.member,
+                        Summary: feedbackText
+                    };
+                    await fetch('https://localhost:7078/api/notify', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'ApiKey': '@Model.ApiKey'
+                        },
+                        body: JSON.stringify(notifyPayload)
+                    });
+                } else {
+                    showToast(`Failed to send feedback: ${data.message || 'Unknown error'}`, 'error');
+                }
+            } catch (err) {
+                console.error('Error sending feedback:', err);
+                showToast('An error occurred while sending feedback.', 'error');
+            }
+        }
+
+        function showToast(message, type = 'info', duration = 3000) {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.textContent = message;
+            toast.style.cssText = `min-width: 200px; margin-top: 10px; padding: 10px 20px; color: #fff; border-radius: 5px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); opacity: 0; transition: opacity 0.5s ease;`;
+            switch(type) {
+                case 'success': toast.style.backgroundColor = '#4caf50'; break;
+                case 'error': toast.style.backgroundColor = '#f44336'; break;
+                case 'warning': toast.style.backgroundColor = '#ff9800'; break;
+                default: toast.style.backgroundColor = '#2196f3';
+            }
+            container.appendChild(toast);
+            requestAnimationFrame(() => { toast.style.opacity = '1'; });
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.addEventListener('transitionend', () => toast.remove());
+            }, duration);
+        }
+
+        window.onload = function () {
+            renderStudyInfo();
+            renderContent();
+            updateQuestionList();
+        };
+    </script>
+</body>
+</html>

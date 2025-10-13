@@ -17,28 +17,7 @@
 
     <link rel="stylesheet" href="/css/Test.css" />
 
-    <style>
-       
-        .sidebar-left {
-            justify-content: center;
-            align-items: center;
-        }
 
-            .sidebar-left .part-btn {
-                flex: 0 0 auto; /* Bỏ thuộc tính flex: 1 để nút không bị kéo dài ra */
-                width: 80%; /* Chiều rộng của nút */
-                height: 100px; /* Chiều cao của nút */
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-            }
-
-        .part-btn-icon {
-            font-size: 2.5rem;
-            margin-bottom: 5px;
-        }
-    </style>
 </head>
 <body>
     @* Cấu trúc Header, Main Content, Sidebar Right gần như giữ nguyên từ Test.cshtml *@
@@ -122,133 +101,109 @@
             </div>
         </div>
     </div>
-
+    <div id="confirm-submit-modal" class="modal">
+        <div class="modal-content">
+            <h2 class="modal-title">Submit Study Session</h2>
+            <p class="modal-text">Are you sure you want to finish and submit this study session?</p>
+            <div class="modal-buttons">
+                <button id="cancel-submit-btn" class="modal-btn cancel-btn">Cancel</button>
+                <button id="confirm-submit-btn" class="modal-btn confirm-btn">Confirm</button>
+            </div>
+        </div>
+    </div>
     <script>
-        // Lấy dữ liệu từ Model
-        const rawJson = '@Html.Raw(Model.QuestionsJson)';
-        const questions = rawJson ? JSON.parse(rawJson) : [];
-        const testKey = '@Model.TestKey';
+        /*
+        =================================================================================
+        1. KHAI BÁO BIẾN TOÀN CỤC VÀ HẰNG SỐ
+        =================================================================================
+        */
+        let timerInterval;
+        let updateTimeInterval;
+
+        // Lấy dữ liệu trực tiếp từ Razor Model (không dùng chuỗi)
+        const questions = @Html.Raw(Model.QuestionsJson);
         const resultKey = '@Model.ResultKey';
+        const testKey = '@Model.TestKey';
         const currentPart = @Model.SelectedPart;
         let timeRemaining = @Model.TimeRemaining.TotalSeconds;
         const resourceBaseUrl = 'https://localhost:7078';
 
-        // Các biến trạng thái khác
         let flaggedQuestions = new Set();
         let questionStates = {};
         let debounceTimers = {};
-            const handleBeforeUnload = (event) => {
-            // Đây là cách chuẩn để kích hoạt hộp thoại xác nhận của trình duyệt
+        let sidebarState = 0;
+
+        /*
+        =================================================================================
+        2. ĐỊNH NGHĨA TẤT CẢ CÁC HÀM
+        =================================================================================
+        */
+
+        // Xử lý beforeunload để hiển thị hộp thoại xác nhận
+        const handleBeforeUnload = (event) => {
             event.preventDefault();
-            event.returnValue = ''; // Dòng này là bắt buộc cho một số trình duyệt
+            event.returnValue = '';
         };
 
-        // --- LOGIC MỚI: CẬP NHẬT THỜI GIAN ĐÃ LÀM LÊN SERVER ---
-        setInterval(async () => {
-            try {
-                await fetch('/Study/Study?handler=UpdateTimeSpent', { // Gọi đến handler mới
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ resultKey: resultKey })
-                });
-            } catch (error) {
-                console.error('Failed to update time spent:', error);
+                    // Dán hàm này vào vị trí của hàm debounce cũ
+        function debouncedSaveAnswer(questionKey, answerKey, timeSpent, part) {
+            // Nếu đã có một lần hẹn giờ cho câu hỏi này, hãy hủy nó đi
+            if (debounceTimers[questionKey]) {
+                clearTimeout(debounceTimers[questionKey]);
             }
-        }, 60000); // Cập nhật mỗi 60 giây (1 phút)
 
-        // --- CÁC HÀM JAVASCRIPT ĐƯỢC TÁI SỬ DỤNG VÀ ĐƠN GIẢN HÓA TỪ TEST.CSHTML ---
-
-        // Hàm render nội dung, đã được đơn giản hóa
-        function renderContent() {
-            const container = document.getElementById('main-content-wrapper');
-            // Không cần switchPart, chỉ cần render dựa trên currentPart
-            if ([1, 2, 5].includes(currentPart)) {
-                renderSimplePart(container);
-            } else {
-                renderComplexPart(container);
+            // Tạo một lần hẹn giờ mới CHỈ cho câu hỏi này
+            debounceTimers[questionKey] = setTimeout(() => {
+                saveAnswer(questionKey, answerKey, timeSpent, part);
+            }, 1000); // Vẫn delay 1 giây
+        }
+     
+        function initializeQuestionState(questionKey, part) {
+            if (!questionStates[questionKey]) {
+                questionStates[questionKey] = {
+                    isVisible: false,
+                    startTime: null,
+                    lastVisibleTime: null, // <-- Đổi tên từ lastAnswerTime
+                    timeSpent: 0,
+                    answerChanges: 0,
+                    part: part
+                };
             }
-            setupIntersectionObserver();
         }
 
-        // Hàm cập nhật danh sách câu hỏi, đã được đơn giản hóa
-        function updateQuestionList() {
-            const listContainer = document.getElementById('question-list');
-            const answeredContainer = document.getElementById('answered-count');
-            let html = '';
-            let displayedQuestions = [];
 
-            if (currentPart <= 2 || currentPart === 5) {
-                displayedQuestions = questions.filter(q => q.parent === null);
-            } else {
-                   // 1. Dùng .filter để lấy TẤT CẢ các câu hỏi cha
-        const parentQuestions = questions.filter(q => q.parent === null);
-        // 2. Dùng .flatMap để tạo một danh sách duy nhất chứa TẤT CẢ câu hỏi con từ tất cả các câu cha
-        displayedQuestions = parentQuestions.flatMap(p => p.children || []);
-            }
+                 // Áp dụng cho cả Study.cshtml và Test.cshtml
+        function setupIntersectionObserver() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    const questionKey = entry.target.getAttribute('data-question-key');
+                    if (!questionKey || !questionStates[questionKey]) return;
 
-            const answeredCount = displayedQuestions.filter(q => q.userAnswerKey && q.userAnswerKey !== '').length;
-            const totalCount = displayedQuestions.length;
-            answeredContainer.innerHTML = `Answered: ${answeredCount}/${totalCount}`;
+                    const state = questionStates[questionKey];
 
-            displayedQuestions.forEach(q => {
-                const isSelected = q.userAnswerKey && q.userAnswerKey !== '';
-                const isFlagged = flaggedQuestions.has(q.questionKey);
-                html += `<a href="#" class="question-circle ${isSelected ? 'selected' : ''} ${isFlagged ? 'flagged' : ''}" data-key="${q.questionKey}" onclick="scrollToQuestion('${q.questionKey}')">${q.order}</a>`;
-            });
-            listContainer.innerHTML = html;
-        }
-
-        // Hàm nộp bài, gọi đến handler mới OnPostSubmitStudy
-        function submitStudy() {
-            showConfirmationModal(
-                'Submit Study Session',
-                'Are you sure you want to finish and submit this study session?',
-                async () => {
-                    try {
-                        const response = await fetch('/Study/Study?handler=SubmitStudy', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ resultKey: resultKey })
-                        });
-                        const data = await response.json();
-                        if (response.ok && data.success) {
-                            window.removeEventListener('beforeunload', handleBeforeUnload);
-                            window.location.href = `/Test/ResultTest?resultKey=${resultKey}`;
-                        } else {
-                            alert('Error submitting session: ' + (data.message || 'Unknown error'));
+                    if (entry.isIntersecting) {
+                        // KHI CÂU HỎI HIỆN RA: chỉ ghi lại thời điểm nó bắt đầu được nhìn thấy.
+                        state.lastVisibleTime = Date.now();
+                    } else {
+                        // KHI CÂU HỎI BIẾN MẤT: tính toán thời gian đã nhìn thấy và cộng dồn.
+                        if (state.lastVisibleTime) {
+                            const timeDiff = (Date.now() - state.lastVisibleTime) / 1000;
+                            state.timeSpent += timeDiff;
+                            state.lastVisibleTime = null; // Reset lại để lần sau tính tiếp
                         }
-                    } catch (error) {
-                        console.error('Error submitting session:', error);
-                        alert('An error occurred while submitting the session.');
                     }
-                }
-            );
+                });
+            }, { threshold: 0.5 });
+
+            document.querySelectorAll('.question-container, .sub-question').forEach(element => {
+                const questionKey = element.getAttribute('data-question-key');
+                if (questionKey) observer.observe(element);
+            });
         }
 
-        function exitTest() {
-            showConfirmationModal(
-                'Exit Study Session',
-                'Are you sure you want to exit? Your progress will be saved.',
-                () => {
-                    window.removeEventListener('beforeunload', handleBeforeUnload);
-                    window.location.href = '/Study'; // Quay về trang chọn Part
-                }
-            );
-        }
-
-       
-                  function debounce(func, wait) {
-            let timeout;
-            return function (...args) {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(this, args), wait);
-            };
-        }
-
-        // 2. Hàm saveAnswer (định nghĩa riêng)
-        async function saveAnswer(questionKey, answerKey, timeSpent, part) {
+        // ======= Giao tiếp server: lưu đáp án, flagged, update time =======
+          async function saveAnswer(questionKey, answerKey, timeSpent, part) {
             try {
-                // URL đã được sửa lại cho đúng
                 const response = await fetch('/Study/Study?handler=SaveAnswer', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -262,61 +217,18 @@
                 });
                 const data = await response.json();
                 if (!response.ok || !data.success) {
-                    console.error('Error saving answer:', data.message || 'Unknown error');
+                    console.error('Error saving answer for question ' + questionKey + ':', data.message || 'Unknown error');
                 }
             } catch (error) {
-                console.error('Error saving answer:', error);
+                console.error('Error saving answer for question ' + questionKey + ':', error);
             }
         }
+       
 
-        // 3. Tạo biến debouncedSaveAnswer (đặt ở ngoài, sau khi đã định nghĩa 2 hàm trên)
-        const debouncedSaveAnswer = debounce(saveAnswer, 1000);
-                function initializeQuestionState(questionKey, part) {
-            if (!questionStates[questionKey]) {
-                questionStates[questionKey] = {
-                    isVisible: false,
-                    hasInteracted: false,
-                    startTime: null,
-                    lastAnswerTime: null,
-                    timeSpent: 0,
-                    answerChanges: 0,
-                    part: part
-                };
-            }
-        }
-                function setupIntersectionObserver() {
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    const questionKey = entry.target.getAttribute('data-question-key');
-                    if (!questionStates[questionKey]) return;
-
-                    if (entry.isIntersecting) {
-                        questionStates[questionKey].isVisible = true;
-                        checkStartTime(questionKey);
-                    } else {
-                        questionStates[questionKey].isVisible = false;
-                    }
-                });
-            }, {
-                threshold: 0.5
-            });
-
-            document.querySelectorAll('.question-container, .sub-question').forEach(element => {
-                const questionKey = element.getAttribute('data-question-key');
-                if (questionKey) {
-                    observer.observe(element);
-                }
-            });
-        }
-                function checkStartTime(questionKey) {
-            const state = questionStates[questionKey];
-            if (state.isVisible && state.hasInteracted && !state.startTime) {
-                state.startTime = Date.now();
-            }
-        }
-                async function loadFlaggedQuestions() {
+        async function loadFlaggedQuestions() {
             try {
-                const response = await fetch(`/MainTest?handler=FlaggedQuestions&resultKey=${resultKey}`);
+                      // THAY ĐỔI DÒNG NÀY
+        const response = await fetch(`/Study/Study?handler=FlaggedQuestions&resultKey=${resultKey}`);
                 const data = await response.json();
                 if (response.ok && Array.isArray(data)) {
                     flaggedQuestions = new Set(data);
@@ -328,13 +240,14 @@
                 console.error('Error loading flagged questions:', error);
             }
         }
-              async function saveFlaggedQuestion(questionKey, isFlagged) {
+
+        async function saveFlaggedQuestion(questionKey, isFlagged) {
             try {
-                const response = await fetch('/MainTest?handler=SaveFlaggedQuestion', {
+                       // THAY ĐỔI DÒNG NÀY
+        const response = await fetch('/Study/Study?handler=SaveFlaggedQuestion', {
+       
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         resultKey: resultKey,
                         questionKey: questionKey,
@@ -350,22 +263,54 @@
             }
         }
 
+        // Toggle flagged
         async function toggleFlag(questionKey) {
             const flagElement = document.querySelector(`.flag-icon[data-question-key="${questionKey}"]`);
             const isFlagged = flaggedQuestions.has(questionKey);
 
             if (isFlagged) {
                 flaggedQuestions.delete(questionKey);
-                flagElement.classList.remove('flagged');
+                if (flagElement) flagElement.classList.remove('flagged');
                 await saveFlaggedQuestion(questionKey, false);
             } else {
                 flaggedQuestions.add(questionKey);
-                flagElement.classList.add('flagged');
+                if (flagElement) flagElement.classList.add('flagged');
                 await saveFlaggedQuestion(questionKey, true);
             }
             updateQuestionList();
         }
-              function selectAnswer(questionKey, answerKey) {
+
+        // ======= Cập nhật UI danh sách câu hỏi (sidebar) =======
+        function updateQuestionList() {
+            const listContainer = document.getElementById('question-list');
+            const answeredContainer = document.getElementById('answered-count');
+            if (!listContainer || !answeredContainer) return;
+
+            let html = '';
+            let displayedQuestions = [];
+
+            if (currentPart <= 2 || currentPart === 5) {
+                displayedQuestions = questions.filter(q => q.parent === null);
+            } else {
+                const parentQuestions = questions.filter(q => q.parent === null);
+                displayedQuestions = parentQuestions.flatMap(p => p.children || []);
+            }
+
+            const answeredCount = displayedQuestions.filter(q => q.userAnswerKey && q.userAnswerKey !== '').length;
+            const totalCount = displayedQuestions.length;
+            answeredContainer.innerHTML = `Answered: ${answeredCount}/${totalCount}`;
+
+            displayedQuestions.forEach(q => {
+                const isSelected = q.userAnswerKey && q.userAnswerKey !== '';
+                const isFlagged = flaggedQuestions.has(q.questionKey);
+                html += `<a href="#" class="question-circle ${isSelected ? 'selected' : ''} ${isFlagged ? 'flagged' : ''}" data-key="${q.questionKey}" onclick="scrollToQuestion('${q.questionKey}')">${q.order}</a>`;
+            });
+
+            listContainer.innerHTML = html;
+        }
+
+        // ======= Chọn/Bỏ chọn đáp án =======
+        function updateAnswer(questionKey, answerKey) {
             let question = questions.find(q => q.questionKey === questionKey);
             if (!question) {
                 for (const parent of questions) {
@@ -376,76 +321,70 @@
                 }
             }
 
-            if (!question) {
+            if (question) {
+                question.userAnswerKey = answerKey; // có thể là null
+                const answerOptions = document.querySelectorAll(`.answer-option input[name="answer_${questionKey}"]`);
+                answerOptions.forEach(option => {
+                    const parent = option.parentElement;
+                    if (answerKey === null) {
+                        option.checked = false;
+                        parent.classList.remove('selected');
+                    } else if (option.value === answerKey) {
+                        parent.classList.add('selected');
+                    } else {
+                        parent.classList.remove('selected');
+                    }
+                });
+                updateQuestionList();
+                updateProgressCircle();
+            } else {
                 console.error(`Question with key ${questionKey} not found.`);
-                return;
             }
+        }
+
+        function selectAnswer(questionKey, answerKey) {
+            let question = questions.find(q => q.questionKey === questionKey);
+            if (!question) {
+                for (const parent of questions) {
+                    if (parent.children) {
+                        question = parent.children.find(child => child.questionKey === questionKey);
+                        if (question) break;
+                    }
+                }
+            }
+            if (!question) return;
 
             const radioButton = document.querySelector(`input[name="answer_${questionKey}"][value="${answerKey}"]`);
             if (!radioButton) return;
 
-            // Kiểm tra xem đáp án đã được chọn chưa
             const isAlreadySelected = question.userAnswerKey === answerKey;
+            const state = questionStates[questionKey];
+            const currentTime = Date.now();
 
-            if (isAlreadySelected) {
-                // Bỏ chọn đáp án
+            // **LOGIC TÍNH TOÁN MỚI**
+            // 1. Tính toán và cộng nốt phần thời gian từ lúc câu hỏi hiện ra cho tới lúc click.
+            if (state.lastVisibleTime) {
+                const timeDiff = (currentTime - state.lastVisibleTime) / 1000;
+                state.timeSpent += timeDiff;
+            }
+
+            // 2. Cập nhật lại thời điểm cuối cùng, chuẩn bị cho lần tính toán tiếp theo.
+            state.lastVisibleTime = currentTime;
+            state.answerChanges += 1;
+
+            // Phần logic còn lại giữ nguyên
+            if (isAlreadySelected) { // Bỏ chọn
                 radioButton.checked = false;
-                updateAnswer(questionKey, null); // Đặt userAnswerKey về null
-
-                const state = questionStates[questionKey];
-                if (state && state.startTime) {
-                    const currentTime = Date.now();
-                    let timeDiff;
-
-                    if (state.lastAnswerTime) {
-                        timeDiff = (currentTime - state.lastAnswerTime) / 1000;
-                        state.answerChanges += 1;
-                    } else {
-                        timeDiff = (currentTime - state.startTime) / 1000;
-                    }
-
-                    state.timeSpent += timeDiff;
-                    state.lastAnswerTime = currentTime;
-
-                    // Gửi request với selectAnswerKey = null
-                    debouncedSaveAnswer(
-                        questionKey,
-                        null, // Bỏ chọn
-                        Math.round(state.timeSpent),
-                        state.part
-                    );
-                }
-            } else {
-                // Chọn đáp án mới
+                updateAnswer(questionKey, null);
+                debouncedSaveAnswer(questionKey, null, Math.round(state.timeSpent), state.part);
+            } else { // Chọn mới
                 radioButton.checked = true;
                 updateAnswer(questionKey, answerKey);
-
-                const state = questionStates[questionKey];
-                if (state && state.startTime) {
-                    const currentTime = Date.now();
-                    let timeDiff;
-
-                    if (state.lastAnswerTime) {
-                        timeDiff = (currentTime - state.lastAnswerTime) / 1000;
-                        state.answerChanges += 1;
-                    } else {
-                        timeDiff = (currentTime - state.startTime) / 1000;
-                    }
-
-                    state.timeSpent += timeDiff;
-                    state.lastAnswerTime = currentTime;
-
-                    debouncedSaveAnswer(
-                        questionKey,
-                        answerKey,
-                        Math.round(state.timeSpent),
-                        state.part
-                    );
-                }
+                debouncedSaveAnswer(questionKey, answerKey, Math.round(state.timeSpent), state.part);
             }
         }
-
-              function renderSimplePart(container) {
+        // ======= Render ==========================
+        function renderSimplePart(container) {
             const partQuestions = questions.filter(q => Number(q.part) === currentPart && q.parent === null);
             let html = '';
             partQuestions.forEach(question => {
@@ -485,23 +424,11 @@
             });
             container.innerHTML = html;
 
-            document.querySelectorAll('.question-container, .sub-question').forEach(element => {
-                const questionKey = element.getAttribute('data-question-key');
-                if (questionKey) {
-                    const answerOptions = element.querySelector('.answer-options');
-                    if (answerOptions) {
-                        answerOptions.addEventListener('mouseover', () => {
-                            if (questionStates[questionKey]) {
-                                questionStates[questionKey].hasInteracted = true;
-                                checkStartTime(questionKey);
-                            }
-                        });
-                    }
-                }
-            });
+           
 
             document.querySelectorAll('.flag-icon').forEach(flag => {
-                flag.addEventListener('click', () => {
+                flag.addEventListener('click', (ev) => {
+                    ev.stopPropagation();
                     const questionKey = flag.getAttribute('data-question-key');
                     toggleFlag(questionKey);
                 });
@@ -570,25 +497,14 @@
                 });
                 html += '</div></div>';
             });
+
             container.innerHTML = html;
 
-            document.querySelectorAll('.question-container, .sub-question').forEach(element => {
-                const questionKey = element.getAttribute('data-question-key');
-                if (questionKey) {
-                    const answerOptions = element.querySelector('.answer-options');
-                    if (answerOptions) {
-                        answerOptions.addEventListener('mouseover', () => {
-                            if (questionStates[questionKey]) {
-                                questionStates[questionKey].hasInteracted = true;
-                                checkStartTime(questionKey);
-                            }
-                        });
-                    }
-                }
-            });
+          
 
             document.querySelectorAll('.flag-icon').forEach(flag => {
-                flag.addEventListener('click', () => {
+                flag.addEventListener('click', (ev) => {
+                    ev.stopPropagation();
                     const questionKey = flag.getAttribute('data-question-key');
                     toggleFlag(questionKey);
                 });
@@ -596,18 +512,28 @@
 
             setupIntersectionObserver();
         }
-                function scrollToQuestion(questionKey) {
+
+        // Scroll tới câu hỏi
+        function scrollToQuestion(questionKey) {
             const element = document.getElementById(`question-${questionKey}`);
-            if (element) {
-                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
+            if (element) element.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-              function showConfirmationModal(title, message, onConfirm) {
+
+        // Modal xác nhận (dùng chung)
+        function showConfirmationModal(title, message, onConfirm) {
             const modal = document.getElementById('confirmation-modal');
             const modalTitle = document.getElementById('modal-title');
             const modalMessage = document.getElementById('modal-message');
             const confirmBtn = document.getElementById('modal-confirm');
             const cancelBtn = document.getElementById('modal-cancel');
+
+            if (!modal) {
+                // fallback: confirm browser
+                if (confirm(message)) {
+                    if (onConfirm) onConfirm();
+                }
+                return;
+            }
 
             modalTitle.textContent = title;
             modalMessage.textContent = message;
@@ -622,168 +548,99 @@
                 modal.classList.remove('active');
             };
         }
-             function updateAnswer(questionKey, answerKey) {
-            let question = questions.find(q => q.questionKey === questionKey);
-            if (!question) {
-                for (const parent of questions) {
-                    if (parent.children) {
-                        question = parent.children.find(child => child.questionKey === questionKey);
-                        if (question) break;
-                    }
-                }
-            }
 
-            if (question) {
-                question.userAnswerKey = answerKey; // Có thể là null khi bỏ chọn
-                const answerOptions = document.querySelectorAll(`.answer-option input[name="answer_${questionKey}"]`);
-                answerOptions.forEach(option => {
-                    const parent = option.parentElement;
-                    if (answerKey === null) {
-                        option.checked = false;
-                        parent.classList.remove('selected');
-                    } else if (option.value === answerKey) {
-                        parent.classList.add('selected');
-                    } else {
-                        parent.classList.remove('selected');
-                    }
+        // Exit test (quay về trang Study)
+        function exitTest() {
+            showConfirmationModal(
+                'Exit Study Session',
+                'Are you sure you want to exit? Your progress will be saved.',
+                () => {
+                    window.removeEventListener('beforeunload', handleBeforeUnload);
+                    window.location.href = '/Study';
+                }
+            );
+        }
+
+        // ======= Submit study (tự động hoặc thủ công) =======
+        async function submitStudy() {
+            const confirmModal = document.getElementById('confirm-submit-modal');
+            const confirmBtn = document.getElementById('confirm-submit-btn');
+            const cancelBtn = document.getElementById('cancel-submit-btn');
+
+            // nếu không có modal, fallback dùng confirm
+            if (!confirmModal) {
+                if (!confirm('Submit study session?')) return;
+            } else {
+                confirmModal.style.display = 'block';
+                const userConfirmed = await new Promise(resolve => {
+                    confirmBtn.onclick = () => { confirmModal.style.display = 'none'; resolve(true); };
+                    cancelBtn.onclick = () => { confirmModal.style.display = 'none'; resolve(false); };
                 });
-                updateQuestionList();
-            } else {
-                console.error(`Question with key ${questionKey} not found.`);
+                if (!userConfirmed) return;
             }
-        }
-               function toggleSidebar() {
-            const leftSidebar = document.querySelector('.sidebar-left');
-            const rightSidebar = document.querySelector('.sidebar-right');
 
-            // Hành vi trên màn hình nhỏ (dưới 768px)
-            if (window.innerWidth <= 768) {
-                sidebarState = (sidebarState + 1) % 3; // Chuyển trạng thái: 0 -> 1 -> 2 -> 0
+            // Dừng timer & update interval
+            clearInterval(timerInterval);
+            clearInterval(updateTimeInterval);
 
-                if (sidebarState === 1) {
-                    // Trạng thái 1: Hiển thị sidebar-left, ẩn sidebar-right
-                    leftSidebar.classList.add('active');
-                    rightSidebar.classList.remove('active');
-                } else if (sidebarState === 2) {
-                    // Trạng thái 2: Ẩn sidebar-left, hiển thị sidebar-right
-                    leftSidebar.classList.remove('active');
-                    rightSidebar.classList.add('active');
+            try {
+                const response = await fetch('/Study/Study?handler=SubmitStudy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        resultKey: resultKey,
+                        selectedPart: currentPart
+                    })
+                });
+
+                if (response.ok) {
+                    window.location.href = `/Study/ResultStudy?TestKey=${testKey}&ResultKey=${resultKey}&PartSelect=${currentPart}`;
                 } else {
-                    // Trạng thái 0: Ẩn cả hai
-                    leftSidebar.classList.remove('active');
-                    rightSidebar.classList.remove('active');
+                    console.error('Failed to submit study session.');
+                    alert('An error occurred while submitting. Please try again.');
                 }
-            } else {
-                // Hành vi trên màn hình lớn (trên 768px): Giữ nguyên như cũ
-                leftSidebar.classList.toggle('active');
-                rightSidebar.classList.toggle('active');
+            } catch (error) {
+                console.error('Error submitting study session:', error);
+                alert('An error occurred. Please check your connection and try again.');
             }
         }
+
+        // ======= Timer: đếm ngược + cập nhật lên server mỗi phút (đã hợp nhất) =======
         function startTimer() {
             const timerElement = document.getElementById('timer');
-            setInterval(() => {
+            if (!timerElement) return;
+
+            // Đồng hồ đếm ngược mỗi giây
+            timerInterval = setInterval(() => {
                 if (timeRemaining > 0) {
                     timeRemaining--;
-                    let minutes = Math.floor(timeRemaining / 60);
-                    let seconds = Math.floor(timeRemaining % 60);
-                    timerElement.textContent = `Time: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                    if (timeRemaining <= 300) {
-                        timerElement.classList.add('warning');
-                    }
+                    const minutes = Math.floor(timeRemaining / 60);
+                    const seconds = Math.round(timeRemaining % 60);
+                    timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
                 } else {
-                    timerElement.textContent = 'Time: 00:00';
+                    clearInterval(timerInterval);
+                    timerElement.textContent = "00:00";
+                    // tự động nộp
                     submitStudy();
                 }
             }, 1000);
+
+            // Cập nhật thời gian đã làm lên server mỗi 60 giây
+            updateTimeInterval = setInterval(() => {
+                try {
+                    fetch('/Study/Study?handler=UpdateTimeSpent', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ resultKey: resultKey })
+                    });
+                } catch (error) {
+                    console.error('Failed to update time spent:', error);
+                }
+            }, 60000);
         }
 
-             window.onload = async function () {
-                 window.addEventListener('beforeunload', handleBeforeUnload);
-                await loadFlaggedQuestions();
-            startTimer();
-            renderContent();
-            updateQuestionList();
-
-            questions.forEach(q => {
-                initializeQuestionState(q.questionKey, q.part);
-                if (q.children) {
-                    q.children.forEach(child => initializeQuestionState(child.questionKey, child.part));
-                }
-            });
-
-            document.getElementById('question-list').addEventListener('click', function(event) {
-                if (event.target.classList.contains('question-circle')) {
-                    event.preventDefault();
-                    const questionKey = event.target.getAttribute('data-key');
-                    if (questionKey) {
-                        scrollToQuestion(questionKey);
-                    }
-                }
-            });
-        };
-          document.addEventListener('keydown', (event) => {
-            // Xử lý phím số để chuyển Part (giữ nguyên)
-          
-
-            // Logic điều hướng bằng mũi tên - Phiên bản cuối cùng, đáng tin cậy
-            if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
-                event.preventDefault();
-
-                // 1. Lấy TẤT CẢ các câu hỏi đang hiển thị trong nội dung chính. Đây là "nguồn sự thật".
-                const questionsOnPage = Array.from(document.querySelectorAll('.question-container, .sub-question'));
-                if (questionsOnPage.length < 2) return; // Không cần điều hướng nếu có ít hơn 2 câu
-
-                // 2. Xác định câu hỏi hiện tại (vẫn dùng phương pháp tâm màn hình)
-                const viewportCenter = window.innerHeight / 2;
-                let currentQuestionOnPage = null;
-                let minDistanceToCenter = Infinity;
-
-                questionsOnPage.forEach(q => {
-                    const rect = q.getBoundingClientRect();
-                    const questionCenter = rect.top + (rect.height / 2);
-                    const distance = Math.abs(questionCenter - viewportCenter);
-
-                    if (distance < minDistanceToCenter) {
-                        minDistanceToCenter = distance;
-                        currentQuestionOnPage = q;
-                    }
-                });
-
-                if (!currentQuestionOnPage) return;
-
-                // 3. Tìm VỊ TRÍ (index) của câu hỏi hiện tại TRONG danh sách câu hỏi nội dung chính.
-                const currentIndex = questionsOnPage.indexOf(currentQuestionOnPage);
-                if (currentIndex === -1) return;
-
-                // 4. Xác định câu hỏi tiếp theo BẰNG CÁCH lấy phần tử trước/sau trong chính danh sách đó.
-                let nextIndex = currentIndex;
-                if (event.key === 'ArrowUp' && currentIndex > 0) {
-                    nextIndex--;
-                } else if (event.key === 'ArrowDown' && currentIndex < questionsOnPage.length - 1) {
-                    nextIndex++;
-                }
-
-                // 5. Cuộn đến câu hỏi tiếp theo.
-                const nextQuestionOnPage = questionsOnPage[nextIndex];
-                if (nextQuestionOnPage && nextQuestionOnPage !== currentQuestionOnPage) {
-                    nextQuestionOnPage.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-                    // 6. (Phụ) Cập nhật vòng tròn active ở sidebar cho đẹp.
-                    const nextKey = nextQuestionOnPage.getAttribute('data-question-key');
-                    if (nextKey) {
-                        const questionCircles = Array.from(document.querySelectorAll('.question-circle'));
-                        questionCircles.forEach(circle => {
-                            if (circle.getAttribute('data-key') === nextKey) {
-                                circle.classList.add('active');
-                            } else {
-                                circle.classList.remove('active');
-                            }
-                        });
-                    }
-                }
-            }
-        });
-                function getTotalQuestions() {
+        // ======= Sidebar helper / progress ==========
+        function getTotalQuestions() {
             let total = 0;
             questions.forEach(q => {
                 if (q.parent === null) {
@@ -813,16 +670,237 @@
             const totalQuestions = getTotalQuestions();
             const answeredQuestions = getAnsweredQuestions();
             const text = document.getElementById('progress-text');
-            text.textContent = `${answeredQuestions}/${totalQuestions}`;
+            if (text) text.textContent = `${answeredQuestions}/${totalQuestions}`;
         }
 
+        // Reload if page was loaded from BFCache
         window.onpageshow = function (event) {
             if (event.persisted) {
-                // Trang được tải từ cache, buộc làm mới để gọi OnGetAsync
                 window.location.reload();
             }
         };
-        // ... Dán các hàm JS còn lại vào đây ...
+
+        // Keydown navigation (ArrowUp/ArrowDown)
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+                event.preventDefault();
+                const questionsOnPage = Array.from(document.querySelectorAll('.question-container, .sub-question'));
+                if (questionsOnPage.length < 2) return;
+
+                const viewportCenter = window.innerHeight / 2;
+                let currentQuestionOnPage = null;
+                let minDistanceToCenter = Infinity;
+
+                questionsOnPage.forEach(q => {
+                    const rect = q.getBoundingClientRect();
+                    const questionCenter = rect.top + (rect.height / 2);
+                    const distance = Math.abs(questionCenter - viewportCenter);
+                    if (distance < minDistanceToCenter) {
+                        minDistanceToCenter = distance;
+                        currentQuestionOnPage = q;
+                    }
+                });
+
+                if (!currentQuestionOnPage) return;
+                const currentIndex = questionsOnPage.indexOf(currentQuestionOnPage);
+                if (currentIndex === -1) return;
+
+                let nextIndex = currentIndex;
+                if (event.key === 'ArrowUp' && currentIndex > 0) {
+                    nextIndex--;
+                } else if (event.key === 'ArrowDown' && currentIndex < questionsOnPage.length - 1) {
+                    nextIndex++;
+                }
+
+                const nextQuestionOnPage = questionsOnPage[nextIndex];
+                if (nextQuestionOnPage && nextQuestionOnPage !== currentQuestionOnPage) {
+                    nextQuestionOnPage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                    const nextKey = nextQuestionOnPage.getAttribute('data-question-key');
+                    if (nextKey) {
+                        const questionCircles = Array.from(document.querySelectorAll('.question-circle'));
+                        questionCircles.forEach(circle => {
+                            if (circle.getAttribute('data-key') === nextKey) {
+                                circle.classList.add('active');
+                            } else {
+                                circle.classList.remove('active');
+                            }
+                        });
+                    }
+                }
+            }
+        });
+
+        /*
+        =================================================================================
+        3. ĐIỂM KHỞI CHẠY (ENTRY POINT)
+        =================================================================================
+        */
+        window.onload = async function () {
+            // Đăng ký beforeunload
+            window.addEventListener('beforeunload', handleBeforeUnload);
+
+            // Tải flagged questions từ server (nếu có)
+            await loadFlaggedQuestions();
+
+            // Render nội dung
+            const container = document.getElementById('main-content-wrapper');
+            if (container) {
+                if ([1, 2, 5].includes(currentPart)) {
+                    renderSimplePart(container);
+                } else {
+                    renderComplexPart(container);
+                }
+            }
+
+            // Cập nhật danh sách sidebar
+            updateQuestionList();
+
+            // Khởi tạo state cho từng câu hỏi
+            questions.forEach(q => {
+                initializeQuestionState(q.questionKey, q.part);
+                if (q.children) q.children.forEach(child => initializeQuestionState(child.questionKey, child.part));
+            });
+
+            // Gắn sự kiện click cho question-list (delegation)
+            const qlist = document.getElementById('question-list');
+            if (qlist) {
+                qlist.addEventListener('click', function(event) {
+                    if (event.target.classList.contains('question-circle')) {
+                        event.preventDefault();
+                        const questionKey = event.target.getAttribute('data-key');
+                        if (questionKey) scrollToQuestion(questionKey);
+                    }
+                });
+            }
+
+            // Bắt đầu timer sau khi mọi thứ sẵn sàng
+            startTimer();
+        };
     </script>
+
 </body>
 </html>
+<style>
+    /* --- Thêm đoạn CSS này vào thẻ <style> --- */
+
+    /* CSS for Confirmation Modal */
+    .modal {
+        display: none; /* Ẩn mặc định */
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.6);
+        animation: fadeIn 0.3s;
+    }
+
+    .modal-content {
+        background-color: #fff;
+        margin: 15% auto;
+        padding: 30px;
+        border: 1px solid #888;
+        width: 80%;
+        max-width: 450px;
+        border-radius: 15px;
+        text-align: center;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        animation: slideIn 0.3s;
+    }
+
+    .modal-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 15px;
+        color: #333;
+    }
+
+    .modal-text {
+        margin-bottom: 25px;
+        color: #555;
+        font-size: 1.1rem;
+    }
+
+    .modal-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+    }
+
+    .modal-btn {
+        padding: 10px 25px;
+        border: none;
+        border-radius: 25px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .cancel-btn {
+        background-color: #f0f0f0;
+        color: #333;
+    }
+
+        .cancel-btn:hover {
+            background-color: #e0e0e0;
+        }
+
+    .confirm-btn {
+        background-color: #d32f2f;
+        color: white;
+    }
+
+        .confirm-btn:hover {
+            background-color: #c62828;
+            transform: translateY(-2px);
+        }
+
+@@keyframes fadeIn {
+        from
+
+    {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+
+    }
+@@keyframes slideIn {
+        from
+
+    {
+        transform: translateY(-50px);
+    }
+
+    to {
+        transform: translateY(0);
+    }
+
+    }
+
+    .sidebar-left {
+        justify-content: center;
+        align-items: center;
+    }
+
+        .sidebar-left .part-btn {
+            flex: 0 0 auto; /* Bỏ thuộc tính flex: 1 để nút không bị kéo dài ra */
+            width: 80%; /* Chiều rộng của nút */
+            height: 100px; /* Chiều cao của nút */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+    .part-btn-icon {
+        font-size: 2.5rem;
+        margin-bottom: 5px;
+    }
+</style>

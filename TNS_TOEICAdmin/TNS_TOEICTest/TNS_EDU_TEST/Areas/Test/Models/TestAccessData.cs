@@ -294,37 +294,21 @@ namespace TNS_EDU_TEST.Areas.Test.Models
             }
         }
         // Cập nhật: Hỗ trợ bỏ chọn đáp án
-      
+
+        // Trong file TestAccessData.cs
+
         public static async Task SaveAnswer(Guid resultKey, Guid questionKey, Guid? selectAnswerKey, int timeSpent, DateTime answerTime, int part)
         {
             using (var conn = new SqlConnection(_connectionString))
             {
                 await conn.OpenAsync();
 
-                int numberOfAnswerChanges = 0;
-                string checkSql = @"
-                    SELECT NumberOfAnswerChanges 
-                    FROM [UserAnswers] 
-                    WHERE ResultKey = @ResultKey AND QuestionKey = @QuestionKey";
-                using (var checkCmd = new SqlCommand(checkSql, conn))
-                {
-                    checkCmd.Parameters.AddWithValue("@ResultKey", resultKey);
-                    checkCmd.Parameters.AddWithValue("@QuestionKey", questionKey);
-                    var result = await checkCmd.ExecuteScalarAsync();
-                    if (result != null && result != DBNull.Value)
-                    {
-                        numberOfAnswerChanges = (int)result + 1;
-                    }
-                }
-
+                // 1. Xác định IsCorrect (logic này không thay đổi)
                 bool? isCorrect = null;
                 if (selectAnswerKey.HasValue)
                 {
                     string tableName = $"TEC_Part{part}_Answer";
-                    string isCorrectSql = $@"
-                        SELECT AnswerCorrect 
-                        FROM [{tableName}] 
-                        WHERE AnswerKey = @AnswerKey";
+                    string isCorrectSql = $"SELECT AnswerCorrect FROM [{tableName}] WHERE AnswerKey = @AnswerKey";
                     using (var isCorrectCmd = new SqlCommand(isCorrectSql, conn))
                     {
                         isCorrectCmd.Parameters.AddWithValue("@AnswerKey", selectAnswerKey.Value);
@@ -337,55 +321,39 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                 }
                 else
                 {
-                    isCorrect = false; // Khi bỏ chọn, IsCorrect = false
+                    isCorrect = false;
                 }
 
-                if (numberOfAnswerChanges == 0)
+                // 2. SỬA LẠI CÂU LỆNH MERGE - ĐÂY LÀ THAY ĐỔI DUY NHẤT VÀ QUAN TRỌNG NHẤT
+                string mergeSql = @"
+            MERGE [UserAnswers] AS target
+            USING (SELECT @ResultKey AS ResultKey, @QuestionKey AS QuestionKey) AS source
+            ON (target.ResultKey = source.ResultKey AND target.QuestionKey = source.QuestionKey)
+            WHEN MATCHED THEN
+                UPDATE SET 
+                    SelectAnswerKey = @SelectAnswerKey,
+                    IsCorrect = @IsCorrect,
+                    TimeSpent = @TimeSpent, -- SỬA LỖI QUAN TRỌNG: Ghi đè trực tiếp, không cộng dồn sai nữa!
+                    AnswerTime = @AnswerTime,
+                    NumberOfAnswerChanges = target.NumberOfAnswerChanges + 1,
+                    RecordStatus = @RecordStatus
+            WHEN NOT MATCHED THEN
+                INSERT (UAnswerKey, ResultKey, QuestionKey, SelectAnswerKey, IsCorrect, TimeSpent, AnswerTime, NumberOfAnswerChanges, Part, RecordStatus)
+                VALUES (NEWID(), @ResultKey, @QuestionKey, @SelectAnswerKey, @IsCorrect, @TimeSpent, @AnswerTime, 1, @Part, @RecordStatus); -- Cải thiện nhỏ: bắt đầu với 1 lần thay đổi
+        ";
+
+                using (var cmd = new SqlCommand(mergeSql, conn))
                 {
-                    // Insert bản ghi mới
-                    string insertSql = @"
-                        INSERT INTO [UserAnswers] (UAnswerKey, ResultKey, QuestionKey, SelectAnswerKey, IsCorrect, TimeSpent, AnswerTime, NumberOfAnswerChanges, Part, RecordStatus)
-                        VALUES (NEWID(), @ResultKey, @QuestionKey, @SelectAnswerKey, @IsCorrect, @TimeSpent, @AnswerTime, @NumberOfAnswerChanges, @Part, @RecordStatus)";
-                    using (var insertCmd = new SqlCommand(insertSql, conn))
-                    {
-                        insertCmd.Parameters.AddWithValue("@ResultKey", resultKey);
-                        insertCmd.Parameters.AddWithValue("@QuestionKey", questionKey);
-                        insertCmd.Parameters.AddWithValue("@SelectAnswerKey", (object)selectAnswerKey ?? DBNull.Value);
-                        insertCmd.Parameters.AddWithValue("@IsCorrect", (object)isCorrect ?? DBNull.Value);
-                        insertCmd.Parameters.AddWithValue("@TimeSpent", timeSpent);
-                        insertCmd.Parameters.AddWithValue("@AnswerTime", answerTime);
-                        insertCmd.Parameters.AddWithValue("@NumberOfAnswerChanges", numberOfAnswerChanges);
-                        insertCmd.Parameters.AddWithValue("@Part", part);
-                        insertCmd.Parameters.AddWithValue("@RecordStatus", selectAnswerKey.HasValue ? 0 : 99); // 99 nếu bỏ chọn
-                        await insertCmd.ExecuteNonQueryAsync();
-                    }
-                }
-                else
-                {
-                    // Update bản ghi hiện có
-                    string updateSql = @"
-                        UPDATE [UserAnswers]
-                        SET SelectAnswerKey = @SelectAnswerKey,
-                            IsCorrect = @IsCorrect,
-                            TimeSpent = @TimeSpent,
-                            AnswerTime = @AnswerTime,
-                            NumberOfAnswerChanges = @NumberOfAnswerChanges,
-                            Part = @Part,
-                            RecordStatus = @RecordStatus
-                        WHERE ResultKey = @ResultKey AND QuestionKey = @QuestionKey";
-                    using (var updateCmd = new SqlCommand(updateSql, conn))
-                    {
-                        updateCmd.Parameters.AddWithValue("@ResultKey", resultKey);
-                        updateCmd.Parameters.AddWithValue("@QuestionKey", questionKey);
-                        updateCmd.Parameters.AddWithValue("@SelectAnswerKey", (object)selectAnswerKey ?? DBNull.Value);
-                        updateCmd.Parameters.AddWithValue("@IsCorrect", (object)isCorrect ?? DBNull.Value);
-                        updateCmd.Parameters.AddWithValue("@TimeSpent", timeSpent);
-                        updateCmd.Parameters.AddWithValue("@AnswerTime", answerTime);
-                        updateCmd.Parameters.AddWithValue("@NumberOfAnswerChanges", numberOfAnswerChanges);
-                        updateCmd.Parameters.AddWithValue("@Part", part);
-                        updateCmd.Parameters.AddWithValue("@RecordStatus", selectAnswerKey.HasValue ? 0 : 99); // 99 nếu bỏ chọn
-                        await updateCmd.ExecuteNonQueryAsync();
-                    }
+                    cmd.Parameters.AddWithValue("@ResultKey", resultKey);
+                    cmd.Parameters.AddWithValue("@QuestionKey", questionKey);
+                    cmd.Parameters.AddWithValue("@SelectAnswerKey", (object)selectAnswerKey ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@IsCorrect", (object)isCorrect ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@TimeSpent", timeSpent);
+                    cmd.Parameters.AddWithValue("@AnswerTime", answerTime);
+                    cmd.Parameters.AddWithValue("@Part", part);
+                    cmd.Parameters.AddWithValue("@RecordStatus", selectAnswerKey.HasValue ? 0 : 99);
+
+                    await cmd.ExecuteNonQueryAsync();
                 }
             }
         }
@@ -452,12 +420,15 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                     await cmd.ExecuteNonQueryAsync();
                 }
 
-                // 4. Xử lý câu trả lời sai và lưu vào UsersError
-                // 4. Xử lý câu trả lời sai và lưu vào UsersError
-                string wrongAnswersSql = @"
+
+               
+
+                string wrongAnswersSql = $@"
     SELECT ResultKey, QuestionKey, SelectAnswerKey, Part
     FROM [UserAnswers]
-    WHERE ResultKey = @ResultKey AND IsCorrect = 0 AND RecordStatus != 99";
+    WHERE ResultKey = @ResultKey 
+      AND (IsCorrect = 0 OR NumberOfAnswerChanges > 2) 
+      AND RecordStatus != 99";
                 using (var cmd = new SqlCommand(wrongAnswersSql, conn))
                 {
                     cmd.Parameters.AddWithValue("@ResultKey", resultKey);
@@ -573,13 +544,13 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                 }
             }
         }
-        }
+    }
 
-        public class TestQuestion
+    public class TestQuestion
     {
         public Guid QuestionKey { get; set; }
         public int Part { get; set; }
-        public float? Order { get; set; } 
+        public float? Order { get; set; }
         public string QuestionText { get; set; }
         public string QuestionImage { get; set; }
         public string QuestionVoice { get; set; }

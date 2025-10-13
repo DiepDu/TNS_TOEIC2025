@@ -35,7 +35,7 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                 r.ResultKey
             FROM Test t
             INNER JOIN ResultOfUserForTest r ON t.TestKey = r.TestKey
-            WHERE r.MemberKey = @MemberKey
+            WHERE r.MemberKey = @MemberKey AND t.TestName = 'TOEIC Full Test'
             ORDER BY t.CreatedOn DESC";
 
                 using (SqlCommand cmd = new SqlCommand(sql, conn))
