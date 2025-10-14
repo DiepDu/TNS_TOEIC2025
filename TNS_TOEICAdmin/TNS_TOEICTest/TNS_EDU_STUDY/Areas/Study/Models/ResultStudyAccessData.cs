@@ -14,6 +14,7 @@ namespace TNS_EDU_STUDY.Areas.Study.Models
         public int TimeSpent { get; set; }
         public int PracticeScore { get; set; }
         public int MaximumTime { get; set; } // Thêm thuộc tính này
+        public int Part { get; set; }
     }
 
     public static class ResultStudyAccessData
@@ -49,7 +50,8 @@ namespace TNS_EDU_STUDY.Areas.Study.Models
                                 MemberName = reader.GetString(1),
                                 TimeSpent = reader.IsDBNull(2) ? 0 : reader.GetInt32(2),
                                 PracticeScore = reader.IsDBNull(3) ? 0 : reader.GetInt32(3),
-                                MaximumTime = reader.IsDBNull(4) ? 0 : reader.GetInt32(4)
+                                MaximumTime = reader.IsDBNull(4) ? 0 : reader.GetInt32(4),
+                                 Part = part
                             };
                         }
                     }

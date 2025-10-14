@@ -1,0 +1,418 @@
+﻿@page
+@model TNS_EDU_STUDY.Areas.Study.Pages.StudyHistoryModel
+@{
+    Layout = "_Layout";
+}
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- THÊM: Các thư viện cần thiết cho zoom và pan -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.0.1/chartjs-plugin-zoom.min.js"></script>
+
+<h1 class="history-title">TOEIC Study History</h1>
+
+<div class="charts-row">
+    <div class="chart-container">
+        <canvas id="accuracyScoreChart"></canvas>
+    </div>
+</div>
+
+<div class="filter-container">
+    <label for="part-select">Select Part:</label>
+    <select id="part-select" onchange="filterHistory()">
+        <option value="1">Part 1</option>
+        <option value="2">Part 2</option>
+        <option value="3">Part 3</option>
+        <option value="4">Part 4</option>
+        <option value="5">Part 5</option>
+        <option value="6">Part 6</option>
+        <option value="7">Part 7</option>
+    </select>
+</div>
+
+<div class="table-container">
+    <table class="styled-table">
+        <thead>
+            <tr>
+                <th>Test Name</th>
+                <th>Created On</th>
+                <th>Member Name</th>
+                <th>Start Time</th>
+                <th>Time Spent</th>
+                <th>Accuracy Score</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody id="history-table-body">
+            @foreach (var item in Model.StudyHistoryItems)
+            {
+                <tr>
+                    <td>@item.TestName.Replace("STUDY ", "")</td>
+                    <td>@string.Format("{0:dd/MM/yyyy}", item.CreatedOn)</td>
+                    <td>@item.MemberName</td>
+                    <td>@string.Format("{0:HH:mm}", item.StartTime)</td>
+                    <td>@(item.TimeSpent != null ? $"{item.TimeSpent} min" : "N/A")</td>
+                    <td>@(item.PracticeScore.HasValue ? $"{item.PracticeScore}%" : "N/A")</td>
+                    <td>
+                        <a class="review-button" href="/Study/ResultStudy?TestKey=@item.TestKey&ResultKey=@item.ResultKey&PartSelect=@item.Part">Review</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<style>
+    /* CSS được tái sử dụng và điều chỉnh từ TestHistory.cshtml */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Poppins', sans-serif;
+        background: linear-gradient(135deg, #E1F5FE, #FFF8E1);
+        color: #333;
+        padding: 40px;
+        min-height: 100vh;
+    }
+
+    .history-title {
+        text-align: center;
+        font-size: 2.8em;
+        font-weight: 700;
+        margin-bottom: 30px;
+        color: #006064;
+    }
+
+    .filter-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 30px; /* Thêm margin-top để tách khỏi biểu đồ */
+        margin-bottom: 30px;
+        gap: 10px;
+        background-color: #fff;
+        padding: 15px;
+        border-radius: 50px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        max-width: 300px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+        .filter-container label {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #006064;
+        }
+
+    #part-select {
+        padding: 8px 12px;
+        border-radius: 20px;
+        border: 2px solid #B2EBF2;
+        font-family: 'Poppins', sans-serif;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: border-color 0.3s;
+    }
+
+        #part-select:focus {
+            outline: none;
+            border-color: #00BCD4;
+        }
+
+    .charts-row {
+        display: flex;
+        justify-content: flex-start; /* Để cuộn từ đầu */
+        margin: 20px auto;
+        /* THÊM: CSS cho thanh cuộn ngang */
+        overflow-x: auto;
+        padding-bottom: 10px;
+        scrollbar-width: thin;
+        scrollbar-color: #0097A7 #e0e0e0;
+    }
+
+        .charts-row::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .charts-row::-webkit-scrollbar-track {
+            background: #e0e0e0;
+            border-radius: 4px;
+        }
+
+        .charts-row::-webkit-scrollbar-thumb {
+            background: #0097A7;
+            border-radius: 4px;
+        }
+
+            .charts-row::-webkit-scrollbar-thumb:hover {
+                background: #00BCD4;
+            }
+
+
+    .chart-container {
+        width: 100%;
+        min-width: 800px; /* Chiều rộng tối thiểu để không bị co lại */
+        max-width: 1100px;
+        height: 450px;
+        background: #fff;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        flex-shrink: 0; /* Ngăn container co lại */
+    }
+
+    .table-container {
+        overflow-x: auto;
+        /* THÊM DÒNG DƯỚI ĐÂY */
+        max-height: 800px; /* Bảng sẽ cao tối đa 800px */
+        overflow-y: auto; /* Thêm thanh cuộn dọc */
+    }
+    /* THÊM KHỐI MỚI DƯỚI ĐÂY */
+    .styled-table thead th {
+        position: sticky; /* "Ghim" header */
+        top: 0; /* Vị trí ghim ở trên cùng */
+        z-index: 1; /* Đảm bảo header luôn nằm trên */
+        background-color: #0097A7; /* Thêm màu nền để che nội dung cuộn bên dưới */
+    }
+    /* THÊM KHỐI MỚI DƯỚI ĐÂY */
+    /* Tùy chỉnh thanh cuộn cho table-container */
+    .table-container::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .table-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .table-container::-webkit-scrollbar-thumb {
+        background: #0097A7;
+        border-radius: 4px;
+    }
+
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #00BCD4;
+        }
+
+    .styled-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0 auto;
+        font-size: 1rem;
+        background: #fff;
+        border-radius: 15px;
+       
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+        .styled-table thead tr {
+            background-color: #0097A7;
+            color: #fff;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .styled-table th, .styled-table td {
+            padding: 12px 15px;
+            text-align: center;
+        }
+
+        .styled-table tbody tr {
+            border-bottom: 1px solid #ddd;
+            transition: background-color 0.2s;
+        }
+
+            .styled-table tbody tr:nth-of-type(even) {
+                background: #f8f8f8;
+            }
+
+            .styled-table tbody tr:hover {
+                background-color: #CFD8DC;
+            }
+
+    .review-button {
+        display: inline-block;
+        background-color: #00BCD4;
+        color: #fff;
+        border: none;
+        border-radius: 20px;
+        padding: 8px 18px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+
+        .review-button:hover {
+            background-color: #00838F;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 188, 212, 0.4);
+        }
+</style>
+
+<script>
+    let studyHistoryData = @Html.Raw(Model.StudyHistoryJson);
+    let myChart = null;
+
+    function createOrUpdateChart(historyData) {
+        const labels = historyData.map(item => new Date(item.createdOn).toLocaleDateString('vi-VN'));
+        const scores = historyData.map(item => item.practiceScore || 0);
+        const selectedPart = document.getElementById('part-select').value;
+        const color = '#0097A7';
+
+        const ctx = document.getElementById('accuracyScoreChart').getContext('2d');
+
+        if(myChart) {
+            myChart.destroy();
+        }
+
+        myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        type: 'bar',
+                        label: 'Accuracy Score (%)',
+                        data: scores,
+                        backgroundColor: color + "80",
+                        borderColor: color,
+                        borderWidth: 2,
+                        barThickness: 30,
+                    },
+                    {
+                        type: 'line',
+                        label: 'Score Trend',
+                        data: scores,
+                        fill: false,
+                        borderColor: '#006064',
+                        borderWidth: 3,
+                        tension: 0.3,
+                        pointRadius: 5,
+                        pointBackgroundColor: '#006064',
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: { font: { family: 'Poppins', size: 14, weight: '600' }, color: '#333' }
+                    },
+                    tooltip: {
+                        backgroundColor: '#006064',
+                        titleFont: { family: 'Poppins', size: 14 },
+                        bodyFont: { family: 'Poppins', size: 12 },
+                        callbacks: { label: context => `${context.dataset.label}: ${context.raw}%` }
+                    },
+                    title: {
+                        display: true,
+                        text: `Practice History for Part ${selectedPart}`,
+                        font: { size: 18, family: 'Poppins', weight: '600' },
+                        color: '#006064'
+                    },
+                    // THÊM: Cấu hình cho plugin zoom
+                    zoom: {
+                        pan: {
+                            enabled: true, // Cho phép kéo/trượt
+                            mode: 'x',     // Chỉ kéo theo trục X (trục ngày tháng)
+                        },
+                        zoom: {
+                            wheel: {
+                                enabled: true, // Cho phép zoom bằng con lăn chuột
+                            },
+                            pinch: {
+                                enabled: true // Cho phép zoom bằng 2 ngón tay trên màn hình cảm ứng
+                            },
+                            mode: 'x', // Chỉ zoom theo trục X
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Date', font: { family: 'Poppins', size: 16, weight: '600' }, color: '#00796B' },
+                        ticks: { font: { family: 'Poppins', size: 12 }, color: '#333' },
+                        grid: { display: false }
+                    },
+                    y: {
+                        title: { display: true, text: 'Score (%)', font: { family: 'Poppins', size: 16, weight: '600' }, color: '#00796B' },
+                        min: 0,
+                        max: 100,
+                        ticks: {
+                            stepSize: 10,
+                            font: { family: 'Poppins', size: 12 },
+                            color: '#333',
+                            callback: function(value) { return value + '%'; }
+                        },
+                        grid: { color: '#e0e0e0' }
+                    }
+                },
+                animation: { duration: 1500, easing: 'easeOutBounce' }
+            }
+        });
+    }
+
+    function updateTable(historyData) {
+        const tableBody = document.getElementById('history-table-body');
+        tableBody.innerHTML = '';
+
+        if (historyData.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="7">No history found for this part.</td></tr>';
+            return;
+        }
+
+        historyData.forEach(item => {
+            const row = `
+                <tr>
+                    <td>${item.testName.replace("STUDY ", "")}</td>
+                    <td>${new Date(item.createdOn).toLocaleDateString('vi-VN')}</td>
+                    <td>${item.memberName}</td>
+                    <td>${new Date(item.startTime).toLocaleTimeString('vi-VN')}</td>
+                  <td>${item.timeSpent != null ? `${item.timeSpent} min` : 'N/A'}</td>
+                    <td>${item.practiceScore ? `${item.practiceScore}%` : 'N/A'}</td>
+                    <td>
+                        <a class="review-button" href="/Study/ResultStudy?TestKey=${item.testKey}&ResultKey=${item.resultKey}&PartSelect=${item.part}">Review</a>
+                    </td>
+                </tr>
+            `;
+            tableBody.innerHTML += row;
+        });
+    }
+
+    async function filterHistory() {
+        const selectedPart = document.getElementById('part-select').value;
+
+        try {
+            const response = await fetch(`/Study/StudyHistory?handler=HistoryByPart&part=${selectedPart}`);
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            const newData = await response.json();
+
+            // Sắp xếp dữ liệu mới nhận được theo ngày tạo
+            const sortedData = newData.sort((a, b) => new Date(a.createdOn) - new Date(b.createdOn));
+
+            studyHistoryData = sortedData;
+            updateTable(studyHistoryData);
+            createOrUpdateChart(studyHistoryData);
+        } catch (error) {
+            console.error('Failed to fetch study history:', error);
+            const tableBody = document.getElementById('history-table-body');
+            tableBody.innerHTML = '<tr><td colspan="7">Error loading history. Please try again.</td></tr>';
+        }
+    }
+
+    window.onload = function() {
+        document.getElementById('part-select').value = '@Model.PartSelect';
+        createOrUpdateChart(studyHistoryData);
+    }
+</script>
+

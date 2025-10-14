@@ -46,7 +46,7 @@ namespace TNS_EDU_STUDY.Areas.Study.Pages
                 return RedirectToPage("/Index");
             }
 
-            ApiKey = _configuration.GetValue<string>("ApiKey");
+            ApiKey = _configuration["ApiSettings:ApiKey"];
             var (info, questions) = await ResultStudyAccessData.GetStudyResultData(TestKey, ResultKey, PartSelect);
 
             if (info == null || questions == null)
@@ -80,22 +80,36 @@ namespace TNS_EDU_STUDY.Areas.Study.Pages
         {
             try
             {
-                var memberKeyClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-                if (!Guid.TryParse(memberKeyClaim, out var memberKeyGuid))
+                if (feedbackRequest == null ||
+                    string.IsNullOrWhiteSpace(feedbackRequest.QuestionKey) ||
+                    string.IsNullOrWhiteSpace(feedbackRequest.FeedbackText))
                 {
-                    return new JsonResult(new { success = false, message = "User not found." }) { StatusCode = 401 };
+                    return new JsonResult(new { success = false, message = "Dữ liệu không hợp lệ." }) { StatusCode = 400 };
+                }
+
+                if (!Guid.TryParse(feedbackRequest.QuestionKey, out Guid questionKeyGuid))
+                {
+                    return new JsonResult(new { success = false, message = "QuestionKey không hợp lệ." }) { StatusCode = 400 };
                 }
 
                 Guid? parentKeyGuid = null;
-                if (!string.IsNullOrEmpty(feedbackRequest.Parent) && Guid.TryParse(feedbackRequest.Parent, out Guid parsedGuid))
+                if (!string.IsNullOrEmpty(feedbackRequest.Parent))
                 {
-                    parentKeyGuid = parsedGuid;
+                    if (!Guid.TryParse(feedbackRequest.Parent, out Guid parsedParent))
+                        return new JsonResult(new { success = false, message = "Parent key không hợp lệ." }) { StatusCode = 400 };
+                    parentKeyGuid = parsedParent;
+                }
+
+                var memberKey = User.Claims.FirstOrDefault(c => c.Type == "MemberKey" || c.Type == ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(memberKey) || !Guid.TryParse(memberKey, out Guid memberKeyGuid))
+                {
+                    return new JsonResult(new { success = false, message = "Người dùng chưa đăng nhập." }) { StatusCode = 401 };
                 }
 
                 var feedback = new QuestionFeedback
                 {
                     FeedbackKey = Guid.NewGuid(),
-                    QuestionKey = Guid.Parse(feedbackRequest.QuestionKey),
+                    QuestionKey = questionKeyGuid,
                     MemberKey = memberKeyGuid,
                     FeedbackText = feedbackRequest.FeedbackText,
                     CreatedOn = DateTime.Now,
@@ -105,11 +119,12 @@ namespace TNS_EDU_STUDY.Areas.Study.Pages
                 };
 
                 await ResultTestAccessData.InsertFeedbackAsync(feedback);
-                return new JsonResult(new { success = true, message = "Feedback submitted successfully." });
+                return new JsonResult(new { success = true, message = "Gửi phản hồi thành công." });
             }
             catch (Exception ex)
             {
-                return new JsonResult(new { success = false, message = "An error occurred: " + ex.Message }) { StatusCode = 500 };
+                Console.WriteLine("Lỗi khi xử lý phản hồi: " + ex.Message);
+                return new JsonResult(new { success = false, message = "Đã xảy ra lỗi: " + ex.Message }) { StatusCode = 500 };
             }
         }
     }

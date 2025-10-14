@@ -24,23 +24,23 @@ namespace TNS_EDU_TEST.Areas.Test.Pages
             _configuration = configuration;
         }
 
-        
+
         public void OnGet()
         {
-           
+
             string memberKey = User.Claims.FirstOrDefault(c => c.Type == "MemberKey" || c.Type == ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(memberKey))
             {
-                
+
                 return;
             }
 
-           
+
             TestHistoryItems = TestHistoryAccessData.LoadTestHistory(memberKey);
         }
 
-     
-      
+
+
     }
 
 

@@ -22,7 +22,7 @@
     </div>
 </div>
 
-<div class="table-header-bar">
+<div class="table-container">
     <table class="styled-table">
         <thead>
             <tr>
@@ -61,6 +61,31 @@
 </div>
 
 <style>
+    /* === START: THÊM KHỐI MỚI CHO BẢNG CUỘN === */
+    .table-container {
+        max-height: 800px; /* Chiều cao tối đa cho bảng, bạn có thể điều chỉnh */
+        overflow-y: auto; /* Bật thanh cuộn dọc khi cần */
+    }
+
+        /* Tùy chỉnh thanh cuộn cho table-container */
+        .table-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .table-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb {
+            background: #0288D1;
+            border-radius: 4px;
+        }
+
+            .table-container::-webkit-scrollbar-thumb:hover {
+                background: #4FC3F7;
+            }
+    /* === END: THÊM KHỐI MỚI === */
     * {
         margin: 0;
         padding: 0;
@@ -152,13 +177,29 @@
         font-size: 1.1em;
         background: #fff;
         border-radius: 15px;
-        overflow: hidden;
+      
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
         animation: zoomIn 0.8s ease-in-out;
     }
+        /* THÊM KHỐI MỚI DƯỚI ĐÂY ĐỂ BO TRÒN GÓC TIÊU ĐỀ */
+        .styled-table thead th:first-child {
+            border-top-left-radius: 15px;
+        }
+
+        .styled-table thead th:last-child {
+            border-top-right-radius: 15px;
+        }
+        /* THÊM KHỐI MỚI DƯỚI ĐÂY */
+        .styled-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            /* Đặt lại nền để đảm bảo không bị trong suốt khi cuộn */
+            background: linear-gradient(40deg, #278BF5, #4FC3F7);
+        }
 
     .styled-table thead tr {
-        background: linear-gradient(90deg, #0288D1, #4FC3F7);
+            background: linear-gradient(90deg, #278BF5, #4FC3F7);
         color: #fff;
         text-transform: uppercase;
         font-weight: 600;
