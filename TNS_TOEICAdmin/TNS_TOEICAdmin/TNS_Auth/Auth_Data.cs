@@ -133,23 +133,14 @@ namespace TNS_Auth
     {
         public static string HashPassMember(string nPass)
         {
-            using (SHA1 mHash = SHA1.Create())
-            {
-                string trimmedPass = nPass.Trim();
-                byte[] pwordData = Encoding.UTF8.GetBytes(trimmedPass);
-                byte[] nHash = mHash.ComputeHash(pwordData);
-                string result = BitConverter.ToString(nHash).Replace("-", "").ToLower();
-                Console.WriteLine($"[Admin] HashPassMember input: '{trimmedPass}', output: {result}, length: {result.Length}");
-                return result;
-            }
+            // Gọi đến hàm mã hóa BCrypt an toàn đã có sẵn
+            return TNS_Auth.MyCryptography.HashPass(nPass);
         }
 
-
-
-        public static Boolean VerifyHashMember(string NewPass, string OldPass)
+        public static Boolean VerifyHashMember(string NewPass, string OldHashedPass)
         {
-            string HashNewPass = HashPassMember(NewPass);
-            return (OldPass == HashNewPass);
+            // Gọi đến hàm xác thực BCrypt an toàn đã có sẵn
+            return TNS_Auth.MyCryptography.VerifyHash(NewPass, OldHashedPass);
         }
     }
 }

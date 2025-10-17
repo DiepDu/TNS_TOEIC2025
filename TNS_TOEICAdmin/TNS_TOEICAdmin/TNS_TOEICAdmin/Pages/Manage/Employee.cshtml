@@ -383,8 +383,8 @@
             <input type="text" class="form-control search-input" id="searchInput" placeholder="Search by name..." />
             <select class="form-control" id="statusFilter">
                 <option value="">All Status</option>
-                <option value="activate">Active</option>
-                <option value="inactivate">Inactive</option>
+                <option value="active">Active</option> <!-- Sửa 'activate' thành 'active' -->
+                <option value="inactive">Inactive</option> <!-- Sửa 'inactivate' thành 'inactive' -->
             </select>
             <button class="btn btn-search" onclick="searchEmployees()"><i class="fas fa-search"></i></button>
         </div>
@@ -474,7 +474,9 @@
         let searchTerm = '';
         let statusFilter = '';
         let isEditMode = false;
-        let isLoading = false;
+                   if (typeof window.isLoading === 'undefined') {
+            window.isLoading = false;
+        }
 
         $(document).ready(function () {
             loadEmployees();

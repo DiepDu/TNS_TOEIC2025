@@ -118,23 +118,19 @@ namespace TNS.Member
     {
         public static string HashPass(string nPass)
         {
-            using (SHA1 mHash = SHA1.Create())
-            {
-                string trimmedPass = nPass.Trim();
-                byte[] pwordData = Encoding.UTF8.GetBytes(trimmedPass);
-                byte[] nHash = mHash.ComputeHash(pwordData);
-                string result = BitConverter.ToString(nHash).Replace("-", "").ToLower();
-                Console.WriteLine($"[Test] HashPass input: '{trimmedPass}', output: {result}, length: {result.Length}");
-                return result;
-            }
+            string salt = BCrypt.Net.BCrypt.GenerateSalt(12); // 12 là số vòng hash
+
+            // Dùng salt này để mã hóa
+            string hashedPassword = BCrypt.Net.BCrypt.HashPassword(nPass, salt);
+
+            // Có thể đặt breakpoint ở đây để xem plainTextPassword, salt, và hashedPassword
+            return hashedPassword;
         }
 
-
-
-        public static Boolean VerifyHash(string NewPass, string OldPass)
+        public static Boolean VerifyHash(string NewPass, string OldHashedPass)
         {
-            string HashNewPass = HashPass(NewPass);
-            return (OldPass == HashNewPass);
+            return BCrypt.Net.BCrypt.Verify(NewPass, OldHashedPass);
         }
+
     }
 }

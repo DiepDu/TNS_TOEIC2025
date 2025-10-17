@@ -54,9 +54,11 @@ namespace TNS_TOEICAdmin.Pages.Manage
             {
                 try
                 {
-                    var members = await MembersAccessData.GetMembersAsync(page, pageSize, search, activate, testStatus);
-                    var totalItems = await MembersAccessData.GetTotalMembersAsync(search, activate, testStatus); // Thêm hàm mới
-                    return new JsonResult(new { members, totalItems });
+                    // SỬA Ở ĐÂY: "Giải nén" tuple trả về từ GetMembersAsync
+                    var (membersList, totalItems) = await MembersAccessData.GetMembersAsync(page, pageSize, search, activate, testStatus);
+
+                    // Trả về JSON với đúng tên thuộc tính mà JavaScript đang mong đợi
+                    return new JsonResult(new { members = membersList, totalItems });
                 }
                 catch (Exception ex)
                 {
@@ -69,7 +71,31 @@ namespace TNS_TOEICAdmin.Pages.Manage
                 return new JsonResult(new { status = "ERROR", message = "Bạn không có quyền xem danh sách!" }) { StatusCode = 403 };
             }
         }
-
+        public async Task<IActionResult> OnGetGetMemberDetails(Guid memberKey)
+        {
+            CheckAuth();
+            if (IsFullAdmin || UserLogin.Role.IsRead)
+            {
+                try
+                {
+                    var member = await MembersAccessData.GetMemberDetailsAsync(memberKey);
+                    if (member == null)
+                    {
+                        return NotFound();
+                    }
+                    return new JsonResult(member);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error in OnGetGetMemberDetails: {ex.Message}");
+                    return new JsonResult(new { status = "ERROR", message = "Lỗi khi tải chi tiết học viên." }) { StatusCode = 500 };
+                }
+            }
+            else
+            {
+                return new JsonResult(new { status = "ERROR", message = "Bạn không có quyền xem chi tiết!" }) { StatusCode = 403 };
+            }
+        }
         public async Task<IActionResult> OnGetGetDepartments()
         {
             var departments = await MembersAccessData.GetDepartmentsAsync();
@@ -89,15 +115,30 @@ namespace TNS_TOEICAdmin.Pages.Manage
                 return new JsonResult(new { status = "ERROR", message = "Bạn không có quyền xem chi tiết!" }) { StatusCode = 403 };
             }
         }
-        public async Task<IActionResult> OnGetGetTestScoreHistory(Guid memberKey)
+        public async Task<IActionResult> OnGetGetTestScoreHistory(Guid memberKey, string type)
         {
             CheckAuth();
             if (IsFullAdmin || UserLogin.Role.IsRead)
             {
                 try
                 {
-                    var history = await MembersAccessData.GetTestScoreHistoryAsync(memberKey);
-                    return new JsonResult(history);
+                    // Xử lý các yêu cầu cho Practice Test
+                    if (type.StartsWith("Practice"))
+                    {
+                        string part = null;
+                        // Kiểm tra xem có yêu cầu lọc theo part cụ thể không (vd: "Practice-1")
+                        if (type.Contains("-"))
+                        {
+                            part = type.Split('-')[1];
+                        }
+                        var practiceHistory = await MembersAccessData.GetPracticeHistoryAsync(memberKey, part);
+                        return new JsonResult(practiceHistory);
+                    }
+                    else // Mặc định là FullTest
+                    {
+                        var fullTestHistory = await MembersAccessData.GetFullTestHistoryAsync(memberKey);
+                        return new JsonResult(fullTestHistory);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -113,59 +154,40 @@ namespace TNS_TOEICAdmin.Pages.Manage
         public async Task<IActionResult> OnPostCreate([FromBody] Member member)
         {
             CheckAuth();
-            if (IsFullAdmin || UserLogin.Role.IsCreate)
+            if (IsFullAdmin || (UserLogin.Role != null && UserLogin.Role.IsCreate))
             {
-                if (string.IsNullOrEmpty(member.MemberID) || string.IsNullOrEmpty(member.MemberName) || (string.IsNullOrEmpty(member.Password) && member.MemberKey == Guid.Empty))
-                    return new JsonResult(new { success = false, message = "Dữ liệu không hợp lệ." }) { StatusCode = 400 };
-
-                if (member.ToeicScoreStudy.HasValue && (member.ToeicScoreStudy < 0 || member.ToeicScoreStudy > 990))
-                    return new JsonResult(new { success = false, message = "Điểm học phải từ 0 đến 990." }) { StatusCode = 400 };
-                if (member.ToeicScoreExam.HasValue && (member.ToeicScoreExam < 0 || member.ToeicScoreExam > 990))
-                    return new JsonResult(new { success = false, message = "Điểm thi phải từ 0 đến 990." }) { StatusCode = 400 };
+                if (string.IsNullOrEmpty(member.MemberID) || string.IsNullOrEmpty(member.MemberName) || string.IsNullOrEmpty(member.Password))
+                    return new JsonResult(new { success = false, message = "Invalid data." }) { StatusCode = 400 };
 
                 if (member.MemberKey == Guid.Empty) member.MemberKey = Guid.NewGuid();
                 member.CreatedBy = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value);
-                if (!string.IsNullOrEmpty(member.Password))
-                    member.Password = MyCryptography.HashPass(member.Password);
 
                 await MembersAccessData.AddMemberAsync(member);
-                return new JsonResult(new { success = true, message = "Thêm học viên thành công!" });
+                return new JsonResult(new { success = true, message = "Member added successfully!" });
             }
-            else
-            {
-                return new JsonResult(new { status = "ERROR", message = "ACCESS DENIED!!!" }) { StatusCode = 403 };
-            }
+            return new JsonResult(new { status = "ERROR", message = "ACCESS DENIED!!!" }) { StatusCode = 403 };
         }
 
         public async Task<IActionResult> OnPostUpdate([FromBody] Member member)
         {
             CheckAuth();
-            if (IsFullAdmin || UserLogin.Role.IsUpdate)
+            if (IsFullAdmin || (UserLogin.Role != null && UserLogin.Role.IsUpdate))
             {
-                if (member.MemberKey == Guid.Empty || string.IsNullOrEmpty(member.MemberID) || string.IsNullOrEmpty(member.MemberName))
-                    return new JsonResult(new { success = false, message = "Dữ liệu không hợp lệ: MemberKey, MemberID hoặc MemberName không được để trống." }) { StatusCode = 400 };
-
-                if (member.ToeicScoreStudy.HasValue && (member.ToeicScoreStudy < 0 || member.ToeicScoreStudy > 990))
-                    return new JsonResult(new { success = false, message = "Điểm học phải từ 0 đến 990." }) { StatusCode = 400 };
-                if (member.ToeicScoreExam.HasValue && (member.ToeicScoreExam < 0 || member.ToeicScoreExam > 990))
-                    return new JsonResult(new { success = false, message = "Điểm thi phải từ 0 đến 990." }) { StatusCode = 400 };
+                if (member.MemberKey == Guid.Empty)
+                    return new JsonResult(new { success = false, message = "Invalid data: MemberKey is required." }) { StatusCode = 400 };
 
                 try
                 {
                     member.ModifiedBy = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value);
                     await MembersAccessData.UpdateMemberAsync(member);
-                    return new JsonResult(new { success = true, message = "Cập nhật học viên thành công!" });
+                    return new JsonResult(new { success = true, message = "Member updated successfully!" });
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error in OnPostUpdate: Message={ex.Message}, StackTrace={ex.StackTrace}");
-                    return new JsonResult(new { success = false, message = $"Cập nhật thất bại: {ex.Message}" }) { StatusCode = 500 };
+                    return new JsonResult(new { success = false, message = $"Update failed: {ex.Message}" }) { StatusCode = 500 };
                 }
             }
-            else
-            {
-                return new JsonResult(new { status = "ERROR", message = "ACCESS DENIED!!!" }) { StatusCode = 403 };
-            }
+            return new JsonResult(new { status = "ERROR", message = "ACCESS DENIED!!!" }) { StatusCode = 403 };
         }
 
         public async Task<IActionResult> OnGetDelete(Guid memberKey)

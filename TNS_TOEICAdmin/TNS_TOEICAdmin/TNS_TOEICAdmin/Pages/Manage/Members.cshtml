@@ -1,517 +1,987 @@
-﻿@page 
+﻿@page
 @model TNS_TOEICAdmin.Pages.Manage.MembersModel
 @{
     ViewData["Title"] = "Member Management";
 }
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"]</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body>
-    <div class="container">
+<style>
+    :root {
+        --primary-color: #3498db;
+        --secondary-color: #2ecc71;
+        --danger-color: #e74c3c;
+        --text-color: #34495e;
+        --bg-color: #f4f7f6;
+        --container-bg: #ffffff;
+        --shadow-color: rgba(0, 0, 0, 0.08);
+    }
+
+    #testHistoryContainer .table thead {
+        position: sticky;
+        top: 0;
+        z-index: 10; /* Đảm bảo header nằm trên các dòng khác */
+        background-color: #f8f9fa; /* Thêm màu nền để che nội dung bên dưới khi cuộn */
+    }
+    body {
+        background-color: var(--bg-color);
+        font-family: 'Poppins', sans-serif;
+        color: var(--text-color);
+    }
+
+    .member-page-container {
+        padding: 2rem;
+    }
+
+    .header-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    h2 {
+        font-weight: 700;
+        font-size: 2rem;
+        color: var(--text-color);
+    }
+
+    .actions-bar {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .search-wrapper {
+        position: relative;
+    }
+
+        .search-wrapper .fa-search {
+            position: absolute;
+            top: 50%;
+            left: 15px;
+            transform: translateY(-50%);
+            color: #bdc3c7;
+        }
+
+    .search-input, .filter-select {
+        border-radius: 25px;
+        border: 1px solid #dfe6e9;
+        background-color: var(--container-bg);
+        padding: 0.6rem 1rem;
+        transition: all 0.3s ease;
+        min-width: 200px;
+    }
+
+    .search-input {
+        padding-left: 40px;
+    }
+
+        .search-input:focus, .filter-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+            outline: none;
+        }
+
+    .btn-add {
+        background-image: linear-gradient(45deg, var(--primary-color), #85c1e9);
+        border: none;
+        color: #fff;
+        font-weight: 500;
+        padding: 0.7rem 1.5rem;
+        border-radius: 25px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+    }
+
+        .btn-add:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
+
+    .table-container {
+        max-height: 70vh;
+        overflow-y: auto;
+        border-radius: 15px;
+        background-color: var(--container-bg);
+        box-shadow: 0 8px 30px var(--shadow-color);
+    }
+
+    .styled-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .styled-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background-color: #f8f9fa;
+            color: var(--text-color);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 2px solid #dfe6e9;
+        }
+
+            .styled-table thead th:first-child {
+                border-top-left-radius: 15px;
+            }
+
+            .styled-table thead th:last-child {
+                border-top-right-radius: 15px;
+            }
+
+        .styled-table tbody tr {
+            transition: background-color 0.2s ease;
+        }
+
+            .styled-table tbody tr:hover {
+                background-color: #f1f5f8;
+            }
+
+        .styled-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #ecf0f1;
+            vertical-align: middle;
+        }
+
+    .score-cell .exam-score {
+        font-weight: 600;
+        font-size: 1.1em;
+    }
+
+    .score-cell .target-score {
+        color: #7f8c8d;
+    }
+
+    .status-badge {
+        padding: 0.25em 0.6em;
+        border-radius: 15px;
+        font-size: 0.8em;
+        font-weight: 500;
+    }
+
+    .status-activated {
+        background-color: #e8f5e9;
+        color: #388e3c;
+    }
+
+    .status-locked {
+        background-color: #ffebee;
+        color: #d32f2f;
+    }
+
+    .btn-action {
+        background: transparent;
+        border: none;
+        color: #95a5a6;
+        font-size: 1.2rem;
+        margin: 0 0.2rem;
+        transition: all 0.2s ease;
+    }
+
+        .btn-action:hover {
+            transform: scale(1.2);
+        }
+
+    .btn-edit:hover {
+        color: var(--primary-color);
+    }
+
+    .btn-details:hover {
+        color: var(--secondary-color);
+    }
+
+    .btn-delete:hover {
+        color: var(--danger-color);
+    }
+
+    .pagination {
+        margin-top: 2rem;
+    }
+
+        .pagination .page-link {
+            border-radius: 50%;
+            margin: 0 5px;
+            color: var(--primary-color);
+            border: none;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+            .pagination .page-link:hover {
+                background-color: #e9ecef;
+            }
+
+        .pagination .active .page-link {
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+
+    /* Modal Styling */
+    .modal-content {
+        border-radius: 15px;
+        border: none;
+    }
+
+    .modal-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        border-top-left-radius: 15px;
+        border-top-right-radius: 15px;
+    }
+
+    .modal-title {
+        color: var(--text-color);
+        font-weight: 600;
+    }
+
+    .modal-body {
+        padding: 2rem;
+    }
+
+    .chart-container-modal {
+        height: 300px;
+    }
+
+    .btn-save, .btn-cancel {
+        font-weight: 500;
+        padding: 0.7rem 1.5rem;
+        border-radius: 25px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-save {
+        background-image: linear-gradient(45deg, var(--secondary-color), #58d68d);
+        border: none;
+        color: #fff;
+        box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+    }
+
+        .btn-save:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
+        }
+
+    .btn-cancel {
+        background-color: #dfe6e9;
+        border-color: #dfe6e9;
+    }
+
+        .btn-cancel:hover {
+            background-color: #b2bec3;
+        }
+
+    /* Scrollbar */
+    .table-container::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .table-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .table-container::-webkit-scrollbar-thumb {
+        background: #bdc3c7;
+        border-radius: 4px;
+    }
+
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #95a5a6;
+        }
+</style>
+
+<div class="container-fluid member-page-container">
+    <div class="header-bar">
         <h2><i class="fas fa-user-graduate me-2"></i>Member Management</h2>
-        <div class="search-container">
-            <button class="btn btn-add"><i class="fas fa-plus me-2"></i>Add Member</button>
-            <input type="text" class="form-control search-input" id="searchInput" placeholder="Search by MemberID or MemberName" />
-            <select class="form-control" id="activateFilter">
+        <div class="actions-bar">
+            <div class="search-wrapper">
+                <i class="fas fa-search"></i>
+                <input type="text" class="form-control search-input" id="searchInput" placeholder="Search by ID or Name..." />
+            </div>
+            <select class="form-control filter-select" id="activateFilter">
                 <option value="">All Statuses</option>
                 <option value="1">Activated</option>
                 <option value="0">Locked</option>
             </select>
-            <select class="form-control" id="testStatusFilter">
-                <option value="">All Test Statuses</option>
-                <option value="inprogress">In Progress</option>
-                <option value="completed">Completed</option>
-                <option value="notstarted">Not Started</option>
-            </select>
-            <button class="btn btn-search" onclick="searchMembers()"><i class="fas fa-search me-2"></i>Search</button>
+            <button class="btn btn-add" onclick="showAddModal()"><i class="fas fa-plus me-1"></i>Add Member</button>
         </div>
+    </div>
 
-        <table class="table table-bordered table-hover">
+    <div class="table-container">
+        <table class="table styled-table">
             <thead>
                 <tr>
-                    <th>MemberID</th>
+                    <th>Member ID</th>
                     <th>Member Name</th>
-                    <th>Gender</th>
-                    <th>Age</th>
-                    <th>Department</th>
-                    <th>StudyScore</th>
-                    <th>ExamScore</th>
-                    <th>TotalTests</th>
-                    <th>Average Score</th>
+                    <th>Score (Exam/Target)</th>
+                    <th>Ability (IRT)</th>
                     <th>Status</th>
-                    <th>LastLogin</th>
+                    <th>Last Login</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody id="memberTableBody"></tbody>
         </table>
-
-        <nav aria-label="Page navigation">
-            <ul class="pagination justify-content-center" id="pagination"></ul>
-        </nav>
     </div>
 
-    <!-- Add/Edit Modal -->
-    <div class="modal fade" id="memberModal" tabindex="-1" aria-labelledby="memberModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="memberModalLabel">Add Member</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="memberForm">
-                        <input type="hidden" id="memberKey" name="memberKey" />
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="memberID" class="form-label">MemberID</label>
-                                <input type="text" class="form-control" id="memberID" name="memberID" required />
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="memberName" class="form-label">Member Name</label>
-                                <input type="text" class="form-control" id="memberName" name="memberName" required />
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="password" class="form-label">Password</label>
-                                <input type="password" class="form-control" id="password" name="password" placeholder="Enter only when creating or resetting" />
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="gender" class="form-label">Gender</label>
-                                <select class="form-control" id="gender" name="gender">
-                                    <option value="1">Male</option>
-                                    <option value="0">Female</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="yearOld" class="form-label">Age</label>
-                                <input type="number" class="form-control" id="yearOld" name="yearOld" min="1" max="100" required />
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="departmentKey" class="form-label">Department</label>
-                                <select class="form-control" id="departmentKey" name="departmentKey">
-                                    <option value="">Not Linked</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="toeicScoreStudy" class="form-label">Study Score</label>
-                                <input type="number" class="form-control" id="toeicScoreStudy" name="toeicScoreStudy" min="0" max="990" placeholder="0-990" />
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="toeicScoreExam" class="form-label">Exam Score</label>
-                                <input type="number" class="form-control" id="toeicScoreExam" name="toeicScoreExam" min="0" max="990" placeholder="0-990" />
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="activate" class="form-label">Status</label>
-                                <select class="form-control" id="activate" name="activate">
-                                    <option value="1">Activated</option>
-                                    <option value="0">Locked</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="text-end">
-                            <button type="submit" class="btn btn-save"><i class="fas fa-save me-2"></i>Save</button>
-                            <button type="button" class="btn btn-cancel" data-bs-dismiss="modal"><i class="fas fa-times me-2"></i>Cancel</button>
-                        </div>
-                    </form>
-                </div>
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center" id="pagination"></ul>
+    </nav>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal fade" id="memberModal" tabindex="-1" aria-labelledby="memberModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="memberModalLabel">Add Member</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-        </div>
-    </div>
-
-    <!-- Delete Modal -->
-    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="deleteModalLabel">Delete Member</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    Are you sure you want to delete this member?
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-delete" onclick="confirmDelete()">Delete</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Details Modal -->
-    <div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="detailsModalLabel">Test Details</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="charts-row">
-                        <div class="chart-container">
-                            <canvas id="listeningScoreChart"></canvas>
+            <div class="modal-body">
+                <form id="memberForm">
+                    <input type="hidden" id="memberKey" name="memberKey" />
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="memberID" class="form-label">MemberID</label>
+                            <input type="text" class="form-control" id="memberID" name="memberID" required />
                         </div>
-                        <div class="chart-container">
-                            <canvas id="readingScoreChart"></canvas>
+                        <div class="col-md-6 mb-3">
+                            <label for="memberName" class="form-label">Member Name</label>
+                            <input type="text" class="form-control" id="memberName" name="memberName" required />
                         </div>
-                        <div class="chart-container">
-                            <canvas id="testScoreChart"></canvas>
+                        <div class="col-md-6 mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" name="password" placeholder="Enter only when creating or resetting" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="gender" class="form-label">Gender</label>
+                            <select class="form-control" id="gender" name="gender">
+                                <option value="1">Male</option>
+                                <option value="0">Female</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="yearOld" class="form-label">Age</label>
+                            <input type="number" class="form-control" id="yearOld" name="yearOld" min="1" max="100" required />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="departmentKey" class="form-label">Department</label>
+                            <select class="form-control" id="departmentKey" name="departmentKey">
+                                <option value="">Not Linked</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="scoreTarget" class="form-label">Target Score</label>
+                            <input type="number" class="form-control" id="scoreTarget" name="scoreTarget" min="0" max="990" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="toeicScoreExam" class="form-label">Exam Score</label>
+                            <input type="number" class="form-control" id="toeicScoreExam" name="toeicScoreExam" min="0" max="990" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="irtAbility" class="form-label">IRT Ability</label>
+                            <input type="number" step="0.01" class="form-control" id="irtAbility" name="irtAbility" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="activate" class="form-label">Status</label>
+                            <select class="form-control" id="activate" name="activate">
+                                <option value="1">Activated</option>
+                                <option value="0">Locked</option>
+                            </select>
                         </div>
                     </div>
-                    <hr />
-                    <h6>Test List</h6>
-                    <div class="table-responsive">
-                        <table class="table table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>Test ID</th>
-                                    <th>Score</th>
-                                    <th>Start Time</th>
-                                    <th>End Time</th>
-                                    <th>Duration</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="testDetailsBody"></tbody>
-                        </table>
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-save"><i class="fas fa-save me-2"></i>Save</button>
+                        <button type="button" class="btn btn-cancel" data-bs-dismiss="modal"><i class="fas fa-times me-2"></i>Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Details Modal -->
+<div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detailsModalLabel">Member Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-lg-4">
+                        <h6>Personal Information</h6>
+                        <p><strong>Member ID:</strong> <span id="detailMemberID"></span></p>
+                        <p><strong>Name:</strong> <span id="detailMemberName"></span></p>
+                        <p><strong>Gender:</strong> <span id="detailGender"></span></p>
+                        <p><strong>Age:</strong> <span id="detailYearOld"></span></p>
+                        <p><strong>Department:</strong> <span id="detailDepartment"></span></p>
+                        <hr />
+                        <h6>Performance Metrics</h6>
+                        <p><strong>Target Score:</strong> <span id="detailScoreTarget"></span></p>
+                        <p><strong>Exam Score:</strong> <span id="detailToeicScoreExam"></span></p>
+                        <p><strong>IRT Ability:</strong> <span id="detailIrtAbility"></span></p>
+                    </div>
+                    <div class="col-lg-8">
+                        <h6>Practice Score Analysis (by Parts)</h6>
+                        <div class="chart-container-modal">
+                            <canvas id="practiceScoreChart"></canvas>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+
+                @* --- PHẦN MÃ MỚI ĐƯỢC THÊM VÀO --- *@
+                <hr class="my-4" />
+                <h6>Test History & Progress Chart</h6>
+                <div class="btn-group mb-3" role="group" id="historyTypeSelector">
+                    <button type="button" id="fullTestHistoryBtn" class="btn btn-primary active" onclick="loadTestHistory('FullTest', this)">Full Tests</button>
+
+                    <div class="btn-group" role="group">
+                        <button id="practiceTestHistoryBtn" type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            Practice Tests
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="loadTestHistory('Practice', this, 'Practice Tests')">All Practice</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" onclick="loadTestHistory('Practice-1', this, 'Practice Part 1')">Part 1</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="loadTestHistory('Practice-2', this, 'Practice Part 2')">Part 2</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="loadTestHistory('Practice-3', this, 'Practice Part 3')">Part 3</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="loadTestHistory('Practice-4', this, 'Practice Part 4')">Part 4</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="loadTestHistory('Practice-5', this, 'Practice Part 5')">Part 5</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="loadTestHistory('Practice-6', this, 'Practice Part 6')">Part 6</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="loadTestHistory('Practice-7', this, 'Practice Part 7')">Part 7</a></li>
+                        </ul>
+                    </div>
                 </div>
+
+                @* Container cho biểu đồ có thể cuộn *@
+                <div class="chart-container-modal mb-3" style="height: 350px;">
+                    <canvas id="historyChart"></canvas>
+                </div>
+
+                @* Container cho bảng lịch sử *@
+                <div id="testHistoryContainer" class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                    <p class="text-muted">Select a history type to view...</p>
+                </div>
+             
             </div>
         </div>
     </div>
-
-    <!-- Edit Test Modal -->
-    <div class="modal fade" id="editTestModal" tabindex="-1" aria-labelledby="editTestModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="editTestModalLabel">Edit Test</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="editTestForm">
-                        <input type="hidden" id="editResultKey" name="editResultKey" />
-                        <div class="mb-3">
-                            <label for="editTestScore" class="form-label">Test Score</label>
-                            <input type="number" class="form-control" id="editTestScore" name="editTestScore" min="0" max="990" required />
-                        </div>
-                        <div class="text-end">
-                            <button type="submit" class="btn btn-save"><i class="fas fa-save me-2"></i>Save Score</button>
-                            <button type="button" class="btn btn-danger" onclick="cancelTest()"><i class="fas fa-ban me-2"></i>Cancel Test</button>
-                            <button type="button" class="btn btn-cancel" data-bs-dismiss="modal"><i class="fas fa-times me-2"></i>Close</button>
-                        </div>
-                    </form>
-                </div>
+</div>
+<div class="modal fade" id="editTestModal" tabindex="-1" aria-labelledby="editTestModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editTestModalLabel">Edit Test Score</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editTestForm" onsubmit="event.preventDefault(); submitEditTestScore();">
+                    <input type="hidden" id="editResultKey" name="editResultKey" />
+                    <div class="mb-3">
+                        <label for="editTestScore" class="form-label">Test Score</label>
+                        <input type="number" class="form-control" id="editTestScore" name="editTestScore" min="0" max="990" required />
+                        <small class="form-text text-muted">Enter total score for Full Test, or percentage for Practice Test.</small>
+                    </div>
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-save"><i class="fas fa-save me-2"></i>Save Score</button>
+                        <button type="button" class="btn btn-danger" onclick="cancelTest()"><i class="fas fa-ban me-2"></i>Cancel Test</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
-    @section Scripts {
-        <script>
-            let totalItems = 0;
-            let members = [];
-            let currentMemberKey = null;
-            let currentPage = 1;
-            const pageSize = 10;
-            let searchTerm = '';
-            let activateFilter = '';
-            let testStatusFilter = '';
-            let isEditMode = false;
+</div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.0.1/chartjs-plugin-zoom.min.js"></script>
+@section Scripts {
+    <script>
+        let currentHistoryType = 'FullTest';
+     
+        let members = [];
+        let currentMemberKey = null;
+        let currentPage = 1;
+        const pageSize = 10;
+        let searchTerm = '';
+        let activateFilter = '';
+        let isEditMode = false;
+        let practiceScoreChart = null;
+        let historyChart = null;
 
-            $(document).ready(function () {
-                loadMembers();
-                $('.btn-add').on('click', showAddModal);
-            });
+        $(document).ready(function () {
+            loadMembers();
+            Chart.register(ChartZoom);
+            $('#searchInput').on('keyup', debounce(searchMembers, 500));
+            $('#activateFilter').on('change', searchMembers);
+        });
 
-            function loadMembers(page = 1, search = '', activate = '', testStatus = '') {
-                currentPage = page;
-                searchTerm = search;
-                activateFilter = activate;
-                testStatusFilter = testStatus;
+        function debounce(func, delay) {
+            let timeout;
+            return function(...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), delay);
+            };
+        }
 
-                let data = { page: currentPage, pageSize: pageSize };
-                if (search.trim() !== '') data.search = search;
-                if (activate !== '') data.activate = activate;
-                if (testStatus !== '') data.testStatus = testStatus;
+        function loadMembers(page = 1) {
+            currentPage = page;
+            searchTerm = $('#searchInput').val().trim();
+            activateFilter = $('#activateFilter').val();
 
-                $.ajax({
-                    url: '/Manage/Members?handler=GetMembers',
-                    method: 'GET',
-                    data: data,
-                    dataType: 'json',
-                    success: function (data) {
-                        if (data.status === 'ERROR') {
-                            showAlert('danger', data.message || 'Error loading member list.');
-                            members = [];
-                            totalItems = 0;
-                        } else {
-                            members = Array.isArray(data.members) ? data.members : [];
-                            totalItems = data.totalItems || 0;
-                        }
-                        renderMembers();
-                        renderPagination();
-                    },
-                    error: function () {
-                        showAlert('danger', 'Failed to load member list.');
+            let data = { page: currentPage, pageSize: pageSize, search: searchTerm, activate: activateFilter };
+
+            $.ajax({
+                url: '/Manage/Members?handler=GetMembers',
+                method: 'GET',
+                data: data,
+                dataType: 'json',
+                success: function (response) {
+                    if (response.status === 'ERROR') {
+                        showAlert('danger', response.message);
                         members = [];
-                        totalItems = 0;
+                    } else {
+                        members = Array.isArray(response.members) ? response.members : [];
                         renderMembers();
-                        renderPagination();
+                        renderPagination(response.totalItems);
                     }
-                });
-            }
-
-            function renderMembers() {
-                const tbody = $('#memberTableBody');
-                tbody.empty();
-                members.forEach(m => {
-                    tbody.append(`
-                                <tr>
-                                    <td>${m.MemberID || 'N/A'}</td>
-                                    <td>${m.MemberName || 'N/A'}</td>
-                                    <td>${m.Gender === 1 ? 'Male' : 'Female'}</td>
-                                    <td>${m.YearOld || 'N/A'}</td>
-                                    <td>${m.DepartmentName || 'Not Linked'}</td>
-                                    <td>${m.ToeicScoreStudy !== null ? m.ToeicScoreStudy : 'None'}</td>
-                                    <td>${m.ToeicScoreExam !== null ? m.ToeicScoreExam : 'None'}</td>
-                                    <td>${m.TotalTests || 0}</td>
-                                    <td>${m.AverageTestScore ? m.AverageTestScore.toFixed(2) : 'N/A'}</td>
-                                    <td>${m.Activate ? 'Activated' : 'Locked'}</td>
-                                    <td>${m.LastLoginDate || 'Never Logged In'}</td>
-                                    <td>
-                                        <button class="btn btn-action btn-edit" onclick="showEditModal('${m.MemberKey}')"><i class="fas fa-edit"></i></button>
-                                        <button class="btn btn-action btn-details" onclick="showDetailsModal('${m.MemberKey}')"><i class="fas fa-info-circle"></i></button>
-                                        <button class="btn btn-action btn-delete" onclick="showDeleteModal('${m.MemberKey}')"><i class="fas fa-trash"></i></button>
-                                    </td>
-                                </tr>
-                            `);
-                });
-            }
-
-            function renderPagination() {
-                const totalPages = Math.ceil(totalItems / pageSize);
-                const pagination = $('#pagination');
-                pagination.empty();
-
-                pagination.append(`<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-                    <a class="page-link" href="#" onclick="loadMembers(${currentPage - 1}, '${searchTerm}', '${activateFilter}', '${testStatusFilter}')"><i class="fas fa-chevron-left"></i></a>
-                </li>`);
-
-                for (let i = 1; i <= totalPages; i++) {
-                    pagination.append(`<li class="page-item ${i === currentPage ? 'active' : ''}">
-                        <a class="page-link" href="#" onclick="loadMembers(${i}, '${searchTerm}', '${activateFilter}', '${testStatusFilter}')">${i}</a>
-                    </li>`);
-                }
-
-                pagination.append(`<li class="page-item ${currentPage === totalPages || totalPages === 0 ? 'disabled' : ''}">
-                    <a class="page-link" href="#" onclick="loadMembers(${currentPage + 1}, '${searchTerm}', '${activateFilter}', '${testStatusFilter}')"><i class="fas fa-chevron-right"></i></a>
-                </li>`);
-            }
-
-            function showAddModal() {
-                isEditMode = false;
-                $('#memberModalLabel').text('Add Member');
-                $('#memberForm')[0].reset();
-                $('#memberKey').val('');
-                $('#password').prop('required', true);
-                $('#toeicScoreStudy').val('');
-                $('#toeicScoreExam').val('');
-                populateDepartmentDropdown();
-                $('#memberModal').modal('show');
-            }
-
-            function showEditModal(memberKey) {
-                const member = members.find(m => m.MemberKey === memberKey);
-                if (member) {
-                    isEditMode = true;
-                    $('#memberModalLabel').text('Edit Member');
-                    $('#memberKey').val(member.MemberKey);
-                    $('#memberID').val(member.MemberID);
-                    $('#memberName').val(member.MemberName);
-                    $('#password').val('').prop('required', false);
-                    $('#gender').val(member.Gender === 1 ? '1' : '0');
-                    $('#yearOld').val(member.YearOld);
-                    $('#toeicScoreStudy').val(member.ToeicScoreStudy !== null ? member.ToeicScoreStudy : '');
-                    $('#toeicScoreExam').val(member.ToeicScoreExam !== null ? member.ToeicScoreExam : '');
-                    $('#activate').val(member.Activate ? '1' : '0');
-                    populateDepartmentDropdown(member.DepartmentKey ? member.DepartmentKey.toString() : '');
-                    $('#memberModal').modal('show');
-                } else {
-                    showAlert('danger', 'Member not found.');
-                }
-            }
-
-            function showDeleteModal(memberKey) {
-                currentMemberKey = memberKey;
-                $('#deleteModal').modal('show');
-            }
-
-            function showDetailsModal(memberKey) {
-                currentMemberKey = memberKey;
-                $.ajax({
-                    url: '/Manage/Members?handler=GetTestDetails',
-                    method: 'GET',
-                    data: { memberKey: memberKey },
-                    success: function (data) {
-                        const tbody = $('#testDetailsBody');
-                        tbody.empty();
-                        if (Array.isArray(data) && data.length > 0) {
-                            data.forEach(test => {
-                                const statusText = test.Status === 0 ? 'In Progress' :
-                                    test.Status === 1 ? 'Completed' :
-                                        test.Status === 2 ? 'Score Edited' :
-                                            test.Status === 99 ? 'Cancelled' : 'Unknown';
-                                const timeText = test.Time !== null ? `${test.Time} seconds` : 'N/A';
-                                tbody.append(`
-                                            <tr>
-                                                <td>${test.TestName || 'N/A'}</td>
-                                                <td>${test.TestScore !== null ? test.TestScore : 'None'}</td>
-                                                <td>${test.StartTime || 'N/A'}</td>
-                                                <td>${test.EndTime || 'Not Completed'}</td>
-                                                <td>${timeText}</td>
-                                                <td>${statusText}</td>
-                                                <td>
-                                                    <button class="btn btn-action btn-details" onclick="viewTestResult('${test.TestKey}', '${test.ResultKey}')"><i class="fas fa-eye"></i></button>
-                                                    <button class="btn btn-action btn-edit" onclick="showEditTestModal('${test.ResultKey}', ${test.TestScore !== null ? test.TestScore : 0})"><i class="fas fa-edit"></i></button>
-                                                </td>
-                                            </tr>
-                                        `);
-                            });
-                        } else {
-                            tbody.append('<tr><td colspan="7" class="text-center">No tests available.</td></tr>');
-                        }
-
-                        // Fetch test score history
-                        $.ajax({
-                            url: '/Manage/Members?handler=GetTestScoreHistory',
-                            method: 'GET',
-                            data: { memberKey: memberKey },
-                            success: function (history) {
-                                createChart('listeningScoreChart', 'Listening Score', 'ListeningScore', '#0288D1');
-                                createChart('readingScoreChart', 'Reading Score', 'ReadingScore', '#FFD54F');
-                                createChart('testScoreChart', 'Test Score', 'TestScore', '#4FC3F7');
-                            },
-                            error: function () {
-                                showAlert('danger', 'Failed to load test score history.');
-                            }
-                        });
-
-                        $('#detailsModal').modal('show');
-                    },
-                    error: function () {
-                        showAlert('danger', 'Failed to load test list.');
-                    }
-                });
-            }
-
-            function viewTestResult(testKey, resultKey) {
-                const url = `https://localhost:7003/Test/ResultTest?testKey=${testKey}&resultKey=${resultKey}`;
-                window.open(url, '_blank');
-            }
-
-            function showEditTestModal(resultKey, testScore) {
-                $('#editResultKey').val(resultKey);
-                $('#editTestScore').val(testScore);
-                $('#editTestModal').modal('show');
-            }
-
-            $('#editTestForm').on('submit', function (e) {
-                e.preventDefault();
-                const formData = {
-                    ResultKey: $('#editResultKey').val(),
-                    TestScore: parseInt($('#editTestScore').val())
-                };
-
-                $.ajax({
-                    url: '/Manage/Members?handler=UpdateTestScore',
-                    method: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify(formData),
-                    headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
-                    success: function (data) {
-                        $('#editTestModal').modal('hide');
-                        $('#detailsModal').modal('hide');
-                        showAlert('success', data.message || 'Score updated successfully!');
-                        showDetailsModal(currentMemberKey);
-                    },
-                    error: function (xhr) {
-                        let errorMessage = 'Failed to update score.';
-                        if (xhr.responseJSON && xhr.responseJSON.message) {
-                            errorMessage = xhr.responseJSON.message;
-                        }
-                        showAlert('danger', errorMessage);
-                    }
-                });
+                },
+                error: () => showAlert('danger', 'Failed to load member list.')
             });
+        }
 
-            function cancelTest() {
-                const formData = {
-                    ResultKey: $('#editResultKey').val()
-                };
+        function renderMembers() {
+            const tbody = $('#memberTableBody');
+            tbody.empty();
+            if(members.length === 0) {
+                tbody.append(`<tr><td colspan="7" class="text-center p-5">No members found.</td></tr>`);
+                return;
+            }
+          members.forEach(m => {
+                // THAY ĐỔI Ở ĐÂY: Sử dụng PascalCase
+                const statusClass = m.Activate ? 'status-activated' : 'status-locked';
+                const statusText = m.Activate ? 'Activated' : 'Locked';
 
+                tbody.append(`
+                    <tr style="animation: fadeIn 0.5s ease-out;">
+                        <td><strong>${m.MemberID || 'N/A'}</strong></td>
+                        <td>${m.MemberName || 'N/A'}</td>
+                        <td class="score-cell">
+                            <span class="exam-score">${m.ToeicScoreExam ?? 'N/A'}</span> / <span class="target-score">${m.ScoreTarget ?? 'N/A'}</span>
+                        </td>
+                        <td>${m.IrtAbility?.toFixed(2) ?? 'N/A'}</td>
+                        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                        <td>${m.LastLoginDate || 'Never'}</td>
+                        <td>
+                            <button class="btn-action btn-edit" onclick="showEditModal('${m.MemberKey}')" title="Edit"><i class="fas fa-edit"></i></button>
+                            <button class="btn-action btn-details" onclick="showDetailsModal('${m.MemberKey}')" title="Details"><i class="fas fa-info-circle"></i></button>
+                            <button class="btn-action btn-delete" onclick="showDeleteModal('${m.MemberKey}')" title="Delete"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `);
+            });
+        }
+
+        function renderPagination(totalItems) {
+            const totalPages = Math.ceil(totalItems / pageSize);
+            const pagination = $('#pagination');
+            pagination.empty();
+            if (totalPages <= 1) return;
+
+            for (let i = 1; i <= totalPages; i++) {
+                pagination.append(`<li class="page-item ${i === currentPage ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="event.preventDefault(); loadMembers(${i});">${i}</a>
+                </li>`);
+            }
+        }
+
+        function searchMembers() {
+            loadMembers(1);
+        }
+
+        function showDetailsModal(memberKey) {
+             currentMemberKey = memberKey;
+             // Hủy biểu đồ cũ trước khi mở modal mới để tránh lỗi
+             if (practiceScoreChart) practiceScoreChart.destroy();
+             if (historyChart) {
+                 historyChart.destroy();
+                 historyChart = null;
+             }
+
+             $.ajax({
+                 url: `/Manage/Members?handler=GetMemberDetails&memberKey=${memberKey}`,
+                 method: 'GET',
+                 success: function (member) {
+                     // THAY ĐỔI Ở ĐÂY: Sử dụng PascalCase cho tất cả các thuộc tính
+                     $('#detailsModalLabel').text(`Details for ${member.MemberName}`);
+                     $('#detailMemberID').text(member.MemberID || 'N/A');
+                     $('#detailMemberName').text(member.MemberName || 'N/A');
+                     $('#detailGender').text(member.Gender === 1 ? 'Male' : 'Female');
+                     $('#detailYearOld').text(member.YearOld || 'N/A');
+                     $('#detailDepartment').text(member.DepartmentName || 'Not Linked');
+                     $('#detailScoreTarget').text(member.ScoreTarget ?? 'N/A');
+                     $('#detailToeicScoreExam').text(member.ToeicScoreExam ?? 'N/A');
+                     $('#detailIrtAbility').text(member.IrtAbility?.toFixed(2) ?? 'N/A');
+
+                     const practiceScores = [
+                         member.PracticeScore_Part1, member.PracticeScore_Part2, member.PracticeScore_Part3,
+                         member.PracticeScore_Part4, member.PracticeScore_Part5, member.PracticeScore_Part6,
+                         member.PracticeScore_Part7
+                     ];
+                     renderPracticeScoreChart(practiceScores);
+
+                            loadTestHistory('FullTest', document.getElementById('fullTestHistoryBtn'));
+        $('#detailsModal').modal('show');
+                         },
+                         error: () => showAlert('danger', 'Failed to load member details.')
+                     });
+        }
+        function loadTestHistory(type, element, buttonText = null) {
+               event.preventDefault();
+               if (!currentMemberKey) return;
+               currentHistoryType = type; // Lưu lại type đang xem
+
+               // Cập nhật giao diện nút bấm
+               const fullTestBtn = $('#fullTestHistoryBtn');
+               const practiceBtn = $('#practiceTestHistoryBtn');
+
+               if (type.startsWith('Practice')) {
+                   fullTestBtn.removeClass('active btn-primary').addClass('btn-outline-primary');
+                   practiceBtn.removeClass('btn-outline-primary').addClass('active btn-primary');
+                   if (buttonText) {
+                       practiceBtn.text(buttonText);
+                   }
+               } else { // FullTest
+                   practiceBtn.removeClass('active btn-primary').addClass('btn-outline-primary').text('Practice Tests');
+                   fullTestBtn.removeClass('btn-outline-primary').addClass('active btn-primary');
+               }
+
+              $.ajax({
+                  url: `/Manage/Members?handler=GetTestScoreHistory&memberKey=${currentMemberKey}&type=${type}`,
+                  method: 'GET',
+                  success: function(historyData) {
+                      renderHistoryTable(historyData, type);
+
+                      renderHistoryChart(historyData, type); // Gọi hàm vẽ biểu đồ mới
+                  },
+                  error: function() {
+                      container.html('<p class="text-danger text-center p-3">Failed to load history.</p>');
+                      if (historyChart) historyChart.destroy(); // Xóa biểu đồ nếu lỗi
+                  }
+              });
+         }
+
+            function renderHistoryTable(data, type) {
+            const container = $('#testHistoryContainer');
+            container.empty();
+
+            if (!data || data.length === 0) {
+                container.html('<p class="text-muted text-center p-3">No history found.</p>');
+                return;
+            }
+
+            // Hàm helper để tạo badge trạng thái
+            const getStatusBadge = (status) => {
+                switch (status) {
+                    case 99: return '<span class="badge bg-danger">Cancelled</span>';
+                    case 2: return '<span class="badge bg-warning text-dark">Edited</span>';
+                    case 1: return '<span class="badge bg-success">Completed</span>';
+                    default: return '<span class="badge bg-secondary">Unknown</span>';
+                }
+            };
+
+            let table = '<table class="table table-sm table-striped table-hover"><thead><tr>';
+            if (type.startsWith('FullTest')) {
+                table += '<th>Test Name</th><th>Total</th><th>Listen</th><th>Read</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+                data.forEach(item => {
+                    const startTime = new Date(item.StartTime).toLocaleString('vi-VN');
+                    const statusBadge = getStatusBadge(item.Status);
+                    const isCancelled = item.Status === 99;
+
+                    table += `<tr>
+                        <td>${item.TestName || 'N/A'}</td>
+                        <td><strong>${item.TestScore ?? 'N/A'}</strong></td>
+                        <td>${item.ListeningScore ?? 'N/A'}</td>
+                        <td>${item.ReadingScore ?? 'N/A'}</td>
+                        <td>${startTime}</td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-info" onclick="viewTestResult('${item.TestKey}', '${item.ResultKey}')" title="Review"><i class="fas fa-eye"></i></button>
+                            <button class="btn btn-sm btn-outline-warning" onclick="showEditTestModal('${item.ResultKey}', ${item.TestScore ?? 0})" title="Edit Score" ${isCancelled ? 'disabled' : ''}><i class="fas fa-edit"></i></button>
+                        </td>
+                    </tr>`;
+                });
+            } else { // Practice
+                table += '<th>Part Name</th><th>Score (%)</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+                data.forEach(item => {
+                    const startTime = new Date(item.StartTime).toLocaleString('vi-VN');
+                    const statusBadge = getStatusBadge(item.Status);
+                    const isCancelled = item.Status === 99;
+
+                    table += `<tr>
+                        <td>${item.TestName || 'N/A'}</td>
+                        <td><strong>${item.PracticeScore ?? 'N/A'}%</strong></td>
+                        <td>${startTime}</td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-info" onclick="viewTestResult('${item.TestKey}', '${item.ResultKey}')" title="Review"><i class="fas fa-eye"></i></button>
+                            <button class="btn btn-sm btn-outline-warning" onclick="showEditTestModal('${item.ResultKey}', ${item.PracticeScore ?? 0})" title="Edit Score" ${isCancelled ? 'disabled' : ''}><i class="fas fa-edit"></i></button>
+                        </td>
+                    </tr>`;
+                });
+            }
+            table += '</tbody></table>';
+            container.html(table);
+        }
+          function showEditTestModal(resultKey, currentScore) {
+            $('#editResultKey').val(resultKey);
+            $('#editTestScore').val(currentScore);
+            $('#editTestModal').modal('show');
+        }
+
+        $('#editTestForm').on('submit', function (e) {
+            e.preventDefault();
+            const resultKey = $('#editResultKey').val();
+            const newScore = parseInt($('#editTestScore').val());
+
+            $.ajax({
+                url: '/Manage/Members?handler=UpdateTestScore',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ ResultKey: resultKey, TestScore: newScore }),
+                headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
+                success: function (response) {
+                    $('#editTestModal').modal('hide');
+                    showAlert('success', response.message);
+                    loadTestHistory(currentHistoryType); // Tải lại lịch sử hiện tại
+                },
+                error: (xhr) => showAlert('danger', xhr.responseJSON?.message || 'Failed to update score.')
+            });
+        });
+
+        function cancelTest() {
+            const resultKey = $('#editResultKey').val();
+            if (confirm('Are you sure you want to cancel this test result? This action marks the test as cancelled.')) {
                 $.ajax({
                     url: '/Manage/Members?handler=CancelTest',
                     method: 'POST',
                     contentType: 'application/json',
-                    data: JSON.stringify(formData),
+                    data: JSON.stringify({ ResultKey: resultKey }),
                     headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
-                    success: function (data) {
+                    success: function (response) {
                         $('#editTestModal').modal('hide');
-                        $('#detailsModal').modal('hide');
-                        showAlert('success', data.message || 'Test cancelled successfully!');
-                        showDetailsModal(currentMemberKey);
+                        showAlert('success', response.message);
+                        loadTestHistory(currentHistoryType); // Tải lại lịch sử hiện tại
                     },
-                    error: function (xhr) {
-                        let errorMessage = 'Failed to cancel test.';
-                        if (xhr.responseJSON && xhr.responseJSON.message) {
-                            errorMessage = xhr.responseJSON.message;
-                        }
-                        showAlert('danger', errorMessage);
-                    }
+                    error: (xhr) => showAlert('danger', xhr.responseJSON?.message || 'Failed to cancel test.')
                 });
             }
+        }
+           function renderHistoryChart(data, type) {
+              const ctx = document.getElementById('historyChart').getContext('2d');
+              if (historyChart) {
+                  historyChart.destroy();
+              }
 
-            function confirmDelete() {
-                deleteMember(currentMemberKey);
-                $('#deleteModal').modal('hide');
+              if (!data || data.length === 0) {
+                  return;
+                  // Không vẽ gì nếu không có dữ liệu
+              }
+
+              const labels = data.map(item => new Date(item.StartTime).toLocaleDateString('vi-VN'));
+              const scores = (type === 'FullTest') ? data.map(item => item.TestScore) : data.map(item => item.PracticeScore);
+              const chartLabel = (type === 'FullTest') ? 'Total Score' : 'Practice Score (%)';
+              const yMax = (type === 'FullTest') ?
+              990 : 100;
+
+              historyChart = new Chart(ctx, {
+                  type: 'bar',
+                  data: {
+                      labels: labels,
+                      datasets: [
+
+                         {
+                              label: chartLabel,
+                              data: scores,
+                              backgroundColor: 'rgba(52, 152, 219, 0.6)',
+
+                              borderColor: 'rgba(52, 152, 219, 1)',
+                              borderWidth: 1,
+                              borderRadius: 5,
+
+                              order: 2 // Vẽ cột phía sau
+                          },
+                          {
+                              type: 'line',
+
+                              label: 'Progress Trend',
+                              data: scores,
+                              borderColor: 'rgba(231, 76, 60, 0.8)',
+
+                              backgroundColor: 'rgba(231, 76, 60, 0.2)',
+                              fill: false,
+                              tension: 0.1,
+
+                              order: 1 // Vẽ đường phía trên
+                          }
+                      ]
+                  },
+                  options: {
+
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      scales: {
+                          y: {
+
+                              beginAtZero: true,
+                              max: yMax
+                          }
+                      },
+
+                      plugins: {
+                          legend: {
+                              position: 'top',
+                          },
+
+                          title: {
+                              display: true,
+                              text: 'Student Progress Over Time (Scroll/Pinch to Zoom & Pan)'
+                          },
+
+                          zoom: {
+                              pan: {
+                                  enabled: true,
+
+                                  mode: 'x' // Chỉ cho phép cuộn ngang
+                              },
+                              zoom: {
+
+                                  wheel: { enabled: true },
+                                  pinch: { enabled: true },
+                                  mode: 'x', // Chỉ cho phép zoom theo chiều ngang
+
+                              }
+                          }
+                      }
+                  }
+              });
+          }
+        function viewTestResult(testKey, resultKey) {
+              // URL này cần được điều chỉnh cho phù hợp với cấu trúc project của bạn
+              const url = `/Test/ResultTest?testKey=${testKey}&resultKey=${resultKey}`;
+              window.open(url, '_blank');
+          }
+        function renderPracticeScoreChart(scores) {
+            const ctx = document.getElementById('practiceScoreChart').getContext('2d');
+            if (practiceScoreChart) {
+                practiceScoreChart.destroy();
             }
+            practiceScoreChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Part 1', 'Part 2', 'Part 3', 'Part 4', 'Part 5', 'Part 6', 'Part 7'],
+                    datasets: [{
+                        label: 'Practice Score (%)',
+                        data: scores,
+                        backgroundColor: 'rgba(52, 152, 219, 0.6)',
+                        borderColor: 'rgba(52, 152, 219, 1)',
+                        borderWidth: 1,
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: { callback: value => value + '%' }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
 
-            function populateDepartmentDropdown(selectedKey = '') {
-                $.ajax({
-                    url: '/Manage/Members?handler=GetDepartments',
+        function showAddModal() {
+            isEditMode = false;
+            $('#memberModalLabel').text('Add Member');
+            $('#memberForm')[0].reset();
+            $('#memberKey').val('');
+            $('#password').prop('required', true);
+            populateDepartmentDropdown();
+            $('#memberModal').modal('show');
+        }
+
+        function showEditModal(memberKey) {
+                 $.ajax({
+                    url: `/Manage/Members?handler=GetMemberDetails&memberKey=${memberKey}`,
                     method: 'GET',
-                    success: function (data) {
-                        const deptSelect = $('#departmentKey');
-                        deptSelect.empty();
-                        deptSelect.append('<option value="">Not Linked</option>');
-                        if (Array.isArray(data)) {
-                            data.forEach(dept => {
-                                if (dept && dept.DepartmentKey && dept.DepartmentName) {
-                                    const isSelected = dept.DepartmentKey.toString() === selectedKey ? 'selected' : '';
-                                    deptSelect.append(`<option value="${dept.DepartmentKey}" ${isSelected}>${dept.DepartmentName}</option>`);
-                                }
-                            });
-                        }
+                    success: function (memberDetails) {
+
+                        isEditMode = true;
+                        // THAY ĐỔI Ở ĐÂY: Sử dụng PascalCase
+                        $('#memberModalLabel').text('Edit Member');
+                        $('#memberKey').val(memberDetails.MemberKey);
+                        $('#memberID').val(memberDetails.MemberID);
+                        $('#memberName').val(memberDetails.MemberName);
+                        $('#password').val('').prop('required', false).attr('placeholder', 'Leave blank to keep current password');
+                        $('#gender').val(memberDetails.Gender);
+                        $('#yearOld').val(memberDetails.YearOld);
+                        $('#scoreTarget').val(memberDetails.ScoreTarget);
+                        $('#toeicScoreExam').val(memberDetails.ToeicScoreExam);
+                        $('#irtAbility').val(memberDetails.IrtAbility);
+                        $('#activate').val(memberDetails.Activate ? '1' : '0');
+                        populateDepartmentDropdown(memberDetails.DepartmentKey);
+                        $('#memberModal').modal('show');
                     },
-                    error: function () {
-                        showAlert('danger', 'Failed to load department list.');
-                    }
+                    error: () => showAlert('danger', 'Failed to load member details for editing.')
                 });
             }
 
-            $('#memberForm').on('submit', function (e) {
+        function populateDepartmentDropdown(selectedKey = '') {
+             $.ajax({
+                 url: '/Manage/Members?handler=GetDepartments',
+                 method: 'GET',
+                 success: function (data) {
+                     const deptSelect =
+                     $('#departmentKey');
+                     deptSelect.empty().append('<option value="">Not Linked</option>');
+                     if (Array.isArray(data)) {
+                         data.forEach(dept => {
+                             // THAY ĐỔI Ở ĐÂY: Sử dụng PascalCase
+                             if (dept && dept.DepartmentKey && dept.DepartmentName) {
+                                 const isSelected = dept.DepartmentKey === selectedKey;
+                                 deptSelect.append(new Option(dept.DepartmentName, dept.DepartmentKey, false, isSelected));
+
+                              }
+                         });
+                         if(selectedKey){
+                             deptSelect.val(selectedKey);
+
+                          }
+                     }
+                 }
+             });
+         }
+
+        $('#memberForm').on('submit', function (e) {
                 e.preventDefault();
+                // THAY ĐỔI Ở ĐÂY: Gửi dữ liệu đi với key là PascalCase
                 const formData = {
                     MemberKey: $('#memberKey').val() || '00000000-0000-0000-0000-000000000000',
                     MemberID: $('#memberID').val(),
@@ -519,10 +989,12 @@
                     Password: $('#password').val() || null,
                     Gender: parseInt($('#gender').val()),
                     YearOld: parseInt($('#yearOld').val()),
-                    ToeicScoreStudy: $('#toeicScoreStudy').val() ? parseInt($('#toeicScoreStudy').val()) : null,
-                    ToeicScoreExam: $('#toeicScoreExam').val() ? parseInt($('#toeicScoreExam').val()) : null,
                     DepartmentKey: $('#departmentKey').val() || null,
-                    Activate: $('#activate').val() === '1'
+                    Activate: $('#activate').val() === '1',
+                    ScoreTarget: $('#scoreTarget').val()
+                    ? parseInt($('#scoreTarget').val()) : null,
+                    ToeicScoreExam: $('#toeicScoreExam').val() ? parseInt($('#toeicScoreExam').val()) : null,
+                    IrtAbility: $('#irtAbility').val() ? parseFloat($('#irtAbility').val()) : null,
                 };
 
                 const url = isEditMode ? '/Manage/Members?handler=Update' : '/Manage/Members?handler=Create';
@@ -532,517 +1004,54 @@
                     contentType: 'application/json',
                     data: JSON.stringify(formData),
                     headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
-                    success: function (data) {
+
+                    success: function (response) {
                         $('#memberModal').modal('hide');
-                        showAlert('success', data.message || (isEditMode ? 'Member updated successfully!' : 'Member added successfully!'));
-                        loadMembers(currentPage, searchTerm, activateFilter, testStatusFilter);
+                        showAlert('success', response.message);
+                        loadMembers(isEditMode ? currentPage : 1);
                     },
-                    error: function () {
-                        showAlert('danger', isEditMode ? 'Update failed.' : 'Add failed.');
+
+                    error: function (xhr) {
+                         showAlert('danger', xhr.responseJSON?.message || (isEditMode ? 'Update failed.' : 'Add failed.'));
                     }
                 });
             });
 
-            function deleteMember(memberKey) {
-                $.ajax({
-                    url: '/Manage/Members?handler=Delete',
-                    method: 'GET',
-                    data: { memberKey: memberKey },
-                    success: function () {
-                        showAlert('success', 'Member deleted successfully!');
-                        loadMembers(currentPage, searchTerm, activateFilter, testStatusFilter);
-                    },
-                    error: function () {
-                        showAlert('danger', 'Failed to delete member.');
-                    }
-                });
+        function showDeleteModal(memberKey) {
+            currentMemberKey = memberKey;
+            if (confirm('Are you sure you want to delete this member? This action cannot be undone.')) {
+                deleteMember(currentMemberKey);
             }
-
-            function searchMembers() {
-                const searchValue = $('#searchInput').val().trim();
-                const activateValue = $('#activateFilter').val();
-                const testStatusValue = $('#testStatusFilter').val();
-                loadMembers(1, searchValue, activateValue, testStatusValue);
-            }
-
-            function showAlert(type, message) {
-                const alertDiv = $(`
-                            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-                                ${message}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                            </div>
-                        `);
-                $('body').append(alertDiv);
-                setTimeout(() => alertDiv.alert('close'), 3000);
-            }
-
-            // Chart creation function
-            function createChart(canvasId, label, dataKey, color) {
-                $.ajax({
-                    url: '/Manage/Members?handler=GetTestScoreHistory',
-                    method: 'GET',
-                    data: { memberKey: currentMemberKey },
-                    success: function (history) {
-                        if (!history || history.length === 0) {
-                            const canvasEl = document.getElementById(canvasId);
-                            if (canvasEl && canvasEl.parentElement) {
-                                canvasEl.parentElement.style.display = 'none';
-                            }
-                            console.warn(`No data available for ${label} chart.`);
-                            return;
-                        }
-
-                        const labels = history.map(item => {
-                            const date = new Date(item.StartTime);
-                            return date.toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                        });
-
-                        const scores = history.map(item => {
-                            const score = item[dataKey] || 0;
-                            return Number(score) || 0;
-                        });
-
-                        const ctx = document.getElementById(canvasId).getContext('2d');
-                        if (window[canvasId + 'Chart'] instanceof Chart) {
-                            window[canvasId + 'Chart'].destroy();
-                        }
-
-                        window[canvasId + 'Chart'] = new Chart(ctx, {
-                            type: 'bar',
-                            data: {
-                                labels: labels,
-                                datasets: [
-                                    {
-                                        type: 'bar',
-                                        label: label,
-                                        data: scores,
-                                        backgroundColor: color + "80",
-                                        borderColor: color,
-                                        borderWidth: 2,
-                                        barThickness: 20,
-                                    },
-                                    {
-                                        type: 'line',
-                                        label: label + " Trend",
-                                        data: scores,
-                                        fill: false,
-                                        borderColor: color,
-                                        borderWidth: 2,
-                                        tension: 0.3,
-                                        pointRadius: 4,
-                                        pointBackgroundColor: color,
-                                    }
-                                ]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: {
-                                    legend: {
-                                        display: true,
-                                        position: 'top',
-                                        labels: { font: { family: 'Poppins', size: 12, weight: '600' }, color: '#333' }
-                                    },
-                                    tooltip: {
-                                        backgroundColor: '#0288D1',
-                                        titleFont: { family: 'Poppins', size: 12 },
-                                        bodyFont: { family: 'Poppins', size: 10 },
-                                        callbacks: { label: context => `${context.dataset.label}: ${context.raw}` }
-                                    }
-                                },
-                                scales: {
-                                    x: {
-                                        title: { display: true, text: 'Test Date', font: { family: 'Poppins', size: 14, weight: '600' }, color: '#0288D1' },
-                                        ticks: { font: { family: 'Poppins', size: 10 }, color: '#333', maxRotation: 45, minRotation: 45 },
-                                        grid: { display: false }
-                                    },
-                                    y: {
-                                        title: { display: true, text: 'Score', font: { family: 'Poppins', size: 14, weight: '600' }, color: '#0288D1' },
-                                        min: 0,
-                                        max: 495, // Listening and Reading max 495, Test max 990
-                                        ticks: {
-                                            stepSize: 50,
-                                            font: { family: 'Poppins', size: 10 },
-                                            color: '#333'
-                                        },
-                                        grid: { color: '#e0e0e0' }
-                                    }
-                                },
-                                animation: { duration: 1500, easing: 'easeOutBounce' }
-                            }
-                        });
-                    },
-                    error: function () {
-                        console.error(`Failed to load data for ${label} chart.`);
-                    }
-                });
-            }
-        </script>
-    }
-</body>
-</html>
-<style>
-    .charts-row {
-        display: flex;
-        gap: 20px;
-        margin: 20px 0;
-        overflow-x: auto;
-        padding-bottom: 10px;
-        scrollbar-width: thin;
-        scrollbar-color: #0288D1 #e0e0e0;
-    }
-
-    .charts-row::-webkit-scrollbar {
-        height: 8px;
-    }
-
-    .charts-row::-webkit-scrollbar-track {
-        background: #e0e0e0;
-        border-radius: 4px;
-    }
-
-    .charts-row::-webkit-scrollbar-thumb {
-        background: #0288D1;
-        border-radius: 4px;
-    }
-
-    .charts-row::-webkit-scrollbar-thumb:hover {
-        background: #4FC3F7;
-    }
-
-    .chart-container {
-        width: 350px;
-        height: 250px;
-        background: #fff;
-        border-radius: 10px;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        padding: 15px;
-        flex-shrink: 0;
-    }
-
-    @@media (max-width: 1200px) {
-        .chart-container {
-            width: 300px;
-            height: 200px;
         }
-    }
 
-    @@media (max-width: 768px) {
-        .charts-row {
-            gap: 10px;
+        function deleteMember(memberKey) {
+            $.ajax({
+                url: `/Manage/Members?handler=Delete&memberKey=${memberKey}`,
+                method: 'GET',
+                headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
+                success: function () {
+                    showAlert('success', 'Member deleted successfully!');
+                    loadMembers(1);
+                },
+                error: () => showAlert('danger', 'Failed to delete member.')
+            });
         }
-        .chart-container {
-            width: 250px;
-            height: 180px;
-        }
-    }
 
-    body {
-        background: linear-gradient(135deg, #E5F9FF 0%, #D1F1FF 100%);
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        color: #2C3E50;
-        line-height: 1.6;
-    }
+        function showAlert(type, message) {
+               // Can be replaced with a nicer toast notification library like Toastr
+               const alertContainer = document.createElement('div');
+               alertContainer.innerHTML = `
+                   <div style="position: fixed; top: 20px; right: 20px; z-index: 1055;"
+                   class="alert alert-${type} alert-dismissible fade show" role="alert">
+                       ${message}
+                       <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                   </div>
+               `;
+               document.body.appendChild(alertContainer);
+               setTimeout(() => {
+                   $(alertContainer).find('.alert').alert('close');
+               }, 3000);
+           }
+    </script>
+}
 
-    .container {
-        background: #FFF9E5;
-        border-radius: 20px;
-        padding: 30px;
-        margin: 40px auto;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-        max-width: 1400px;
-        transition: box-shadow 0.3s ease;
-    }
-
-    .container:hover {
-        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
-    }
-
-    h2 {
-        color: #2C3E50;
-        font-weight: 700;
-        font-size: 28px;
-        margin-bottom: 25px;
-        text-align: center;
-        text-transform: uppercase;
-        letter-spacing: 1.5px;
-        background: linear-gradient(90deg, #2C3E50, #3498DB);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-
-    .search-container {
-        display: flex;
-        gap: 20px;
-        align-items: center;
-        margin-bottom: 25px;
-        flex-wrap: nowrap;
-        justify-content: space-between;
-        width: 100%;
-    }
-
-    .search-input, .form-control {
-        border-radius: 12px;
-        border: 2px solid #3498DB;
-        background-color: #FFFFFF;
-        padding: 10px 15px;
-        transition: all 0.4s ease;
-        flex-grow: 1;
-        min-width: 150px;
-    }
-
-    .search-input:focus, .form-control:focus {
-        border-color: #2980B9;
-        box-shadow: 0 0 10px rgba(52, 152, 219, 0.4);
-        background-color: #F9FBFF;
-        outline: none;
-    }
-
-    .btn-add {
-        background: linear-gradient(45deg, #3498DB, #5DADE2);
-        border: none;
-        color: #FFFFFF;
-        padding: 10px 20px;
-        border-radius: 12px;
-        transition: all 0.3s ease;
-    }
-
-    .btn-add:hover {
-        background: linear-gradient(45deg, #2980B9, #4D97C8);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
-    }
-
-    .btn-search {
-        background: linear-gradient(45deg, #2ECC71, #27AE60);
-        border: none;
-        color: #FFFFFF;
-        padding: 10px 20px;
-        border-radius: 12px;
-        transition: all 0.3s ease;
-    }
-
-    .btn-search:hover {
-        background: linear-gradient(45deg, #27AE60, #219653);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
-    }
-
-    .table {
-        background-color: #FFFFFF;
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    }
-
-    .table th {
-        background: linear-gradient(45deg, #3498DB, #5DADE2);
-        color: #FFFFFF;
-        text-transform: uppercase;
-        font-weight: 600;
-        padding: 12px;
-        border: none;
-        font-size: 13px;
-    }
-
-    .table td {
-        padding: 12px;
-        vertical-align: middle;
-        border-color: #ECF0F1;
-        transition: background-color 0.3s ease;
-        font-size: 13px;
-    }
-
-    .table th:nth-child(1) {
-        width: 90px;
-    }
-
-    .table tr:hover td {
-        background-color: #F9FBFF;
-    }
-
-    /* Căn giữa số trong các cột */
-    .table td:nth-child(4), /* Tuổi */
-    .table td:nth-child(6), /* Điểm học */
-    .table td:nth-child(7), /* Điểm thi */
-    .table td:nth-child(8), /* Tổng bài thi */
-    .table td:nth-child(9) /* Điểm trung bình */ {
-        text-align: center;
-        vertical-align: middle;
-    }
-
-    #detailsModal .table td:nth-child(2), /* Điểm */
-    #detailsModal .table td:nth-child(5) /* Thời gian làm bài */ {
-        text-align: center;
-        vertical-align: middle;
-    }
-
-    .btn-action {
-        background: none;
-        border: none;
-        padding: 6px 8px;
-        margin: 0 3px;
-        transition: all 0.3s ease;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .btn-action i {
-        font-size: 14px;
-    }
-
-    .btn-edit i {
-        color: #3498DB;
-    }
-
-    .btn-edit:hover i {
-        color: #2980B9;
-        transform: scale(1.2);
-    }
-
-    .btn-details i {
-        color: #2ECC71;
-    }
-
-    .btn-details:hover i {
-        color: #27AE60;
-        transform: scale(1.2);
-    }
-
-    .btn-delete i {
-        color: #E74C3C;
-    }
-
-    .btn-delete:hover i {
-        color: #C0392B;
-        transform: scale(1.2);
-    }
-
-    .pagination .page-link {
-        border-radius: 8px;
-        margin: 0 5px;
-        color: #3498DB;
-        border: 2px solid #3498DB;
-        transition: all 0.3s ease;
-    }
-
-    .pagination .page-link:hover {
-        background: linear-gradient(45deg, #3498DB, #5DADE2);
-        color: #FFFFFF;
-        border-color: transparent;
-    }
-
-    .pagination .active .page-link {
-        background: linear-gradient(45deg, #3498DB, #5DADE2);
-        border-color: transparent;
-        color: #FFFFFF;
-    }
-
-    .modal-content {
-        border-radius: 15px;
-        border: none;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-        background: #FFFFFF;
-    }
-
-    .modal-header {
-        background: linear-gradient(45deg, #3498DB, #5DADE2);
-        color: #FFFFFF;
-        border-top-left-radius: 15px;
-        border-top-right-radius: 15px;
-        border-bottom: none;
-        padding: 20px;
-    }
-
-    .modal-title {
-        font-weight: 600;
-        font-size: 20px;
-    }
-
-    .modal-body {
-        padding: 25px;
-    }
-
-    .btn-save {
-        background: linear-gradient(45deg, #2ECC71, #27AE60);
-        border: none;
-        color: #FFFFFF;
-        padding: 10px 20px;
-        border-radius: 12px;
-        transition: all 0.3s ease;
-    }
-
-    .btn-save:hover {
-        background: linear-gradient(45deg, #27AE60, #219653);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
-    }
-
-    .btn-cancel {
-        background: linear-gradient(45deg, #95A5A6, #BDC3C7);
-        border: none;
-        color: #FFFFFF;
-        padding: 10px 20px;
-        border-radius: 12px;
-        transition: all 0.3s ease;
-    }
-
-    .btn-cancel:hover {
-        background: linear-gradient(45deg, #7F8C8D, #95A5A6);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(149, 165, 166, 0.3);
-    }
-
-    .btn-delete {
-        background: linear-gradient(45deg, #E74C3C, #F1948A);
-        border: none;
-        color: #FFFFFF;
-        padding: 10px 20px;
-        border-radius: 12px;
-        transition: all 0.3s ease;
-    }
-
-    .btn-delete:hover {
-        background: linear-gradient(45deg, #C0392B, #E57373);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
-    }
-
-    .btn-danger {
-        background: linear-gradient(45deg, #E74C3C, #F1948A);
-        border: none;
-        color: #FFFFFF;
-        padding: 10px 20px;
-        border-radius: 12px;
-        transition: all 0.3s ease;
-    }
-
-    .btn-danger:hover {
-        background: linear-gradient(45deg, #C0392B, #E57373);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
-    }
-
-    .alert {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 1050;
-        border-radius: 12px;
-        padding: 15px 20px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-
-    .alert-success {
-        background: linear-gradient(45deg, #2ECC71, #27AE60);
-        color: #FFFFFF;
-        border: none;
-    }
-
-    .alert-danger {
-        background: linear-gradient(45deg, #E74C3C, #F1948A);
-        color: #FFFFFF;
-        border: none;
-    }
-</style>

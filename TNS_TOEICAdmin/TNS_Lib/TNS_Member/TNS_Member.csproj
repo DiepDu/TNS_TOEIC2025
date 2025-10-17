@@ -7,11 +7,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+	  <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
 	  <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\TNS_DBConnection\TNS_DBConnection.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="TNS_Auth">
+      <HintPath>..\TNS_DLL\TNS_Auth.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>
