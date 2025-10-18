@@ -173,6 +173,16 @@ namespace TNS_TOEICAdmin.Models
             using (var conn = new SqlConnection(_connectionString))
             {
                 await conn.OpenAsync();
+                string checkSql = "SELECT COUNT(*) FROM [EDU_Member] WHERE MemberID = @MemberID AND MemberKey != @MemberKey";
+                using (var checkCmd = new SqlCommand(checkSql, conn))
+                {
+                    checkCmd.Parameters.AddWithValue("@MemberID", member.MemberID);
+                    checkCmd.Parameters.AddWithValue("@MemberKey", member.MemberKey);
+                    if ((int)await checkCmd.ExecuteScalarAsync() > 0)
+                    {
+                        throw new InvalidOperationException("MemberID already exists for another member.");
+                    }
+                }
                 string sql = @"
                     UPDATE [EDU_Member]
                     SET MemberID = @MemberID, 

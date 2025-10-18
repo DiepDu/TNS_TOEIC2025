@@ -14,7 +14,6 @@ using TNS_EDU_TEST.Areas.Test.Models;
 namespace TNS_EDU_TEST.Areas.Test.Pages
 {
     [IgnoreAntiforgeryToken]
-    [Authorize]
     public class ResultTestModel : PageModel
     {
         private readonly IConfiguration _configuration; // Thêm IConfiguration

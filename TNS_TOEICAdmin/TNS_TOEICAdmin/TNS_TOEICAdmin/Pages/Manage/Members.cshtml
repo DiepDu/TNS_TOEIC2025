@@ -3,60 +3,80 @@
 @{
     ViewData["Title"] = "Member Management";
 }
+@* External Libraries *@
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.0.1/chartjs-plugin-zoom.min.js"></script>
 
 <style>
+    /* Global Variables & Base Styles */
     :root {
         --primary-color: #3498db;
+        --primary-light: #85c1e9;
         --secondary-color: #2ecc71;
+        --secondary-light: #58d68d;
         --danger-color: #e74c3c;
+        --danger-light: #f1948a;
+        --warning-color: #f39c12; /* Adjusted warning color */
+        --warning-light: #f8c471;
+        --info-color: #3498db; /* Using primary for info */
         --text-color: #34495e;
+        --text-muted-color: #7f8c8d;
         --bg-color: #f4f7f6;
         --container-bg: #ffffff;
-        --shadow-color: rgba(0, 0, 0, 0.08);
+        --shadow-color-light: rgba(0, 0, 0, 0.06);
+        --shadow-color-medium: rgba(0, 0, 0, 0.1);
+        --border-color: #dfe6e9;
+        --header-bg: #e9ecef; /* Light background for table header */
+        --hover-bg: #f1f5f8;
     }
 
-    #testHistoryContainer .table thead {
-        position: sticky;
-        top: 0;
-        z-index: 10; /* Đảm bảo header nằm trên các dòng khác */
-        background-color: #f8f9fa; /* Thêm màu nền để che nội dung bên dưới khi cuộn */
-    }
     body {
         background-color: var(--bg-color);
         font-family: 'Poppins', sans-serif;
         color: var(--text-color);
+        font-size: 14px; /* Slightly smaller base font size */
     }
 
+    /* Page Container */
     .member-page-container {
         padding: 2rem;
     }
 
-    .header-bar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 2rem;
-        flex-wrap: wrap;
-        gap: 1rem;
-    }
-
-    h2 {
+    /* Page Header */
+    .page-title {
+        text-align: center;
         font-weight: 700;
-        font-size: 2rem;
+        font-size: 2.2rem;
         color: var(--text-color);
+        margin-bottom: 1.5rem; /* Space below title */
+        background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
 
-    .actions-bar {
+    /* Controls Area (Search, Filter, Add Button) */
+    .controls-area {
+        display: flex;
+        flex-direction: column; /* Stack rows */
+        align-items: flex-end; /* Align rows to the right */
+        margin-bottom: 2rem;
+        gap: 0.75rem; /* Space between rows */
+    }
+
+    .controls-row-1, .controls-row-2 {
         display: flex;
         gap: 1rem;
         align-items: center;
-        flex-wrap: wrap;
+        width: auto; /* Allow shrinking */
     }
 
     .search-wrapper {
         position: relative;
+        flex-grow: 1; /* Allow search to take available space */
     }
 
         .search-wrapper .fa-search {
@@ -68,12 +88,14 @@
         }
 
     .search-input, .filter-select {
-        border-radius: 25px;
-        border: 1px solid #dfe6e9;
+        border-radius: 20px; /* Slightly less rounded */
+        border: 1px solid var(--border-color);
         background-color: var(--container-bg);
-        padding: 0.6rem 1rem;
+        padding: 0.5rem 1rem; /* Adjusted padding */
+        font-size: 0.9rem;
         transition: all 0.3s ease;
-        min-width: 200px;
+        min-width: 220px; /* Ensure decent width */
+        height: calc(1.5em + 1rem + 2px); /* Match Bootstrap input height */
     }
 
     .search-input {
@@ -86,28 +108,64 @@
             outline: none;
         }
 
-    .btn-add {
-        background-image: linear-gradient(45deg, var(--primary-color), #85c1e9);
-        border: none;
-        color: #fff;
-        font-weight: 500;
-        padding: 0.7rem 1.5rem;
-        border-radius: 25px;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+    .filter-select {
+        min-width: 180px;
+        flex-shrink: 0;
     }
 
-        .btn-add:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+    /* Buttons */
+    .btn {
+        font-weight: 500;
+        padding: 0.6rem 1.3rem; /* Adjusted padding */
+        border-radius: 20px;
+        transition: all 0.3s ease;
+        border: none;
+        font-size: 0.9rem;
+        box-shadow: 0 3px 10px var(--shadow-color-light);
+    }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px var(--shadow-color-medium);
         }
 
+        .btn i {
+            margin-right: 0.4rem;
+        }
+
+    .btn-add {
+        background-image: linear-gradient(45deg, var(--primary-color), var(--primary-light));
+        color: #fff;
+    }
+
+    .btn-save {
+        background-image: linear-gradient(45deg, var(--secondary-color), var(--secondary-light));
+        color: #fff;
+    }
+
+    .btn-cancel {
+        background-color: #dfe6e9;
+        border-color: #dfe6e9;
+        color: var(--text-color);
+    }
+
+        .btn-cancel:hover {
+            background-color: #b2bec3;
+        }
+
+    .btn-danger {
+        background-image: linear-gradient(45deg, var(--danger-color), var(--danger-light));
+        color: #fff;
+    }
+
+    /* Main Member Table */
     .table-container {
         max-height: 70vh;
         overflow-y: auto;
-        border-radius: 15px;
+        border-radius: 10px;
         background-color: var(--container-bg);
-        box-shadow: 0 8px 30px var(--shadow-color);
+        box-shadow: 0 6px 25px var(--shadow-color-medium);
+        border: 1px solid var(--border-color);
     }
 
     .styled-table {
@@ -119,52 +177,113 @@
             position: sticky;
             top: 0;
             z-index: 10;
-            background-color: #f8f9fa;
+            background: linear-gradient(to bottom, #f8f9fa, #e9ecef); /* Subtle gradient */
             color: var(--text-color);
             font-weight: 600;
             text-transform: uppercase;
-            font-size: 0.8rem;
-            padding: 1rem;
+            font-size: 0.75rem; /* Smaller header font */
+            padding: 0.8rem 1rem; /* Reduced padding */
             text-align: left;
-            border-bottom: 2px solid #dfe6e9;
-        }
-
-            .styled-table thead th:first-child {
-                border-top-left-radius: 15px;
-            }
-
-            .styled-table thead th:last-child {
-                border-top-right-radius: 15px;
-            }
-
-        .styled-table tbody tr {
+            border-bottom: 2px solid var(--primary-color); /* Accent border */
+            white-space: nowrap;
+            vertical-align: middle;
             transition: background-color 0.2s ease;
         }
 
-            .styled-table tbody tr:hover {
-                background-color: #f1f5f8;
+            .styled-table thead th:hover {
+                background-color: #dde2e6;
             }
+        /* Subtle hover */
+
+        .styled-table tbody tr:hover {
+            background-color: var(--hover-bg);
+        }
 
         .styled-table td {
-            padding: 1rem;
+            padding: 0.75rem 1rem; /* Reduced padding */
             border-bottom: 1px solid #ecf0f1;
             vertical-align: middle;
+            font-size: 0.85rem; /* Smaller cell font */
+            transition: background-color 0.2s ease;
         }
+
+    /* Specific Table Cell Highlighting */
+    .member-id-cell {
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+
+    .member-name-cell {
+        font-weight: 500;
+    }
 
     .score-cell .exam-score {
         font-weight: 600;
-        font-size: 1.1em;
+        font-size: 1.05em;
+        color: var(--secondary-color);
+        display: inline-block;
+        padding: 0.1em 0.4em;
+        border-radius: 4px;
+        background-color: #e8f5e9;
     }
 
     .score-cell .target-score {
-        color: #7f8c8d;
+        /* color: var(--text-muted-color); */ /* Màu cũ */
+        color: #2980b9; /* Màu xanh dương đậm hơn */
+        font-size: 0.9em;
+        margin-left: 2px;
+        font-weight: 500; /* Làm chữ đậm hơn một chút */
     }
 
-    .status-badge {
-        padding: 0.25em 0.6em;
+    .score-separator {
+        color: var(--text-muted-color);
+        margin: 0 4px;
+    }
+
+    /* Ability (IRT) Color Coding */
+    .ability-cell {
+        font-weight: 600;
+        text-align: center;
+        padding: 0.4em 0.6em;
+        border-radius: 4px;
+        color: #fff;
+    }
+
+    .ability-very-low {
+        background-color: #c0392b;
+    }
+    /* -2 to -3 */
+    .ability-low {
+        background-color: #e67e22;
+    }
+    /* -1 to -2 */
+    .ability-average {
+        background-color: #f1c40f;
+        color: #333;
+    }
+    /* -1 to 1 */
+    .ability-high {
+        background-color: #27ae60;
+    }
+    /* 1 to 2 */
+    .ability-very-high {
+        background-color: #2980b9;
+    }
+    /* 2 to 3 */
+    .ability-na {
+        background-color: #bdc3c7;
+        color: #333;
+    }
+    /* N/A */
+
+
+    .status-badge { /* Main table status */
+        display: inline-block;
+        padding: 0.3em 0.8em;
         border-radius: 15px;
-        font-size: 0.8em;
-        font-weight: 500;
+        font-size: 0.75rem;
+        font-weight: 600;
+        line-height: 1;
     }
 
     .status-activated {
@@ -177,45 +296,81 @@
         color: #d32f2f;
     }
 
+    /* Action Buttons in Table */
     .btn-action {
         background: transparent;
         border: none;
-        color: #95a5a6;
-        font-size: 1.2rem;
-        margin: 0 0.2rem;
+        font-size: 1rem;
+        margin: 0 1px;
+        padding: 5px;
         transition: all 0.2s ease;
+        cursor: pointer;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        line-height: 1;
     }
 
-        .btn-action:hover {
-            transform: scale(1.2);
+        .btn-action i {
+            transition: transform 0.2s ease;
         }
 
-    .btn-edit:hover {
+        .btn-action:hover {
+            transform: translateY(-1px);
+        }
+
+            .btn-action:hover i {
+                transform: scale(1.1);
+            }
+
+    .btn-edit {
         color: var(--primary-color);
     }
 
-    .btn-details:hover {
+        .btn-edit:hover {
+            background-color: rgba(52, 152, 219, 0.1);
+            color: #2980b9;
+        }
+
+    .btn-details {
         color: var(--secondary-color);
     }
 
-    .btn-delete:hover {
+        .btn-details:hover {
+            background-color: rgba(46, 204, 113, 0.1);
+            color: #27ae60;
+        }
+
+    .btn-delete {
         color: var(--danger-color);
     }
 
+        .btn-delete:hover {
+            background-color: rgba(231, 76, 60, 0.1);
+            color: #c0392b;
+        }
+
+
+    /* Pagination */
     .pagination {
         margin-top: 2rem;
     }
 
         .pagination .page-link {
             border-radius: 50%;
-            margin: 0 5px;
+            margin: 0 4px;
             color: var(--primary-color);
             border: none;
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
+            font-size: 0.9rem;
             display: flex;
             justify-content: center;
             align-items: center;
+            transition: all 0.2s ease;
         }
 
             .pagination .page-link:hover {
@@ -225,666 +380,845 @@
         .pagination .active .page-link {
             background-color: var(--primary-color);
             color: #fff;
+            box-shadow: 0 2px 5px rgba(52, 152, 219, 0.4);
+        }
+
+        .pagination .disabled .page-link {
+            color: #adb5bd;
+            background-color: transparent;
         }
 
     /* Modal Styling */
     .modal-content {
-        border-radius: 15px;
+        border-radius: 10px;
         border: none;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.15);
     }
 
     .modal-header {
-        background-color: #f8f9fa;
+        background: linear-gradient(to right, #f8f9fa, #e9ecef); /* Subtle gradient */
         border-bottom: 1px solid #dee2e6;
-        border-top-left-radius: 15px;
-        border-top-right-radius: 15px;
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+        padding: 1rem 1.5rem;
     }
 
     .modal-title {
         color: var(--text-color);
         font-weight: 600;
+        font-size: 1.1rem;
     }
 
     .modal-body {
-        padding: 2rem;
+        padding: 1.5rem;
     }
 
-    .chart-container-modal {
-        height: 300px;
+    .modal-footer {
+        background-color: #f8f9fa;
+        border-top: 1px solid #dee2e6;
+        border-bottom-left-radius: 10px;
+        border-bottom-right-radius: 10px;
+        padding: 0.75rem 1.5rem;
     }
 
-    .btn-save, .btn-cancel {
+    .modal-xl {
+        max-width: 90%;
+    }
+    /* Wider XL modal */
+
+    /* Modal form elements */
+    .modal .form-label {
         font-weight: 500;
-        padding: 0.7rem 1.5rem;
-        border-radius: 25px;
-        transition: all 0.3s ease;
+        font-size: 0.85rem;
+        margin-bottom: 0.3rem;
     }
 
-    .btn-save {
-        background-image: linear-gradient(45deg, var(--secondary-color), #58d68d);
-        border: none;
+    .modal .form-control, .modal .form-select {
+        font-size: 0.9rem;
+        border-radius: 6px;
+    }
+
+        .modal .form-control:focus, .modal .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+    .modal .text-danger {
+        font-size: 0.8rem;
+    }
+    /* Smaller required asterisk */
+
+    /* Details Modal Specifics */
+    #detailsModal h6 { /* Section headers in details */
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: 0.8rem;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 0.4rem;
+        font-size: 1rem;
+    }
+
+    #detailsModal p {
+        font-size: 0.9rem;
+    }
+
+        #detailsModal p strong {
+            color: var(--text-color);
+            margin-right: 5px;
+        }
+
+    #detailsModal .chart-container-modal {
+        height: 280px;
+        margin-bottom: 1.5rem;
+    }
+
+    #historyTypeSelector .btn { /* Style buttons inside the group */
+        border-radius: 20px !important;
+        margin-right: 5px;
+        font-size: 0.85rem;
+        padding: 0.5rem 1rem;
+    }
+
+    #historyTypeSelector .dropdown-menu {
+        font-size: 0.85rem;
+        border-radius: 6px;
+    }
+
+    #historyTypeSelector .dropdown-item {
+        padding: 0.4rem 1rem;
+    }
+
+    #historyTypeSelector .dropdown-toggle::after {
+        margin-left: 0.5em;
+    }
+
+    /* Test History Table in Modal */
+    #testHistoryContainer {
+        max-height: 250px; /* Adjusted height */
+        overflow-y: auto;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+    }
+
+        #testHistoryContainer .table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background-color: var(--header-bg);
+            font-size: 0.75rem;
+            border-bottom: 2px solid var(--border-color);
+            padding: 0.6rem 0.8rem;
+        }
+
+        #testHistoryContainer .table td {
+            font-size: 0.8rem;
+            white-space: nowrap;
+            vertical-align: middle;
+            padding: 0.6rem 0.8rem;
+        }
+
+        #testHistoryContainer .table tbody tr:last-child td {
+            border-bottom: none;
+        }
+    /* Remove last border */
+
+    /* Test History Status Badges */
+    .history-badge {
+        padding: 0.3em 0.7em;
+        font-size: 0.7rem;
+        font-weight: 600;
+        border-radius: 4px;
         color: #fff;
-        box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
     }
 
-        .btn-save:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
+        .history-badge.bg-success {
+            background-color: #198754 !important;
         }
 
-    .btn-cancel {
-        background-color: #dfe6e9;
-        border-color: #dfe6e9;
-    }
-
-        .btn-cancel:hover {
-            background-color: #b2bec3;
+        .history-badge.bg-warning {
+            background-color: #ffc107 !important;
+            color: #000 !important;
         }
 
-    /* Scrollbar */
-    .table-container::-webkit-scrollbar {
-        width: 8px;
+        .history-badge.bg-danger {
+            background-color: #dc3545 !important;
+        }
+
+        .history-badge.bg-info {
+            background-color: #0dcaf0 !important;
+            color: #000 !important;
+        }
+
+        .history-badge.bg-secondary {
+            background-color: #6c757d !important;
+        }
+
+    /* Edit Test Score Modal */
+    #editTestModal .form-label {
+        font-weight: 500;
     }
 
-    .table-container::-webkit-scrollbar-track {
+    #editTestModal .form-text {
+        font-size: 0.8rem;
+    }
+
+    /* Alert Styling */
+    .alert {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1060; /* Higher z-index */
+        min-width: 300px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        border-radius: 6px;
+    }
+
+    /* Custom scrollbar */
+    .table-container::-webkit-scrollbar, #testHistoryContainer::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .table-container::-webkit-scrollbar-track, #testHistoryContainer::-webkit-scrollbar-track {
         background: #f1f1f1;
-        border-radius: 4px;
+        border-radius: 3px;
     }
 
-    .table-container::-webkit-scrollbar-thumb {
-        background: #bdc3c7;
-        border-radius: 4px;
+    .table-container::-webkit-scrollbar-thumb, #testHistoryContainer::-webkit-scrollbar-thumb {
+        background: #ccc;
+        border-radius: 3px;
     }
 
-        .table-container::-webkit-scrollbar-thumb:hover {
-            background: #95a5a6;
+        .table-container::-webkit-scrollbar-thumb:hover, #testHistoryContainer::-webkit-scrollbar-thumb:hover {
+            background: #aaa;
         }
+
+    /* Confirm Modal Styling */
+    #confirmModal .modal-header.bg-danger {
+        background: linear-gradient(45deg, var(--danger-color), var(--danger-light)) !important;
+    }
+
+    #confirmModal .modal-body {
+        padding: 1.5rem;
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+
+    #confirmModal #confirmMessage {
+        white-space: pre-line; /* Preserve line breaks from \n */
+    }
+
+    #confirmModal .btn-danger {
+        min-width: 100px;
+    }
 </style>
 
 <div class="container-fluid member-page-container">
-    <div class="header-bar">
-        <h2><i class="fas fa-user-graduate me-2"></i>Member Management</h2>
-        <div class="actions-bar">
-            <div class="search-wrapper">
-                <i class="fas fa-search"></i>
-                <input type="text" class="form-control search-input" id="searchInput" placeholder="Search by ID or Name..." />
-            </div>
-            <select class="form-control filter-select" id="activateFilter">
+    @* Centered Page Title *@
+    <h2 class="page-title"><i class="fas fa-user-graduate me-2"></i>Member Management</h2>
+
+    <div class="row mb-4 justify-content-end g-2"> @* row align-items-center justify-content-end gx-2 gy-2 *@
+        <div class="col-12 col-md-auto mb-2 mb-md-0"> @* Full width on small, auto on medium+ *@
+            <select class="form-select filter-select" id="activateFilter" aria-label="Filter by Status" style="min-width: 170px;">
                 <option value="">All Statuses</option>
                 <option value="1">Activated</option>
                 <option value="0">Locked</option>
             </select>
-            <button class="btn btn-add" onclick="showAddModal()"><i class="fas fa-plus me-1"></i>Add Member</button>
+        </div>
+        <div class="col-12 col-md-5 col-lg-4 mb-2 mb-md-0"> @* Adjusted column width for search *@
+            <div class="search-wrapper position-relative">
+                <i class="fas fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                <input type="text" class="form-control search-input ps-5" id="searchInput" placeholder="Search ID or Name..." /> @* Added ps-5 for icon padding *@
+            </div>
+        </div>
+        <div class="col-12 col-md-auto"> @* Button column *@
+            <div class="text-md-end"> @* Align button right only on medium+ screens *@
+                <button class="btn btn-add w-100 w-md-auto" onclick="showAddModal()"><i class="fas fa-plus"></i> Add Member</button> @* Full width on small screens *@
+            </div>
         </div>
     </div>
 
+    @* Member List Table *@
     <div class="table-container">
-        <table class="table styled-table">
+        <table class="table styled-table table-hover">
+            @* Added table-hover for bootstrap effect *@
             <thead>
                 <tr>
                     <th>Member ID</th>
                     <th>Member Name</th>
                     <th>Score (Exam/Target)</th>
-                    <th>Ability (IRT)</th>
-                    <th>Status</th>
+                    <th class="text-center">Ability (IRT)</th> @* Centered Header *@
+                    <th class="text-center">Status</th> @* Centered Header *@
                     <th>Last Login</th>
-                    <th>Actions</th>
+                    <th class="text-center">Actions</th> @* Centered Header *@
                 </tr>
             </thead>
-            <tbody id="memberTableBody"></tbody>
+            <tbody id="memberTableBody">
+                @* Rows will be rendered here by JavaScript *@
+            </tbody>
         </table>
     </div>
 
+    @* Pagination Controls *@
     <nav aria-label="Page navigation">
         <ul class="pagination justify-content-center" id="pagination"></ul>
     </nav>
 </div>
 
-<!-- Add/Edit Modal -->
-<div class="modal fade" id="memberModal" tabindex="-1" aria-labelledby="memberModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+@* Add/Edit Member Modal *@
+<div class="modal fade" id="memberModal" tabindex="-1" aria-labelledby="memberModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    @* Added static backdrop *@
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        @* Centered modal *@
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="memberModalLabel">Add Member</h5>
+                <h5 class="modal-title" id="memberModalLabel"><i class="fas fa-user-plus me-2"></i>Add Member</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form id="memberForm">
+                <form id="memberForm" onsubmit="event.preventDefault(); submitMemberForm();">
                     <input type="hidden" id="memberKey" name="memberKey" />
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="memberID" class="form-label">MemberID</label>
+                    <div class="row g-3">
+                        @* Added gutters between columns *@
+                        <div class="col-md-6">
+                            <label for="memberID" class="form-label">Member ID <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="memberID" name="memberID" required />
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="memberName" class="form-label">Member Name</label>
+                        <div class="col-md-6">
+                            <label for="memberName" class="form-label">Member Name <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="memberName" name="memberName" required />
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6">
                             <label for="password" class="form-label">Password</label>
-                            <input type="password" class="form-control" id="password" name="password" placeholder="Enter only when creating or resetting" />
+                            <input type="password" class="form-control" id="password" name="password" placeholder="Required for new, blank to keep current" />
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6">
                             <label for="gender" class="form-label">Gender</label>
-                            <select class="form-control" id="gender" name="gender">
+                            <select class="form-select" id="gender" name="gender">
                                 <option value="1">Male</option>
                                 <option value="0">Female</option>
                             </select>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="yearOld" class="form-label">Age</label>
-                            <input type="number" class="form-control" id="yearOld" name="yearOld" min="1" max="100" required />
+                        <div class="col-md-6">
+                            <label for="yearOld" class="form-label">Age <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="yearOld" name="yearOld" min="1" max="120" required />
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6">
                             <label for="departmentKey" class="form-label">Department</label>
-                            <select class="form-control" id="departmentKey" name="departmentKey">
-                                <option value="">Not Linked</option>
+                            <select class="form-select" id="departmentKey" name="departmentKey">
+                                <option value="">-- Not Linked --</option>
                             </select>
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6">
                             <label for="scoreTarget" class="form-label">Target Score</label>
-                            <input type="number" class="form-control" id="scoreTarget" name="scoreTarget" min="0" max="990" />
+                            <input type="number" class="form-control" id="scoreTarget" name="scoreTarget" min="0" max="990" placeholder="e.g., 750" />
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="toeicScoreExam" class="form-label">Exam Score</label>
-                            <input type="number" class="form-control" id="toeicScoreExam" name="toeicScoreExam" min="0" max="990" />
+                        <div class="col-md-6">
+                            <label for="toeicScoreExam" class="form-label">Actual Exam Score</label>
+                            <input type="number" class="form-control" id="toeicScoreExam" name="toeicScoreExam" min="0" max="990" placeholder="e.g., 800" />
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6">
                             <label for="irtAbility" class="form-label">IRT Ability</label>
-                            <input type="number" step="0.01" class="form-control" id="irtAbility" name="irtAbility" />
+                            <input type="number" step="0.01" class="form-control" id="irtAbility" name="irtAbility" placeholder="e.g., 1.5" />
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="activate" class="form-label">Status</label>
-                            <select class="form-control" id="activate" name="activate">
+                        <div class="col-md-6">
+                            <label for="activate" class="form-label">Account Status</label>
+                            <select class="form-select" id="activate" name="activate">
                                 <option value="1">Activated</option>
                                 <option value="0">Locked</option>
                             </select>
                         </div>
                     </div>
-                    <div class="text-end">
-                        <button type="submit" class="btn btn-save"><i class="fas fa-save me-2"></i>Save</button>
+                    <div class="modal-footer mt-4 pb-0 px-0">
+                        @* Footer inside body for spacing *@
                         <button type="button" class="btn btn-cancel" data-bs-dismiss="modal"><i class="fas fa-times me-2"></i>Cancel</button>
+                        <button type="submit" class="btn btn-save"><i class="fas fa-save me-2"></i>Save Changes</button>
                     </div>
                 </form>
             </div>
+            @* Removed separate modal-footer, integrated into body *@
         </div>
     </div>
 </div>
 
-<!-- Details Modal -->
+@* Member Details Modal *@
 <div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        @* Added scrollable content *@
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="detailsModalLabel">Member Details</h5>
+                <h5 class="modal-title" id="detailsModalLabel"><i class="fas fa-info-circle me-2"></i>Member Details</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="row">
-                    <div class="col-lg-4">
-                        <h6>Personal Information</h6>
-                        <p><strong>Member ID:</strong> <span id="detailMemberID"></span></p>
-                        <p><strong>Name:</strong> <span id="detailMemberName"></span></p>
-                        <p><strong>Gender:</strong> <span id="detailGender"></span></p>
-                        <p><strong>Age:</strong> <span id="detailYearOld"></span></p>
-                        <p><strong>Department:</strong> <span id="detailDepartment"></span></p>
-                        <hr />
-                        <h6>Performance Metrics</h6>
-                        <p><strong>Target Score:</strong> <span id="detailScoreTarget"></span></p>
-                        <p><strong>Exam Score:</strong> <span id="detailToeicScoreExam"></span></p>
-                        <p><strong>IRT Ability:</strong> <span id="detailIrtAbility"></span></p>
+                @* Member Info & Practice Chart Row *@
+                <div class="row mb-4">
+                    <div class="col-lg-4 border-end pe-4"> @* Added border and padding *@
+                        <h6><i class="fas fa-user me-2 text-primary"></i>Personal Information</h6>
+                        <p class="mb-1"><strong>ID:</strong> <span id="detailMemberID" class="text-primary fw-bold">N/A</span></p>
+                        <p class="mb-1"><strong>Name:</strong> <span id="detailMemberName" class="fw-bold">N/A</span></p>
+                        <p class="mb-1"><strong>Gender:</strong> <span id="detailGender">N/A</span></p>
+                        <p class="mb-1"><strong>Age:</strong> <span id="detailYearOld">N/A</span></p>
+                        <p><strong>Department:</strong> <span id="detailDepartment">N/A</span></p>
+                        @* Tìm phần này trong Details Modal (dòng ~486-498) và THAY THẾ hoàn toàn: *@
+
+                        <hr class="my-3" />
+                        <h6><i class="fas fa-bullseye me-2 text-success"></i>Performance Metrics</h6>
+                        <p class="mb-1">
+                            <strong>Target Score:</strong> 
+                            <span id="detailScoreTarget" class="text-muted">N/A</span>
+                        </p>
+                        <p class="mb-1">
+                            <strong>Actual Exam Score:</strong> 
+                            <span id="detailToeicScoreExam" class="text-muted">N/A</span>
+                        </p>
+                        <p class="mb-1">
+                            <strong>IRT Ability:</strong> 
+                            <span id="detailIrtAbility" class="text-muted">N/A</span>
+                        </p>
                     </div>
-                    <div class="col-lg-8">
-                        <h6>Practice Score Analysis (by Parts)</h6>
-                        <div class="chart-container-modal">
+                    <div class="col-lg-8 ps-4">
+                        @* Added padding *@
+                        <h6><i class="fas fa-chart-bar me-2 text-warning"></i>Practice Score Analysis (by Parts)</h6>
+                        <div class="chart-container-modal" style="height: 250px;">
+                            @* Adjusted height slightly *@
                             <canvas id="practiceScoreChart"></canvas>
                         </div>
                     </div>
                 </div>
 
-                @* --- PHẦN MÃ MỚI ĐƯỢC THÊM VÀO --- *@
                 <hr class="my-4" />
-                <h6>Test History & Progress Chart</h6>
-                <div class="btn-group mb-3" role="group" id="historyTypeSelector">
-                    <button type="button" id="fullTestHistoryBtn" class="btn btn-primary active" onclick="loadTestHistory('FullTest', this)">Full Tests</button>
 
-                    <div class="btn-group" role="group">
-                        <button id="practiceTestHistoryBtn" type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                            Practice Tests
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#" onclick="loadTestHistory('Practice', this, 'Practice Tests')">All Practice</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#" onclick="loadTestHistory('Practice-1', this, 'Practice Part 1')">Part 1</a></li>
-                            <li><a class="dropdown-item" href="#" onclick="loadTestHistory('Practice-2', this, 'Practice Part 2')">Part 2</a></li>
-                            <li><a class="dropdown-item" href="#" onclick="loadTestHistory('Practice-3', this, 'Practice Part 3')">Part 3</a></li>
-                            <li><a class="dropdown-item" href="#" onclick="loadTestHistory('Practice-4', this, 'Practice Part 4')">Part 4</a></li>
-                            <li><a class="dropdown-item" href="#" onclick="loadTestHistory('Practice-5', this, 'Practice Part 5')">Part 5</a></li>
-                            <li><a class="dropdown-item" href="#" onclick="loadTestHistory('Practice-6', this, 'Practice Part 6')">Part 6</a></li>
-                            <li><a class="dropdown-item" href="#" onclick="loadTestHistory('Practice-7', this, 'Practice Part 7')">Part 7</a></li>
-                        </ul>
+                @* Test History Section *@
+                <h6><i class="fas fa-history me-2 text-info"></i>Test History & Progress</h6>
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                    <div class="btn-group" role="group" id="historyTypeSelector">
+                        <button type="button" id="fullTestHistoryBtn" class="btn btn-sm btn-primary active" onclick="loadTestHistory('FullTest', this)">Full Tests</button> @* Smaller buttons *@
+                        <div class="btn-group" role="group">
+                            <button id="practiceTestHistoryBtn" type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                Practice Tests
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" onclick="loadTestHistory('Practice', this, 'All Practice')">All Practice</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#" onclick="loadTestHistory('Practice-1', this, 'Part 1')">Part 1</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="loadTestHistory('Practice-2', this, 'Part 2')">Part 2</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="loadTestHistory('Practice-3', this, 'Part 3')">Part 3</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="loadTestHistory('Practice-4', this, 'Part 4')">Part 4</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="loadTestHistory('Practice-5', this, 'Part 5')">Part 5</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="loadTestHistory('Practice-6', this, 'Part 6')">Part 6</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="loadTestHistory('Practice-7', this, 'Part 7')">Part 7</a></li>
+                            </ul>
+                        </div>
                     </div>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="resetHistoryChartZoom()" title="Reset Chart Zoom"><i class="fas fa-search-minus me-1"></i>Reset Zoom</button>
                 </div>
 
-                @* Container cho biểu đồ có thể cuộn *@
-                <div class="chart-container-modal mb-3" style="height: 350px;">
+                @* History Chart *@
+                <div class="chart-container-modal mb-3" style="height: 300px;">
+                    @* Adjusted height *@
                     <canvas id="historyChart"></canvas>
                 </div>
 
-                @* Container cho bảng lịch sử *@
-                <div id="testHistoryContainer" class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                    <p class="text-muted">Select a history type to view...</p>
+                @* History Table *@
+                <div id="testHistoryContainer" class="mt-3">
+                    <p class="text-muted text-center p-3">Select history type to view table...</p>
                 </div>
-             
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
 </div>
-<div class="modal fade" id="editTestModal" tabindex="-1" aria-labelledby="editTestModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+
+@* Edit Test Score Modal *@
+<div class="modal fade" id="editTestModal" tabindex="-1" aria-labelledby="editTestModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        @* Centered *@
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="editTestModalLabel">Edit Test Score</h5>
+                <h5 class="modal-title" id="editTestModalLabel"><i class="fas fa-edit me-2"></i>Edit Test Score</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="editTestForm" onsubmit="event.preventDefault(); submitEditTestScore();">
                     <input type="hidden" id="editResultKey" name="editResultKey" />
                     <div class="mb-3">
-                        <label for="editTestScore" class="form-label">Test Score</label>
-                        <input type="number" class="form-control" id="editTestScore" name="editTestScore" min="0" max="990" required />
-                        <small class="form-text text-muted">Enter total score for Full Test, or percentage for Practice Test.</small>
+                        <label for="editTestScore" class="form-label">New Score <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="editTestScore" name="editTestScore" min="0" max="990" required placeholder="Enter score..." />
+                        <small class="form-text text-muted" id="editScoreHelp">Enter total score (0-990) for Full Test, or percentage (0-100) for Practice Test.</small>
                     </div>
-                    <div class="text-end">
-                        <button type="submit" class="btn btn-save"><i class="fas fa-save me-2"></i>Save Score</button>
+                    <div class="modal-footer mt-4 pb-0 px-0">
+                        @* Footer inside body *@
+                        <button type="button" class="btn btn-cancel" data-bs-dismiss="modal"><i class="fas fa-times me-2"></i>Cancel</button>
                         <button type="button" class="btn btn-danger" onclick="cancelTest()"><i class="fas fa-ban me-2"></i>Cancel Test</button>
+                        <button type="submit" class="btn btn-save"><i class="fas fa-save me-2"></i>Save Score</button>
                     </div>
                 </form>
+            </div>
+            @* Removed separate footer *@
+        </div>
+    </div>
+</div>
+
+@* Confirmation Modal *@
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="confirmModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirm Action
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage" class="mb-0" style="white-space: pre-line;">Are you sure you want to proceed?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmBtn">
+                    <i class="fas fa-check me-2"></i>Confirm
+                </button>
             </div>
         </div>
     </div>
 </div>
-</div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.0.1/chartjs-plugin-zoom.min.js"></script>
+
 @section Scripts {
     <script>
-        let currentHistoryType = 'FullTest';
-     
+        // === Global Variables ===
         let members = [];
         let currentMemberKey = null;
         let currentPage = 1;
         const pageSize = 10;
-        let searchTerm = '';
-        let activateFilter = '';
         let isEditMode = false;
+        let currentHistoryType = 'FullTest';
         let practiceScoreChart = null;
         let historyChart = null;
 
+        // === Initialization ===
         $(document).ready(function () {
-            loadMembers();
             Chart.register(ChartZoom);
-            $('#searchInput').on('keyup', debounce(searchMembers, 500));
+            loadMembers();
+            $('#searchInput').on('keyup', debounce(searchMembers, 400));
             $('#activateFilter').on('change', searchMembers);
         });
 
-        function debounce(func, delay) {
-            let timeout;
-            return function(...args) {
-                const context = this;
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(context, args), delay);
-            };
+        // === Utility Functions ===
+        function debounce(func, delay) { /* ... (keep existing debounce) ... */
+             let timeout;
+             return function(...args) {
+                 const context = this;
+                 clearTimeout(timeout);
+                 timeout = setTimeout(() => func.apply(context, args), delay);
+             };
+        }
+        function showAlert(type, message) { /* ... (keep existing showAlert) ... */
+             const alertElement = document.createElement('div');
+             alertElement.className = `alert alert-${type} alert-dismissible fade show shadow-sm`;
+             alertElement.setAttribute('role', 'alert');
+             alertElement.style.position = 'fixed'; alertElement.style.top = '20px'; alertElement.style.right = '20px';
+             alertElement.style.zIndex = '1060'; alertElement.style.minWidth = '250px';
+             alertElement.innerHTML = `${escapeHtml(message)}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>`;
+             document.body.appendChild(alertElement);
+             const bsAlert = bootstrap.Alert.getOrCreateInstance(alertElement);
+             const timeoutId = setTimeout(() => { if (document.body.contains(alertElement)) { bsAlert.close(); } }, 3500);
+             alertElement.addEventListener('closed.bs.alert', () => { clearTimeout(timeoutId); }, { once: true });
+        }
+        function escapeHtml(text) { /* ... (keep existing escapeHtml) ... */
+             if (text === null || text === undefined) return '';
+             const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+             return String(text).replace(/[&<>"']/g, m => map[m]);
+        }
+        
+        // === Confirmation Modal Helper ===
+        function showConfirmModal(message, onConfirm) {
+            $('#confirmMessage').text(message);
+            const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+            
+            // Remove old event listeners
+            $('#confirmBtn').off('click');
+            
+            // Add new event listener
+            $('#confirmBtn').on('click', function() {
+                confirmModal.hide();
+                if (typeof onConfirm === 'function') {
+                    onConfirm();
+                }
+            });
+            
+            confirmModal.show();
+        }
+        
+        function formatDisplayDateTime(dateString) { /* ... (keep existing formatDisplayDateTime) ... */
+             if (!dateString) return 'N/A';
+             try {
+                 const date = new Date(dateString);
+                 return date.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+             } catch (e) { console.error("Date format error:", e); return dateString; }
         }
 
-        function loadMembers(page = 1) {
+        // === Member List Loading & Rendering ===
+        function loadMembers(page = 1) { /* ... (keep existing loadMembers logic) ... */
             currentPage = page;
-            searchTerm = $('#searchInput').val().trim();
-            activateFilter = $('#activateFilter').val();
-
-            let data = { page: currentPage, pageSize: pageSize, search: searchTerm, activate: activateFilter };
+            const searchTerm = $('#searchInput').val().trim();
+            const activateFilter = $('#activateFilter').val();
+             $('#memberTableBody').html('<tr><td colspan="7" class="text-center p-5 text-muted"><div class="spinner-border spinner-border-sm me-2"></div>Loading members...</td></tr>');
 
             $.ajax({
-                url: '/Manage/Members?handler=GetMembers',
-                method: 'GET',
-                data: data,
+                url: '/Manage/Members?handler=GetMembers', method: 'GET',
+                data: { page: currentPage, pageSize: pageSize, search: searchTerm, activate: activateFilter },
                 dataType: 'json',
                 success: function (response) {
-                    if (response.status === 'ERROR') {
-                        showAlert('danger', response.message);
-                        members = [];
+                    if (response && Array.isArray(response.members)) {
+                        members = response.members; renderMembers(); renderPagination(response.totalItems);
                     } else {
-                        members = Array.isArray(response.members) ? response.members : [];
-                        renderMembers();
-                        renderPagination(response.totalItems);
+                         console.error("Invalid response:", response); showAlert('danger', response?.message || 'Error loading members.');
+                         $('#memberTableBody').html('<tr><td colspan="7" class="text-center p-5 text-danger">Error loading data.</td></tr>'); renderPagination(0);
                     }
                 },
-                error: () => showAlert('danger', 'Failed to load member list.')
+                error: (xhr) => {
+                    console.error("AJAX Error:", xhr); showAlert('danger', xhr.responseJSON?.message || 'Failed to load member list.');
+                     $('#memberTableBody').html('<tr><td colspan="7" class="text-center p-5 text-danger">Failed to load data. Please try again.</td></tr>'); renderPagination(0);
+                }
             });
         }
 
+        // UPDATED renderMembers to add classes and styles
         function renderMembers() {
             const tbody = $('#memberTableBody');
             tbody.empty();
-            if(members.length === 0) {
-                tbody.append(`<tr><td colspan="7" class="text-center p-5">No members found.</td></tr>`);
+            if (members.length === 0) {
+                tbody.html('<tr><td colspan="7" class="text-center p-5 text-muted">No members found matching your criteria.</td></tr>');
                 return;
             }
-          members.forEach(m => {
-                // THAY ĐỔI Ở ĐÂY: Sử dụng PascalCase
+
+            members.forEach(m => {
                 const statusClass = m.Activate ? 'status-activated' : 'status-locked';
                 const statusText = m.Activate ? 'Activated' : 'Locked';
+                const lastLogin = formatDisplayDateTime(m.LastLoginDate);
 
-                tbody.append(`
-                    <tr style="animation: fadeIn 0.5s ease-out;">
-                        <td><strong>${m.MemberID || 'N/A'}</strong></td>
-                        <td>${m.MemberName || 'N/A'}</td>
+                // --- Ability Color Coding Logic ---
+                let abilityClass = 'ability-na';
+                let abilityText = 'N/A';
+                if (m.IrtAbility !== null && m.IrtAbility !== undefined) {
+                    const ability = parseFloat(m.IrtAbility);
+                    abilityText = ability.toFixed(2);
+                    if (ability >= 2) abilityClass = 'ability-very-high';
+                    else if (ability >= 1) abilityClass = 'ability-high';
+                    else if (ability > -1) abilityClass = 'ability-average';
+                    else if (ability > -2) abilityClass = 'ability-low';
+                    else abilityClass = 'ability-very-low';
+                }
+                // --- End Ability Logic ---
+
+                const rowHtml = `
+                    <tr>
+                        <td class="member-id-cell">${escapeHtml(m.MemberID)}</td>
+                        <td class="member-name-cell">${escapeHtml(m.MemberName)}</td>
                         <td class="score-cell">
-                            <span class="exam-score">${m.ToeicScoreExam ?? 'N/A'}</span> / <span class="target-score">${m.ScoreTarget ?? 'N/A'}</span>
+                            <span class="exam-score">${m.ToeicScoreExam ?? 'N/A'}</span>
+                            <span class="score-separator">/</span>
+                            <span class="target-score">${m.ScoreTarget ?? 'N/A'}</span>
                         </td>
-                        <td>${m.IrtAbility?.toFixed(2) ?? 'N/A'}</td>
-                        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-                        <td>${m.LastLoginDate || 'Never'}</td>
-                        <td>
-                            <button class="btn-action btn-edit" onclick="showEditModal('${m.MemberKey}')" title="Edit"><i class="fas fa-edit"></i></button>
-                            <button class="btn-action btn-details" onclick="showDetailsModal('${m.MemberKey}')" title="Details"><i class="fas fa-info-circle"></i></button>
-                            <button class="btn-action btn-delete" onclick="showDeleteModal('${m.MemberKey}')" title="Delete"><i class="fas fa-trash"></i></button>
+                        <td class="text-center"><span class="ability-cell ${abilityClass}">${abilityText}</span></td>
+                        <td class="text-center"><span class="status-badge ${statusClass}">${statusText}</span></td>
+                        <td>${lastLogin}</td>
+                        <td class="text-center">
+                            <button class="btn-action btn-edit" onclick="showEditModal('${m.MemberKey}')" title="Edit Member"><i class="fas fa-edit fa-fw"></i></button>
+                            <button class="btn-action btn-details" onclick="showDetailsModal('${m.MemberKey}')" title="View Details"><i class="fas fa-info-circle fa-fw"></i></button>
+                            <button class="btn-action btn-delete" onclick="showDeleteModal('${m.MemberKey}')" title="Delete Member"><i class="fas fa-trash fa-fw"></i></button>
                         </td>
-                    </tr>
-                `);
+                    </tr>`;
+                tbody.append(rowHtml);
             });
         }
 
-        function renderPagination(totalItems) {
-            const totalPages = Math.ceil(totalItems / pageSize);
-            const pagination = $('#pagination');
-            pagination.empty();
-            if (totalPages <= 1) return;
-
-            for (let i = 1; i <= totalPages; i++) {
-                pagination.append(`<li class="page-item ${i === currentPage ? 'active' : ''}">
-                    <a class="page-link" href="#" onclick="event.preventDefault(); loadMembers(${i});">${i}</a>
-                </li>`);
-            }
+        function renderPagination(totalItems) { /* ... (keep existing pagination logic) ... */
+             const totalPages = Math.ceil(totalItems / pageSize);
+             const pagination = $('#pagination'); pagination.empty();
+             if (totalPages <= 1) return;
+             const maxPagesToShow = 5; let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+             let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+             if(endPage - startPage + 1 < maxPagesToShow){ startPage = Math.max(1, endPage - maxPagesToShow + 1); }
+             pagination.append(`<li class="page-item ${currentPage === 1 ? 'disabled' : ''}"><a class="page-link" href="#" aria-label="Previous" onclick="event.preventDefault(); ${currentPage > 1 ? `loadMembers(${currentPage - 1})` : ''}"><span aria-hidden="true">&laquo;</span></a></li>`);
+             for (let i = startPage; i <= endPage; i++) { pagination.append(`<li class="page-item ${i === currentPage ? 'active' : ''}"><a class="page-link" href="#" onclick="event.preventDefault(); loadMembers(${i});">${i}</a></li>`); }
+             pagination.append(`<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}"><a class="page-link" href="#" aria-label="Next" onclick="event.preventDefault(); ${currentPage < totalPages ? `loadMembers(${currentPage + 1})` : ''}"><span aria-hidden="true">&raquo;</span></a></li>`);
         }
+        function searchMembers() { loadMembers(1); }
 
-        function searchMembers() {
-            loadMembers(1);
+        // === Add/Edit Member Modal ===
+        function showAddModal() { /* ... (keep existing showAddModal logic, check modal title) ... */
+            isEditMode = false;
+            $('#memberModalLabel').html('<i class="fas fa-user-plus me-2"></i>Add New Member'); // Update title with icon
+            $('#memberForm')[0].reset(); $('#memberKey').val('');
+            $('#password').prop('required', true).attr('placeholder', 'Password (Required for new member)');
+            populateDepartmentDropdown();
+            const addModal = new bootstrap.Modal(document.getElementById('memberModal')); addModal.show();
         }
-
-        function showDetailsModal(memberKey) {
-             currentMemberKey = memberKey;
-             // Hủy biểu đồ cũ trước khi mở modal mới để tránh lỗi
-             if (practiceScoreChart) practiceScoreChart.destroy();
-             if (historyChart) {
-                 historyChart.destroy();
-                 historyChart = null;
-             }
-
+        function showEditModal(memberKey) { /* ... (keep existing showEditModal logic, check modal title) ... */
+            currentMemberKey = memberKey; isEditMode = true;
+            $.ajax({
+                url: `/Manage/Members?handler=GetMemberDetails&memberKey=${memberKey}`, method: 'GET',
+                success: function (member) {
+                    if (!member) { showAlert('danger', 'Could not load member details.'); return; }
+                    $('#memberModalLabel').html(`<i class="fas fa-user-edit me-2"></i>Edit Member: ${escapeHtml(member.MemberName)}`); // Update title with icon
+                    $('#memberKey').val(member.MemberKey); $('#memberID').val(member.MemberID); $('#memberName').val(member.MemberName);
+                    $('#password').val('').prop('required', false).attr('placeholder', 'Leave blank to keep current password');
+                    $('#gender').val(member.Gender); $('#yearOld').val(member.YearOld);
+                    $('#scoreTarget').val(member.ScoreTarget); $('#toeicScoreExam').val(member.ToeicScoreExam);
+                    $('#irtAbility').val(member.IrtAbility); $('#activate').val(member.Activate ? '1' : '0');
+                    populateDepartmentDropdown(member.DepartmentKey);
+                    const editModal = new bootstrap.Modal(document.getElementById('memberModal')); editModal.show();
+                },
+                error: (xhr) => showAlert('danger', xhr.responseJSON?.message || 'Failed to load member details.')
+            });
+        }
+        function populateDepartmentDropdown(selectedKey = null) { /* ... (keep existing populateDepartmentDropdown) ... */
+             const deptSelect = $('#departmentKey');
+             deptSelect.html('<option>Loading...</option>').prop('disabled', true);
              $.ajax({
-                 url: `/Manage/Members?handler=GetMemberDetails&memberKey=${memberKey}`,
-                 method: 'GET',
-                 success: function (member) {
-                     // THAY ĐỔI Ở ĐÂY: Sử dụng PascalCase cho tất cả các thuộc tính
-                     $('#detailsModalLabel').text(`Details for ${member.MemberName}`);
-                     $('#detailMemberID').text(member.MemberID || 'N/A');
-                     $('#detailMemberName').text(member.MemberName || 'N/A');
-                     $('#detailGender').text(member.Gender === 1 ? 'Male' : 'Female');
-                     $('#detailYearOld').text(member.YearOld || 'N/A');
-                     $('#detailDepartment').text(member.DepartmentName || 'Not Linked');
-                     $('#detailScoreTarget').text(member.ScoreTarget ?? 'N/A');
-                     $('#detailToeicScoreExam').text(member.ToeicScoreExam ?? 'N/A');
-                     $('#detailIrtAbility').text(member.IrtAbility?.toFixed(2) ?? 'N/A');
+                 url: '/Manage/Members?handler=GetDepartments', method: 'GET',
+                 success: function (data) {
+                     deptSelect.empty().append('<option value="">-- Not Linked --</option>');
+                     if (Array.isArray(data)) {
+                         data.forEach(dept => { if (dept && dept.DepartmentKey && dept.DepartmentName) {
+                                 const option = new Option(escapeHtml(dept.DepartmentName), dept.DepartmentKey);
+                                 if (dept.DepartmentKey === selectedKey) { option.selected = true; }
+                                 deptSelect.append(option); } }); }
+                     deptSelect.prop('disabled', false); // Re-enable dropdown
+                     // Ensure selection is applied AFTER options are added
+                     if(selectedKey){ deptSelect.val(selectedKey); }
 
-                     const practiceScores = [
-                         member.PracticeScore_Part1, member.PracticeScore_Part2, member.PracticeScore_Part3,
-                         member.PracticeScore_Part4, member.PracticeScore_Part5, member.PracticeScore_Part6,
-                         member.PracticeScore_Part7
-                     ];
-                     renderPracticeScoreChart(practiceScores);
-
-                            loadTestHistory('FullTest', document.getElementById('fullTestHistoryBtn'));
-        $('#detailsModal').modal('show');
-                         },
-                         error: () => showAlert('danger', 'Failed to load member details.')
-                     });
+                 },
+                 error: () => { showAlert('danger', 'Failed to load departments.'); deptSelect.html('<option value="">-- Error --</option>').prop('disabled', true); }
+             });
         }
-        function loadTestHistory(type, element, buttonText = null) {
-               event.preventDefault();
-               if (!currentMemberKey) return;
-               currentHistoryType = type; // Lưu lại type đang xem
+        function submitMemberForm() { /* ... (keep existing submitMemberForm logic) ... */
+             const formData = { MemberKey: $('#memberKey').val() || '00000000-0000-0000-0000-000000000000', MemberID: $('#memberID').val().trim(), MemberName: $('#memberName').val().trim(), Password: $('#password').val() || null, Gender: parseInt($('#gender').val()), YearOld: parseInt($('#yearOld').val()), DepartmentKey: $('#departmentKey').val() || null, Activate: $('#activate').val() === '1', ScoreTarget: $('#scoreTarget').val() ? parseInt($('#scoreTarget').val()) : null, ToeicScoreExam: $('#toeicScoreExam').val() ? parseInt($('#toeicScoreExam').val()) : null, IrtAbility: $('#irtAbility').val() ? parseFloat($('#irtAbility').val()) : null, };
+             if (!formData.MemberID || !formData.MemberName || !formData.YearOld) { showAlert('warning', 'Please fill required fields (*).'); return; }
+             if (!isEditMode && !formData.Password) { showAlert('warning', 'Password required for new members.'); $('#password').focus(); return; }
+             const url = isEditMode ? '/Manage/Members?handler=Update' : '/Manage/Members?handler=Create'; const method = 'POST';
+             $.ajax({ url: url, method: method, contentType: 'application/json', data: JSON.stringify(formData),
+                 success: function (response) { if (response && response.success) { const modalInstance = bootstrap.Modal.getInstance(document.getElementById('memberModal')); modalInstance.hide(); showAlert('success', response.message || (isEditMode ? 'Member updated!' : 'Member added!')); loadMembers(isEditMode ? currentPage : 1); } else { showAlert('danger', response?.message || (isEditMode ? 'Update failed.' : 'Add failed.')); } },
+                 error: (xhr) => showAlert('danger', xhr.responseJSON?.message || (isEditMode ? 'Update failed.' : 'Add failed.'))
+             });
+        }
 
-               // Cập nhật giao diện nút bấm
-               const fullTestBtn = $('#fullTestHistoryBtn');
-               const practiceBtn = $('#practiceTestHistoryBtn');
-
-               if (type.startsWith('Practice')) {
-                   fullTestBtn.removeClass('active btn-primary').addClass('btn-outline-primary');
-                   practiceBtn.removeClass('btn-outline-primary').addClass('active btn-primary');
-                   if (buttonText) {
-                       practiceBtn.text(buttonText);
-                   }
-               } else { // FullTest
-                   practiceBtn.removeClass('active btn-primary').addClass('btn-outline-primary').text('Practice Tests');
-                   fullTestBtn.removeClass('btn-outline-primary').addClass('active btn-primary');
-               }
-
-              $.ajax({
-                  url: `/Manage/Members?handler=GetTestScoreHistory&memberKey=${currentMemberKey}&type=${type}`,
-                  method: 'GET',
-                  success: function(historyData) {
-                      renderHistoryTable(historyData, type);
-
-                      renderHistoryChart(historyData, type); // Gọi hàm vẽ biểu đồ mới
-                  },
-                  error: function() {
-                      container.html('<p class="text-danger text-center p-3">Failed to load history.</p>');
-                      if (historyChart) historyChart.destroy(); // Xóa biểu đồ nếu lỗi
-                  }
-              });
-         }
-
-            function renderHistoryTable(data, type) {
-            const container = $('#testHistoryContainer');
-            container.empty();
-
-            if (!data || data.length === 0) {
-                container.html('<p class="text-muted text-center p-3">No history found.</p>');
-                return;
-            }
-
-            // Hàm helper để tạo badge trạng thái
-            const getStatusBadge = (status) => {
-                switch (status) {
-                    case 99: return '<span class="badge bg-danger">Cancelled</span>';
-                    case 2: return '<span class="badge bg-warning text-dark">Edited</span>';
-                    case 1: return '<span class="badge bg-success">Completed</span>';
-                    default: return '<span class="badge bg-secondary">Unknown</span>';
+        // === Delete Member ===
+        function showDeleteModal(memberKey) {
+            const member = members.find(m => m.MemberKey === memberKey);
+            const memberName = member ? escapeHtml(member.MemberName) : 'this member';
+            
+            showConfirmModal(
+                `Are you sure you want to delete "${memberName}"?\n\nThis action cannot be undone and will also delete all test records for this member.`,
+                function() {
+                    deleteMember(memberKey);
                 }
-            };
-
-            let table = '<table class="table table-sm table-striped table-hover"><thead><tr>';
-            if (type.startsWith('FullTest')) {
-                table += '<th>Test Name</th><th>Total</th><th>Listen</th><th>Read</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
-                data.forEach(item => {
-                    const startTime = new Date(item.StartTime).toLocaleString('vi-VN');
-                    const statusBadge = getStatusBadge(item.Status);
-                    const isCancelled = item.Status === 99;
-
-                    table += `<tr>
-                        <td>${item.TestName || 'N/A'}</td>
-                        <td><strong>${item.TestScore ?? 'N/A'}</strong></td>
-                        <td>${item.ListeningScore ?? 'N/A'}</td>
-                        <td>${item.ReadingScore ?? 'N/A'}</td>
-                        <td>${startTime}</td>
-                        <td>${statusBadge}</td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-info" onclick="viewTestResult('${item.TestKey}', '${item.ResultKey}')" title="Review"><i class="fas fa-eye"></i></button>
-                            <button class="btn btn-sm btn-outline-warning" onclick="showEditTestModal('${item.ResultKey}', ${item.TestScore ?? 0})" title="Edit Score" ${isCancelled ? 'disabled' : ''}><i class="fas fa-edit"></i></button>
-                        </td>
-                    </tr>`;
-                });
-            } else { // Practice
-                table += '<th>Part Name</th><th>Score (%)</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
-                data.forEach(item => {
-                    const startTime = new Date(item.StartTime).toLocaleString('vi-VN');
-                    const statusBadge = getStatusBadge(item.Status);
-                    const isCancelled = item.Status === 99;
-
-                    table += `<tr>
-                        <td>${item.TestName || 'N/A'}</td>
-                        <td><strong>${item.PracticeScore ?? 'N/A'}%</strong></td>
-                        <td>${startTime}</td>
-                        <td>${statusBadge}</td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-info" onclick="viewTestResult('${item.TestKey}', '${item.ResultKey}')" title="Review"><i class="fas fa-eye"></i></button>
-                            <button class="btn btn-sm btn-outline-warning" onclick="showEditTestModal('${item.ResultKey}', ${item.PracticeScore ?? 0})" title="Edit Score" ${isCancelled ? 'disabled' : ''}><i class="fas fa-edit"></i></button>
-                        </td>
-                    </tr>`;
-                });
-            }
-            table += '</tbody></table>';
-            container.html(table);
+            );
         }
-          function showEditTestModal(resultKey, currentScore) {
-            $('#editResultKey').val(resultKey);
-            $('#editTestScore').val(currentScore);
-            $('#editTestModal').modal('show');
+        
+        function deleteMember(memberKey) { /* ... (keep existing deleteMember) ... */
+             $.ajax({ url: `/Manage/Members?handler=Delete&memberKey=${memberKey}`, method: 'GET',
+                 success: function (response) { if (response && response.success) { showAlert('success', response.message || 'Member deleted!'); loadMembers(members.length === 1 && currentPage > 1 ? currentPage - 1 : currentPage); } else { showAlert('danger', response?.message || 'Failed to delete member.'); } },
+                 error: (xhr) => showAlert('danger', xhr.responseJSON?.message || 'Failed to delete member.')
+             });
         }
 
-        $('#editTestForm').on('submit', function (e) {
-            e.preventDefault();
-            const resultKey = $('#editResultKey').val();
-            const newScore = parseInt($('#editTestScore').val());
+        // === Member Details Modal & History ===
+               function showDetailsModal(memberKey) {
+            currentMemberKey = memberKey;
+
+            // Reset về trạng thái ban đầu
+            $('#detailMemberID').text('Loading...').removeClass().addClass('text-primary fw-bold');
+            $('#detailMemberName').text('...').removeClass().addClass('fw-bold');
+            $('#detailGender, #detailYearOld, #detailDepartment').text('N/A').removeClass().addClass('text-muted');
+
+            // ✅ FIX: Reset performance metrics về text-muted
+            $('#detailScoreTarget, #detailToeicScoreExam, #detailIrtAbility')
+                .text('N/A')
+                .removeClass()  // Xóa tất cả classes
+                .addClass('text-muted'); // Chỉ giữ text-muted
+
+            $('#testHistoryContainer').html('<p class="text-muted text-center p-3"><div class="spinner-border spinner-border-sm me-2"></div>Loading history...</p>');
+
+            if (practiceScoreChart) practiceScoreChart.destroy();
+            if (historyChart) { historyChart.destroy(); historyChart = null; }
 
             $.ajax({
-                url: '/Manage/Members?handler=UpdateTestScore',
-                method: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({ ResultKey: resultKey, TestScore: newScore }),
-                headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
-                success: function (response) {
-                    $('#editTestModal').modal('hide');
-                    showAlert('success', response.message);
-                    loadTestHistory(currentHistoryType); // Tải lại lịch sử hiện tại
+                url: `/Manage/Members?handler=GetMemberDetails&memberKey=${memberKey}`,
+                method: 'GET',
+                success: function (member) {
+                    if (!member) {
+                        showAlert('danger', 'Could not load details.');
+                        return;
+                    }
+
+                    // Populate basic info
+                    $('#detailsModalLabel').html(`<i class="fas fa-info-circle me-2"></i>Details for: ${escapeHtml(member.MemberName)}`);
+                    $('#detailMemberID').text(escapeHtml(member.MemberID));
+                    $('#detailMemberName').text(escapeHtml(member.MemberName));
+                    $('#detailGender').text(member.Gender === 1 ? 'Male' : 'Female').removeClass('text-muted');
+                    $('#detailYearOld').text(member.YearOld || 'N/A').removeClass('text-muted');
+                    $('#detailDepartment').text(escapeHtml(member.DepartmentName) || 'Not Linked').removeClass('text-muted');
+
+                    // ✅ FIX: Hiển thị Performance Metrics ĐÚNG CÁCH
+                    // Target Score
+                    if (member.ScoreTarget !== null && member.ScoreTarget !== undefined) {
+                        $('#detailScoreTarget')
+                            .text(member.ScoreTarget)
+                            .removeClass('text-muted')
+                            .addClass('fw-semibold text-primary'); // Màu xanh, đậm
+                    } else {
+                        $('#detailScoreTarget').text('N/A');
+                    }
+
+                    // Actual Exam Score
+                    if (member.ToeicScoreExam !== null && member.ToeicScoreExam !== undefined) {
+                        $('#detailToeicScoreExam')
+                            .text(member.ToeicScoreExam)
+                            .removeClass('text-muted')
+                            .addClass('fw-semibold text-success'); // Màu xanh lá, đậm
+                    } else {
+                        $('#detailToeicScoreExam').text('N/A');
+                    }
+
+                    // IRT Ability
+                    if (member.IrtAbility !== null && member.IrtAbility !== undefined) {
+                        $('#detailIrtAbility')
+                            .text(member.IrtAbility.toFixed(2))
+                            .removeClass('text-muted')
+                            .addClass('fw-semibold text-info'); // Màu xanh dương, đậm
+                    } else {
+                        $('#detailIrtAbility').text('N/A');
+                    }
+
+                    // Render practice scores chart
+                    const practiceScores = [
+                        member.PracticeScore_Part1, member.PracticeScore_Part2,
+                        member.PracticeScore_Part3, member.PracticeScore_Part4,
+                        member.PracticeScore_Part5, member.PracticeScore_Part6,
+                        member.PracticeScore_Part7
+                    ];
+                    renderPracticeScoreChart(practiceScores);
+
+                    // Load default Full Test history
+                    $('#practiceTestHistoryBtn').text('Practice Tests');
+                    $('#fullTestHistoryBtn').addClass('active btn-primary').removeClass('btn-outline-primary');
+                    $('#practiceTestHistoryBtn').removeClass('active btn-primary').addClass('btn-outline-primary');
+                    currentHistoryType = 'FullTest';
+                    loadTestHistory(currentHistoryType, document.getElementById('fullTestHistoryBtn'));
+
+                    // Show modal
+                    const detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
+                    detailsModal.show();
                 },
-                error: (xhr) => showAlert('danger', xhr.responseJSON?.message || 'Failed to update score.')
+                error: (xhr) => showAlert('danger', xhr.responseJSON?.message || 'Failed to load details.')
             });
-        });
-
-        function cancelTest() {
-            const resultKey = $('#editResultKey').val();
-            if (confirm('Are you sure you want to cancel this test result? This action marks the test as cancelled.')) {
-                $.ajax({
-                    url: '/Manage/Members?handler=CancelTest',
-                    method: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify({ ResultKey: resultKey }),
-                    headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
-                    success: function (response) {
-                        $('#editTestModal').modal('hide');
-                        showAlert('success', response.message);
-                        loadTestHistory(currentHistoryType); // Tải lại lịch sử hiện tại
-                    },
-                    error: (xhr) => showAlert('danger', xhr.responseJSON?.message || 'Failed to cancel test.')
-                });
-            }
         }
-           function renderHistoryChart(data, type) {
-              const ctx = document.getElementById('historyChart').getContext('2d');
-              if (historyChart) {
-                  historyChart.destroy();
-              }
-
-              if (!data || data.length === 0) {
-                  return;
-                  // Không vẽ gì nếu không có dữ liệu
-              }
-
-              const labels = data.map(item => new Date(item.StartTime).toLocaleDateString('vi-VN'));
-              const scores = (type === 'FullTest') ? data.map(item => item.TestScore) : data.map(item => item.PracticeScore);
-              const chartLabel = (type === 'FullTest') ? 'Total Score' : 'Practice Score (%)';
-              const yMax = (type === 'FullTest') ?
-              990 : 100;
-
-              historyChart = new Chart(ctx, {
-                  type: 'bar',
-                  data: {
-                      labels: labels,
-                      datasets: [
-
-                         {
-                              label: chartLabel,
-                              data: scores,
-                              backgroundColor: 'rgba(52, 152, 219, 0.6)',
-
-                              borderColor: 'rgba(52, 152, 219, 1)',
-                              borderWidth: 1,
-                              borderRadius: 5,
-
-                              order: 2 // Vẽ cột phía sau
-                          },
-                          {
-                              type: 'line',
-
-                              label: 'Progress Trend',
-                              data: scores,
-                              borderColor: 'rgba(231, 76, 60, 0.8)',
-
-                              backgroundColor: 'rgba(231, 76, 60, 0.2)',
-                              fill: false,
-                              tension: 0.1,
-
-                              order: 1 // Vẽ đường phía trên
-                          }
-                      ]
-                  },
-                  options: {
-
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      scales: {
-                          y: {
-
-                              beginAtZero: true,
-                              max: yMax
-                          }
-                      },
-
-                      plugins: {
-                          legend: {
-                              position: 'top',
-                          },
-
-                          title: {
-                              display: true,
-                              text: 'Student Progress Over Time (Scroll/Pinch to Zoom & Pan)'
-                          },
-
-                          zoom: {
-                              pan: {
-                                  enabled: true,
-
-                                  mode: 'x' // Chỉ cho phép cuộn ngang
-                              },
-                              zoom: {
-
-                                  wheel: { enabled: true },
-                                  pinch: { enabled: true },
-                                  mode: 'x', // Chỉ cho phép zoom theo chiều ngang
-
-                              }
-                          }
-                      }
-                  }
-              });
-          }
-        function viewTestResult(testKey, resultKey) {
-              // URL này cần được điều chỉnh cho phù hợp với cấu trúc project của bạn
-              const url = `/Test/ResultTest?testKey=${testKey}&resultKey=${resultKey}`;
-              window.open(url, '_blank');
-          }
-        function renderPracticeScoreChart(scores) {
+                function renderPracticeScoreChart(scores) {
             const ctx = document.getElementById('practiceScoreChart').getContext('2d');
             if (practiceScoreChart) {
                 practiceScoreChart.destroy();
@@ -892,14 +1226,14 @@
             practiceScoreChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: ['Part 1', 'Part 2', 'Part 3', 'Part 4', 'Part 5', 'Part 6', 'Part 7'],
+                    labels: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7'],
                     datasets: [{
                         label: 'Practice Score (%)',
-                        data: scores,
+                        data: scores.map(s => s ?? null),
                         backgroundColor: 'rgba(52, 152, 219, 0.6)',
                         borderColor: 'rgba(52, 152, 219, 1)',
                         borderWidth: 1,
-                        borderRadius: 5
+                        borderRadius: 3
                     }]
                 },
                 options: {
@@ -909,149 +1243,212 @@
                         y: {
                             beginAtZero: true,
                             max: 100,
-                            ticks: { callback: value => value + '%' }
+                            ticks: {
+                                callback: value => value + '%'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: { size: 10 }
+                            }
                         }
                     },
-                    plugins: { legend: { display: false } }
-                }
-            });
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) { label += ': '; }
+                                    const originalValue = scores[context.dataIndex];
+                                    label += (originalValue !== null && originalValue !== undefined) ? `${originalValue}%` : 'N/A';
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                } // ← Đóng options
+            }); // ← Đóng new Chart()
+        } // ← Đóng function renderPracticeScoreChart
+        function loadTestHistory(type, element, buttonText = null) { /* ... (keep existing loadTestHistory logic) ... */
+             if (element && event) event.preventDefault(); if (!currentMemberKey) return; currentHistoryType = type;
+             const fullTestBtn = $('#fullTestHistoryBtn'); const practiceBtn = $('#practiceTestHistoryBtn');
+             if (type.startsWith('Practice')) { fullTestBtn.removeClass('active btn-primary').addClass('btn-outline-primary'); practiceBtn.removeClass('btn-outline-primary').addClass('active btn-primary'); if (buttonText) practiceBtn.text(buttonText); }
+             else { practiceBtn.removeClass('active btn-primary').addClass('btn-outline-primary').text('Practice Tests'); fullTestBtn.removeClass('btn-outline-primary').addClass('active btn-primary'); }
+             $('#testHistoryContainer').html('<p class="text-muted text-center p-3"><div class="spinner-border spinner-border-sm me-2"></div>Loading history...</p>');
+             if (historyChart) { historyChart.destroy(); historyChart = null; }
+             $.ajax({ url: `/Manage/Members?handler=GetTestScoreHistory&memberKey=${currentMemberKey}&type=${type}`, method: 'GET',
+                 success: function(historyData) { if (Array.isArray(historyData)) { renderHistoryTable(historyData, type); renderHistoryChart(historyData, type); } else { $('#testHistoryContainer').html('<p class="text-danger text-center p-3">Error: Invalid data.</p>'); } },
+                 error: (xhr) => { console.error('History load error:', xhr); $('#testHistoryContainer').html('<p class="text-danger text-center p-3">Failed to load history.</p>'); if (historyChart) { historyChart.destroy(); historyChart = null; } }
+             });
         }
 
-        function showAddModal() {
-            isEditMode = false;
-            $('#memberModalLabel').text('Add Member');
-            $('#memberForm')[0].reset();
-            $('#memberKey').val('');
-            $('#password').prop('required', true);
-            populateDepartmentDropdown();
-            $('#memberModal').modal('show');
-        }
-
-        function showEditModal(memberKey) {
-                 $.ajax({
-                    url: `/Manage/Members?handler=GetMemberDetails&memberKey=${memberKey}`,
-                    method: 'GET',
-                    success: function (memberDetails) {
-
-                        isEditMode = true;
-                        // THAY ĐỔI Ở ĐÂY: Sử dụng PascalCase
-                        $('#memberModalLabel').text('Edit Member');
-                        $('#memberKey').val(memberDetails.MemberKey);
-                        $('#memberID').val(memberDetails.MemberID);
-                        $('#memberName').val(memberDetails.MemberName);
-                        $('#password').val('').prop('required', false).attr('placeholder', 'Leave blank to keep current password');
-                        $('#gender').val(memberDetails.Gender);
-                        $('#yearOld').val(memberDetails.YearOld);
-                        $('#scoreTarget').val(memberDetails.ScoreTarget);
-                        $('#toeicScoreExam').val(memberDetails.ToeicScoreExam);
-                        $('#irtAbility').val(memberDetails.IrtAbility);
-                        $('#activate').val(memberDetails.Activate ? '1' : '0');
-                        populateDepartmentDropdown(memberDetails.DepartmentKey);
-                        $('#memberModal').modal('show');
-                    },
-                    error: () => showAlert('danger', 'Failed to load member details for editing.')
-                });
+        // UPDATED renderHistoryTable for better UI
+        function renderHistoryTable(data, type) {
+            const container = $('#testHistoryContainer');
+            container.empty();
+            if (!data || data.length === 0) {
+                 container.html('<p class="text-muted text-center p-3">No history found for this selection.</p>');
+                return;
             }
 
-        function populateDepartmentDropdown(selectedKey = '') {
-             $.ajax({
-                 url: '/Manage/Members?handler=GetDepartments',
-                 method: 'GET',
-                 success: function (data) {
-                     const deptSelect =
-                     $('#departmentKey');
-                     deptSelect.empty().append('<option value="">Not Linked</option>');
-                     if (Array.isArray(data)) {
-                         data.forEach(dept => {
-                             // THAY ĐỔI Ở ĐÂY: Sử dụng PascalCase
-                             if (dept && dept.DepartmentKey && dept.DepartmentName) {
-                                 const isSelected = dept.DepartmentKey === selectedKey;
-                                 deptSelect.append(new Option(dept.DepartmentName, dept.DepartmentKey, false, isSelected));
+            const getStatusBadge = (statusValue) => { /* ... (keep existing getStatusBadge) ... */
+                 const numericStatus = parseInt(statusValue);
+                 switch (numericStatus) { case 99: return '<span class="history-badge bg-danger">Cancelled</span>'; case 2: return '<span class="history-badge bg-warning">Edited</span>'; case 1: return '<span class="history-badge bg-success">Completed</span>'; case 0: return '<span class="history-badge bg-info">In Progress</span>'; default: return '<span class="history-badge bg-secondary">Unknown</span>'; }
+            };
 
-                              }
-                         });
-                         if(selectedKey){
-                             deptSelect.val(selectedKey);
+            let tableHtml = '<table class="table table-sm table-striped table-hover align-middle"><thead><tr>'; // Added align-middle
+             if (type.startsWith('FullTest')) {
+                tableHtml += '<th>Test Name</th><th class="text-center">Total</th><th class="text-center">Listen</th><th class="text-center">Read</th><th>Date</th><th class="text-center">Status</th><th class="text-center">Actions</th>';
+            } else {
+                tableHtml += '<th>Part Name</th><th class="text-center">Score</th><th>Date</th><th class="text-center">Status</th><th class="text-center">Actions</th>';
+            }
+             tableHtml += '</tr></thead><tbody>';
 
-                          }
-                     }
+            data.forEach(item => {
+                const statusVal = item.Status;
+                const statusBadge = getStatusBadge(statusVal);
+                const isCancelled = statusVal === 99;
+                const testName = item.TestName ?? 'N/A';
+                const startTime = formatDisplayDateTime(item.StartTime);
+                const testKey = item.TestKey ?? '';
+                const resultKey = item.ResultKey ?? '';
+
+                tableHtml += `<tr>`;
+                if (type.startsWith('FullTest')) {
+                    const testScore = item.TestScore ?? 'N/A';
+                    const listening = item.ListeningScore ?? 'N/A';
+                    const reading = item.ReadingScore ?? 'N/A';
+                    tableHtml += `
+                        <td>${escapeHtml(testName)}</td>
+                        <td class="text-center fw-bold">${testScore}</td>
+                        <td class="text-center">${listening}</td>
+                        <td class="text-center">${reading}</td>
+                        <td>${startTime}</td>
+                        <td class="text-center">${statusBadge}</td>
+                        <td class="text-center">
+                            <button class="btn btn-action btn-sm btn-outline-info py-0 px-1" onclick="viewTestResult('${testKey}', '${resultKey}')" title="Review"><i class="fas fa-eye fa-fw"></i></button>
+                            <button class="btn btn-action btn-sm btn-outline-warning py-0 px-1" onclick="showEditTestModal('${resultKey}', ${item.TestScore ?? 0})" title="Edit Score" ${isCancelled ? 'disabled' : ''}><i class="fas fa-edit fa-fw"></i></button>
+                        </td>`;
+                } else {
+                    const practiceScore = item.PracticeScore ?? item.TestScore ?? 'N/A';
+                    tableHtml += `
+                        <td>${escapeHtml(testName)}</td>
+                        <td class="text-center fw-bold">${practiceScore}${practiceScore !== 'N/A' ? '%' : ''}</td>
+                        <td>${startTime}</td>
+                        <td class="text-center">${statusBadge}</td>
+                        <td class="text-center">
+                             <button class="btn btn-action btn-sm btn-outline-info py-0 px-1" onclick="viewTestResult('${testKey}', '${resultKey}')" title="Review"><i class="fas fa-eye fa-fw"></i></button>
+                            <button class="btn btn-action btn-sm btn-outline-warning py-0 px-1" onclick="showEditTestModal('${resultKey}', ${practiceScore === 'N/A' ? 0 : practiceScore})" title="Edit Score" ${isCancelled ? 'disabled' : ''}><i class="fas fa-edit fa-fw"></i></button>
+                        </td>`;
+                }
+                 tableHtml += `</tr>`;
+            });
+            tableHtml += '</tbody></table>';
+            container.html(tableHtml);
+        }
+
+        function renderHistoryChart(data, type) {
+             const ctx = document.getElementById('historyChart').getContext('2d');
+             if (historyChart) { historyChart.destroy(); }
+             if (!data || data.length === 0) { $(ctx.canvas).hide(); return; }
+             $(ctx.canvas).show();
+             
+             // ✅ FIX: Hiển thị đầy đủ ngày + giờ
+             const labels = data.map(item => {
+                 const fullDateTime = formatDisplayDateTime(item.StartTime);
+                 // Tách thành "dd/MM HH:mm" để gọn hơn trên chart
+                 const parts = fullDateTime.split(' ');
+                 if (parts.length >= 2) {
+                     const datePart = parts[0]; // "dd/MM/yyyy"
+                     const timePart = parts[1]; // "HH:mm"
+                     // Chỉ lấy dd/MM (bỏ năm) + giờ
+                     const shortDate = datePart.split('/').slice(0, 2).join('/'); // "dd/MM"
+                     return `${shortDate} ${timePart}`; // "dd/MM HH:mm"
                  }
+                 return fullDateTime; // Fallback
              });
+             
+             const scores = (type.startsWith('FullTest')) ? data.map(item => item.TestScore ?? null) : data.map(item => item.PracticeScore ?? item.TestScore ?? null);
+             const chartLabel = (type.startsWith('FullTest')) ? 'Total Score' : 'Practice Score (%)';
+             const yMax = (type.startsWith('FullTest')) ? 990 : 100;
+             historyChart = new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [ { label: chartLabel, data: scores, backgroundColor: 'rgba(52, 152, 219, 0.6)', borderColor: 'rgba(52, 152, 219, 1)', borderWidth: 1, borderRadius: 3, order: 2 }, { type: 'line', label: 'Progress Trend', data: scores, borderColor: 'rgba(231, 76, 60, 0.8)', backgroundColor: 'rgba(231, 76, 60, 0.2)', fill: false, tension: 0.1, pointRadius: 3, pointHoverRadius: 5, order: 1 } ] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: yMax, title: { display: true, text: 'Score' } }, x: { title: { display: true, text: 'Date & Time' }, ticks: { maxRotation: 45, minRotation: 45 } } }, plugins: { legend: { position: 'top' }, title: { display: true, text: 'Progress Over Time (Scroll/Pinch to Zoom & Pan)' }, tooltip: { mode: 'index', intersect: false, callbacks: { label: function(context) { let label = context.dataset.label || ''; if (label) { label += ': '; } label += (context.parsed.y !== null) ? context.parsed.y : 'N/A'; if (!type.startsWith('FullTest') && context.dataset.type !== 'line' && context.parsed.y !== null) { label += '%'; } return label; } } }, zoom: { pan: { enabled: true, mode: 'x', threshold: 5 }, zoom: { wheel: { enabled: true, speed: 0.1 }, pinch: { enabled: true }, mode: 'x' } } } } });
+        }
+
+        // ADDED: Function to reset chart zoom
+         function resetHistoryChartZoom(){
+              if(historyChart && historyChart.isZoomedOrPanned()) { // Check if zoom/pan is active
+                   historyChart.resetZoom();
+                   showAlert('info', 'Chart zoom/pan reset.');
+              } else if (historyChart) {
+                   showAlert('info', 'Chart is already at default view.');
+              }
          }
 
-        $('#memberForm').on('submit', function (e) {
-                e.preventDefault();
-                // THAY ĐỔI Ở ĐÂY: Gửi dữ liệu đi với key là PascalCase
-                const formData = {
-                    MemberKey: $('#memberKey').val() || '00000000-0000-0000-0000-000000000000',
-                    MemberID: $('#memberID').val(),
-                    MemberName: $('#memberName').val(),
-                    Password: $('#password').val() || null,
-                    Gender: parseInt($('#gender').val()),
-                    YearOld: parseInt($('#yearOld').val()),
-                    DepartmentKey: $('#departmentKey').val() || null,
-                    Activate: $('#activate').val() === '1',
-                    ScoreTarget: $('#scoreTarget').val()
-                    ? parseInt($('#scoreTarget').val()) : null,
-                    ToeicScoreExam: $('#toeicScoreExam').val() ? parseInt($('#toeicScoreExam').val()) : null,
-                    IrtAbility: $('#irtAbility').val() ? parseFloat($('#irtAbility').val()) : null,
-                };
 
-                const url = isEditMode ? '/Manage/Members?handler=Update' : '/Manage/Members?handler=Create';
-                $.ajax({
-                    url: url,
-                    method: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify(formData),
-                    headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
-
-                    success: function (response) {
-                        $('#memberModal').modal('hide');
-                        showAlert('success', response.message);
-                        loadMembers(isEditMode ? currentPage : 1);
-                    },
-
-                    error: function (xhr) {
-                         showAlert('danger', xhr.responseJSON?.message || (isEditMode ? 'Update failed.' : 'Add failed.'));
-                    }
-                });
+        // === Edit/Cancel Test Actions ===
+        function showEditTestModal(resultKey, currentScore) { /* ... (keep existing showEditTestModal logic, updated help text) ... */
+            $('#editResultKey').val(resultKey); $('#editTestScore').val(currentScore ?? 0);
+            const isFullTest = currentHistoryType.startsWith('FullTest');
+            const maxScore = isFullTest ? 990 : 100;
+             $('#editTestScore').attr('max', maxScore).attr('placeholder', `0-${maxScore}`);
+             $('#editScoreHelp').text(isFullTest ? 'Enter total score (0-990).' : 'Enter percentage (0-100).');
+             $('#editTestModalLabel').html(`<i class="fas fa-edit me-2"></i>Edit Score`);
+            const editModal = new bootstrap.Modal(document.getElementById('editTestModal')); editModal.show();
+        }
+        function submitEditTestScore() { /* ... (keep existing submitEditTestScore logic) ... */
+             const resultKey = $('#editResultKey').val(); const newScoreInput = $('#editTestScore');
+             const newScore = parseInt(newScoreInput.val()); const maxScore = parseInt(newScoreInput.attr('max'));
+             if (isNaN(newScore) || newScore < 0 || newScore > maxScore) { showAlert('warning', `Enter valid score (0-${maxScore}).`); newScoreInput.focus(); return; }
+             // SHOW confirmation modal
+            $('#confirmMessage').text(`You are about to update the score. This action is irreversible!\n\nNew Score: ${newScore}\nContinue?`);
+            $('#confirmBtn').off('click').on('click', function() {
+                 $.ajax({ url: '/Manage/Members?handler=UpdateTestScore', method: 'POST', contentType: 'application/json', data: JSON.stringify({ ResultKey: resultKey, TestScore: newScore }),
+                     success: function (response) { if (response && response.success) { const modalInstance = bootstrap.Modal.getInstance(document.getElementById('editTestModal')); modalInstance.hide(); showAlert('success', response.message || 'Score updated!'); loadTestHistory(currentHistoryType); } else { showAlert('danger', response?.message || 'Update failed.'); } },
+                     error: (xhr) => showAlert('danger', xhr.responseJSON?.message || 'Update failed.')
+                 });
+                 const confirmModal = bootstrap.Modal.getInstance(document.getElementById('confirmModal'));
+                 confirmModal.hide();
             });
-
-        function showDeleteModal(memberKey) {
-            currentMemberKey = memberKey;
-            if (confirm('Are you sure you want to delete this member? This action cannot be undone.')) {
-                deleteMember(currentMemberKey);
-            }
+            const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+            confirmModal.show();
+        }
+        function cancelTest() {
+             const resultKey = $('#editResultKey').val();
+             
+             showConfirmModal(
+                 'Are you sure you want to mark this test result as Cancelled?\n\nThis action will set the test status to Cancelled and cannot be undone.',
+                 function() {
+                     $.ajax({
+                         url: '/Manage/Members?handler=CancelTest',
+                         method: 'POST',
+                         contentType: 'application/json',
+                         data: JSON.stringify({ ResultKey: resultKey }),
+                         success: function (response) {
+                             if (response && response.success) {
+                                 const modalInstance = bootstrap.Modal.getInstance(document.getElementById('editTestModal'));
+                                 modalInstance.hide();
+                                 showAlert('success', response.message || 'Test cancelled!');
+                                 loadTestHistory(currentHistoryType);
+                             } else {
+                                 showAlert('danger', response?.message || 'Cancel failed.');
+                             }
+                         },
+                         error: (xhr) => showAlert('danger', xhr.responseJSON?.message || 'Cancel failed.')
+                     });
+                 }
+             );
         }
 
-        function deleteMember(memberKey) {
-            $.ajax({
-                url: `/Manage/Members?handler=Delete&memberKey=${memberKey}`,
-                method: 'GET',
-                headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
-                success: function () {
-                    showAlert('success', 'Member deleted successfully!');
-                    loadMembers(1);
-                },
-                error: () => showAlert('danger', 'Failed to delete member.')
-            });
+        // === View Test Result ===
+        function viewTestResult(testKey, resultKey) { /* ... (keep existing viewTestResult logic, ensure URL is correct) ... */
+             if (!testKey || !resultKey) { showAlert('warning', 'Missing info to view result.'); return; }
+             // !!! IMPORTANT: Verify this URL matches your project structure !!!
+             const url = `https://localhost:7003/Test/ResultTest?testKey=${testKey}&resultKey=${resultKey}`;
+             window.open(url, '_blank');
         }
 
-        function showAlert(type, message) {
-               // Can be replaced with a nicer toast notification library like Toastr
-               const alertContainer = document.createElement('div');
-               alertContainer.innerHTML = `
-                   <div style="position: fixed; top: 20px; right: 20px; z-index: 1055;"
-                   class="alert alert-${type} alert-dismissible fade show" role="alert">
-                       ${message}
-                       <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                   </div>
-               `;
-               document.body.appendChild(alertContainer);
-               setTimeout(() => {
-                   $(alertContainer).find('.alert').alert('close');
-               }, 3000);
-           }
     </script>
 }
-

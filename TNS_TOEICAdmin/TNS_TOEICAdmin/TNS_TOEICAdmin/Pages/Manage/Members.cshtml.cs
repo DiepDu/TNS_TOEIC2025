@@ -16,20 +16,12 @@ namespace TNS_TOEICAdmin.Pages.Manage
         {
             UserLogin = new TNS_Auth.UserLogin_Info(User);
             var fullRole = new TNS_Auth.Role_Info(UserLogin.UserKey, "Full");
-            if (fullRole.GetCode() == "200")
-            {
-                IsFullAdmin = true;
-                UserLogin.GetRole("Members");
-            }
-            else
-            {
-                IsFullAdmin = false;
-                UserLogin.GetRole("Members");
-            }
-            if (UserLogin.Role == null)
-            {
-                UserLogin.GetRole("Members");
-            }
+            IsFullAdmin = fullRole.GetCode() == "200";
+
+            UserLogin.GetRole("Members"); // Chỉ gọi 1 lần
+
+            if (UserLogin.Role == null && !IsFullAdmin)
+                throw new UnauthorizedAccessException("No access to Members module.");
         }
         #endregion
 
