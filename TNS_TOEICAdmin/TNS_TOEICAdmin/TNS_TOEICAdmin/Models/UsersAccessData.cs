@@ -94,6 +94,37 @@ namespace TNS_TOEICAdmin.Models
             }
             return users;
         }
+        public static async Task<int> GetTotalUsersCountAsync(string search = null, string activate = null)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                await conn.OpenAsync();
+                string sql = "SELECT COUNT(DISTINCT u.UserKey) FROM [SYS_Users] u WHERE 1=1";
+
+                if (!string.IsNullOrEmpty(search))
+                {
+                    sql += " AND u.UserName LIKE @Search";
+                }
+                if (!string.IsNullOrEmpty(activate))
+                {
+                    sql += " AND u.Activate = @Activate";
+                }
+
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    if (!string.IsNullOrEmpty(search))
+                    {
+                        cmd.Parameters.AddWithValue("@Search", "%" + search + "%");
+                    }
+                    if (!string.IsNullOrEmpty(activate))
+                    {
+                        cmd.Parameters.AddWithValue("@Activate", activate == "1");
+                    }
+
+                    return (int)await cmd.ExecuteScalarAsync();
+                }
+            }
+        }
         public static async Task<List<Employee>> GetEmployeesAsync()
         {
             var employees = new List<Employee>();

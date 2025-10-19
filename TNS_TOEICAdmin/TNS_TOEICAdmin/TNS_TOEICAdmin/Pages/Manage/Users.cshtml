@@ -18,9 +18,10 @@
     <div class="container">
         <h2><i class="fas fa-users me-2"></i>User Management</h2>
         <div class="search-container">
-            <button class="btn btn-add"><i class="fas fa-plus me-2"></i>Add User</button>
+            <!-- THÊM ID "btnAddUser" -->
+            <button class="btn btn-add" id="btnAddUser"><i class="fas fa-plus me-2"></i>Add User</button>
             <input type="text" class="form-control search-input" id="searchInput" placeholder="Search by UserName" />
-            <button class="btn btn-search" onclick="searchUsers()"><i class="fas fa-search me-2"></i>Search</button>
+          
         </div>
 
         <!-- Table Section (Unchanged) -->
@@ -278,9 +279,9 @@
             }
 
         .btn-action {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
+            width: 27px;
+            height: 27px;
+            border-radius: 8px;
             padding: 0;
             display: inline-flex;
             align-items: center;
@@ -329,11 +330,11 @@
                 box-shadow: 0 6px 16px rgba(142, 68, 173, 0.3);
             }
 
-        /* Modified Table Styles */
         .table-container {
             background: #FFFFFF;
             border-radius: 15px;
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+            overflow-x: hidden; /* Ẩn scroll ngang */
         }
 
         .table {
@@ -368,11 +369,81 @@
             white-space: normal; /* Allow text wrapping */
             box-sizing: border-box; /* Include padding in width */
         }
-
-        .table tr:hover {
-            background: #F8FAFF;
-            transition: background 0.3s ease;
+        /* Status Badges */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
+
+        .status-activated {
+            background: linear-gradient(135deg, #27AE60, #52BE80);
+            color: #FFFFFF;
+            box-shadow: 0 2px 6px rgba(39, 174, 96, 0.3);
+        }
+
+        .status-locked {
+            background: linear-gradient(135deg, #E74C3C, #EC7063);
+            color: #FFFFFF;
+            box-shadow: 0 2px 6px rgba(231, 76, 60, 0.3);
+        }
+        /* Role Tags */
+        .role-tag {
+            display: inline-block;
+            padding: 3px 8px;
+            margin: 2px;
+            background: linear-gradient(135deg, #9B59B6, #BB8FCE);
+            color: #FFFFFF;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(155, 89, 182, 0.3);
+        }
+
+        /* Username Highlight */
+        .username-cell {
+            font-weight: 600;
+            color: #2980B9;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Failed Attempts Warning */
+        .failed-attempts {
+            font-weight: 600;
+        }
+
+            .failed-attempts.warning {
+                color: #E67E22;
+            }
+
+            .failed-attempts.danger {
+                color: #E74C3C;
+            }
+
+            /* Bo tròn cho ô đầu và cuối mỗi hàng */
+            .table tbody tr td:first-child {
+                border-top-left-radius: 8px;
+                border-bottom-left-radius: 8px;
+            }
+
+            .table tbody tr td:last-child {
+                border-top-right-radius: 8px;
+                border-bottom-right-radius: 8px;
+            }
+
+        .table tbody tr {
+            transition: all 0.3s ease;
+        }
+
+            .table tbody tr:hover {
+                background: linear-gradient(90deg, #F8FAFF, #EBF5FF);
+                box-shadow: 0 2px 8px rgba(52, 152, 219, 0.15);
+            }
 
         /* Define column widths for both header and body */
         .table th:nth-child(1), .table td:nth-child(1) { width: 100px; } /* UserName */
@@ -389,10 +460,19 @@
             overflow-y: auto;
             scrollbar-width: thin;
             scrollbar-color: #3498DB #ECF0F1;
-            box-sizing: border-box; /* Include padding in width */
-            padding-right: 8px; /* Compensate for scrollbar width */
         }
 
+        /* FIX: Căn chỉnh header table với scrollbar */
+        /* ===== FIX COLUMN ALIGNMENT ===== */
+        .table-container > table {
+            width: calc(100% - 8px);
+            margin-right: 8px;
+        }
+
+        .table-body-scroll table {
+            width: 100%;
+            margin-right: 0;
+        }
         .table-body-scroll::-webkit-scrollbar {
             width: 8px;
         }
@@ -517,19 +597,29 @@
             let searchTerm = '';
             let activateFilter = '';
             let isEditMode = false;
-
-            $(document).ready(function () {
+            let totalUsers = 0;
+                               $(document).ready(function () {
                 loadUsers();
                 loadRoles();
-                $('.btn-add').on('click', showAddModal);
+
+                // ✅ SỬA: Chỉ bắt nút Add User bằng ID
+                $('#btnAddUser').on('click', showAddModal);
+
+                // Auto-search
+                $('#searchInput').on('keyup', autoSearch);
+                $('#searchInput').on('keypress', function(e) {
+                    if (e.which === 13) {
+                        e.preventDefault();
+                        autoSearch();
+                    }
+                });
             });
 
-            function loadUsers(page = 1, search = '', activate = '') {
+                      function loadUsers(page = 1, search = '', activate = '') {
                 currentPage = page;
                 searchTerm = search;
                 activateFilter = activate;
 
-                // Create data object with only non-empty parameters
                 let data = { page: currentPage, pageSize: pageSize };
                 if (search.trim() !== '') {
                     data.search = search;
@@ -542,8 +632,10 @@
                     url: '/Manage/Users?handler=GetUsers',
                     method: 'GET',
                     data: data,
-                    success: function (data) {
-                        users = Array.isArray(data) ? data : [];
+                    success: function (response) {
+                        // ✅ FIX: Nhận cả users VÀ totalCount
+                        users = Array.isArray(response.users) ? response.users : [];
+                        totalUsers = response.totalCount || 0;
                         renderUsers();
                         renderPagination();
                     },
@@ -567,56 +659,100 @@
                 });
             }
 
-            function renderUsers() {
+                        function renderUsers() {
                 const tbody = $('#userTableBody');
                 tbody.empty();
-                let filteredUsers = users; // No client-side filtering, let server handle it
 
-                const startIndex = (currentPage - 1) * pageSize;
-                const endIndex = Math.min(startIndex + pageSize, filteredUsers.length);
-                const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+                // ✅ Backend đã pagination rồi, không cần slice nữa
+                users.forEach(u => {
+                    // ✅ Role tags với styling đẹp
+                    const roleNames = u.Roles && u.Roles.length > 0
+                        ? u.Roles.map(r => `<span class="role-tag">${r.RoleName}</span>`).join(' ')
+                        : '<span style="color: #95A5A6; font-style: italic;">No Roles</span>';
 
-                paginatedUsers.forEach(u => {
-                    const roleNames = u.Roles ? u.Roles.map(r => r.RoleName).join(', ') : 'None';
+                    // ✅ Status badge
+                    const statusBadge = u.Activate
+                        ? '<span class="status-badge status-activated">Activated</span>'
+                        : '<span class="status-badge status-locked">Locked</span>';
+
+                    // ✅ Failed attempts với màu cảnh báo
+                    const failedAttempts = u.FailedPasswordAttemptCount || 0;
+                    let failedClass = '';
+                    if (failedAttempts >= 3) failedClass = 'danger';
+                    else if (failedAttempts > 0) failedClass = 'warning';
+                    const failedAttemptsHtml = `<span class="failed-attempts ${failedClass}">${failedAttempts}</span>`;
+
+                    // ✅ Format date đẹp hơn
+                    const lastLogin = u.LastLoginDate
+                        ? new Date(u.LastLoginDate).toLocaleString('vi-VN', {
+                            year: 'numeric', month: '2-digit', day: '2-digit',
+                            hour: '2-digit', minute: '2-digit'
+                          })
+                        : '<span style="color: #95A5A6; font-style: italic;">Never</span>';
+
                     tbody.append(`
                         <tr>
-                            <td>${u.UserName || 'N/A'}</td>
-                            <td>${u.Description || ''}</td>
-                            <td>${u.Activate ? 'Activated' : 'Locked'}</td>
-                            <td>${u.LastLoginDate || 'Never Logged In'}</td>
-                            <td>${u.FailedPasswordAttemptCount || 0}</td>
-                            <td>${u.EmployeeName || 'Not Linked'}</td>
+                            <td class="username-cell">${u.UserName || 'N/A'}</td>
+                            <td>${u.Description || '<span style="color: #BDC3C7;">—</span>'}</td>
+                            <td>${statusBadge}</td>
+                            <td>${lastLogin}</td>
+                            <td>${failedAttemptsHtml}</td>
+                            <td><strong>${u.EmployeeName || '<span style="color: #95A5A6;">Not Linked</span>'}</strong></td>
                             <td>${roleNames}</td>
                             <td>
                                 <div class="actions-container">
-                                    <button class="btn btn-action btn-edit" onclick="showEditModal('${u.UserKey}')"><i class="fas fa-edit"></i></button>
-                                    <button class="btn btn-action btn-roles" onclick="showRolesModal('${u.UserKey}')"><i class="fas fa-user-shield"></i></button>
-                                    <button class="btn btn-action btn-delete" onclick="showDeleteModal('${u.UserKey}')"><i class="fas fa-trash"></i></button>
+                                    <button class="btn btn-action btn-edit" onclick="showEditModal('${u.UserKey}')" title="Edit User">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-action btn-roles" onclick="showRolesModal('${u.UserKey}')" title="Manage Roles">
+                                        <i class="fas fa-user-shield"></i>
+                                    </button>
+                                    <button class="btn btn-action btn-delete" onclick="showDeleteModal('${u.UserKey}')" title="Delete User">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
                     `);
                 });
+                         setTimeout(adjustTableAlignment, 50);
+            }
+            function adjustTableAlignment() {
+    const scrollContainer = $('.table-body-scroll');
+    const hasScrollbar = scrollContainer[0].scrollHeight > scrollContainer[0].clientHeight;
+    
+    if (hasScrollbar) {
+        $('.table-container > table').css({
+            'width': 'calc(100% - 8px)',
+            'margin-right': '8px'
+        });
+    } else {
+        $('.table-container > table').css({
+            'width': '100%',
+            'margin-right': '0'
+        });
+    }
             }
 
             function renderPagination() {
-                const totalItems = users.length; // Use total count from server response
-                const totalPages = Math.ceil(totalItems / pageSize);
+                const totalPages = Math.ceil(totalUsers / pageSize); // ← DÙNG totalUsers
                 const pagination = $('#pagination');
                 pagination.empty();
 
+                if (totalPages <= 1) return; // ← Không hiển thị pagination nếu chỉ 1 page
+
                 pagination.append(`<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-                    <a class="page-link" href="#" onclick="loadUsers(${currentPage - 1}, '${searchTerm}', '${activateFilter}')"><i class="fas fa-chevron-left"></i></a>
+                    <a class="page-link" href="#" onclick="event.preventDefault(); loadUsers(${currentPage - 1}, '${searchTerm}', '${activateFilter}')"><i class="fas fa-chevron-left"></i></a>
                 </li>`);
 
                 for (let i = 1; i <= totalPages; i++) {
                     pagination.append(`<li class="page-item ${i === currentPage ? 'active' : ''}">
-                        <a class="page-link" href="#" onclick="loadUsers(${i}, '${searchTerm}', '${activateFilter}')">${i}</a>
+                        <a class="page-link" href="#" onclick="event.preventDefault(); loadUsers(${i}, '${searchTerm}', '${activateFilter}')">${i}</a>
                     </li>`);
                 }
 
                 pagination.append(`<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
-                    <a class="page-link" href="#" onclick="loadUsers(${currentPage + 1}, '${searchTerm}', '${activateFilter}')"><i class="fas fa-chevron-right"></i></a>
+                    <a class="page-link" href="#" onclick="event.preventDefault(); loadUsers(${currentPage + 1}, '${searchTerm}', '${activateFilter}')"><i class="fas fa-chevron-right"></i></a>
                 </li>`);
             }
 
@@ -810,10 +946,25 @@
                 });
             }
 
-            function searchUsers() {
+                      // ✅ Debounce helper
+            function debounce(func, delay) {
+                let timeout;
+                return function(...args) {
+                    const context = this;
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => func.apply(context, args), delay);
+                };
+            }
+
+            // ✅ Auto-search function
+            const autoSearch = debounce(function() {
                 const searchValue = $('#searchInput').val().trim();
-                const activateValue = $('#activateFilter').val();
+                const activateValue = $('#activateFilter').val() || '';
                 loadUsers(1, searchValue, activateValue);
+            }, 400); // Chờ 400ms sau khi user ngừng gõ
+
+            function searchUsers() {
+                autoSearch();
             }
 
             function showAlert(type, message) {

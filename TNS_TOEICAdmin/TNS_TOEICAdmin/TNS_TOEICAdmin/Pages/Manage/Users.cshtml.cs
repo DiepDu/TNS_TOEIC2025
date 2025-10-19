@@ -54,12 +54,13 @@ namespace TNS_TOEICAdmin.Pages.Manage
             if (IsFullAdmin || UserLogin.Role.IsRead)
             {
                 var users = await UserAccessData.GetUsersAsync(page, pageSize, search, activate);
-                return new JsonResult(users);
+                var totalCount = await UserAccessData.GetTotalUsersCountAsync(search, activate); // ← THÊM DÒNG NÀY
+
+                return new JsonResult(new { users, totalCount }); // ← SỬA DÒNG NÀY
             }
             else
             {
                 return new JsonResult(new { status = "ERROR", message = "Bạn không có quyền xem danh sách!" }) { StatusCode = 403 };
-
             }
         }
 
