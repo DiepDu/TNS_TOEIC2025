@@ -263,6 +263,7 @@
     .table-container {
         max-height: 500px;
         overflow-y: auto;
+        overflow-x: hidden; /* ← BỎ SCROLL NGANG */
         position: relative;
         background: #FFFFFF;
         border-radius: 15px;
@@ -281,34 +282,108 @@
             position: sticky;
             top: 0;
             z-index: 10;
-            background: linear-gradient(90deg, #3498DB, #5DADE2);
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e8ba3 100%);
         }
 
         .table th {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e8ba3 100%);
             color: #FFFFFF;
             text-align: center;
             padding: 12px;
             font-weight: 600;
             font-size: 15px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            border-bottom: 2px solid #1e3c72;
         }
 
+            .table th:hover {
+                background: linear-gradient(135deg, #2a5298 0%, #3d5a9e 50%, #8a94a8 100%);
+                transform: translateY(-1px);
+            }
+
             .table th:first-child {
-                background: linear-gradient(90deg, #1A6DB8, #3B8ECE);
+                background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e8ba3 100%);
                 box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.15);
             }
+
+                .table th:first-child:hover {
+                    background: linear-gradient(135deg, #2a5298 0%, #3d5a9e 50%, #8a94a8 100%);
+                }
 
         .table td {
             background: #FFFFFF;
             vertical-align: middle;
-            padding: 8px;
+            padding: 12px;
             border-bottom: 1px solid #ECF0F1;
             font-size: 14px;
+            color: #2C3E50;
+            transition: all 0.3s ease;
         }
 
-        .table tr:hover {
-            background: #F8FAFF;
-            transition: background 0.3s ease;
+        .table tbody tr {
+            transition: all 0.3s ease;
         }
+
+            .table tbody tr:hover {
+                background: linear-gradient(90deg, #F8FAFF, #EBF5FF);
+                box-shadow: 0 2px 8px rgba(52, 152, 219, 0.15);
+                transform: scale(1.002);
+            }
+
+        /* Employee ID - Nổi bật */
+        .table td:nth-child(1) {
+            font-weight: 600;
+            color: #2980B9;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Full Name - Đậm hơn */
+        .table td:nth-child(2) {
+            font-weight: 600;
+            color: #2C3E50;
+        }
+
+        /* Department - Màu phụ */
+        .table td:nth-child(3) {
+            color: #7F8C8D;
+            font-weight: 500;
+        }
+
+        /* Email - Màu xanh dương */
+        .table td:nth-child(4) {
+            color: #3498DB;
+            font-style: italic;
+        }
+
+        /* Status - Badge styling */
+        .table td:nth-child(5) {
+            font-weight: 600;
+            text-align: center;
+        }
+    /* Status Badge Styling */
+    .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .status-active {
+        background: linear-gradient(135deg, #27AE60, #52BE80);
+        color: #FFFFFF;
+        box-shadow: 0 2px 6px rgba(39, 174, 96, 0.3);
+    }
+
+    .status-inactive {
+        background: linear-gradient(135deg, #E74C3C, #EC7063);
+        color: #FFFFFF;
+        box-shadow: 0 2px 6px rgba(231, 76, 60, 0.3);
+    }
 
     .table-container::-webkit-scrollbar {
         width: 8px;
@@ -373,6 +448,55 @@
         background: linear-gradient(45deg, #E74C3C, #F1948A);
         color: #FFFFFF;
     }
+    /* Pagination Styling */
+    .pagination {
+        margin-top: 2rem;
+        display: flex;
+        justify-content: center;
+        list-style: none;
+        padding: 0;
+    }
+
+        .pagination .page-link {
+            border-radius: 50%;
+            margin: 0 6px;
+            color: #3498DB;
+            border: 2px solid #3498DB;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            background: #FFFFFF;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+            .pagination .page-link:hover {
+                background: #ECF0F1;
+                color: #2980B9;
+                transform: translateY(-2px);
+            }
+
+        .pagination .active .page-link {
+            background: #3498DB;
+            color: #FFFFFF;
+            border-color: #3498DB;
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+        }
+
+        .pagination .disabled .page-link {
+            color: #BDC3C7;
+            border-color: #ECF0F1;
+            cursor: not-allowed;
+            background: #F8F9FA;
+        }
+
+            .pagination .disabled .page-link:hover {
+                background: #F8F9FA;
+                transform: none;
+            }
 </style>
 
 <div class="container">
@@ -386,7 +510,7 @@
                 <option value="active">Active</option> <!-- Sửa 'activate' thành 'active' -->
                 <option value="inactive">Inactive</option> <!-- Sửa 'inactivate' thành 'inactive' -->
             </select>
-            <button class="btn btn-search" onclick="searchEmployees()"><i class="fas fa-search"></i></button>
+
         </div>
     </div>
 
@@ -406,11 +530,10 @@
         </table>
     </div>
 
-    <div class="load-more-container text-center mt-3">
-        <button class="btn" id="loadMoreBtn" style="display: none;">
-            <i class="fas fa-plus me-2"></i>Load More
-        </button>
-    </div>
+    <!-- Pagination Controls -->
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center" id="pagination"></ul>
+    </nav>
 </div>
 
 <div class="modal fade" id="employeeModal" tabindex="-1" aria-labelledby="employeeModalLabel" aria-hidden="true">
@@ -464,41 +587,89 @@
         </div>
     </div>
 </div>
-
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="confirmModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirm Action
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage" class="mb-0" style="white-space: pre-line;">Are you sure you want to proceed?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmBtn">
+                    <i class="fas fa-check me-2"></i>Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 @section Scripts {
     <script>
         let employees = [];
         let departments = [];
-        let loadedRows = 0;
+        let currentPage = 1;
         const pageSize = 10;
         let searchTerm = '';
         let statusFilter = '';
         let isEditMode = false;
-                   if (typeof window.isLoading === 'undefined') {
-            window.isLoading = false;
+        let totalEmployees = 0;
+
+        // ===== DEBOUNCE HELPER =====
+        function debounce(func, delay) {
+            let timeout;
+            return function(...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), delay);
+            };
         }
+
+        // ===== AUTO-SEARCH FUNCTION =====
+        const autoSearch = debounce(function() {
+            const searchValue = $('#searchInput').val().trim();
+            const statusValue = $('#statusFilter').val();
+            loadEmployees(1, searchValue, statusValue);
+        }, 400);
 
         $(document).ready(function () {
             loadEmployees();
             loadDepartments();
             $('.btn-add').on('click', showAddModal);
-            $('#loadMoreBtn').on('click', loadMoreEmployees);
+
+            // ✅ AUTO-SEARCH khi gõ
+            $('#searchInput').on('keyup', autoSearch);
+            $('#statusFilter').on('change', autoSearch);
+
+            // ✅ Trigger search khi nhấn Enter
+            $('#searchInput').on('keypress', function(e) {
+                if (e.which === 13) {
+                    e.preventDefault();
+                    autoSearch();
+                }
+            });
         });
 
-        function loadEmployees(search = '', status = '') {
+        // ===== LOAD EMPLOYEES WITH PAGINATION =====
+        function loadEmployees(page = 1, search = '', status = '') {
+            currentPage = page;
             searchTerm = search;
             statusFilter = status;
-            loadedRows = 0;
-            employees = [];
 
             const dataToSend = {
-                offset: loadedRows,
+                page: currentPage,
                 pageSize: pageSize,
                 search: searchTerm,
                 status: statusFilter
             };
 
-            isLoading = true;
             $.ajax({
                 url: '/Manage/Employee?handler=GetEmployees',
                 method: 'GET',
@@ -507,93 +678,90 @@
                 success: function (response) {
                     if (response && response.data) {
                         employees = Array.isArray(response.data) ? response.data : [];
-                        loadedRows = employees.length;
-                        renderEmployees(true);
-                        toggleLoadMoreButton(response.hasMore);
+                        totalEmployees = response.totalCount || 0;
+                        renderEmployees();
+                        renderPagination();
                     } else {
-                        renderEmployees(true);
-                        toggleLoadMoreButton(false);
+                        employees = [];
+                        totalEmployees = 0;
+                        renderEmployees();
+                        renderPagination();
                     }
-                    isLoading = false;
                 },
                 error: function (xhr, status, error) {
                     console.error('Error loading employees:', error);
                     showAlert('danger', 'Failed to load employees.');
-                    isLoading = false;
                 }
             });
         }
 
-        function loadMoreEmployees() {
-            if (isLoading) return;
-
-            const dataToSend = {
-                offset: loadedRows,
-                pageSize: pageSize,
-                search: searchTerm,
-                status: statusFilter
-            };
-
-            isLoading = true;
-            $.ajax({
-                url: '/Manage/Employee?handler=GetEmployees',
-                method: 'GET',
-                data: dataToSend,
-                cache: false,
-                success: function (response) {
-                    if (response && response.data) {
-                        const newEmployees = Array.isArray(response.data) ? response.data : [];
-                        employees = employees.concat(newEmployees.filter(newEmp =>
-                            !employees.some(existingEmp => existingEmp.EmployeeKey === newEmp.EmployeeKey)
-                        ));
-                        loadedRows += newEmployees.length;
-                        renderEmployees(true); // Clear table and re-render all employees
-                        toggleLoadMoreButton(response.hasMore);
-                    }
-                    isLoading = false;
-                },
-                error: function (xhr, status, error) {
-                    console.error('Error loading more employees:', error);
-                    showAlert('danger', 'Failed to load more employees.');
-                    isLoading = false;
-                }
-            });
-        }
-
-        function renderEmployees(clearTable = false) {
+        // ===== RENDER EMPLOYEES =====
+        function renderEmployees() {
             const tbody = $('#employeeTableBody');
-            if (clearTable) tbody.empty();
+            tbody.empty();
 
             if (employees.length > 0) {
                 employees.forEach(emp => {
                     const currentDate = new Date();
                     const leavingDate = emp.LeavingDate ? new Date(emp.LeavingDate) : null;
                     const isInactivate = leavingDate && currentDate > leavingDate;
+
+                    const statusBadge = isInactivate
+                        ? '<span class="status-badge status-inactive">Inactive</span>'
+                        : '<span class="status-badge status-active">Active</span>';
+
                     const row = `<tr>
                                 <td>${emp.EmployeeID || 'N/A'}</td>
                                 <td>${(emp.LastName || '') + ' ' + (emp.FirstName || '')}</td>
-                                <td>${emp.DepartmentName || 'No Department'}</td>
-                                <td>${emp.CompanyEmail || 'N/A'}</td>
-                                <td>${isInactivate ? 'Inactive' : 'Active'}</td>
+                                <td>${emp.DepartmentName || '<span style="color: #95A5A6;">No Department</span>'}</td>
+                                <td>${emp.CompanyEmail || '<span style="color: #95A5A6;">N/A</span>'}</td>
+                                <td>${statusBadge}</td>
                                 <td class="action-buttons">
-                                    <button class="btn btn-action btn-edit" onclick="showEditModal('${emp.EmployeeKey}')"><i class="fas fa-edit"></i></button>
-                                    <button class="btn btn-action btn-delete" onclick="deleteEmployee('${emp.EmployeeKey}', ${isInactivate ? 'true' : 'false'})"><i class="fas fa-trash"></i></button>
+                                    <button class="btn btn-action btn-edit" onclick="showEditModal('${emp.EmployeeKey}')" title="Edit Employee"><i class="fas fa-edit"></i></button>
+                                    <button class="btn btn-action btn-delete" onclick="deleteEmployee('${emp.EmployeeKey}', ${isInactivate ? 'true' : 'false'})" title="Delete Employee"><i class="fas fa-trash"></i></button>
                                 </td>
                             </tr>`;
                     tbody.append(row);
                 });
-            } else if (clearTable) {
-                tbody.append('<tr><td colspan="6" class="text-center">No data available</td></tr>');
+            } else {
+                tbody.append('<tr><td colspan="6" class="text-center text-muted p-4">No employees found</td></tr>');
             }
         }
 
-        function toggleLoadMoreButton(hasMore) {
-            const loadMoreBtn = $('#loadMoreBtn');
-            if (hasMore) {
-                loadMoreBtn.show();
-            } else {
-                loadMoreBtn.hide();
+        // ===== RENDER PAGINATION =====
+        function renderPagination() {
+            const totalPages = Math.ceil(totalEmployees / pageSize);
+            const pagination = $('#pagination');
+            pagination.empty();
+
+            if (totalPages <= 1) return; // Không hiển thị nếu chỉ 1 trang
+
+            // Previous button
+            pagination.append(`
+                <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="event.preventDefault(); ${currentPage > 1 ? `loadEmployees(${currentPage - 1}, '${searchTerm}', '${statusFilter}')` : ''}">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
+            `);
+
+            // Page numbers
+            for (let i = 1; i <= totalPages; i++) {
+                pagination.append(`
+                    <li class="page-item ${i === currentPage ? 'active' : ''}">
+                        <a class="page-link" href="#" onclick="event.preventDefault(); loadEmployees(${i}, '${searchTerm}', '${statusFilter}')">${i}</a>
+                    </li>
+                `);
             }
+
+            // Next button
+            pagination.append(`
+                <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="event.preventDefault(); ${currentPage < totalPages ? `loadEmployees(${currentPage + 1}, '${searchTerm}', '${statusFilter}')` : ''}">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+            `);
         }
 
         function loadDepartments() {
@@ -646,10 +814,23 @@
             });
         }
 
-        function searchEmployees() {
-            const searchValue = $('#searchInput').val().trim();
-            const statusValue = $('#statusFilter').val();
-            loadEmployees(searchValue, statusValue);
+               // ===== CONFIRMATION MODAL HELPER =====
+        function showConfirmModal(message, onConfirm) {
+            $('#confirmMessage').text(message);
+            const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+
+            // Remove old event listeners
+            $('#confirmBtn').off('click');
+
+            // Add new event listener
+            $('#confirmBtn').on('click', function() {
+                confirmModal.hide();
+                if (typeof onConfirm === 'function') {
+                    onConfirm();
+                }
+            });
+
+            confirmModal.show();
         }
 
         $('#employeeForm').on('submit', function (e) {
@@ -682,7 +863,7 @@
                     if (response.success) {
                         $('#employeeModal').modal('hide');
                         showAlert('success', response.message || (isEditMode ? 'Employee updated successfully!' : 'Employee added successfully!'));
-                        loadEmployees(searchTerm, statusFilter);
+                        loadEmployees(currentPage, searchTerm, statusFilter);
                     } else {
                         showAlert('danger', response.message || 'Error saving employee!');
                     }
@@ -694,13 +875,17 @@
             });
         });
 
-        function deleteEmployee(employeeKey, isSoftDeleted) {
-            const confirmMessage = isSoftDeleted
-                ? 'This employee is already soft deleted. Do you want to permanently delete this employee?'
-                : 'Are you sure you want to soft delete this employee?';
-            const handler = isSoftDeleted ? 'Delete' : 'SoftDelete';
+            function deleteEmployee(employeeKey, isSoftDeleted) {
+            const employee = employees.find(emp => emp.EmployeeKey === employeeKey);
+            const employeeName = employee ? `${employee.FirstName} ${employee.LastName}` : 'this employee';
 
-            if (confirm(confirmMessage)) {
+            const confirmMessage = isSoftDeleted
+                ? `This employee "${employeeName}" is already inactive.\n\nDo you want to PERMANENTLY DELETE this employee?\n\nThis action CANNOT be undone!`
+                : `Are you sure you want to SOFT DELETE employee "${employeeName}"?\n\nThis will set their leaving date to today.`;
+
+            showConfirmModal(confirmMessage, function() {
+                const handler = isSoftDeleted ? 'Delete' : 'SoftDelete';
+
                 $.ajax({
                     url: `/Manage/Employee?handler=${handler}&employeeKey=${employeeKey}`,
                     method: 'GET',
@@ -708,7 +893,7 @@
                     success: function (response) {
                         if (response && response.success) {
                             showAlert('success', response.message || (isSoftDeleted ? 'Employee permanently deleted!' : 'Employee soft deleted!'));
-                            loadEmployees(searchTerm, statusFilter);
+                            loadEmployees(currentPage, searchTerm, statusFilter);
                         } else {
                             showAlert('danger', response.message || `Error ${isSoftDeleted ? 'permanently deleting' : 'soft deleting'} employee!`);
                         }
@@ -718,16 +903,16 @@
                         showAlert('danger', `Error ${isSoftDeleted ? 'permanently deleting' : 'soft deleting'} employee: ${xhr.statusText || 'Unknown reason'}`);
                     }
                 });
-            }
+            });
         }
 
         function showAlert(type, message) {
             const alertDiv = $(`
-                        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-                            ${message}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    `);
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `);
             alertDiv.css({
                 position: 'fixed',
                 top: '20px',

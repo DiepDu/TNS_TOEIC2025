@@ -6,34 +6,58 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta content="App for Bank" name="description" />
     <meta content="Themesbrand" name="TN Solution" />
-    <meta name="csrf-token" content="@Html.AntiForgeryToken()" /> <!-- Thêm meta tag CSRF -->
+    <meta name="csrf-token" content="@Html.AntiForgeryToken()" />
     <link rel="shortcut icon" href="~/images/favicon.ico">
     <link href="~/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
     <link href="~/lib/minible/css/icons.min.css" rel="stylesheet" type="text/css" />
     <link href="~/lib/minible/css/app.min.css" id="app-style" rel="stylesheet" type="text/css" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
     <link href="~/css/site.css" rel="stylesheet" />
     <style>
-        /* Giữ nguyên style hiện tại */
+        /* ===== BASE STYLES ===== */
+        :root {
+            --primary-color: #5DADE2;
+            --primary-dark: #3498DB;
+            --sidebar-bg: linear-gradient(180deg, #AED6F1 0%, #D6EAF8 100%);
+            --header-bg: linear-gradient(90deg, #AED6F1 0%, #D6EAF8 100%);
+            --accent-color: #1A73E8;
+            --text-dark: #2C3E50;
+            --text-light: #FFFFFF;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 15px;
+            --transition-fast: 0.2s ease;
+            --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             background: linear-gradient(135deg, #F0F7FF 0%, #F8F9FA 100%) !important;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-            color: #2C3E50 !important;
-            margin: 0 !important;
-            padding: 0 !important;
+            color: var(--text-dark) !important;
             overflow-x: hidden !important;
+            line-height: 1.6;
         }
 
         #layout-wrapper {
-            min-height: 100vh !important;
-            display: flex !important;
-            flex-direction: column !important;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
-        /* Header */
         #page-topbar {
-            background: linear-gradient(90deg, #AED6F1 0%, #D6EAF8 100%) !important;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+            background: var(--header-bg) !important;
+            background-color: transparent !important; /* ✅ Force override */
+            box-shadow: var(--shadow-sm) !important;
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
@@ -42,8 +66,20 @@
             height: 60px !important;
         }
 
+            /* ✅ THÊM - Force gradient không bị override */
+            #page-topbar::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: var(--header-bg);
+                z-index: -1;
+            }
+
         .navbar-header {
-            padding: 0 10px !important;
+            padding: 0 16px !important;
             display: flex !important;
             justify-content: space-between !important;
             align-items: center !important;
@@ -57,62 +93,54 @@
             border: none !important;
             display: flex !important;
             align-items: center !important;
+            transition: var(--transition-fast);
         }
 
-            .navbar-brand-box:hover {
-                background: rgba(255, 255, 255, 0.1) !important;
-            }
+        .navbar-brand-box:hover {
+            background: rgba(255, 255, 255, 0.15) !important;
+            border-radius: var(--radius-sm);
+        }
 
         .btn-toggle-sidebar {
             background: transparent !important;
             border: none !important;
-            color: #2C3E50 !important;
-            padding: 10px !important;
-            transition: transform 0.2s ease !important;
-            width: 44px !important;
-            height: 44px !important;
+            color: var(--text-dark) !important;
+            padding: 8px !important;
+            transition: var(--transition-fast) !important;
+            width: 40px !important;
+            height: 40px !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
+            border-radius: var(--radius-sm);
         }
 
-            .btn-toggle-sidebar:hover {
-                color: #1A73E8 !important;
-                transform: scale(1.1) !important;
-            }
+        .btn-toggle-sidebar:hover {
+            background: rgba(255, 255, 255, 0.25) !important;
+            color: var(--accent-color) !important;
+            transform: scale(1.05) !important;
+        }
 
-        /* Sidebar */
+        /* ===== SIDEBAR ===== */
         #layout-wrapper .vertical-menu {
-            background: linear-gradient(180deg, #AED6F1 0%, #D6EAF8 100%) !important;
-            border-radius: 0 15px 15px 0 !important;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+            background: var(--sidebar-bg) !important;
+            border-radius: 0 var(--radius-lg) var(--radius-lg) 0 !important;
+            box-shadow: var(--shadow-md) !important;
             position: fixed !important;
             top: 0 !important;
-            left: -250px !important;
+            left: 0 !important;
             z-index: 1032 !important;
             height: 100vh !important;
             width: 250px !important;
             padding-top: 60px !important;
-            opacity: 0 !important;
-            transition: left 0.3s ease, opacity 0.3s ease !important;
+            transition: transform var(--transition-normal), opacity var(--transition-normal) !important;
+            transform: translateX(0);
+            opacity: 1;
         }
 
-            #layout-wrapper .vertical-menu.active {
-                left: 0 !important;
-                opacity: 1 !important;
-            }
-
-        .vertical-menu .navbar-brand-box {
-            position: absolute !important;
-            top: 0 !important;
-            width: 100% !important;
-            height: 60px !important;
-            padding: 0 !important;
-            background: transparent !important;
-            border: none !important;
-            display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
+        #layout-wrapper .vertical-menu.sidebar-hidden {
+            transform: translateX(-100%);
+            opacity: 0;
         }
 
         .sidebar-overlay {
@@ -122,473 +150,462 @@
             left: 0 !important;
             width: 100% !important;
             height: 100% !important;
-            background: rgba(0, 0, 0, 0.3) !important;
+            background: rgba(0, 0, 0, 0.4) !important;
             z-index: 1031 !important;
+            backdrop-filter: blur(3px);
+            transition: opacity var(--transition-normal);
         }
 
-            .sidebar-overlay.active {
-                display: block !important;
-            }
+        .sidebar-overlay.active {
+            display: block !important;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @@keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
 
         .sidebar-menu-scroll {
-            padding: 10px 0 !important;
-            height: calc(100% - 60px) !important;
+            padding: 12px 0 !important;
+            height: calc(100% - 60px) !important; /* Logo chiếm 60px */
+            margin-top: 60px !important; /* ✅ THÊM - Đẩy menu xuống dưới logo */
             overflow-y: auto !important;
-            margin-top: 0 !important;
+            overflow-x: hidden;
         }
 
-            .sidebar-menu-scroll[data-simplebar] {
-                max-height: none !important;
-                height: calc(100% - 60px) !important;
-                overflow-y: auto !important;
-            }
+        .sidebar-menu-scroll::-webkit-scrollbar {
+            width: 5px;
+        }
 
+        .sidebar-menu-scroll::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-menu-scroll::-webkit-scrollbar-thumb {
+            background: rgba(26, 115, 232, 0.3);
+            border-radius: 10px;
+        }
+
+        .sidebar-menu-scroll::-webkit-scrollbar-thumb:hover {
+            background: rgba(26, 115, 232, 0.5);
+        }
+
+        /* ===== MENU ITEMS ===== */
         #side-menu {
             margin: 0 !important;
-            padding: 0 !important;
+            padding: 0 10px !important;
         }
 
-            #side-menu a {
-                color: #2C3E50 !important;
-                font-weight: 500 !important;
-                padding: 12px 20px !important;
-                transition: all 0.3s ease !important;
-                display: flex !important;
-                align-items: center !important;
-                border-bottom: 1px solid rgba(224, 231, 255, 0.3) !important;
-                font-size: 16px !important;
-                text-decoration: none !important;
-            }
-
-            #side-menu .nav-active {
-                background: linear-gradient(90deg, #1A73E8 0%, #AED6F1 100%) !important;
-                color: #FFFFFF !important;
-                font-weight: bold !important;
-            }
-
-            #side-menu .mm-active > a,
-            #side-menu a:hover {
-                background: rgba(255, 255, 255, 0.2) !important;
-                color: #1A73E8 !important;
-                border-radius: 8px !important;
-            }
-
-            #side-menu .has-arrow::after {
-                transition: transform 0.3s ease !important;
-            }
-
-            #side-menu .mm-active > .has-arrow::after {
-                transform: rotate(-180deg) !important;
-            }
-
-        .metismenu .mm-collapse {
-            display: none !important;
+        #side-menu li {
+            margin-bottom: 3px;
         }
 
-        .metismenu .mm-show {
-            display: block !important;
+        #side-menu a {
+            color: var(--text-dark) !important;
+            font-weight: 500 !important;
+            padding: 12px 14px !important;
+            transition: all var(--transition-normal) !important;
+            display: flex !important;
+            align-items: center !important;
+            border-radius: var(--radius-sm) !important;
+            font-size: 15px !important;
+            text-decoration: none !important;
+            position: relative;
+        }
+
+        #side-menu a::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%) scaleY(0);
+            height: 70%;
+            width: 3px;
+            background: var(--accent-color);
+            border-radius: 0 3px 3px 0;
+            transition: transform var(--transition-normal);
+        }
+
+        #side-menu a:hover::before,
+        #side-menu .nav-active::before {
+            transform: translateY(-50%) scaleY(1);
+        }
+
+        #side-menu a:hover {
+            background: rgba(26, 115, 232, 0.08) !important;
+            color: var(--accent-color) !important;
+            transform: translateX(3px);
+        }
+
+        #side-menu .nav-active {
+            background: linear-gradient(90deg, rgba(26, 115, 232, 0.15) 0%, rgba(52, 152, 219, 0.1) 100%) !important;
+            color: var(--accent-color) !important;
+            font-weight: 600 !important;
+            box-shadow: 0 2px 8px rgba(26, 115, 232, 0.15);
+        }
+
+        #side-menu i {
+            font-size: 17px !important;
+            margin-right: 10px !important;
+            transition: transform var(--transition-fast);
+            min-width: 22px;
+            text-align: center;
+        }
+
+        #side-menu a:hover i {
+            transform: scale(1.12);
+        }
+
+        /* Submenu */
+        .has-arrow::after {
+            content: '\f107';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            right: 14px;
+            transition: transform var(--transition-normal);
+            font-size: 13px;
+        }
+
+        .mm-active > .has-arrow::after {
+            transform: rotate(-180deg);
         }
 
         ul.sub-menu {
-            background: rgba(255, 255, 255, 0.1) !important;
-            border-radius: 6px !important;
-            margin: 5px 0 5px 15px !important;
-            padding: 5px 0 !important;
-            border: 1px solid #E0E7FF !important;
+            background: rgba(255, 255, 255, 0.15) !important;
+            border-radius: var(--radius-sm) !important;
+            margin: 3px 0 3px 14px !important;
+            padding: 6px 0 !important;
+            border-left: 2px solid rgba(26, 115, 232, 0.4);
+            display: none;
+            animation: slideDown 0.25s ease;
         }
 
-            ul.sub-menu a {
-                color: #2C3E50 !important;
-                padding: 10px 25px !important;
-                font-size: 15px !important;
-                border-bottom: none !important;
+        @@keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-8px);
             }
-
-                ul.sub-menu a:hover {
-                    color: #1A73E8 !important;
-                    background: rgba(255, 255, 255, 0.2) !important;
-                    padding-left: 30px !important;
-                }
-
-        /* Dropdown chuông thông báo */
-        .noti-icon {
-            color: #2C3E50 !important;
-            font-size: 24px !important;
-            padding: 10px !important;
-            transition: transform 0.2s ease !important;
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-            .noti-icon:hover {
-                color: #1A73E8 !important;
-
-                transform: scale(1.1) !important;
-            }
-
-        .messenger-icon {
-            color: #2C3E50 !important;
-            font-size: 24px !important;
-            padding: 10px !important;
-            transition: transform 0.2s ease !important;
+        ul.sub-menu.mm-show {
+            display: block !important;
         }
 
-            .messenger-icon:hover {
-                color: #1A73E8 !important;
-                transform: scale(1.1) !important;
-            }
+        ul.sub-menu a {
+            color: var(--text-dark) !important;
+            padding: 9px 14px 9px 36px !important;
+            font-size: 14px !important;
+        }
 
-            .noti-icon:focus, .messenger-icon:focus {
-                outline: none !important;
-                border: 2px solid #1A73E8 !important;
-                border-radius: 6px !important;
-                box-shadow: none !important;
-                padding: 8px !important;
-            }
+        ul.sub-menu a:hover {
+            color: var(--accent-color) !important;
+            background: rgba(255, 255, 255, 0.2) !important;
+        }
+
+        /* ===== NOTIFICATION DROPDOWN - FIX POSITION ===== */
+        .noti-icon, .messenger-icon {
+            color: var(--text-dark) !important;
+            font-size: 20px !important;
+            padding: 8px !important;
+            transition: var(--transition-fast) !important;
+            border-radius: var(--radius-sm);
+            position: relative;
+        }
+
+        .noti-icon:hover, .messenger-icon:hover {
+            background: rgba(255, 255, 255, 0.3) !important;
+            color: var(--accent-color) !important;
+            transform: scale(1.08) !important;
+        }
 
         .badge {
-            min-width: 20px !important;
-            height: 20px !important;
-            line-height: 20px !important;
+            min-width: 18px !important;
+            height: 18px !important;
+            line-height: 18px !important;
             text-align: center !important;
-            background: #E74C3C !important;
+            background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
             border-radius: 50% !important;
-            font-size: 12px !important;
-            font-weight: bold !important;
-            box-shadow: 0 1px 4px rgba(231, 76, 60, 0.2) !important;
+            font-size: 10px !important;
+            font-weight: 700 !important;
+            box-shadow: 0 2px 6px rgba(231, 76, 60, 0.35) !important;
             position: absolute !important;
-            top: 5px !important;
-            right: 5px !important;
-            border: 1px solid #FFFFFF !important;
+            top: 3px !important;
+            right: 3px !important;
+            border: 1.5px solid var(--text-light) !important;
+            animation: pulse 2s infinite;
+        }
+
+        @@keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); }
         }
 
         .dropdown-menu {
             background: #FFFFFF !important;
-            border: 1px solid #E0E7FF !important;
-            border-radius: 10px !important;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
-            padding: 10px 0 !important;
+            border: none !important;
+            border-radius: var(--radius-md) !important;
+            box-shadow: var(--shadow-lg) !important;
+            padding: 0 !important;
             max-width: 90vw !important;
-            width: 300px !important;
+            width: 360px !important;
+            margin-top: 0 !important; /* ✅ BỎ MARGIN */
+            top: 100% !important; /* ✅ THÊM - Gắn sát button */
+            animation: slideDownSmooth 0.25s ease;
+        }
+            /* ✅ FIX - Đảm bảo dropdown không bị đẩy */
+            .dropdown-menu.show {
+                display: block;
+                margin-top: 0 !important;
+                transform: translateY(0) !important;
+            }
+
+        /* ✅ FIX - Position cho notification dropdown */
+        .notification-dropdown.show,
+        .dropdown-menu-end.show {
             position: absolute !important;
             top: 100% !important;
-            right: 0 !important;
-        }
-
-        .notification-dropdown, .messenger-dropdown {
-            top: 60px !important;
             right: 0 !important;
             left: auto !important;
             transform: none !important;
-            width: 33vw !important;
+        }
+        @@keyframes slideDownSmooth {
+            from {
+                opacity: 0;
+                transform: translateY(-12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        /* Áp dụng max-height cho dropdown thông báo và tin nhắn */
-        #notification-list[data-simplebar],
-        #messenger-list[data-simplebar] {
-            max-height: 400px !important;
-            overflow-y: auto !important;
-            overflow-x: hidden !important;
+        .notification-dropdown, .messenger-dropdown {
+            width: 400px !important;
+            max-height: 550px !important;
         }
 
         .notification-header {
-            padding: 12px 15px !important;
-            border-bottom: 1px solid #E0E7FF !important;
+            padding: 14px 18px !important;
+            border-bottom: 2px solid #f0f0f0 !important;
+            background: linear-gradient(135deg, #5DADE2 0%, #3498DB 100%);
+            border-radius: var(--radius-md) var(--radius-md) 0 0;
+        }
+
+        .notification-header h5 {
+            color: #FFFFFF !important;
+            font-weight: 600;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+        }
+
+        .notification-header h5::before {
+            content: '\f0f3';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            font-size: 16px;
+        }
+
+        #notification-list, #messenger-list {
+            max-height: 420px !important;
+            overflow-y: auto !important;
+            padding: 8px;
         }
 
         .notification-item {
-            padding: 12px 15px !important;
-            transition: all 0.3s ease !important;
-            border-radius: 6px !important;
-            border-bottom: 1px solid rgba(224, 231, 255, 0.3) !important;
-            font-size: 15px !important;
+            padding: 12px 14px !important;
+            transition: all var(--transition-fast) !important;
+            border-radius: var(--radius-sm) !important;
+            margin-bottom: 6px;
+            background: #f8f9fa;
+            border-left: 3px solid transparent;
         }
 
-            .notification-item:hover {
-                background: rgba(174, 214, 241, 0.1) !important;
-                color: #2C3E50 !important;
-            }
+        .notification-item:hover {
+            background: linear-gradient(90deg, rgba(26, 115, 232, 0.08) 0%, rgba(52, 152, 219, 0.05) 100%) !important;
+            border-left-color: var(--accent-color);
+            transform: translateX(3px);
+            box-shadow: var(--shadow-sm);
+        }
 
-            /* Cắt nội dung thông báo dài, thêm dấu ... */
-            .notification-item .flex-grow-1 h6 {
-                white-space: nowrap !important;
-                overflow: hidden !important;
-                text-overflow: ellipsis !important;
-                max-width: 100% !important;
-            }
+        .notification-item .avatar-title {
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #5DADE2, #3498DB);
+            box-shadow: 0 2px 6px rgba(52, 152, 219, 0.25);
+        }
 
-        /* Dropdown user avatar */
+        .notification-item .avatar-title i {
+            font-size: 16px;
+            color: #FFFFFF;
+        }
+
+        .notification-item h6 {
+            font-weight: 600;
+            color: var(--text-dark);
+            margin: 0 0 3px 0;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .notification-item p {
+            font-size: 11px;
+            color: #6c757d;
+            margin: 0;
+        }
+
+        /* ===== USER DROPDOWN ===== */
         .header-profile-user {
-            width: 44px !important;
-            height: 44px !important;
-            border: 1px solid #E0E7FF !important;
-            transition: transform 0.2s ease !important;
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05) !important;
+            width: 38px !important;
+            height: 38px !important;
+            border: 2px solid rgba(26, 115, 232, 0.2) !important;
+            transition: var(--transition-fast) !important;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1) !important;
         }
 
         .header-item:hover .header-profile-user {
-            border-color: #1A73E8 !important;
-            transform: scale(1.05) !important;
+            border-color: var(--accent-color) !important;
+            transform: scale(1.06) !important;
+            box-shadow: 0 3px 10px rgba(26, 115, 232, 0.2) !important;
         }
 
         #txtEmployeeName {
-            color: #2C3E50 !important;
+            color: var(--text-dark) !important;
             font-weight: 500 !important;
-            font-size: 15px !important;
-        }
-
-        .header-item:hover #txtEmployeeName {
-            color: #1A73E8 !important;
-        }
-
-        .uil-angle-down {
-            color: #2C3E50 !important;
-            font-size: 15px !important;
+            font-size: 14px !important;
         }
 
         .dropdown-menu-end {
-            min-width: 200px !important;
-            max-width: 90vw !important;
-            border: 1px solid #E0E7FF !important;
-            border-radius: 10px !important;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
-            position: absolute !important;
-            top: 100% !important;
-            right: 0 !important;
+            min-width: 180px !important;
         }
 
-            .dropdown-menu-end .dropdown-item {
-                padding: 12px 20px !important;
-                color: #2C3E50 !important;
-                font-size: 15px !important;
-                transition: all 0.3s ease !important;
-                border-radius: 6px !important;
-            }
+        .dropdown-item {
+            padding: 10px 16px !important;
+            font-size: 14px !important;
+            color: var(--text-dark) !important;
+            transition: var(--transition-fast);
+        }
 
-                .dropdown-menu-end .dropdown-item:hover {
-                    background: rgba(174, 214, 241, 0.1) !important;
-                    color: #1A73E8 !important;
-                    padding-left: 25px !important;
-                }
+        .dropdown-item:hover {
+            background: rgba(26, 115, 232, 0.08) !important;
+            color: var(--accent-color) !important;
+            padding-left: 20px !important;
+        }
 
-        /* Main content */
+        .dropdown-item i {
+            width: 20px;
+            text-align: center;
+        }
+
+        /* ===== MAIN CONTENT ===== */
         .main-content {
             padding: 20px !important;
             margin-top: 60px !important;
             margin-left: 250px !important;
-            transition: margin-left 0.3s ease !important;
+            transition: margin-left var(--transition-normal) !important;
+            min-height: calc(100vh - 60px);
+        }
+
+        .main-content.sidebar-collapsed {
+            margin-left: 0 !important;
         }
 
         .page-content {
             background: #FFFFFF !important;
-            border-radius: 10px !important;
+            border-radius: var(--radius-md) !important;
             padding: 20px !important;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+            box-shadow: var(--shadow-sm) !important;
             border: 1px solid #E0E7FF !important;
+            transition: box-shadow var(--transition-fast);
         }
 
-            .page-content:hover {
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
-            }
-
-        /* Menu nổi bật */
-        .standout-menu {
-            background: linear-gradient(90deg, #1A73E8 0%, #AED6F1 100%) !important;
-            color: #FFFFFF !important;
-            font-size: 16px !important;
-            font-weight: 600 !important;
-            border-radius: 8px !important;
-            padding: 14px 20px !important;
-            box-shadow: 0 2px 6px rgba(26, 115, 232, 0.3) !important;
-            transition: all 0.3s ease !important;
+        .page-content:hover {
+            box-shadow: var(--shadow-md) !important;
         }
 
-            .standout-menu:hover {
-                background: linear-gradient(90deg, #1A73E8 0%, #D6EAF8 100%) !important;
+        /* ===== RESPONSIVE ===== */
+        @@media (max-width: 768px) {
+            #layout-wrapper .vertical-menu {
+                transform: translateX(-100%);
+                opacity: 0;
+                width: 250px;
             }
 
-        .standout-icon {
-            font-size: 20px !important;
-            margin-right: 12px !important;
-            transition: transform 0.3s ease !important;
-        }
-
-        #side-menu .mm-active > a .standout-icon,
-        #side-menu a:hover .standout-icon {
-            color: #FFFFFF !important;
-            transform: scale(1.2) !important;
-        }
-
-        .standout-submenu {
-            background: rgba(255, 255, 255, 0.15) !important;
-            border: 1px solid #FFFFFF !important;
-            border-radius: 8px !important;
-            margin: 8px 0 8px 20px !important;
-            padding: 8px 0 !important;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05) !important;
-        }
-
-            .standout-submenu a {
-                font-weight: 500 !important;
-                color: #2C3E50 !important;
-                padding: 12px 30px !important;
-                transition: all 0.3s ease !important;
-            }
-
-                .standout-submenu a:hover {
-                    background: rgba(26, 115, 232, 0.2) !important;
-                    color: #1A73E8 !important;
-                    padding-left: 35px !important;
-                    border-radius: 6px !important;
-                }
-
-        .standout-item a {
-            background: rgba(26, 115, 232, 0.1) !important;
-            color: #2C3E50 !important;
-            font-weight: 600 !important;
-            padding: 14px 20px !important;
-            border-radius: 8px !important;
-            transition: all 0.3s ease !important;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05) !important;
-        }
-
-            .standout-item.mm-active > a,
-            .standout-item a:hover {
-                background: linear-gradient(90deg, #1A73E8 0%, #AED6F1 100%) !important;
-                color: #FFFFFF !important;
-            }
-
-        /* Responsive - Dùng @@media để tương thích Razor */
-        @@media (max-width: 576px) {
-            /* Mobile */
-            #page-topbar {
-                height: 56px !important;
-            }
-
-            .navbar-header {
-                padding: 0 5px !important;
-            }
-
-            .navbar-brand-box {
-                padding: 0 5px !important;
-                height: 100% !important;
-            }
-
-                .navbar-brand-box .logo-lg {
-                    display: none !important;
-                }
-
-                .navbar-brand-box .logo-sm {
-                    display: block !important;
-                }
-
-            .header-profile-user {
-                width: 44px !important;
-                height: 44px !important;
-            }
-
-            #txtEmployeeName,
-            .uil-angle-down {
-                display: none !important;
+            #layout-wrapper .vertical-menu.active {
+                transform: translateX(0);
+                opacity: 1;
             }
 
             .main-content {
                 margin-left: 0 !important;
-                padding: 15px !important;
-                margin-top: 56px !important;
+                padding: 16px !important;
             }
 
-            .page-content {
-                padding: 15px !important;
+            .notification-dropdown, .messenger-dropdown {
+                width: 90vw !important;
             }
 
-            #layout-wrapper .vertical-menu {
-                left: -250px !important;
-                width: 250px !important;
-                opacity: 0 !important;
-            }
-
-                #layout-wrapper .vertical-menu.active {
-                    left: 0 !important;
-                    opacity: 1 !important;
-                }
-
-            .dropdown-menu,
-            .dropdown-menu-end {
-                max-width: 85vw !important;
-                width: auto !important;
-                font-size: 16px !important;
-            }
-
-            .noti-icon {
-                font-size: 22px !important;
-            }
-
-            #side-menu a {
-                font-size: 16px !important;
-                padding: 14px 20px !important;
-            }
-
-            ul.sub-menu a {
-                font-size: 15px !important;
-                padding: 12px 25px !important;
-            }
-        }
-
-        @@media (min-width: 577px) and (max-width: 768px) {
-            /* Tablet */
-            #layout-wrapper .vertical-menu {
-                width: 60px !important;
-                left: 0 !important;
-                opacity: 1 !important;
-            }
-
-            .vertical-menu .navbar-brand-box,
-            #side-menu a span {
-                display: none !important;
-            }
-
-            #side-menu a {
-                justify-content: center !important;
-                padding: 12px !important;
-                font-size: 0 !important;
-            }
-
-            .standout-icon {
-                margin-right: 0 !important;
-                font-size: 22px !important;
-            }
-
-            .main-content {
-                margin-left: 60px !important;
-                padding: 15px !important;
-            }
-
-            .page-content {
-                padding: 15px !important;
-            }
-
-            .dropdown-menu,
-            .dropdown-menu-end {
-                max-width: 90vw !important;
-                width: auto !important;
+            .sidebar-logo .logo-img {
+                height: 32px; /* Nhỏ hơn trên mobile */
             }
         }
 
         @@media (min-width: 769px) {
-            /* Desktop */
-            #layout-wrapper .vertical-menu {
-                left: 0 !important;
-                width: 250px !important;
-                opacity: 1 !important;
-            }
-
-            .main-content {
-                margin-left: 250px !important;
+            .btn-toggle-sidebar {
+                display: none !important;
             }
 
             .sidebar-overlay {
                 display: none !important;
             }
         }
+        /* ===== SIDEBAR LOGO ===== */
+        .sidebar-logo {
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 10;
+        }
+
+            .sidebar-logo a {
+                text-decoration: none;
+                padding: 10px;
+                transition: var(--transition-fast);
+                border-radius: var(--radius-sm);
+            }
+
+                .sidebar-logo a:hover {
+                    background: rgba(255, 255, 255, 0.15);
+                }
+
+            .sidebar-logo .logo-img {
+                max-width: 100%;
+                height: auto;
+                transition: var(--transition-fast);
+            }
+
+            .sidebar-logo a:hover .logo-img {
+                transform: scale(1.05);
+            }
     </style>
 </head>
 <body>
@@ -599,65 +616,27 @@
                     <button class="btn btn-toggle-sidebar d-lg-none" aria-label="Toggle Sidebar">
                         <i class="uil uil-bars font-size-24"></i>
                     </button>
-                    <div class="navbar-brand-box">
-                        <a href="~/Index" class="logo logo-dark">
-                            <span class="logo-sm">
-                                <img src="~/images/logo-sm.png" alt="Small Dark Logo" height="24">
-                            </span>
-                            <span class="logo-lg">
-                                <img src="~/images/logo-dark.png" alt="Large Dark Logo" height="22">
-                            </span>
-                        </a>
-                        <a href="~/Index" class="logo logo-light">
-                            <span class="logo-sm">
-                                <img src="~/images/logo-sm.png" alt="Small Light Logo" height="24">
-                            </span>
-                            <span class="logo-lg">
-                                <img src="~/images/logo-light.png" alt="Large Light Logo" height="22">
-                            </span>
-                        </a>
-                    </div>
+                  
                 </div>
-                <div class="d-flex align-items-center">
+                <div class="d-flex align-items-center gap-1">
                     <div class="dropdown d-inline-block position-relative">
                         <button type="button" class="btn header-item noti-icon waves-effect"
                                 id="page-header-notifications-dropdown"
                                 data-bs-toggle="dropdown"
                                 aria-expanded="false">
-                            <i class="uil-bell font-size-24"></i>
+                            <i class="uil-bell"></i>
                             <span class="badge bg-danger rounded-pill" id="txtAmountNoticeNotRead">0</span>
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-end p-0 notification-dropdown"
+                        <ul class="dropdown-menu dropdown-menu-end notification-dropdown"
                             aria-labelledby="page-header-notifications-dropdown">
-                            <li class="p-3 notification-header">
-                                <h5 class="m-0 font-size-16">Notifications</h5>
+                            <li class="notification-header">
+                                <h5 class="m-0">Notifications</h5>
                             </li>
                             <li>
                                 <div data-simplebar id="notification-list">
-                                    <!-- Danh sách thông báo sẽ được load bằng JavaScript -->
-                                </div>
-                            </li>
-                            <li class="p-2 border-top" id="view-more" style="display: none;">
-                                <a class="dropdown-item text-center" href="javascript:void(0);">View More..</a>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="dropdown d-inline-block position-relative">
-                        <button type="button" class="btn header-item messenger-icon waves-effect"
-                                id="page-header-messenger-dropdown"
-                                data-bs-toggle="dropdown"
-                                aria-expanded="false">
-                            <i class="uil-comment font-size-24"></i>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-end p-0 messenger-dropdown"
-                            aria-labelledby="page-header-messenger-dropdown">
-                            <li class="p-3 notification-header">
-                                <h5 class="m-0 font-size-16">Messages</h5>
-                            </li>
-                            <li>
-                                <div data-simplebar id="messenger-list">
-                                    <div class="text-center p-3">
-                                        <p class="text-muted">No messages available.</p>
+                                    <div class="text-center p-4">
+                                        <i class="uil-bell-slash font-size-24 text-muted mb-2"></i>
+                                        <p class="text-muted mb-0">No new notifications</p>
                                     </div>
                                 </div>
                             </li>
@@ -670,16 +649,13 @@
                                 aria-expanded="false">
                             <img id="imgEmployeeAvatar" class="rounded-circle header-profile-user"
                                  src="~/images/avatar/default-avatar.jpg"
-                                 alt="User Avatar" />
-                            <span id="txtEmployeeName" class="d-none d-xl-inline-block ms-1 fw-medium font-size-15">User</span>
-                            <i class="uil-angle-down d-none d-xl-inline-block font-size-15"></i>
+                                 alt="Avatar" />
+                            <span id="txtEmployeeName" class="d-none d-xl-inline-block ms-1">User</span>
+                            <i class="uil-angle-down d-none d-xl-inline-block ms-1"></i>
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end"
-                            aria-labelledby="page-header-user-dropdown">
-                            <li><a class="dropdown-item" href="/Account/EmployeeProfile"><i class="uil uil-user-circle font-size-18 align-middle text-muted me-1"></i> View Profile</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="uil uil-cog font-size-18 align-middle text-muted me-1"></i> Settings <span class="badge bg-success-subtle text-success rounded-pill ms-2">03</span></a></li>
-                            <li><a class="dropdown-item" href="#"><i class="uil uil-lock-alt font-size-18 align-middle text-muted me-1"></i> Lock Screen</a></li>
-                            <li><a class="dropdown-item" href="~/Account/SignedOut"><i class="uil uil-sign-out-alt font-size-18 align-middle text-muted me-1"></i> Sign Out</a></li>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="/Account/EmployeeProfile"><i class="uil uil-user-circle me-2"></i> Profile</a></li>
+                            <li><a class="dropdown-item" href="~/Account/SignedOut"><i class="uil uil-sign-out-alt me-2"></i> Sign Out</a></li>
                         </ul>
                     </div>
                 </div>
@@ -688,75 +664,68 @@
 
         <div class="vertical-menu">
             <div class="sidebar-overlay"></div>
-            <div class="navbar-brand-box">
-                <a href="~/Index" class="logo logo-dark">
-                    <span class="logo-sm">
-                        <img src="~/images/logo-sm.png" alt="" height="32">
-                    </span>
-                    <span class="logo-lg">
-                        <img src="~/images/logo-dark.png" alt="" height="30">
-                    </span>
-                </a>
-                <a href="~/Index" class="logo logo-light">
-                    <span class="logo-sm">
-                        <img src="~/images/logo-sm.png" alt="" height="32">
-                    </span>
-                    <span class="logo-lg">
-                        <img src="~/images/logo-light.png" alt="" height="30">
-                    </span>
+            <div class="sidebar-logo">
+                <a href="~/Index" class="d-flex align-items-center justify-content-center">
+                    <img src="~/images/logo-dark.png" alt="Logo" height="40" class="logo-img">
                 </a>
             </div>
             <div data-simplebar class="sidebar-menu-scroll">
                 <div id="sidebar-menu">
                     <ul class="metismenu list-unstyled" id="side-menu">
                         <li>
-                            <a href="javascript:void(0);" class="has-arrow waves-effect standout-menu">
-                                <i class="uil-notebooks standout-icon"></i>
-                                <span>DATA TOEIC</span>
+                            <a href="javascript:void(0);" class="has-arrow waves-effect">
+                                <i class="fas fa-book-open"></i>
+                                <span>TOEIC Questions</span>
                             </a>
-                            <ul class="sub-menu standout-submenu" aria-expanded="false">
-                                <li><a href="/TOEICPart1/QuestionList">Part 1</a></li>
-                                <li><a href="/TOEICPart2/QuestionList">Part 2</a></li>
-                                <li><a href="/TOEICPart3/QuestionList">Part 3</a></li>
-                                <li><a href="/TOEICPart4/QuestionList">Part 4</a></li>
-                                <li><a href="/TOEICPart5/QuestionList">Part 5</a></li>
-                                <li><a href="/TOEICPart6/QuestionList">Part 6</a></li>
-                                <li><a href="/TOEICPart7/QuestionList">Part 7</a></li>
+                            <ul class="sub-menu" aria-expanded="false">
+                                <li><a href="/TOEICPart1/QuestionList">Part 1 - Photos</a></li>
+                                <li><a href="/TOEICPart2/QuestionList">Part 2 - Q&A</a></li>
+                                <li><a href="/TOEICPart3/QuestionList">Part 3 - Conversations</a></li>
+                                <li><a href="/TOEICPart4/QuestionList">Part 4 - Talks</a></li>
+                                <li><a href="/TOEICPart5/QuestionList">Part 5 - Grammar</a></li>
+                                <li><a href="/TOEICPart6/QuestionList">Part 6 - Text Completion</a></li>
+                                <li><a href="/TOEICPart7/QuestionList">Part 7 - Reading</a></li>
                             </ul>
                         </li>
-                        <li class="standout-item">
+                        <li>
+                            <a href="~/Manage/QuestionAttributes" class="waves-effect">
+                                <i class="fas fa-tags"></i>
+                                <span>Question Attributes</span>
+                            </a>
+                        </li>
+                        <li>
                             <a href="~/Manage/Department" class="waves-effect">
-                                <i class="fas fa-building standout-icon"></i>
+                                <i class="fas fa-building"></i>
                                 <span>Departments</span>
                             </a>
                         </li>
-                        <li class="standout-item">
+                        <li>
                             <a href="~/Manage/Employee" class="waves-effect">
-                                <i class="fa fa-user-tie standout-icon"></i>
-                                <span>Employee List</span>
+                                <i class="fas fa-user-tie"></i>
+                                <span>Employees</span>
                             </a>
                         </li>
-                        <li class="standout-item">
+                        <li>
                             <a href="~/Manage/Users" class="waves-effect">
-                                <i class="fa fa-user standout-icon"></i>
+                                <i class="fas fa-users"></i>
                                 <span>Users</span>
                             </a>
                         </li>
-                        <li class="standout-item">
+                        <li>
                             <a href="~/Manage/Members" class="waves-effect">
-                                <i class="fa fa-id-badge standout-icon"></i>
+                                <i class="fas fa-id-badge"></i>
                                 <span>Members</span>
                             </a>
                         </li>
-                        <li class="standout-item">
+                        <li>
                             <a href="~/Manage/Test" class="waves-effect">
-                                <i class="fa fa-file-alt standout-icon"></i>
+                                <i class="fas fa-file-alt"></i>
                                 <span>Tests</span>
                             </a>
                         </li>
-                        <li class="standout-item">
+                        <li>
                             <a href="~/Manage/Result" class="waves-effect">
-                                <i class="fa fa-chart-bar standout-icon"></i>
+                                <i class="fas fa-chart-bar"></i>
                                 <span>Results</span>
                             </a>
                         </li>
@@ -773,7 +742,6 @@
             </div>
         </div>
 
-        <!-- Thêm render file _FeedbackPopup.cshtml -->
         @await Html.PartialAsync("~/Pages/Shared/Partials/_FeedbackPopup.cshtml")
         @await Html.PartialAsync("~/Pages/Shared/Partials/_ChatbotAIPopup.cshtml")
     </div>
@@ -783,8 +751,6 @@
     <script src="~/lib/metismenu/metisMenu.min.js"></script>
     <script src="/lib/simplebar/dist/simplebar.min.js"></script>
     <script src="/lib/node-waves/dist/waves.min.js"></script>
-    <script src="~/lib/datatables/js/dataTables.min.js"></script>
-    <script src="~/lib/chart/chart.umd.min.js"></script>
     <script src="~/lib/signalr/dist/browser/signalr.min.js"></script>
     <script src="~/js/feedbackPopup.js"></script>
     <script src="~/js/chatbot_admin.js"></script>
@@ -793,44 +759,23 @@
             function debounce(func, wait) {
                 let timeout;
                 return function (...args) {
-                    const context = this;
                     clearTimeout(timeout);
-                    timeout = setTimeout(() => func.apply(context, args), wait);
+                    timeout = setTimeout(() => func.apply(this, args), wait);
                 };
             }
 
-            if (typeof jQuery === 'undefined') {
-                console.error('jQuery is not loaded. Check ~/lib/jquery/jquery.min.js.');
-                alert('jQuery could not be loaded. Please ensure the file exists in ~/lib/jquery/.');
-                return;
-            }
-
-            // Hàm làm nổi bật nút điều hướng dựa trên URL
             function highlightActiveMenu() {
                 const currentPath = window.location.pathname.toLowerCase();
-                const menuLinks = $('#side-menu a');
-
-                menuLinks.each(function () {
+                $('#side-menu a').each(function () {
                     const linkPath = $(this).attr('href')?.toLowerCase();
-                    if (linkPath && currentPath === linkPath) {
+                    if (linkPath && currentPath.includes(linkPath) && linkPath !== '/') {
                         $(this).addClass('nav-active');
-                    } else {
-                        $(this).removeClass('nav-active');
-                    }
-                });
-
-                const submenuLinks = $('.sub-menu.standout-submenu a');
-                submenuLinks.each(function () {
-                    const submenuPath = $(this).attr('href')?.toLowerCase();
-                    if (submenuPath && currentPath === submenuPath) {
-                        $(this).addClass('nav-active');
-                        $(this).closest('.sub-menu').prev('a').addClass('mm-active');
                         $(this).closest('.sub-menu').addClass('mm-show');
+                        $(this).closest('.sub-menu').prev('a').addClass('mm-active');
                     }
                 });
             }
 
-            // Tải dữ liệu user
             function loadUserData() {
                 $.ajax({
                     url: "/Reports/Personal",
@@ -838,31 +783,22 @@
                     success: function (data) {
                         if (data && data.EmployeeName) {
                             $("#txtAmountNoticeNotRead").text(data.NoticeNotRead || 0);
-                            let avatarUrl = data.EmployeeAvatar || "~/images/avatar/default-avatar.jpg";
-                            if (avatarUrl && !avatarUrl.startsWith('http') && avatarUrl.startsWith('~/')) {
+                            let avatarUrl = data.EmployeeAvatar || "/images/avatar/default-avatar.jpg";
+                            if (avatarUrl.startsWith('~/')) {
                                 avatarUrl = avatarUrl.replace('~/', '/');
-                            } else if (avatarUrl && !avatarUrl.startsWith('http') && !avatarUrl.startsWith('/')) {
-                                avatarUrl = `/images/avatar/${avatarUrl}`;
                             }
                             $("#imgEmployeeAvatar").attr("src", avatarUrl);
                             $("#txtEmployeeName").text(data.EmployeeName || "User");
                             window.userKey = data.UserKey;
                             initializeSignalR(window.userKey);
-                        } else {
-                            console.warn("No user data returned from /Reports/Personal");
-                            $("#txtEmployeeName").text("User");
-                            $("#imgEmployeeAvatar").attr("src", "/images/avatar/default-avatar.jpg");
                         }
                     },
-                    error: function (xhr) {
-                        console.error("Error fetching user data:", xhr.status, xhr.responseText);
+                    error: function () {
                         $("#txtEmployeeName").text("User");
-                        $("#imgEmployeeAvatar").attr("src", "/images/avatar/default-avatar.jpg");
                     }
                 });
             }
 
-            // Tải số lượng thông báo chưa đọc khi load trang
             function loadUnreadCount() {
                 $.ajax({
                     url: "/api/NotificationHandler/GetUnreadCount",
@@ -872,28 +808,29 @@
                         if (data.count > 0) {
                             shakeBell();
                         }
-                    },
-                    error: function (xhr) {
-                        console.error("Error fetching unread count:", xhr.status, xhr.responseText);
                     }
                 });
             }
 
-            // Hàm tính thời gian tương đối (ví dụ: "5 phút trước")
+            function shakeBell() {
+                const $bell = $("#page-header-notifications-dropdown");
+                if (!$bell.hasClass("animate__shakeX")) {
+                    $bell.addClass("animate__shakeX");
+                    setTimeout(() => $bell.removeClass("animate__shakeX"), 500);
+                }
+            }
+
             function getTimeAgo(createdOn) {
                 const now = new Date();
                 const createdDate = new Date(createdOn);
-                const diffInMinutes = Math.floor((now - createdDate) / (1000 * 60)); // Chênh lệch tính bằng phút
-
-                if (diffInMinutes < 1) return "Vừa xong";
-                if (diffInMinutes < 60) return `${diffInMinutes} phút trước`;
-                const diffInHours = Math.floor(diffInMinutes / 60);
-                if (diffInHours < 24) return `${diffInHours} giờ trước`;
-                const diffInDays = Math.floor(diffInHours / 24);
-                return `${diffInDays} ngày trước`;
+                const diff = Math.floor((now - createdDate) / 60000);
+                if (diff < 1) return "Just now";
+                if (diff < 60) return `${diff}m ago`;
+                const hours = Math.floor(diff / 60);
+                if (hours < 24) return `${hours}h ago`;
+                return `${Math.floor(hours / 24)}d ago`;
             }
 
-            // Tải danh sách thông báo (30 bản ghi gần nhất) và đánh dấu đã đọc
             let skip = 0;
             const take = 30;
             function loadNotifications() {
@@ -901,34 +838,27 @@
                     url: `/api/NotificationHandler/GetNotifications?skip=${skip}&take=${take}`,
                     type: "GET",
                     success: function (data) {
-                        console.log("Notifications data:", data);
                         const $list = $("#notification-list");
                         $list.empty();
                         if (data.notifications && data.notifications.length > 0) {
                             data.notifications.forEach(function (notification) {
-                                // Phân biệt icon và hành động click dựa trên Type
                                 const iconClass = notification.Type === "Feedback" ? "uil-feedback" : "uil-comment-alt-message";
                                 const clickAction = notification.Type === "Feedback" ? 'data-bs-toggle="modal" data-bs-target="#feedbackModal"' : '';
                                 $list.append(`
-                                                            <a href="#" class="dropdown-item text-dark notification-item d-flex align-items-start p-2" data-notification-id="${notification.NotificationKey}" ${clickAction}>
-                                                                <div class="flex-shrink-0 me-3">
-                                                                    <span class="avatar-title bg-primary rounded-circle font-size-16">
-                                                                        <i class="${iconClass}"></i>
-                                                                    </span>
-                                                                </div>
-                                                                <div class="flex-grow-1">
-                                                                    <h6 class="mt-0 mb-1">${notification.Content}</h6>
-                                                                    <p class="mb-0 text-muted">${getTimeAgo(notification.CreatedOn)}</p>
-                                                                </div>
-                                                            </a>
-                                                        `);
+                                    <a href="#" class="dropdown-item notification-item d-flex align-items-start" data-notification-id="${notification.NotificationKey}" ${clickAction}>
+                                        <div class="flex-shrink-0 me-3">
+                                            <div class="avatar-title">
+                                                <i class="${iconClass}"></i>
+                                            </div>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h6>${notification.Content}</h6>
+                                            <p>${getTimeAgo(notification.CreatedOn)}</p>
+                                        </div>
+                                    </a>
+                                `);
                             });
-                            if (data.totalCount > skip + take) {
-                                $("#view-more").show();
-                            } else {
-                                $("#view-more").hide();
-                            }
-                            // Đánh dấu tất cả thông báo là đã đọc
+
                             const notificationIds = data.notifications.map(n => n.NotificationKey);
                             if (notificationIds.length > 0) {
                                 $.ajax({
@@ -938,64 +868,30 @@
                                     data: JSON.stringify(notificationIds),
                                     success: function () {
                                         loadUnreadCount();
-                                    },
-                                    error: function (xhr) {
-                                        console.error("Error marking as read:", xhr.status, xhr.responseText);
                                     }
                                 });
                             }
                         } else {
-                            $list.append(`
-                                                        <div class="text-center p-3">
-                                                            <p class="text-muted">Không có thông báo.</p>
-                                                        </div>
-                                                    `);
-                            $("#view-more").hide();
+                            $list.html(`
+                                <div class="text-center p-4">
+                                    <i class="uil-bell-slash font-size-24 text-muted mb-2"></i>
+                                    <p class="text-muted mb-0">No notifications</p>
+                                </div>
+                            `);
                         }
-                    },
-                    error: function (xhr) {
-                        console.error("Error fetching notifications:", xhr.status, xhr.responseText);
-                        $("#notification-list").html(`
-                                                    <div class="text-center p-3">
-                                                        <p class="text-muted">Lỗi khi tải thông báo.</p>
-                                                    </div>
-                                                `);
-                        $("#view-more").hide();
                     }
                 });
             }
 
-            // Tải thêm thông báo khi click View More
-            $("#view-more").on("click", function (e) {
-                e.preventDefault(); // Ngăn hành vi mặc định của thẻ <a>
-                e.stopPropagation(); // Ngăn sự kiện lan truyền lên dropdown
-                skip += take;
-                loadNotifications();
-            });
-
-            // Hiệu ứng lắc chuông
-            function shakeBell() {
-                const $bell = $("#page-header-notifications-dropdown");
-                if (!$bell.hasClass("animate__shakeX")) {
-                    $bell.addClass("animate__shakeX");
-                    setTimeout(() => $bell.removeClass("animate__shakeX"), 500);
-                }
-            }
-
-            // Kết nối SignalR
             function initializeSignalR(userKey) {
                 const connection = new signalR.HubConnectionBuilder()
                     .withUrl("/notificationHub", { accessTokenFactory: () => userKey || "" })
                     .build();
 
-                      const debouncedLoadUnreadCount = debounce(function() {
-        console.log("Debounced: Loading unread count now...");
-        loadUnreadCount(); 
-    }, 2000);
+                const debouncedLoadUnreadCount = debounce(loadUnreadCount, 2000);
 
-                connection.on("ReceiveNotification", function (content) {
+                connection.on("ReceiveNotification", function () {
                     debouncedLoadUnreadCount();
-                   
                     if (parseInt($("#txtAmountNoticeNotRead").text()) > 0) {
                         shakeBell();
                     }
@@ -1003,146 +899,31 @@
 
                 connection.start()
                     .then(() => console.log("SignalR connected"))
-                    .catch(err => console.error("SignalR connection error:", err));
+                    .catch(err => console.error("SignalR error:", err));
             }
 
-            // Xử lý click chuông
             $("#page-header-notifications-dropdown").on("click", function () {
-                skip = 0; // Reset skip khi mở popup
+                skip = 0;
                 loadNotifications();
             });
 
-            // Khởi tạo các thành phần
+            $('.btn-toggle-sidebar').on('click', function () {
+                $('.vertical-menu').toggleClass('active');
+                $('.sidebar-overlay').toggleClass('active');
+            });
+
+            $('.sidebar-overlay').on('click', function () {
+                $('.vertical-menu').removeClass('active');
+                $(this).removeClass('active');
+            });
+
+            if ($.fn.metisMenu) {
+                $('#side-menu').metisMenu();
+            }
+
             loadUserData();
             highlightActiveMenu();
             loadUnreadCount();
-
-            // Khởi tạo dropdown Bootstrap
-            var dropdownElementList = [].slice.call(document.querySelectorAll('[data-bs-toggle="dropdown"]'));
-            var dropdownList = dropdownElementList.map(function (dropdownToggleEl) {
-                try {
-                    return new bootstrap.Dropdown(dropdownToggleEl);
-                } catch (e) {
-                    console.error("Error initializing dropdown:", e);
-                    return null;
-                }
-            });
-
-            // Khởi tạo MetisMenu cho submenu
-            if ($.fn.metisMenu) {
-                try {
-                    $('#side-menu').metisMenu();
-                    console.log('MetisMenu initialized successfully for sidebar menu.');
-                } catch (e) {
-                    console.error('Error initializing MetisMenu:', e);
-                }
-            } else {
-                console.error('MetisMenu not available. Check ~/lib/metismenu/metisMenu.min.js.');
-            }
-
-            // Khởi tạo DataTables
-            if ($.fn.DataTable) {
-                try {
-                    $('table.dataTable').DataTable({});
-                    console.log('DataTables initialized successfully.');
-                } catch (e) {
-                    console.error('Error initializing DataTables:', e);
-                }
-            }
-
-            // Khởi tạo SimpleBar
-            if (typeof SimpleBar !== 'undefined') {
-                try {
-                    $('.sidebar-menu-scroll').each(function () {
-                        new SimpleBar(this);
-                    });
-                    console.log('SimpleBar initialized successfully.');
-                } catch (e) {
-                    console.error('Error initializing SimpleBar:', e);
-                }
-            } else {
-                console.error('SimpleBar not available. Check SimpleBar CDN.');
-            }
-
-            // Khởi tạo Waves
-            if (typeof Waves !== 'undefined') {
-                Waves.init();
-                console.log('Waves initialized successfully.');
-            }
-
-            // Khởi tạo trạng thái sidebar
-            function initSidebarState() {
-                const windowWidth = $(window).width();
-                const $verticalMenu = $('.vertical-menu');
-                const $overlay = $('.sidebar-overlay');
-
-                if (windowWidth <= 576) {
-                    $verticalMenu.removeClass('active');
-                    $overlay.removeClass('active').hide();
-                    console.log('Mobile Init: Sidebar hidden, overlay hidden.');
-                    console.log('CSS Check - .vertical-menu:', $verticalMenu.css('left'), $verticalMenu.css('opacity'));
-                } else if (windowWidth <= 768) {
-                    $verticalMenu.removeClass('active');
-                    $overlay.removeClass('active').hide();
-                    console.log('Tablet Init: Sidebar collapsed, overlay hidden.');
-                } else {
-                    $verticalMenu.removeClass('active');
-                    $overlay.removeClass('active').hide();
-                    console.log('Desktop Init: Sidebar visible, overlay hidden.');
-                }
-            }
-
-            initSidebarState();
-            $(window).on('resize', initSidebarState);
-
-            // Toggle sidebar trên mobile
-            $('.btn-toggle-sidebar').on('click', function (e) {
-                e.preventDefault();
-                if ($(window).width() <= 576) {
-                    console.log('Hamburger clicked (Mobile)!');
-                    const $verticalMenu = $('.vertical-menu');
-                    const $overlay = $('.sidebar-overlay');
-
-                    $verticalMenu.toggleClass('active');
-
-                    if ($verticalMenu.hasClass('active')) {
-                        $overlay.addClass('active').fadeIn(200);
-                        console.log('Sidebar opened (active class added), overlay shown.');
-                        console.log('CSS Check - .vertical-menu.active:', $verticalMenu.css('left'), $verticalMenu.css('opacity'));
-                    } else {
-                        $overlay.removeClass('active').fadeOut(200);
-                        console.log('Sidebar closed (active class removed), overlay hidden.');
-                        console.log('CSS Check - .vertical-menu:', $verticalMenu.css('left'), $verticalMenu.css('opacity'));
-                    }
-                } else {
-                    console.log('Hamburger clicked (ignored on non-mobile).');
-                }
-            });
-
-            // Đóng sidebar khi click overlay
-            $('.sidebar-overlay').on('click', function () {
-                if ($('.vertical-menu').hasClass('active')) {
-                    console.log('Overlay clicked, closing sidebar.');
-                    const $verticalMenu = $('.vertical-menu');
-                    const $overlay = $('.sidebar-overlay');
-                    $verticalMenu.removeClass('active');
-                    $overlay.removeClass('active').fadeOut(200);
-                    console.log('CSS Check - .vertical-menu:', $verticalMenu.css('left'), $verticalMenu.css('opacity'));
-                }
-            });
-
-            // Đóng sidebar khi click ngoài trên mobile
-            $(document).on('click', function (e) {
-                const $verticalMenu = $('.vertical-menu');
-                if ($(window).width() <= 576 && $verticalMenu.hasClass('active')) {
-                    if (!$(e.target).closest('.vertical-menu').length && !$(e.target).closest('.btn-toggle-sidebar').length) {
-                        console.log('Clicked outside sidebar on mobile, closing.');
-                        $verticalMenu.removeClass('active');
-                        $('.sidebar-overlay').removeClass('active').fadeOut(200);
-                        console.log('CSS Check - .vertical-menu:', $verticalMenu.css('left'), $verticalMenu.css('opacity'));
-                    }
-                }
-            });
         });
     </script>
     @await RenderSectionAsync("Scripts", required: false)

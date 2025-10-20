@@ -1,0 +1,754 @@
+﻿@page
+@model TNS_TOEICAdmin.Pages.Manage.QuestionAttributesModel
+
+@{
+    ViewData["Title"] = "Question Attributes Management";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+
+    <style>
+        :root {
+            --primary: #1E90FF;
+            --primary-dark: #1873CC;
+            --secondary: #F4D03F;
+            --secondary-dark: #D4AC0D;
+            --danger: #E74C3C;
+            --danger-dark: #C0392B;
+            --success: #27AE60;
+            --success-dark: #219653;
+            --neutral: #95A5A6;
+            --neutral-dark: #7F8C8D;
+            --bg-light: #F0F8FF;
+            --bg-container: #FFFACD;
+            --bg-white: #FFFFFF;
+            --text-dark: #1A252F;
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.15);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 20px;
+            --font-primary: 'Inter', 'Roboto', 'Segoe UI', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-primary);
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            overflow-x: hidden;
+        }
+
+        .container {
+            background-color: var(--bg-container);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            margin: 20px auto;
+            box-shadow: var(--shadow-md);
+            max-width: 1200px;
+        }
+
+        h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 20px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Combobox chọn loại bảng */
+        .type-selector-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 15px;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+        }
+
+        .type-selector-container label {
+            color: #FFFFFF;
+            font-weight: 600;
+            font-size: 1rem;
+            margin: 0;
+            white-space: nowrap;
+        }
+
+        .type-selector-container select {
+            flex: 1;
+            border-radius: var(--radius-lg);
+            border: 2px solid #FFFFFF;
+            padding: 10px 15px;
+            font-size: 1rem;
+            background-color: var(--bg-white);
+            color: var(--text-dark);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .type-selector-container select:focus {
+            outline: none;
+            border-color: var(--secondary);
+            box-shadow: 0 0 8px rgba(244, 208, 63, 0.5);
+        }
+
+        .type-selector-container select option {
+            padding: 10px;
+        }
+
+        /* Search container */
+        .search-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--primary);
+            padding: 8px 15px;
+            background-color: var(--bg-white);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            flex: 1;
+        }
+
+        .search-input:focus {
+            border-color: var(--primary-dark);
+            box-shadow: 0 0 6px rgba(30, 144, 255, 0.3);
+            background-color: #F9F9F9;
+            outline: none;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-lg);
+            padding: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: transform 0.2s ease, background-color 0.2s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-add {
+            width: 40px;
+            height: 40px;
+            background-color: var(--primary);
+            color: #FFFFFF;
+        }
+
+        .btn-add:hover {
+            background-color: var(--primary-dark);
+            transform: scale(1.05);
+        }
+
+        .btn-save {
+            background-color: var(--success);
+            color: #FFFFFF;
+            padding: 8px 16px;
+        }
+
+        .btn-save:hover {
+            background-color: var(--success-dark);
+            transform: scale(1.05);
+        }
+
+        .btn-cancel {
+            background-color: var(--neutral);
+            color: #FFFFFF;
+            padding: 8px 16px;
+        }
+
+        .btn-cancel:hover {
+            background-color: var(--neutral-dark);
+            transform: scale(1.05);
+        }
+
+        /* Table container */
+        .table-container {
+            max-height: 500px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            border-radius: 15px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+            background: #FFFFFF;
+            border: 1px solid #E8EEF7;
+            margin-bottom: 20px;
+        }
+
+        .table-custom {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background: #FFFFFF;
+            font-size: 0.9375rem;
+            color: #2C3E50;
+            margin-bottom: 0;
+        }
+
+        .table-custom thead th {
+            position: sticky;
+            top: 0;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e8ba3 100%);
+            color: #FFFFFF;
+            text-align: center;
+            padding: 14px 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 14px;
+            border-bottom: 2px solid #1e3c72;
+            z-index: 10;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .table-custom tbody td {
+            vertical-align: middle;
+            padding: 12px 10px;
+            border-bottom: 1px solid #ECF0F1;
+            font-size: 14px;
+            color: #2C3E50;
+            transition: all 0.3s ease;
+        }
+
+        .table-custom tbody td:nth-child(1) {
+            font-weight: 600;
+            color: #2980B9;
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        .table-custom tbody td:nth-child(2) {
+            font-weight: 600;
+            color: #2C3E50;
+        }
+
+        .table-custom tbody tr:hover {
+            background: linear-gradient(90deg, #F8FAFF, #EBF5FF);
+            box-shadow: 0 2px 8px rgba(52, 152, 219, 0.15);
+            transform: scale(1.002);
+        }
+
+        .table-custom .btn-edit,
+        .table-custom .btn-delete {
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .table-custom .btn-edit {
+            background: linear-gradient(45deg, #F1C40F, #F7DC6F);
+            color: #2C3E50;
+        }
+
+        .table-custom .btn-edit:hover {
+            background: linear-gradient(45deg, #D4AC0D, #E4C107);
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(241, 196, 15, 0.3);
+        }
+
+        .table-custom .btn-delete {
+            background: linear-gradient(45deg, #E74C3C, #F1948A);
+            color: #FFFFFF;
+        }
+
+        .table-custom .btn-delete:hover {
+            background: linear-gradient(45deg, #C0392B, #E57373);
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        .pagination .page-link {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            transition: all 0.2s ease;
+        }
+
+        .pagination .page-item.active .page-link {
+            background-color: var(--primary);
+            color: #FFFFFF;
+            border-color: var(--primary);
+        }
+
+        .pagination .page-link:hover {
+            background-color: var(--primary-dark);
+            color: #FFFFFF;
+            border-color: var(--primary-dark);
+            transform: scale(1.05);
+        }
+
+        /* Modal */
+        .modal-content {
+            background-color: var(--bg-container);
+            border-radius: var(--radius-md);
+            border: none;
+            box-shadow: var(--shadow-md);
+        }
+
+        .modal-header {
+            background-color: var(--primary);
+            color: #FFFFFF;
+            border-top-left-radius: var(--radius-md);
+            border-top-right-radius: var(--radius-md);
+            padding: 15px 20px;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .form-control {
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--primary);
+            background-color: var(--bg-white);
+            padding: 8px 12px;
+            transition: all 0.2s ease;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-dark);
+            box-shadow: 0 0 6px rgba(30, 144, 255, 0.3);
+            background-color: #F9F9F9;
+            outline: none;
+        }
+
+        /* Alert */
+        .alert {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            min-width: 300px;
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-sm);
+            padding: 15px;
+            z-index: 1050;
+            animation: slideInRight 0.3s ease forwards;
+        }
+
+        @@keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .alert-success {
+            background-color: var(--success);
+            color: #FFFFFF;
+        }
+
+        .alert-danger {
+            background-color: var(--danger);
+            color: #FFFFFF;
+        }
+
+        .alert .btn-close {
+            filter: invert(1);
+            opacity: 0.8;
+        }
+
+        /* Loading spinner */
+        .loading-spinner {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--primary);
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            z-index: 9999;
+        }
+
+        @@keyframes spin {
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2><i class="fas fa-tags me-2"></i>Question Attributes Management</h2>
+
+        <!-- Combobox chọn loại bảng -->
+        <div class="type-selector-container">
+            <label for="attributeType"><i class="fas fa-filter me-2"></i>Select Attribute Type:</label>
+            <select id="attributeType" class="form-select">
+                <option value="ErrorType">Error Types</option>
+                <option value="VocabularyTopic">Vocabulary Topics</option>
+                <option value="GrammarTopic">Grammar Topics</option>
+                <option value="Category">Categories</option>
+            </select>
+        </div>
+
+        <!-- Search và Add button -->
+        <div class="search-container">
+            <button class="btn btn-add" title="Add New"><i class="fas fa-plus"></i></button>
+            <input type="text" class="form-control search-input" id="searchInput" placeholder="Search..." />
+        </div>
+
+        <!-- Table -->
+        <div class="table-container">
+            <table class="table table-hover table-custom">
+                <thead>
+                    <tr>
+                        <th style="width: 20%;">ID</th>
+                        <th style="width: 60%;">Name</th>
+                        <th style="width: 20%;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="attributeTableBody">
+                    <!-- Data will be rendered by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <nav aria-label="Page navigation">
+            <ul class="pagination" id="pagination"></ul>
+        </nav>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div class="loading-spinner" id="loadingSpinner"></div>
+
+    <!-- Modal Add/Edit -->
+    <div class="modal fade" id="attributeModal" tabindex="-1" aria-labelledby="attributeModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="attributeModalLabel">Add Attribute</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="attributeForm">
+                        <input type="hidden" id="attributeKey" />
+                        <div class="mb-3">
+                            <label for="attributeName" class="form-label">Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="attributeName" required />
+                        </div>
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-save"><i class="fas fa-save me-2"></i>Save</button>
+                            <button type="button" class="btn btn-cancel" data-bs-dismiss="modal"><i class="fas fa-times me-2"></i>Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Delete Confirmation -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteModalLabel"><i class="fas fa-exclamation-triangle me-2"></i>Confirm Deletion</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0"><strong>Warning:</strong> This action cannot be undone!</p>
+                    <p class="mb-0">Are you sure you want to permanently delete this attribute?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-cancel" data-bs-dismiss="modal"><i class="fas fa-times me-2"></i>Cancel</button>
+                    <button type="button" class="btn" style="background-color: var(--danger); color: #FFF;" id="confirmDeleteBtn">
+                        <i class="fas fa-trash me-2"></i>Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @section Scripts {
+        <script>
+            let currentType = 'ErrorType';
+            let currentPage = 1;
+            const pageSize = 10;
+            let searchTerm = '';
+            let isEditMode = false;
+            let currentKey = null;
+
+            // Debounce helper
+            function debounce(func, delay) {
+                let timeout;
+                return function(...args) {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => func.apply(this, args), delay);
+                };
+            }
+
+            $(document).ready(function () {
+                loadAttributes(1);
+
+                // Change attribute type
+                $('#attributeType').on('change', function () {
+                    currentType = $(this).val();
+                    $('#searchInput').val('');
+                    searchTerm = '';
+                    loadAttributes(1);
+                });
+
+                // Add button
+                $('.btn-add').on('click', showAddModal);
+
+                // Auto-search
+                $('#searchInput').on('keyup', debounce(function() {
+                    loadAttributes(1, $(this).val().trim());
+                }, 400));
+
+                // Search on Enter
+                $('#searchInput').on('keypress', function(e) {
+                    if (e.which === 13) {
+                        e.preventDefault();
+                        loadAttributes(1, $(this).val().trim());
+                    }
+                });
+
+                // Form submit
+                $('#attributeForm').on('submit', function (e) {
+                    e.preventDefault();
+                    saveAttribute();
+                });
+
+                // Delete confirmation
+                $('#confirmDeleteBtn').on('click', deleteAttribute);
+            });
+
+            function showLoading(show) {
+                if (show) {
+                    $('#loadingSpinner').show();
+                } else {
+                    $('#loadingSpinner').hide();
+                }
+            }
+
+            function loadAttributes(page, search = '') {
+                currentPage = page || 1;
+                searchTerm = search;
+
+                showLoading(true);
+                $.ajax({
+                    url: '/Manage/QuestionAttributes?handler=GetAttributes',
+                    method: 'GET',
+                    data: { type: currentType, page: currentPage, pageSize: pageSize, search: searchTerm },
+                    success: function (data) {
+                        showLoading(false);
+                        if (data.status !== "OK") {
+                            showAlert('danger', data.message || 'Unable to load attributes.');
+                            return;
+                        }
+                        renderTable(data.data);
+                        renderPagination(data.totalItems);
+                    },
+                    error: function (xhr) {
+                        showLoading(false);
+                        showAlert('danger', xhr.responseJSON?.message || 'Unable to load attributes.');
+                    }
+                });
+            }
+
+                    function renderTable(data) {
+                const tbody = $('#attributeTableBody');
+                tbody.empty();
+
+                if (!data || data.length === 0) {
+                    tbody.append('<tr><td colspan="3" class="text-center text-muted p-4">No data found</td></tr>');
+                    return;
+                }
+
+                data.forEach((item, index) => {
+                    // Tính số thứ tự dựa trên trang hiện tại
+                    const displayId = (currentPage - 1) * pageSize + index + 1;
+
+                    tbody.append(`
+                        <tr data-key="${item.Key || 'N/A'}">
+                            <td>${displayId}</td>
+                            <td>${item.Name || 'N/A'}</td>
+                            <td style="text-align: center;">
+                                <button class="btn btn-edit" title="Edit" onclick="showEditModal('${item.Key}', '${item.Name}')">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-delete" title="Delete" onclick="showDeleteModal('${item.Key}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `);
+                });
+            }
+
+            function renderPagination(totalItems) {
+                const totalPages = Math.ceil(totalItems / pageSize);
+                const pagination = $('#pagination');
+                pagination.empty();
+
+                if (totalPages <= 1) return;
+
+                pagination.append(`
+                    <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                        <a class="page-link" href="#" data-page="${currentPage - 1}"><i class="fas fa-chevron-left"></i></a>
+                    </li>
+                `);
+
+                for (let i = 1; i <= totalPages; i++) {
+                    pagination.append(`
+                        <li class="page-item ${i === currentPage ? 'active' : ''}">
+                            <a class="page-link" href="#" data-page="${i}">${i}</a>
+                        </li>
+                    `);
+                }
+
+                pagination.append(`
+                    <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                        <a class="page-link" href="#" data-page="${currentPage + 1}"><i class="fas fa-chevron-right"></i></a>
+                    </li>
+                `);
+
+                $('#pagination .page-link').off('click').on('click', function (e) {
+                    e.preventDefault();
+                    const page = parseInt($(this).data('page'));
+                    if (page >= 1 && page <= totalPages) {
+                        loadAttributes(page, searchTerm);
+                    }
+                });
+            }
+
+            function showAddModal() {
+                isEditMode = false;
+                currentKey = null;
+                $('#attributeModalLabel').text('Add Attribute');
+                $('#attributeForm')[0].reset();
+                $('#attributeKey').val('');
+                $('#attributeModal').modal('show');
+            }
+
+            function showEditModal(key, name) {
+                isEditMode = true;
+                currentKey = key;
+                // Escape HTML để tránh lỗi với quotes
+                const escapedName = $('<div>').text(name).html();
+                $('#attributeModalLabel').text('Edit Attribute');
+                $('#attributeKey').val(key);
+                $('#attributeName').val(name);
+                $('#attributeModal').modal('show');
+            }
+
+            function showDeleteModal(key) {
+                currentKey = key;
+                $('#deleteModal').modal('show');
+            }
+
+            function saveAttribute() {
+                const name = $('#attributeName').val().trim();
+                if (!name) {
+                    showAlert('danger', 'Name is required.');
+                    return;
+                }
+
+                const url = isEditMode ? '/Manage/QuestionAttributes?handler=Update' : '/Manage/QuestionAttributes?handler=Create';
+                const data = {
+                    Type: currentType,
+                    Key: currentKey,
+                    Name: name
+                };
+
+                showLoading(true);
+                $.ajax({
+                    url: url,
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(data),
+                    headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
+                    success: function (response) {
+                        showLoading(false);
+                        $('#attributeModal').modal('hide');
+                        showAlert('success', response.message || (isEditMode ? 'Update successful!' : 'Add successful!'));
+                        loadAttributes(currentPage, searchTerm);
+                    },
+                    error: function (xhr) {
+                        showLoading(false);
+                        showAlert('danger', xhr.responseJSON?.message || (isEditMode ? 'Update failed.' : 'Add failed.'));
+                    }
+                });
+            }
+
+            function deleteAttribute() {
+                showLoading(true);
+                $.ajax({
+                    url: '/Manage/QuestionAttributes?handler=Delete',
+                    method: 'GET',
+                    data: { type: currentType, key: currentKey },
+                    success: function (data) {
+                        showLoading(false);
+                        $('#deleteModal').modal('hide');
+                        if (data.status === "OK") {
+                            showAlert('success', data.message || 'Delete successful!');
+                            loadAttributes(currentPage, searchTerm);
+                        } else {
+                            showAlert('danger', data.message || 'Delete failed.');
+                        }
+                    },
+                    error: function () {
+                        showLoading(false);
+                        $('#deleteModal').modal('hide');
+                        showAlert('danger', 'Delete failed.');
+                    }
+                });
+            }
+
+            function showAlert(type, message) {
+                const alertDiv = $(`
+                    <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                        ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `);
+                $('body').append(alertDiv);
+                setTimeout(() => alertDiv.alert('close'), 3000);
+            }
+        </script>
+    }
+</body>
+</html>

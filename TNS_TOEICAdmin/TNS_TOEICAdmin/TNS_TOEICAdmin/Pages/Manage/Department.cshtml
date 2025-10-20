@@ -17,134 +17,202 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
 <style>
 
-  /* Table container for sticky header */
-.table-container {
-    max-height: 500px; /* Giới hạn chiều cao bảng */
-    overflow-y: auto; /* Chỉ cuộn dọc */
-    overflow-x: hidden; /* Tắt cuộn ngang */
-    border-radius: 10px; /* Bo góc */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Bóng đổ nhẹ hơn */
-    background: #FFFFFF; /* Nền trắng */
-    border: 1px solid #ECF1FF; /* Viền dịu hơn */
-    margin-bottom: 20px;
-}
+        /* Table container for sticky header */
+        .table-container {
+            max-height: 500px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            border-radius: 15px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+            background: #FFFFFF;
+            border: 1px solid #E8EEF7;
+            margin-bottom: 20px;
+        }
 
-/* Table custom */
-.table-custom {
-    width: 100%;
-    border-collapse: separate; /* Để viền bo góc */
-    border-spacing: 0;
-    background: #FFFFFF;
-    font-size: 0.9375rem; /* 15px */
-    color: #2C3E50;
-}
+        /* Table custom */
+        .table-custom {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background: #FFFFFF;
+            font-size: 0.9375rem;
+            color: #2C3E50;
+            margin-bottom: 0;
+        }
 
-/* Header bảng */
-.table-custom thead th {
-    position: sticky; /* Cố định header */
-    top: 0;
-    background: linear-gradient(90deg, #4A90E2 0%, #B3CFFA 100%); /* Gradient dịu hơn */
-    color: #FFFFFF; /* Chữ trắng, giữ tương phản đọc được */
-    text-align: center;
-    padding: 14px 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    border-bottom: 2px solid #ECF1FF; /* Viền dưới dịu hơn */
-    z-index: 10;
-}
+            /* Header bảng - Navy Gradient */
+            .table-custom thead th {
+                position: sticky;
+                top: 0;
+                background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e8ba3 100%);
+                color: #FFFFFF;
+                text-align: center;
+                padding: 14px 10px;
+                font-weight: 600;
+                text-transform: uppercase;
+                font-size: 14px;
+                border-bottom: 2px solid #1e3c72;
+                z-index: 10;
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+                transition: all 0.3s ease;
+            }
 
-/* Viền cho các ô header */
-.table-custom thead th:first-child {
-    border-top-left-radius: 10px;
-}
+                .table-custom thead th:hover {
+                    background: linear-gradient(135deg, #2a5298 0%, #3d5a9e 50%, #8a94a8 100%);
+                    transform: translateY(-1px);
+                }
 
-.table-custom thead th:last-child {
-    border-top-right-radius: 10px;
-}
+                .table-custom thead th:first-child {
+                    border-top-left-radius: 15px;
+                }
 
-/* Các ô trong tbody */
-.table-custom tbody td {
-    vertical-align: middle;
-    padding: 12px 10px;
-    border-bottom: 1px solid #ECF1FF; /* Viền nhẹ hơn */
-    max-width: 150px; /* Giảm chiều rộng để tránh tràn */
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis; /* Cắt ngắn nội dung dài */
-}
+                .table-custom thead th:last-child {
+                    border-top-right-radius: 15px;
+                }
 
-/* Hiệu ứng hover cho hàng */
-.table-custom tbody tr:hover {
-    background: rgba(174, 214, 241, 0.05); /* Hover nhạt hơn */
-    transition: background-color 0.3s ease;
-    transform: translateX(2px);
-}
+            /* Data rows - Styling nổi bật */
+            .table-custom tbody td {
+                vertical-align: middle;
+                padding: 12px 10px;
+                border-bottom: 1px solid #ECF0F1;
+                font-size: 14px;
+                color: #2C3E50;
+                transition: all 0.3s ease;
+                max-width: 200px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
 
-/* Viền cho các ô trong bảng */
-.table-custom td,
-.table-custom th {
-    border-right: 1px solid #ECF1FF; /* Viền dọc dịu hơn */
-}
+                /* DepartmentID - Nổi bật */
+                .table-custom tbody td:nth-child(1) {
+                    font-weight: 600;
+                    color: #2980B9;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
 
-.table-custom td:last-child,
-.table-custom th:last-child {
-    border-right: none;
-}
+                /* DepartmentName - Đậm hơn */
+                .table-custom tbody td:nth-child(2) {
+                    font-weight: 600;
+                    color: #2C3E50;
+                }
 
-/* Cột hành động */
-.table-custom td:last-child {
-    display: flex;
-    gap: 8px;
-    justify-content: center;
-    min-width: 80px; /* Đảm bảo cột hành động đủ rộng */
-}
+                /* ShortName - Màu phụ */
+                .table-custom tbody td:nth-child(3) {
+                    color: #7F8C8D;
+                    font-weight: 500;
+                }
 
-/* Button styles trong bảng */
-.table-custom .btn-edit,
-.table-custom .btn-delete {
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.2s ease, background-color 0.2s ease;
-}
+                /* Address - Màu xanh dương nhạt */
+                .table-custom tbody td:nth-child(4) {
+                    color: #5DADE2;
+                    font-style: italic;
+                }
 
-.table-custom .btn-edit {
-    background-color: #F4D03F; /* Màu vàng */
-}
+                /* Parent - Màu tím nhạt */
+                .table-custom tbody td:nth-child(5) {
+                    color: #9B59B6;
+                    font-weight: 500;
+                }
 
-.table-custom .btn-edit:hover {
-    background-color: #D4AC0D; /* Màu vàng đậm */
-    transform: scale(1.1);
-}
+            /* Hover effect cho rows */
+            .table-custom tbody tr {
+                transition: all 0.3s ease;
+            }
 
-.table-custom .btn-delete {
-    background-color: #E74C3C; /* Màu đỏ */
-}
+                .table-custom tbody tr:hover {
+                    background: linear-gradient(90deg, #F8FAFF, #EBF5FF);
+                    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.15);
+                    transform: scale(1.002);
+                }
 
-.table-custom .btn-delete:hover {
-    background-color: #C0392B; /* Màu đỏ đậm */
-    transform: scale(1.1);
-}
+                /* Bo tròn cho ô đầu và cuối mỗi hàng */
+                .table-custom tbody tr td:first-child {
+                    border-top-left-radius: 8px;
+                    border-bottom-left-radius: 8px;
+                }
 
-/* Responsive */
-/* Responsive */
-@@media (max-width: 768px) {
-    .table-container {
-        width: 100%; /* Đảm bảo container co giãn */
-    }
+                .table-custom tbody tr td:last-child {
+                    border-top-right-radius: 8px;
+                    border-bottom-right-radius: 8px;
+                }
 
-    .table-custom {
-        width: 100%; /* Bảng co giãn theo container */
-    }
+            /* Viền cho các ô */
+            .table-custom td,
+            .table-custom th {
+                border-right: 1px solid #ECF0F1;
+            }
 
-    .table-custom tbody td {
-        max-width: 100px; /* Giảm chiều rộng trên mobile */
-    }
-}
+                .table-custom td:last-child,
+                .table-custom th:last-child {
+                    border-right: none;
+                }
+
+                /* Cột hành động */
+                .table-custom td:last-child {
+                    display: flex;
+                    gap: 8px;
+                    justify-content: center;
+                    align-items: center;
+                    border-bottom: 1px solid #ECF0F1;
+                }
+
+            /* Button styles trong bảng */
+            .table-custom .btn-edit,
+            .table-custom .btn-delete {
+                width: 32px;
+                height: 32px;
+                padding: 0;
+                border-radius: 8px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            }
+
+            .table-custom .btn-edit {
+                background: linear-gradient(45deg, #F1C40F, #F7DC6F);
+                color: #2C3E50;
+            }
+
+                .table-custom .btn-edit:hover {
+                    background: linear-gradient(45deg, #D4AC0D, #E4C107);
+                    transform: scale(1.1);
+                    box-shadow: 0 4px 12px rgba(241, 196, 15, 0.3);
+                }
+
+            .table-custom .btn-delete {
+                background: linear-gradient(45deg, #E74C3C, #F1948A);
+                color: #FFFFFF;
+            }
+
+                .table-custom .btn-delete:hover {
+                    background: linear-gradient(45deg, #C0392B, #E57373);
+                    transform: scale(1.1);
+                    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+                }
+
+        /* Responsive */
+        @@media (max-width: 768px) {
+            .table-container
+
+        {
+            width: 100%;
+        }
+
+        .table-custom {
+            width: 100%;
+        }
+
+            .table-custom tbody td {
+                max-width: 100px;
+                font-size: 13px;
+                padding: 10px 8px;
+            }
+
+        }
 
     /* Định nghĩa biến CSS */
     :root {
@@ -668,7 +736,7 @@
         <div class="search-container">
             <button class="btn btn-add" title="Add Department"><i class="fas fa-plus"></i></button>
             <input type="text" class="form-control search-input" id="searchInput" placeholder="Tìm kiếm theo DepartmentID hoặc Tên phòng ban" />
-            <button class="btn btn-search" title="Search" onclick="searchDepartments()"><i class="fas fa-search"></i></button>
+          
             <div class="loading-spinner"></div>
         </div>
 
@@ -790,244 +858,274 @@
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> *@
     @section Scripts {
-    <script>
-        let departments = [];
-        let currentDepartmentKey = null;
-        let isEditMode = false;
-        let currentPage = 1;
-        const pageSize = 10;
-        let searchTerm = '';
+        <script>
+            let departments = [];
+            let currentDepartmentKey = null;
+            let isEditMode = false;
+            let currentPage = 1;
+            const pageSize = 10;
+            let searchTerm = '';
 
-        $(document).ready(function () {
-            loadDepartments(1);
-            $('.btn-add').on('click', showAddModal);
-        });
-
-        function loadDepartments(page, search = '') {
-            currentPage = page || 1;
-            searchTerm = search;
-
-            console.log('Loading page:', currentPage);
-            $.ajax({
-                url: '/Manage/Department?handler=GetDepartments',
-                method: 'GET',
-                data: { page: currentPage, pageSize: pageSize, search: searchTerm },
-                cache: false,
-                beforeSend: function () {
-                    console.log('Sending request with data:', { page: currentPage, pageSize: pageSize, search: searchTerm });
-                },
-                success: function (data) {
-                    console.log('Received data:', data);
-                    if (data.status !== "OK") {
-                            showAlert('danger', data.message || 'Unable to load department list.');
-                        return;
-                    }
-                    departments = data.data || [];
-                    renderDepartments();
-                    renderPagination(data.totalItems);
-                    populateParentKeyDropdown();
-                },
-                error: function (xhr, status, error) {
-                    console.error('Error:', error);
-                        showAlert('danger', xhr.responseJSON?.message || 'Unable to load department list.');
-                }
-            });
-        }
-
-        function renderDepartments() {
-            const tbody = $('#departmentTableBody');
-            tbody.empty();
-
-            if (!Array.isArray(departments)) {
-                console.error('departments is not an array:', departments);
-                    showAlert('danger', 'Invalid department dataInvalid department data.');
-                return;
+            // ===== DEBOUNCE HELPER =====
+            function debounce(func, delay) {
+                let timeout;
+                return function(...args) {
+                    const context = this;
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => func.apply(context, args), delay);
+                };
             }
 
-            departments.forEach(dept => {
-                const departmentID = dept.DepartmentID || 'N/A'; // Giữ nguyên PascalCase
-                const departmentName = dept.DepartmentName || 'N/A'; // Giữ nguyên PascalCase
-                const shortName = dept.ShortName || 'N/A'; // Giữ nguyên PascalCase
-                const address = dept.Address || ''; // Giữ nguyên PascalCase
-                const parentShortName = dept.ParentShortName || 'Do not'; // Giữ nguyên PascalCase
-                const departmentKey = dept.DepartmentKey || ''; // Giữ nguyên PascalCase
+            // ===== AUTO-SEARCH FUNCTION =====
+            const autoSearch = debounce(function() {
+                const searchValue = $('#searchInput').val().trim();
+                $('.loading-spinner').show();
+                loadDepartments(1, searchValue);
+            }, 400); // Chờ 400ms sau khi user ngừng gõ
+
+            $(document).ready(function () {
+                loadDepartments(1);
+                $('.btn-add').on('click', showAddModal);
+
+                // ✅ AUTO-SEARCH khi gõ
+                $('#searchInput').on('keyup', autoSearch);
+
+                // ✅ Trigger search khi nhấn Enter
+                $('#searchInput').on('keypress', function(e) {
+                    if (e.which === 13) {
+                        e.preventDefault();
+                        autoSearch();
+                    }
+                });
+            });
+
+            function loadDepartments(page, search = '') {
+                currentPage = page || 1;
+                searchTerm = search;
+
+                console.log('Loading page:', currentPage);
+                $.ajax({
+                    url: '/Manage/Department?handler=GetDepartments',
+                    method: 'GET',
+                    data: { page: currentPage, pageSize: pageSize, search: searchTerm },
+                    cache: false,
+                    beforeSend: function () {
+                        console.log('Sending request with data:', { page: currentPage, pageSize: pageSize, search: searchTerm });
+                    },
+                    success: function (data) {
+                        console.log('Received data:', data);
+                        $('.loading-spinner').hide();
+                        if (data.status !== "OK") {
+                            showAlert('danger', data.message || 'Unable to load department list.');
+                            return;
+                        }
+                        departments = data.data || [];
+                        renderDepartments();
+                        renderPagination(data.totalItems);
+                        populateParentKeyDropdown();
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error:', error);
+                        $('.loading-spinner').hide();
+                        showAlert('danger', xhr.responseJSON?.message || 'Unable to load department list.');
+                    }
+                });
+            }
+
+            function renderDepartments() {
+                const tbody = $('#departmentTableBody');
+                tbody.empty();
+
+                if (!Array.isArray(departments)) {
+                    console.error('departments is not an array:', departments);
+                    showAlert('danger', 'Invalid department data.');
+                    return;
+                }
+
+                if (departments.length === 0) {
+                    tbody.append('<tr><td colspan="6" class="text-center text-muted p-4">No departments found</td></tr>');
+                    return;
+                }
+
+                departments.forEach(dept => {
+                    const departmentID = dept.DepartmentID || 'N/A';
+                    const departmentName = dept.DepartmentName || 'N/A';
+                    const shortName = dept.ShortName || 'N/A';
+                    const address = dept.Address || '<span style="color: #95A5A6;">No address</span>';
+                    const parentShortName = dept.ParentShortName || '<span style="color: #95A5A6;">Do not</span>';
+                    const departmentKey = dept.DepartmentKey || '';
 
                     tbody.append(`
-                <tr>
-                    <td>${departmentID}</td>
-                    <td>${departmentName}</td>
-                    <td>${shortName}</td>
-                    <td>${address}</td>
-                    <td>${parentShortName}</td>
-                    <td>
-                        <button class="btn btn-edit" title="Edit" onclick="showEditModal('${departmentKey}')"><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-delete" title="Delete" onclick="showDeleteModal('${departmentKey}')"><i class="fas fa-trash"></i></button>
-                    </td>
-                </tr>
-            `);
-            });
-        }
-            function searchDepartments() {
-                $('.loading-spinner').show();
-                const searchValue = $('#searchInput').val().trim();
-                loadDepartments(1, searchValue).always(() => $('.loading-spinner').hide());
-            }
-        function renderPagination(totalItems) {
-            const totalPages = Math.ceil(totalItems / pageSize);
-            const pagination = $('#pagination');
-            pagination.empty();
-
-            pagination.append(`
-                        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-                            <a class="page-link" href="#" data-page="${currentPage - 1}"><i class="fas fa-chevron-left"></i></a>
-                        </li>
+                        <tr>
+                            <td>${departmentID}</td>
+                            <td>${departmentName}</td>
+                            <td>${shortName}</td>
+                            <td>${address}</td>
+                            <td>${parentShortName}</td>
+                            <td>
+                                <button class="btn btn-edit" title="Edit" onclick="showEditModal('${departmentKey}')"><i class="fas fa-edit"></i></button>
+                                <button class="btn btn-delete" title="Delete" onclick="showDeleteModal('${departmentKey}')"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
                     `);
+                });
+            }
 
-            for (let i = 1; i <= totalPages; i++) {
+            // ✅ Bỏ hàm searchDepartments() cũ - không cần nữa vì đã có auto-search
+
+            function renderPagination(totalItems) {
+                const totalPages = Math.ceil(totalItems / pageSize);
+                const pagination = $('#pagination');
+                pagination.empty();
+
+                if (totalPages <= 1) return; // Không hiển thị pagination nếu chỉ 1 trang
+
                 pagination.append(`
-                            <li class="page-item ${i === currentPage ? 'active' : ''}">
-                                <a class="page-link" href="#" data-page="${i}">${i}</a>
-                            </li>
-                        `);
-            }
+                    <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                        <a class="page-link" href="#" data-page="${currentPage - 1}"><i class="fas fa-chevron-left"></i></a>
+                    </li>
+                `);
 
-            pagination.append(`
-                        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
-                            <a class="page-link" href="#" data-page="${currentPage + 1}"><i class="fas fa-chevron-right"></i></a>
+                for (let i = 1; i <= totalPages; i++) {
+                    pagination.append(`
+                        <li class="page-item ${i === currentPage ? 'active' : ''}">
+                            <a class="page-link" href="#" data-page="${i}">${i}</a>
                         </li>
                     `);
-
-            $('#pagination .page-link').off('click').on('click', function (e) {
-                e.preventDefault();
-                const page = parseInt($(this).data('page'));
-                console.log('Clicked page:', page);
-                if (page >= 1 && page <= totalPages) {
-                    loadDepartments(page, searchTerm);
                 }
-            });
-        }
 
-        function populateParentKeyDropdown() {
-            const parentKeySelect = $('#parentKey');
-            parentKeySelect.empty();
-            parentKeySelect.append('<option value="">Do not</option>');
-            if (!Array.isArray(departments)) return;
-            departments.forEach(dept => {
-                if (dept.DepartmentKey !== $('#departmentKey').val()) { // Giữ nguyên PascalCase
-                    parentKeySelect.append(`<option value="${dept.DepartmentKey}">${dept.ShortName || 'N/A'}</option>`); // Giữ nguyên PascalCase
-                }
-            });
-        }
+                pagination.append(`
+                    <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                        <a class="page-link" href="#" data-page="${currentPage + 1}"><i class="fas fa-chevron-right"></i></a>
+                    </li>
+                `);
 
-        function showAddModal() {
-            isEditMode = false;
-            $('#departmentModalLabel').text('Add Department');
-            $('#departmentForm')[0].reset();
-            $('#departmentKey').val('');
-            $('#forReport').val('');
-            populateParentKeyDropdown();
-            $('#departmentModal').modal('show');
-        }
-
-        function showEditModal(departmentKey) {
-            const dept = departments.find(d => d.DepartmentKey === departmentKey); // Giữ nguyên PascalCase
-            if (dept) {
-                isEditMode = true;
-                $('#departmentModalLabel').text('Edit Department');
-                $('#departmentKey').val(dept.DepartmentKey || ''); // Giữ nguyên PascalCase
-                $('#departmentID').val(dept.DepartmentID || ''); // Giữ nguyên PascalCase
-                $('#departmentName').val(dept.DepartmentName || ''); // Giữ nguyên PascalCase
-                $('#shortName').val(dept.ShortName || ''); // Giữ nguyên PascalCase
-                $('#address').val(dept.Address || ''); // Giữ nguyên PascalCase
-                $('#trcd').val(dept.TRCD || ''); // Giữ nguyên PascalCase
-                $('#origanizationID').val(dept.OriganizationID || ''); // Giữ nguyên PascalCase
-                $('#rank').val(dept.Rank || ''); // Giữ nguyên PascalCase
-                $('#class').val(dept.Class || ''); // Giữ nguyên PascalCase
-                $('#forReport').val(dept.ForReport || ''); // Giữ nguyên PascalCase
-                populateParentKeyDropdown();
-                $('#parentKey').val(dept.ParentKey || ''); // Giữ nguyên PascalCase
-                $('#departmentModal').modal('show');
-            } else {
-                    showAlert('danger', 'No department found to edit.');
-            }
-        }
-
-        function showDeleteModal(departmentKey) {
-            currentDepartmentKey = departmentKey;
-            $('#deleteModal').modal('show');
-        }
-
-        $('#departmentForm').on('submit', function (e) {
-            e.preventDefault();
-            const formData = {
-                DepartmentKey: $('#departmentKey').val() || '00000000-0000-0000-0000-000000000000',
-                DepartmentID: $('#departmentID').val(),
-                DepartmentName: $('#departmentName').val(),
-                ShortName: $('#shortName').val() || null,
-                Address: $('#address').val() || null,
-                TRCD: $('#trcd').val() || null,
-                ParentKey: $('#parentKey').val() || null,
-                OriganizationID: $('#origanizationID').val() || null,
-                Rank: $('#rank').val() ? parseInt($('#rank').val()) : null,
-                Class: $('#class').val() || null,
-                ForReport: $('#forReport').val() || null
-            };
-
-            const url = isEditMode ? '/Manage/Department?handler=Update' : '/Manage/Department?handler=Create';
-            $.ajax({
-                url: url,
-                method: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(formData),
-                headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
-                success: function (data) {
-                    $('#departmentModal').modal('hide');
-                        showAlert('success', data.message || (isEditMode ? 'Update successful!' : 'Add successful!'));
-                    loadDepartments(currentPage, searchTerm);
-                },
-                error: function (xhr) {
-                    showAlert('danger', xhr.responseJSON?.message || (isEditMode ? 'Update failed.' : 'Add failed.'));
-                }
-            });
-        });
-
-        $('#confirmDeleteBtn').on('click', function () {
-            $.ajax({
-                url: '/Manage/Department?handler=Delete',
-                method: 'GET',
-                data: { departmentKey: currentDepartmentKey },
-                success: function (data) {
-                    $('#deleteModal').modal('hide');
-                    if (data.status === "OK") {
-                        showAlert('success', data.message || 'Delete Successful!');
-                        loadDepartments(currentPage, searchTerm);
-                    } else {
-                        showAlert('danger', data.message || 'Delete failed.');
+                $('#pagination .page-link').off('click').on('click', function (e) {
+                    e.preventDefault();
+                    const page = parseInt($(this).data('page'));
+                    console.log('Clicked page:', page);
+                    if (page >= 1 && page <= totalPages) {
+                        loadDepartments(page, searchTerm);
                     }
-                },
-                error: function () {
-                    $('#deleteModal').modal('hide');
-                    showAlert('danger', 'Delete failed.');
+                });
+            }
+
+            function populateParentKeyDropdown() {
+                const parentKeySelect = $('#parentKey');
+                parentKeySelect.empty();
+                parentKeySelect.append('<option value="">Do not</option>');
+                if (!Array.isArray(departments)) return;
+                departments.forEach(dept => {
+                    if (dept.DepartmentKey !== $('#departmentKey').val()) {
+                        parentKeySelect.append(`<option value="${dept.DepartmentKey}">${dept.ShortName || 'N/A'}</option>`);
+                    }
+                });
+            }
+
+            function showAddModal() {
+                isEditMode = false;
+                $('#departmentModalLabel').text('Add Department');
+                $('#departmentForm')[0].reset();
+                $('#departmentKey').val('');
+                $('#forReport').val('');
+                populateParentKeyDropdown();
+                $('#departmentModal').modal('show');
+            }
+
+            function showEditModal(departmentKey) {
+                const dept = departments.find(d => d.DepartmentKey === departmentKey);
+                if (dept) {
+                    isEditMode = true;
+                    $('#departmentModalLabel').text('Edit Department');
+                    $('#departmentKey').val(dept.DepartmentKey || '');
+                    $('#departmentID').val(dept.DepartmentID || '');
+                    $('#departmentName').val(dept.DepartmentName || '');
+                    $('#shortName').val(dept.ShortName || '');
+                    $('#address').val(dept.Address || '');
+                    $('#trcd').val(dept.TRCD || '');
+                    $('#origanizationID').val(dept.OriganizationID || '');
+                    $('#rank').val(dept.Rank || '');
+                    $('#class').val(dept.Class || '');
+                    $('#forReport').val(dept.ForReport || '');
+                    populateParentKeyDropdown();
+                    $('#parentKey').val(dept.ParentKey || '');
+                    $('#departmentModal').modal('show');
+                } else {
+                    showAlert('danger', 'No department found to edit.');
                 }
+            }
+
+            function showDeleteModal(departmentKey) {
+                currentDepartmentKey = departmentKey;
+                $('#deleteModal').modal('show');
+            }
+
+            $('#departmentForm').on('submit', function (e) {
+                e.preventDefault();
+                const formData = {
+                    DepartmentKey: $('#departmentKey').val() || '00000000-0000-0000-0000-000000000000',
+                    DepartmentID: $('#departmentID').val(),
+                    DepartmentName: $('#departmentName').val(),
+                    ShortName: $('#shortName').val() || null,
+                    Address: $('#address').val() || null,
+                    TRCD: $('#trcd').val() || null,
+                    ParentKey: $('#parentKey').val() || null,
+                    OriganizationID: $('#origanizationID').val() || null,
+                    Rank: $('#rank').val() ? parseInt($('#rank').val()) : null,
+                    Class: $('#class').val() || null,
+                    ForReport: $('#forReport').val() || null
+                };
+
+                const url = isEditMode ? '/Manage/Department?handler=Update' : '/Manage/Department?handler=Create';
+                $.ajax({
+                    url: url,
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(formData),
+                    headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
+                    success: function (data) {
+                        $('#departmentModal').modal('hide');
+                        showAlert('success', data.message || (isEditMode ? 'Update successful!' : 'Add successful!'));
+                        loadDepartments(currentPage, searchTerm);
+                    },
+                    error: function (xhr) {
+                        showAlert('danger', xhr.responseJSON?.message || (isEditMode ? 'Update failed.' : 'Add failed.'));
+                    }
+                });
             });
-        });
 
-        function searchDepartments() {
-            const searchValue = $('#searchInput').val().trim();
-            loadDepartments(1, searchValue);
-        }
+            $('#confirmDeleteBtn').on('click', function () {
+                $.ajax({
+                    url: '/Manage/Department?handler=Delete',
+                    method: 'GET',
+                    data: { departmentKey: currentDepartmentKey },
+                    success: function (data) {
+                        $('#deleteModal').modal('hide');
+                        if (data.status === "OK") {
+                            showAlert('success', data.message || 'Delete Successful!');
+                            loadDepartments(currentPage, searchTerm);
+                        } else {
+                            showAlert('danger', data.message || 'Delete failed.');
+                        }
+                    },
+                    error: function () {
+                        $('#deleteModal').modal('hide');
+                        showAlert('danger', 'Delete failed.');
+                    }
+                });
+            });
 
-        function showAlert(type, message) {
-            const alertDiv = $(`
-                        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-                            ${message}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    `);
-            $('body').append(alertDiv);
-            setTimeout(() => alertDiv.alert('close'), 3000);
-        }
-    </script>
+            function showAlert(type, message) {
+                const alertDiv = $(`
+                    <div class="alert alert-${type} alert-dismissible fade show top-right" role="alert">
+                        ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `);
+                $('body').append(alertDiv);
+                setTimeout(() => alertDiv.alert('close'), 3000);
+            }
+        </script>
     }
 </body>
 </html>

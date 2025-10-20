@@ -118,61 +118,39 @@ namespace TNS_TOEICAdmin.Models
     {
         private static readonly string _connectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
 
-        public static async Task<(List<EmployeeEntity> Employees, int TotalRecords)> GetEmployeesAsync(int offset, int pageSize, string search, string status)
+        public static async Task<List<EmployeeEntity>> GetEmployeesAsync(int page, int pageSize, string search, string status)
         {
             var employees = new List<EmployeeEntity>();
-            int totalRecords = 0;
 
             using (var conn = new SqlConnection(_connectionString))
             {
                 await conn.OpenAsync();
 
-                // Đếm tổng số bản ghi
-                string countSql = @"
-            SELECT COUNT(*)
-            FROM HRM_Employee e
-            WHERE 1=1";
-                if (status == "active")
-                {
-                    countSql += " AND e.LeavingDate IS NULL";
-                }
-                else if (status == "inactive")
-                {
-                    countSql += " AND e.LeavingDate IS NOT NULL";
-                }
-                if (!string.IsNullOrEmpty(search))
-                {
-                    countSql += " AND (e.LastName LIKE '%' + @Search + '%' OR e.FirstName LIKE '%' + @Search + '%')";
-                }
-
-                using (var countCmd = new SqlCommand(countSql, conn))
-                {
-                    if (!string.IsNullOrEmpty(search))
-                    {
-                        countCmd.Parameters.AddWithValue("@Search", search);
-                    }
-                    totalRecords = (int)await countCmd.ExecuteScalarAsync();
-                }
+                // Tính offset từ page
+                int offset = (page - 1) * pageSize;
 
                 // Lấy danh sách nhân viên
                 string sql = @"
-            SELECT e.EmployeeKey, e.EmployeeID, e.LastName, e.FirstName, e.DepartmentKey, d.DepartmentName, 
-                   e.CompanyEmail, e.StartingDate, e.LeavingDate
-            FROM HRM_Employee e
-            LEFT JOIN HRM_Department d ON e.DepartmentKey = d.DepartmentKey
-            WHERE 1=1";
+                    SELECT e.EmployeeKey, e.EmployeeID, e.LastName, e.FirstName, e.DepartmentKey, d.DepartmentName, 
+                           e.CompanyEmail, e.StartingDate, e.LeavingDate
+                    FROM HRM_Employee e
+                    LEFT JOIN HRM_Department d ON e.DepartmentKey = d.DepartmentKey
+                    WHERE 1=1";
+
                 if (status == "active")
                 {
-                    sql += " AND e.LeavingDate IS NULL";
+                    sql += " AND (e.LeavingDate IS NULL OR e.LeavingDate > GETDATE())";
                 }
                 else if (status == "inactive")
                 {
-                    sql += " AND e.LeavingDate IS NOT NULL";
+                    sql += " AND e.LeavingDate IS NOT NULL AND e.LeavingDate <= GETDATE()";
                 }
+
                 if (!string.IsNullOrEmpty(search))
                 {
                     sql += " AND (e.LastName LIKE '%' + @Search + '%' OR e.FirstName LIKE '%' + @Search + '%')";
                 }
+
                 sql += " ORDER BY e.CreatedOn DESC OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 
                 using (var cmd = new SqlCommand(sql, conn))
@@ -181,7 +159,7 @@ namespace TNS_TOEICAdmin.Models
                     {
                         cmd.Parameters.AddWithValue("@Search", search);
                     }
-                    cmd.Parameters.AddWithValue("@Offset", offset); // Sử dụng offset thay vì tính toán từ page
+                    cmd.Parameters.AddWithValue("@Offset", offset);
                     cmd.Parameters.AddWithValue("@PageSize", pageSize);
 
                     using (var reader = await cmd.ExecuteReaderAsync())
@@ -190,23 +168,64 @@ namespace TNS_TOEICAdmin.Models
                         {
                             employees.Add(new EmployeeEntity
                             {
-                                EmployeeKey = reader.GetGuid("EmployeeKey"),
-                                EmployeeID = reader.GetString("EmployeeID"),
-                                LastName = reader.GetString("LastName"),
-                                FirstName = reader.GetString("FirstName"),
-                                DepartmentKey = reader.IsDBNull("DepartmentKey") ? (Guid?)null : reader.GetGuid("DepartmentKey"),
-                                DepartmentName = reader.IsDBNull("DepartmentName") ? null : reader.GetString("DepartmentName"),
-                                CompanyEmail = reader.IsDBNull("CompanyEmail") ? null : reader.GetString("CompanyEmail"),
-                                StartingDate = reader.IsDBNull("StartingDate") ? (DateTime?)null : reader.GetDateTime("StartingDate"),
-                                LeavingDate = reader.IsDBNull("LeavingDate") ? (DateTime?)null : reader.GetDateTime("LeavingDate")
+                                EmployeeKey = reader.GetGuid(reader.GetOrdinal("EmployeeKey")),
+                                EmployeeID = reader.GetString(reader.GetOrdinal("EmployeeID")),
+                                LastName = reader.GetString(reader.GetOrdinal("LastName")),
+                                FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
+                                DepartmentKey = reader.IsDBNull(reader.GetOrdinal("DepartmentKey")) ? (Guid?)null : reader.GetGuid(reader.GetOrdinal("DepartmentKey")),
+                                DepartmentName = reader.IsDBNull(reader.GetOrdinal("DepartmentName")) ? null : reader.GetString(reader.GetOrdinal("DepartmentName")),
+                                CompanyEmail = reader.IsDBNull(reader.GetOrdinal("CompanyEmail")) ? null : reader.GetString(reader.GetOrdinal("CompanyEmail")),
+                                StartingDate = reader.IsDBNull(reader.GetOrdinal("StartingDate")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("StartingDate")),
+                                LeavingDate = reader.IsDBNull(reader.GetOrdinal("LeavingDate")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("LeavingDate"))
                             });
                         }
                     }
                 }
             }
-            return (employees, totalRecords);
+
+            return employees;
         }
 
+        public static async Task<int> GetTotalEmployeesCountAsync(string search, string status)
+        {
+            int totalCount = 0;
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                await conn.OpenAsync();
+
+                string countSql = @"
+                    SELECT COUNT(*)
+                    FROM HRM_Employee e
+                    WHERE 1=1";
+
+                if (status == "active")
+                {
+                    countSql += " AND (e.LeavingDate IS NULL OR e.LeavingDate > GETDATE())";
+                }
+                else if (status == "inactive")
+                {
+                    countSql += " AND e.LeavingDate IS NOT NULL AND e.LeavingDate <= GETDATE()";
+                }
+
+                if (!string.IsNullOrEmpty(search))
+                {
+                    countSql += " AND (e.LastName LIKE '%' + @Search + '%' OR e.FirstName LIKE '%' + @Search + '%')";
+                }
+
+                using (var cmd = new SqlCommand(countSql, conn))
+                {
+                    if (!string.IsNullOrEmpty(search))
+                    {
+                        cmd.Parameters.AddWithValue("@Search", search);
+                    }
+
+                    totalCount = (int)await cmd.ExecuteScalarAsync();
+                }
+            }
+
+            return totalCount;
+        }
         public static async Task<List<DepartmentEntity>> GetDepartmentsAsync()
         {
             var departments = new List<DepartmentEntity>();

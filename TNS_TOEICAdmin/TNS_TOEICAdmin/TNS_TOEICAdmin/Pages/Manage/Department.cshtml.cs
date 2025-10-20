@@ -65,10 +65,10 @@ namespace TNS_TOEICAdmin.Pages.Manage
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Error: {ex.Message}");
-                    return new JsonResult(new { status = "ERROR", message = "Không thể tải danh sách phòng ban." }) { StatusCode = 500 };
+                    return new JsonResult(new { status = "ERROR", message = "Unable to load department list." }) { StatusCode = 500 };
                 }
             }
-            return new JsonResult(new { status = "ERROR", message = "Bạn không có quyền xem danh sách!" }) { StatusCode = 403 };
+            return new JsonResult(new { status = "ERROR", message = "You do not have permission to view the list!" }) { StatusCode = 403 };
         }
 
         public async Task<IActionResult> OnPostCreate([FromBody] Department department)
@@ -78,7 +78,7 @@ namespace TNS_TOEICAdmin.Pages.Manage
             {
                 if (department == null || string.IsNullOrEmpty(department.DepartmentID) || string.IsNullOrEmpty(department.DepartmentName))
                 {
-                    return new JsonResult(new { status = "ERROR", message = "Dữ liệu không hợp lệ." }) { StatusCode = 400 };
+                    return new JsonResult(new { status = "ERROR", message = "Invalid data." }) { StatusCode = 400 };
                 }
 
                 try
@@ -88,15 +88,15 @@ namespace TNS_TOEICAdmin.Pages.Manage
                         department.DepartmentKey = Guid.NewGuid();
                     }
                     await DepartmentAccessData.AddDepartmentAsync(department);
-                    return new JsonResult(new { status = "OK", message = "Thêm phòng ban thành công!" });
+                    return new JsonResult(new { status = "OK", message = "Department added successfully!" });
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Error adding department: {ex.Message}\nStack Trace: {ex.StackTrace}");
-                    return new JsonResult(new { status = "ERROR", message = $"Thêm thất bại: {ex.Message}" }) { StatusCode = 500 };
+                    return new JsonResult(new { status = "ERROR", message = $"Add failures: {ex.Message}" }) { StatusCode = 500 };
                 }
             }
-            return new JsonResult(new { status = "ERROR", message = "Bạn không có quyền thêm phòng ban!" }) { StatusCode = 403 };
+            return new JsonResult(new { status = "ERROR", message = "You do not have permission to add departments!" }) { StatusCode = 403 };
         }
 
         public async Task<IActionResult> OnPostUpdate([FromBody] Department department)
@@ -106,21 +106,21 @@ namespace TNS_TOEICAdmin.Pages.Manage
             {
                 if (department == null || department.DepartmentKey == Guid.Empty)
                 {
-                    return new JsonResult(new { status = "ERROR", message = "Dữ liệu không hợp lệ." }) { StatusCode = 400 };
+                    return new JsonResult(new { status = "ERROR", message = "Invalid data." }) { StatusCode = 400 };
                 }
 
                 try
                 {
                     await DepartmentAccessData.UpdateDepartmentAsync(department);
-                    return new JsonResult(new { status = "OK", message = "Cập nhật phòng ban thành công!" });
+                    return new JsonResult(new { status = "OK", message = "Department updated successfully!" });
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Error updating department: {ex.Message}\nStack Trace: {ex.StackTrace}");
-                    return new JsonResult(new { status = "ERROR", message = $"Cập nhật thất bại: {ex.Message}" }) { StatusCode = 500 };
+                    return new JsonResult(new { status = "ERROR", message = $"Update failed: {ex.Message}" }) { StatusCode = 500 };
                 }
             }
-            return new JsonResult(new { status = "ERROR", message = "Bạn không có quyền cập nhật phòng ban!" }) { StatusCode = 403 };
+            return new JsonResult(new { status = "ERROR", message = "You do not have permission to update departments!" }) { StatusCode = 403 };
         }
 
         public async Task<IActionResult> OnGetDelete([FromQuery] Guid departmentKey)
@@ -131,15 +131,15 @@ namespace TNS_TOEICAdmin.Pages.Manage
                 try
                 {
                     await DepartmentAccessData.DeleteDepartmentAsync(departmentKey);
-                    return new JsonResult(new { status = "OK", message = "Xóa phòng ban thành công!" });
+                    return new JsonResult(new { status = "OK", message = "Department deleted successfully!" });
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Error deleting department: {ex.Message}");
-                    return new JsonResult(new { status = "ERROR", message = "Xóa thất bại." }) { StatusCode = 500 };
+                    return new JsonResult(new { status = "ERROR", message = "Delete failed." }) { StatusCode = 500 };
                 }
             }
-            return new JsonResult(new { status = "ERROR", message = "Bạn không có quyền xóa phòng ban!" }) { StatusCode = 403 };
+            return new JsonResult(new { status = "ERROR", message = "You do not have permission to delete departments!" }) { StatusCode = 403 };
         }
     }
 }

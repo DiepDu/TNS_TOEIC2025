@@ -143,7 +143,30 @@
             </div>
         </div>
     </div>
-
+    <!-- Confirmation Modal -->
+    <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="confirmModalLabel">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Confirm Deletion
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="confirmMessage" class="mb-0" style="white-space: pre-line;">Are you sure?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Cancel
+                    </button>
+                    <button type="button" class="btn btn-danger" id="confirmBtn">
+                        <i class="fas fa-check me-2"></i>Confirm
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
     <style>
         body {
             background: linear-gradient(135deg, #E5F9FF 0%, #D1F1FF 100%);
@@ -345,20 +368,22 @@
             width: 100%; /* Ensure table takes full container width */
         }
 
-        .table thead {
-            background: linear-gradient(90deg, #3498DB, #5DADE2);
-        }
 
-        .table th {
-            background: linear-gradient(90deg, #3498DB, #5DADE2);
-            color: #FFFFFF;
-            text-align: center;
-            padding: 12px; /* Reduced padding to save space */
-            font-weight: 600;
-            font-size: 14px; /* Reduced font size to fit narrower columns */
-            white-space: normal; /* Allow text wrapping */
-            box-sizing: border-box; /* Include padding in width */
-        }
+            .table thead {
+                background: linear-gradient(135deg, #8c59cd 0%, #8c59cd 50%, #7e8ba3 100%);
+            }
+
+            .table th {
+                background: linear-gradient(135deg, #83c9ff 0%, #2a5298 50%, #7e8ba3 100%);
+                color: #FFFFFF;
+                text-align: center;
+                padding: 12px;
+                font-weight: 600;
+                font-size: 14px;
+                white-space: normal;
+                box-sizing: border-box;
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2); /* ← Thêm shadow cho text */
+            }
 
         .table td {
             vertical-align: middle;
@@ -782,12 +807,36 @@
                 }
             }
 
-            function showDeleteModal(userKey) {
-                currentUserKey = userKey;
-                if (confirm('Are you sure you want to delete this user?')) {
-                    deleteUser(userKey);
-                }
-            }
+                              function showDeleteModal(userKey) {
+                        const user = users.find(u => u.UserKey === userKey);
+                        const userName = user ? user.UserName : 'this user';
+
+                        showConfirmModal(
+                            `Are you sure you want to delete user "${userName}"?\n\nThis action cannot be undone and will also delete all associated data.`,
+                            function() {
+                                deleteUser(userKey);
+                            }
+                        );
+                    }
+
+                    // ===== CONFIRMATION MODAL HELPER =====
+                    function showConfirmModal(message, onConfirm) {
+                        $('#confirmMessage').text(message);
+                        const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+
+                        // Remove old event listeners
+                        $('#confirmBtn').off('click');
+
+                        // Add new event listener
+                        $('#confirmBtn').on('click', function() {
+                            confirmModal.hide();
+                            if (typeof onConfirm === 'function') {
+                                onConfirm();
+                            }
+                        });
+
+                        confirmModal.show();
+                    }
 
             function showRolesModal(userKey) {
                 currentUserKey = userKey;

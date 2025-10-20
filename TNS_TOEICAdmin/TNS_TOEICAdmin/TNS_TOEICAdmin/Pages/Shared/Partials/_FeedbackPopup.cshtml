@@ -1,128 +1,579 @@
 ﻿<style>
-    /* Feedback popup như nhóm tin nhắn */
+    /* ===== MODAL CONTAINER ===== */
+    #feedbackModal .modal-dialog {
+        max-width: 65vw;
+        margin: 30px auto;
+    }
+
     #feedbackModal .modal-content {
-        border-radius: 10px !important;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+        border-radius: 16px !important;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
+        border: none !important;
+        overflow: hidden;
     }
 
+    #feedbackModal .modal-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #FFFFFF;
+        border-bottom: none;
+        padding: 20px 24px;
+    }
+
+    #feedbackModal .modal-title {
+        font-weight: 700;
+        font-size: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+        #feedbackModal .modal-title::before {
+            content: '💬';
+            font-size: 1.8rem;
+        }
+
+    #feedbackModal .btn-close {
+        filter: brightness(0) invert(1);
+        opacity: 0.8;
+    }
+
+    /* ===== FEEDBACK CONTAINER ===== */
     #feedback-container {
-        padding: 10px !important;
-        overflow-y: auto !important;
-        display: flex !important;
-        flex-direction: column !important;
+        height: 60vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 16px;
+        background: linear-gradient(to bottom, #f8f9fa 0%, #e9ecef 100%);
+        position: relative;
     }
 
+        /* Custom Scrollbar */
+        #feedback-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #feedback-container::-webkit-scrollbar-track {
+            background: #e9ecef;
+            border-radius: 10px;
+        }
+
+        #feedback-container::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+            #feedback-container::-webkit-scrollbar-thumb:hover {
+                background: linear-gradient(135deg, #764ba2, #667eea);
+            }
+
+    /* ===== FEEDBACK ITEM ===== */
     .feedback-item {
-        background: #F8F9FA !important;
-        border-radius: 10px !important;
-        margin-bottom: 10px !important;
-        padding: 10px !important;
-        width: 100% !important; /* Kéo dài hết chiều rộng */
-        align-self: stretch !important; /* Đảm bảo chiếm hết không gian cha */
-        transition: all 0.3s ease !important;
+        background: #FFFFFF;
+        border-radius: 12px;
+        margin-bottom: 12px;
+        padding: 16px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border-left: 4px solid transparent;
+        animation: fadeInUp 0.4s ease-out;
     }
 
-        .feedback-item:hover {
-            background: #E8F0FE !important;
+    @@keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
         }
 
-        .feedback-item .avatar {
-            width: 40px !important;
-            height: 40px !important;
-            border-radius: 50% !important;
-            margin-right: 10px !important;
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .feedback-item:hover {
+        box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
+        transform: translateY(-2px);
+        border-left-color: #667eea;
+    }
+
+    /* ===== AVATAR ===== */
+    .feedback-item .avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 12px;
+        border: 2px solid #667eea;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        flex-shrink: 0;
+    }
+
+    /* ===== CONTENT AREA ===== */
+    .feedback-item .content {
+        flex: 1;
+        min-width: 0; /* Để text-overflow hoạt động */
+    }
+
+    .feedback-item .header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        gap: 10px;
+    }
+
+    .feedback-item .name {
+        font-weight: 600;
+        font-size: 1rem;
+        color: #2C3E50;
+        margin: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* ===== STATUS BADGES ===== */
+    .status-badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        white-space: nowrap;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        animation: badgePulse 2s infinite;
+    }
+
+    @@keyframes badgePulse {
+        0%, 100% {
+            transform: scale(1);
         }
 
-        .feedback-item .content {
-            flex-grow: 1 !important;
+        50% {
+            transform: scale(1.05);
+        }
+    }
+
+    .status-badge.replied {
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        color: #FFFFFF;
+    }
+
+    .status-badge.resolved {
+        background: linear-gradient(135deg, #27ae60, #229954);
+        color: #FFFFFF;
+    }
+
+    /* ===== TEXT CONTENT ===== */
+    .feedback-item .text {
+        color: #34495e;
+        font-size: 0.95rem;
+        line-height: 1.6;
+        margin-bottom: 8px;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+
+    .feedback-item .meta-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 0.85rem;
+        color: #7f8c8d;
+        margin-bottom: 8px;
+    }
+
+        .feedback-item .meta-info .part-badge {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: #FFFFFF;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.75rem;
         }
 
-        .feedback-item .name {
-            font-weight: 500 !important;
-            color: #2C3E50 !important;
-            margin-bottom: 2px !important;
+        .feedback-item .meta-info .time {
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
-        .feedback-item .text {
-            color: #2C3E50 !important;
-            margin-bottom: 5px !important;
-            word-wrap: break-word !important;
+            .feedback-item .meta-info .time::before {
+                content: '🕒';
+            }
+
+    /* ===== ACTION BUTTONS ===== */
+    .feedback-item .actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+    }
+
+    .feedback-item .btn {
+        font-size: 0.85rem;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .feedback-item .btn-primary {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: #FFFFFF;
+    }
+
+        .feedback-item .btn-primary:hover {
+            background: linear-gradient(135deg, #764ba2, #667eea);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
         }
 
-        .feedback-item .time {
-            font-size: 12px !important;
-            color: #7F8C8D !important;
+    .feedback-item .btn-secondary {
+        background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+        color: #FFFFFF;
+    }
+
+        .feedback-item .btn-secondary:hover {
+            background: linear-gradient(135deg, #7f8c8d, #95a5a6);
+            transform: translateY(-2px);
         }
 
-        .feedback-item .actions {
-            margin-top: 5px !important;
-            display: flex !important;
-            gap: 5px !important;
+    .feedback-item .btn-success {
+        background: linear-gradient(135deg, #27ae60, #229954);
+        color: #FFFFFF;
+    }
+
+        .feedback-item .btn-success:hover {
+            background: linear-gradient(135deg, #229954, #27ae60);
+            transform: translateY(-2px);
         }
 
-        .feedback-item .btn {
-            font-size: 12px !important;
-            padding: 4px 8px !important;
-        }
-
-    /* Hộp trả lời */
+    /* ===== REPLY BOX ===== */
     .reply-box {
         display: none;
         position: sticky;
         bottom: 0;
+        left: 0;
+        right: 0;
         background: #FFFFFF;
-        padding: 10px;
-        border-top: 1px solid #E0E7FF;
-        box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
-        z-index: 1;
+        padding: 16px;
+        border-top: 2px solid #667eea;
+        box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+        z-index: 100;
+        animation: slideUp 0.3s ease-out;
     }
 
-        .reply-box.active {
-            display: flex;
+    @@keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
         }
 
-        .reply-box textarea {
-            flex-grow: 1;
-            resize: none;
-            border-radius: 5px;
-            border: 1px solid #E0E7FF;
-            padding: 5px;
-            font-size: 14px;
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .reply-box.active {
+        display: flex;
+        gap: 12px;
+        align-items: flex-end;
+    }
+
+    .reply-box textarea {
+        flex: 1;
+        resize: none;
+        border-radius: 12px;
+        border: 2px solid #e0e7ff;
+        padding: 12px;
+        font-size: 0.95rem;
+        font-family: inherit;
+        min-height: 60px;
+        transition: all 0.3s ease;
+    }
+
+        .reply-box textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+    .reply-box .btn {
+        border-radius: 12px;
+        padding: 10px 20px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .reply-box .btn-primary {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: #FFFFFF;
+        border: none;
+    }
+
+        .reply-box .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+    .reply-box .btn-secondary {
+        background: #e9ecef;
+        color: #495057;
+        border: none;
+    }
+
+        .reply-box .btn-secondary:hover {
+            background: #dee2e6;
+        }
+
+    /* ===== LOADING SPINNER ===== */
+    #loading-feedback {
+        text-align: center;
+        padding: 20px;
+        display: none;
+    }
+
+        #loading-feedback .spinner-border {
+            width: 3rem;
+            height: 3rem;
+            border-width: 4px;
+            border-color: #667eea;
+            border-right-color: transparent;
+        }
+
+    /* ===== EMPTY STATE ===== */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #7f8c8d;
+    }
+
+        .empty-state::before {
+            content: '📭';
+            font-size: 4rem;
+            display: block;
+            margin-bottom: 16px;
+        }
+
+        .empty-state p {
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+    /* ===== RESPONSIVE ===== */
+    @@media (max-width: 768px) {
+        #feedbackModal .modal-dialog {
+            max-width: 95vw;
+            margin: 10px auto;
+        }
+
+        #feedback-container {
+            height: 70vh;
+        }
+
+        .feedback-item .avatar {
+            width: 40px;
             height: 40px;
         }
 
-        .reply-box .btn {
-            margin-left: 5px;
-            font-size: 12px;
-            padding: 5px 10px;
+        .feedback-item .actions {
+            flex-direction: column;
         }
 
-    /* Hiệu ứng loading */
-    #loading-feedback {
-        margin: 10px auto !important;
+        .feedback-item .btn {
+            width: 100%;
+        }
+
+        .reply-box {
+            flex-direction: column;
+        }
+
+            .reply-box .btn {
+                width: 100%;
+            }
     }
 </style>
 
 <div class="modal fade" id="feedbackModal" tabindex="-1" aria-labelledby="feedbackModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" style="max-width: 50vw;">
+    <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="feedbackModalLabel">Feedback</h5>
+                <h5 class="modal-title" id="feedbackModalLabel">Member Feedback Management</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body" style="height: 50vh; overflow-y: auto;" id="feedback-container">
-                <div id="feedback-list"></div>
-                <div id="loading-feedback" class="text-center mt-3" style="display: none;">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
+            <div class="modal-body p-0">
+                <div id="feedback-container">
+                    <div id="feedback-list"></div>
+                    <div id="loading-feedback">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
                     </div>
                 </div>
                 <div class="reply-box" id="reply-box">
-                    <textarea id="reply-text" placeholder="Enter reply..."></textarea>
+                    <textarea id="reply-text" placeholder="Type your reply here..." maxlength="1000"></textarea>
                     <button class="btn btn-secondary btn-cancel-reply">Cancel</button>
-                    <button class="btn btn-primary btn-send-reply">Send</button>
+                    <button class="btn btn-primary btn-send-reply">
+                        <i class="fas fa-paper-plane me-1"></i> Send
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 </div>
+<div class="modal fade" id="notificationModal" tabindex="-1" aria-labelledby="notificationModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content" id="notification-modal-content">
+            <div class="modal-header" id="notification-header">
+                <h5 class="modal-title" id="notificationModalLabel">
+                    <i class="notification-icon"></i>
+                    <span class="notification-title-text"></span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="notification-body">
+                <p class="notification-message mb-0"></p>
+            </div>
+            <div class="modal-footer" id="notification-footer">
+                <!-- Buttons will be dynamically added -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* ===== NOTIFICATION MODAL STYLES ===== */
+    #notificationModal .modal-sm {
+        max-width: 400px;
+    }
+
+    #notification-modal-content {
+        border-radius: 16px;
+        border: none;
+        overflow: hidden;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Header Variants */
+    #notification-header.success {
+        background: linear-gradient(135deg, #27ae60, #229954);
+        color: #FFFFFF;
+        border-bottom: none;
+    }
+
+    #notification-header.error {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+        color: #FFFFFF;
+        border-bottom: none;
+    }
+
+    #notification-header.warning {
+        background: linear-gradient(135deg, #f39c12, #e67e22);
+        color: #FFFFFF;
+        border-bottom: none;
+    }
+
+    #notification-header.confirm {
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        color: #FFFFFF;
+        border-bottom: none;
+    }
+
+    #notificationModalLabel {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    .notification-icon {
+        font-size: 1.5rem;
+    }
+
+    /* Body */
+    #notification-body {
+        padding: 24px;
+        text-align: center;
+    }
+
+    .notification-message {
+        font-size: 1rem;
+        color: #2c3e50;
+        line-height: 1.6;
+    }
+
+    /* Footer */
+    #notification-footer {
+        padding: 16px 24px;
+        border-top: 1px solid #e9ecef;
+        justify-content: center;
+        gap: 12px;
+    }
+
+        #notification-footer .btn {
+            border-radius: 20px;
+            padding: 8px 24px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        #notification-footer .btn-confirm {
+            background: linear-gradient(135deg, #27ae60, #229954);
+            color: #FFFFFF;
+        }
+
+            #notification-footer .btn-confirm:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+            }
+
+        #notification-footer .btn-cancel {
+            background: #95a5a6;
+            color: #FFFFFF;
+        }
+
+            #notification-footer .btn-cancel:hover {
+                background: #7f8c8d;
+                transform: translateY(-2px);
+            }
+
+        #notification-footer .btn-ok {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: #FFFFFF;
+            min-width: 100px;
+        }
+
+            #notification-footer .btn-ok:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+            }
+
+    /* Animation */
+    #notificationModal .modal-content {
+        animation: modalSlideIn 0.3s ease-out;
+    }
+
+    @@keyframes modalSlideIn {
+        from
+
+    {
+        opacity: 0;
+        transform: scale(0.9) translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+
+    }
+</style>

@@ -35,19 +35,12 @@ namespace TNS_TOEICAdmin.Pages.Manage
             return RedirectToPage("/Index");
         }
 
-        public async Task<IActionResult> OnGetGetEmployees(int offset = 0, int pageSize = 10, string search = "", string status = "")
+        public async Task<IActionResult> OnGetGetEmployees([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string search = null, [FromQuery] string status = null)
         {
-            try
-            {
-                Console.WriteLine($"Received offset: {offset}, pageSize: {pageSize}, search: {search}, status: {status}");
-                var (employees, totalRecords) = await EmployeeAccessData.GetEmployeesAsync(offset, pageSize, search, status);
-                bool hasMore = offset + employees.Count < totalRecords; // Kiểm tra có dữ liệu để tải thêm không
-                return new JsonResult(new { data = employees, totalRecords, hasMore });
-            }
-            catch (Exception ex)
-            {
-                return new JsonResult(new { success = false, message = "Lỗi khi lấy danh sách nhân viên: " + ex.Message }) { StatusCode = 500 };
-            }
+            var employees = await EmployeeAccessData.GetEmployeesAsync(page, pageSize, search, status);
+            var totalCount = await EmployeeAccessData.GetTotalEmployeesCountAsync(search, status);
+
+            return new JsonResult(new { data = employees, totalCount });
         }
 
         public async Task<IActionResult> OnGetGetDepartments()
@@ -62,10 +55,10 @@ namespace TNS_TOEICAdmin.Pages.Manage
                 }
                 catch (Exception ex)
                 {
-                    return new JsonResult(new { status = "ERROR", message = $"Lỗi khi lấy danh sách phòng ban: {ex.Message}" }) { StatusCode = 500 };
+                    return new JsonResult(new { status = "ERROR", message = $"Error when getting department list: {ex.Message}" }) { StatusCode = 500 };
                 }
             }
-            return new JsonResult(new { status = "ERROR", message = "Bạn không có quyền xem phòng ban!" }) { StatusCode = 403 };
+            return new JsonResult(new { status = "ERROR", message = "You do not have permission to view departments!" }) { StatusCode = 403 };
         }
 
         public async Task<IActionResult> OnPostCreate([FromBody] EmployeeEntity employee)
@@ -79,7 +72,7 @@ namespace TNS_TOEICAdmin.Pages.Manage
                         string.IsNullOrEmpty(employee.LastName) || string.IsNullOrEmpty(employee.FirstName) ||
                         string.IsNullOrEmpty(employee.CompanyEmail))
                     {
-                        return new JsonResult(new { success = false, message = "Dữ liệu nhân viên không hợp lệ!" });
+                        return new JsonResult(new { success = false, message = "data invalid!" });
                     }
 
                     var userKeyString = HttpContext.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
@@ -90,7 +83,7 @@ namespace TNS_TOEICAdmin.Pages.Manage
                     }
                     else
                     {
-                        return new JsonResult(new { success = false, message = "Không thể xác định người dùng!" }) { StatusCode = 403 };
+                        return new JsonResult(new { success = false, message = "Unable to identify user!" }) { StatusCode = 403 };
                     }
 
                     employee.CreatedOn = DateTime.Now;
@@ -99,16 +92,16 @@ namespace TNS_TOEICAdmin.Pages.Manage
                     bool result = await EmployeeAccessData.CreateEmployeeAsync(employee);
                     if (result)
                     {
-                        return new JsonResult(new { success = true, message = "Thêm nhân viên thành công!" });
+                        return new JsonResult(new { success = true, message = "Add employee successfully!" });
                     }
-                    return new JsonResult(new { success = false, message = "Thêm nhân viên thất bại!" });
+                    return new JsonResult(new { success = false, message = "Add failed employee!" });
                 }
                 catch (Exception ex)
                 {
-                    return new JsonResult(new { success = false, message = $"Lỗi khi thêm nhân viên: {ex.Message}" }) { StatusCode = 500 };
+                    return new JsonResult(new { success = false, message = $"Error when adding employee: {ex.Message}" }) { StatusCode = 500 };
                 }
             }
-            return new JsonResult(new { success = false, message = "Bạn không có quyền thêm nhân viên!" }) { StatusCode = 403 };
+            return new JsonResult(new { success = false, message = "You do not have create permissions!" }) { StatusCode = 403 };
         }
 
         public async Task<IActionResult> OnPostUpdate([FromBody] EmployeeEntity employee)
@@ -121,21 +114,21 @@ namespace TNS_TOEICAdmin.Pages.Manage
                     if (employee.EmployeeKey == Guid.Empty || string.IsNullOrEmpty(employee.LastName) ||
                         string.IsNullOrEmpty(employee.FirstName) || string.IsNullOrEmpty(employee.CompanyEmail))
                     {
-                        return new JsonResult(new { success = false, message = "Dữ liệu không hợp lệ!" }) { StatusCode = 400 };
+                        return new JsonResult(new { success = false, message = "Data is invalid!" }) { StatusCode = 400 };
                     }
 
                     employee.ModifiedBy = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value ?? Guid.Empty.ToString());
                     employee.ModifiedOn = DateTime.Now;
 
                     await EmployeeAccessData.UpdateEmployeeAsync(employee);
-                    return new JsonResult(new { success = true, message = "Cập nhật nhân viên thành công!" });
+                    return new JsonResult(new { success = true, message = "Successfully updated employee!" });
                 }
                 catch (Exception ex)
                 {
-                    return new JsonResult(new { success = false, message = $"Lỗi khi cập nhật nhân viên: {ex.Message}" }) { StatusCode = 500 };
+                    return new JsonResult(new { success = false, message = $"Error when updating employee: {ex.Message}" }) { StatusCode = 500 };
                 }
             }
-            return new JsonResult(new { status = "ERROR", message = "Bạn không có quyền sửa!" }) { StatusCode = 403 };
+            return new JsonResult(new { status = "ERROR", message = "You do not have update permission!" }) { StatusCode = 403 };
         }
 
         public async Task<IActionResult> OnGetDelete(Guid employeeKey)
@@ -147,17 +140,17 @@ namespace TNS_TOEICAdmin.Pages.Manage
                 {
                     if (employeeKey == Guid.Empty)
                     {
-                        return new JsonResult(new { success = false, message = "EmployeeKey không hợp lệ!" }) { StatusCode = 400 };
+                        return new JsonResult(new { success = false, message = "EmployeeKey is invalid!" }) { StatusCode = 400 };
                     }
                     await EmployeeAccessData.DeleteEmployeeAsync(employeeKey);
-                    return new JsonResult(new { success = true, message = "Xóa nhân viên thành công!" });
+                    return new JsonResult(new { success = true, message = "successfully deleted employee!" });
                 }
                 catch (Exception ex)
                 {
-                    return new JsonResult(new { success = false, message = $"Lỗi khi xóa nhân viên: {ex.Message}" }) { StatusCode = 500 };
+                    return new JsonResult(new { success = false, message = $"Error when deleting employee: {ex.Message}" }) { StatusCode = 500 };
                 }
             }
-            return new JsonResult(new { status = "ERROR", message = "Bạn không có quyền xóa!" }) { StatusCode = 403 };
+            return new JsonResult(new { status = "ERROR", message = "You do not have delete permissions!" }) { StatusCode = 403 };
         }
 
         public async Task<IActionResult> OnGetSoftDelete(Guid employeeKey)
@@ -169,17 +162,17 @@ namespace TNS_TOEICAdmin.Pages.Manage
                 {
                     if (employeeKey == Guid.Empty)
                     {
-                        return new JsonResult(new { success = false, message = "EmployeeKey không hợp lệ!" }) { StatusCode = 400 };
+                        return new JsonResult(new { success = false, message = "EmployeeKey is invalid!" }) { StatusCode = 400 };
                     }
                     await EmployeeAccessData.SoftDeleteEmployeeAsync(employeeKey);
-                    return new JsonResult(new { success = true, message = "Xóa mềm nhân viên thành công!" });
+                    return new JsonResult(new { success = true, message = "successfully deleted employee!" });
                 }
                 catch (Exception ex)
                 {
-                    return new JsonResult(new { success = false, message = $"Lỗi khi xóa mềm nhân viên: {ex.Message}" }) { StatusCode = 500 };
+                    return new JsonResult(new { success = false, message = $"Error when deleting employee: {ex.Message}" }) { StatusCode = 500 };
                 }
             }
-            return new JsonResult(new { status = "ERROR", message = "Bạn không có quyền xóa mềm!" }) { StatusCode = 403 };
+            return new JsonResult(new { status = "ERROR", message = "You do not have soft delete permissions!" }) { StatusCode = 403 };
         }
     }
 }
