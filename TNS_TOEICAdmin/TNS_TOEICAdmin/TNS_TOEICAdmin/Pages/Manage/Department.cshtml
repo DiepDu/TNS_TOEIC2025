@@ -16,7 +16,55 @@
     <!-- Font Awesome for icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
 <style>
+        /* ===== ALTERNATING ROW COLORS ===== */
+        .table-custom tbody tr {
+            background-color: #FFFFFF !important;
+        }
 
+            .table-custom tbody tr:nth-of-type(even) {
+                background-color: #F0F8FF !important; /* Alice Blue */
+            }
+
+            /* Hover effect - ưu tiên cao nhất */
+            .table-custom tbody tr:hover {
+                background: linear-gradient(90deg, #E3F2FD, #BBDEFB) !important;
+                box-shadow: 0 2px 8px rgba(52, 152, 219, 0.15) !important;
+                transform: scale(1.002) !important;
+            }
+.table-container::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.table-container::-webkit-scrollbar-track {
+    background: linear-gradient(180deg, #F0F8FF 0%, #E8F4F9 100%);
+    border-radius: 10px;
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.05);
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #3498DB 0%, #2980B9 100%);
+    border-radius: 10px;
+    border: 2px solid #F0F8FF;
+    box-shadow: 0 2px 6px rgba(52, 152, 219, 0.3);
+    transition: all 0.3s ease;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #2980B9 0%, #1E5A8E 100%);
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.5);
+}
+
+.table-container::-webkit-scrollbar-thumb:active {
+    background: linear-gradient(180deg, #1E5A8E 0%, #154A73 100%);
+}
+
+.table-container::-webkit-scrollbar-corner {
+    background: #F0F8FF;
+    border-radius: 10px;
+}
+
+     
         /* Table container for sticky header */
         .table-container {
             max-height: 500px;
@@ -171,7 +219,17 @@
                 transition: all 0.3s ease;
                 box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
             }
+            /* ===== OVERRIDE BOOTSTRAP STYLES ===== */
+            .table-custom tbody tr,
+            .table-custom tbody tr td {
+                background-color: inherit !important;
+            }
 
+        /* Disable Bootstrap's table-hover */
+        .table.table-custom tbody tr:hover {
+            color: inherit !important;
+            background: linear-gradient(90deg, #E3F2FD, #BBDEFB) !important;
+        }
             .table-custom .btn-edit {
                 background: linear-gradient(45deg, #F1C40F, #F7DC6F);
                 color: #2C3E50;
@@ -742,7 +800,7 @@
 
         <!-- Danh sách phòng ban -->
         <div class="table-container">
-            <table class="table table-hover table-custom">
+            <table class="table table-custom">
                 <thead>
                     <tr>
                         <th>DepartmentID</th>

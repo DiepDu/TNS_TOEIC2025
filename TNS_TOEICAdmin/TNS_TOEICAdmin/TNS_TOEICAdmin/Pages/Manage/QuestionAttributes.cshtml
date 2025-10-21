@@ -406,6 +406,78 @@
         @@keyframes spin {
             to { transform: translate(-50%, -50%) rotate(360deg); }
         }
+      
+.table-container::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.table-container::-webkit-scrollbar-track {
+    background: linear-gradient(180deg, #F0F8FF 0%, #E8F4F9 100%);
+    border-radius: 10px;
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.05);
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #3498DB 0%, #2980B9 100%);
+    border-radius: 10px;
+    border: 2px solid #F0F8FF;
+    box-shadow: 0 2px 6px rgba(52, 152, 219, 0.3);
+    transition: all 0.3s ease;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #2980B9 0%, #1E5A8E 100%);
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.5);
+    transform: scaleY(1.05);
+}
+
+.table-container::-webkit-scrollbar-thumb:active {
+    background: linear-gradient(180deg, #1E5A8E 0%, #154A73 100%);
+}
+
+/* Scrollbar corner */
+.table-container::-webkit-scrollbar-corner {
+    background: #F0F8FF;
+    border-radius: 10px;
+}
+
+        /* ===== ALTERNATING ROW COLORS - CLEAN ===== */
+        .table-custom tbody tr {
+            background-color: #FFFFFF !important;
+            transition: all 0.25s ease !important;
+        }
+
+            .table-custom tbody tr:nth-of-type(even) {
+                background-color: #F0F8FF !important;
+            }
+
+            /* ===== HOVER EFFECT - SMOOTH & UNIFIED ===== */
+            .table-custom tbody tr:hover {
+                background: linear-gradient(90deg, #E8F4FD 0%, #D1E7FA 100%) !important;
+                box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2) !important;
+                transform: translateY(-2px) !important;
+                cursor: pointer !important;
+            }
+
+            /* Force all cells to inherit row background */
+            .table-custom tbody tr td {
+                background-color: transparent !important;
+                transition: all 0.25s ease !important;
+            }
+
+            /* Hover effect for cells - match row */
+            .table-custom tbody tr:hover td {
+                background-color: transparent !important;
+                color: #1A252F !important;
+            }
+
+                /* Keep button colors on hover */
+                .table-custom tbody tr:hover td .btn-edit,
+                .table-custom tbody tr:hover td .btn-delete {
+                    background: inherit !important;
+                }
+    
     </style>
 </head>
 <body>
@@ -431,7 +503,7 @@
 
         <!-- Table -->
         <div class="table-container">
-            <table class="table table-hover table-custom">
+            <table class="table table-custom">
                 <thead>
                     <tr>
                         <th style="width: 20%;">ID</th>
@@ -589,7 +661,7 @@
                 });
             }
 
-                    function renderTable(data) {
+                                     function renderTable(data) {
                 const tbody = $('#attributeTableBody');
                 tbody.empty();
 
@@ -599,24 +671,38 @@
                 }
 
                 data.forEach((item, index) => {
-                    // Tính số thứ tự dựa trên trang hiện tại
                     const displayId = (currentPage - 1) * pageSize + index + 1;
 
-                    tbody.append(`
-                        <tr data-key="${item.Key || 'N/A'}">
-                            <td>${displayId}</td>
-                            <td>${item.Name || 'N/A'}</td>
-                            <td style="text-align: center;">
-                                <button class="btn btn-edit" title="Edit" onclick="showEditModal('${item.Key}', '${item.Name}')">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-delete" title="Delete" onclick="showDeleteModal('${item.Key}')">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    `);
+                    // ✅ FORCE background color với inline style
+                    const bgColor = index % 2 === 0 ? '#FFFFFF' : '#F0F8FF';
+
+                              tbody.append(`
+                <tr data-key="${item.Key || 'N/A'}">
+                    <td>${displayId}</td>
+                    <td>${item.Name || 'N/A'}</td>
+                    <td style="text-align: center;">
+                        <button class="btn btn-edit" title="Edit" onclick="showEditModal('${item.Key}', '${escapeHtml(item.Name)}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-delete" title="Delete" onclick="showDeleteModal('${item.Key}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `);
                 });
+            }
+
+            // ✅ THÊM hàm helper để escape HTML
+            function escapeHtml(text) {
+                const map = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                };
+                return text.replace(/[&<>"']/g, m => map[m]);
             }
 
             function renderPagination(totalItems) {

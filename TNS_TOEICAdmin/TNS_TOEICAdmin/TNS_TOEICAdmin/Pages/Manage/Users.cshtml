@@ -461,14 +461,42 @@
                 border-bottom-right-radius: 8px;
             }
 
+        /* ===== ALTERNATING ROW COLORS ===== */
         .table tbody tr {
-            transition: all 0.3s ease;
+            background-color: #FFFFFF !important;
+            transition: all 0.25s ease !important;
         }
 
-            .table tbody tr:hover {
-                background: linear-gradient(90deg, #F8FAFF, #EBF5FF);
-                box-shadow: 0 2px 8px rgba(52, 152, 219, 0.15);
+            .table tbody tr:nth-of-type(even) {
+                background-color: #F0F8FF !important; /* Alice Blue - xanh nhạt */
             }
+
+            /* ===== HOVER EFFECT - SMOOTH & UNIFIED ===== */
+            .table tbody tr:hover {
+                background: linear-gradient(90deg, #E8F4FD 0%, #D1E7FA 100%) !important;
+                box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2) !important;
+                transform: translateY(-2px) !important;
+                cursor: pointer !important;
+            }
+
+            /* Force all cells to inherit row background */
+            .table tbody tr td {
+                background-color: transparent !important;
+                transition: all 0.25s ease !important;
+            }
+
+            /* Hover effect for cells - match row */
+            .table tbody tr:hover td {
+                background-color: transparent !important;
+                color: #1A252F !important;
+            }
+
+                /* Keep badges and buttons colors on hover */
+                .table tbody tr:hover td .status-badge,
+                .table tbody tr:hover td .role-tag,
+                .table tbody tr:hover td .btn-action {
+                    background: inherit !important;
+                }
 
         /* Define column widths for both header and body */
         .table th:nth-child(1), .table td:nth-child(1) { width: 100px; } /* UserName */

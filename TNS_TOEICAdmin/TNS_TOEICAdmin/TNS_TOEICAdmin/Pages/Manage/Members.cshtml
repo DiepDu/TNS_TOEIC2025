@@ -215,9 +215,41 @@
 
     }
 
-        .styled-table tbody tr:hover {
-             background: linear-gradient(135deg, #2a5298 0%, #3d5a9e 50%, #8a94a8 100%);
+    /* ===== ALTERNATING ROW COLORS ===== */
+    .styled-table tbody tr {
+        background-color: #FFFFFF !important;
+        transition: all 0.25s ease !important;
+    }
+
+        .styled-table tbody tr:nth-of-type(even) {
+            background-color: #F0F8FF !important; /* Alice Blue - xanh nhạt */
         }
+
+        /* ===== HOVER EFFECT - SMOOTH & UNIFIED ===== */
+        .styled-table tbody tr:hover {
+            background: linear-gradient(90deg, #E8F4FD 0%, #D1E7FA 100%) !important;
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2) !important;
+            transform: translateY(-2px) !important;
+            cursor: pointer !important;
+        }
+
+        /* Force all cells to inherit row background */
+        .styled-table tbody tr td {
+            background-color: transparent !important;
+            transition: all 0.25s ease !important;
+        }
+
+        /* Hover effect for cells - match row */
+        .styled-table tbody tr:hover td {
+            background-color: transparent !important;
+        }
+
+            /* Keep badges, cells styling, and buttons colors on hover */
+            .styled-table tbody tr:hover td .status-badge,
+            .styled-table tbody tr:hover td .ability-cell,
+            .styled-table tbody tr:hover td .btn-action {
+                background: inherit !important;
+            }
 
         .styled-table td {
             padding: 0.75rem 1rem; /* Reduced padding */
@@ -594,23 +626,39 @@
     }
 
     /* Custom scrollbar */
+    /* ===== CUSTOM SCROLLBAR - BLUE THEME ===== */
     .table-container::-webkit-scrollbar, #testHistoryContainer::-webkit-scrollbar {
-        width: 6px;
+        width: 10px;
+        height: 10px;
     }
 
     .table-container::-webkit-scrollbar-track, #testHistoryContainer::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 3px;
+        background: linear-gradient(180deg, #F0F8FF 0%, #E8F4F9 100%);
+        border-radius: 10px;
+        box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.05);
     }
 
     .table-container::-webkit-scrollbar-thumb, #testHistoryContainer::-webkit-scrollbar-thumb {
-        background: #ccc;
-        border-radius: 3px;
+        background: linear-gradient(180deg, #3498DB 0%, #2980B9 100%);
+        border-radius: 10px;
+        border: 2px solid #F0F8FF;
+        box-shadow: 0 2px 6px rgba(52, 152, 219, 0.3);
+        transition: all 0.3s ease;
     }
 
         .table-container::-webkit-scrollbar-thumb:hover, #testHistoryContainer::-webkit-scrollbar-thumb:hover {
-            background: #aaa;
+            background: linear-gradient(180deg, #2980B9 0%, #1E5A8E 100%);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.5);
         }
+
+        .table-container::-webkit-scrollbar-thumb:active, #testHistoryContainer::-webkit-scrollbar-thumb:active {
+            background: linear-gradient(180deg, #1E5A8E 0%, #154A73 100%);
+        }
+
+    .table-container::-webkit-scrollbar-corner, #testHistoryContainer::-webkit-scrollbar-corner {
+        background: #F0F8FF;
+        border-radius: 10px;
+    }
 
     /* Confirm Modal Styling */
     #confirmModal .modal-header.bg-danger {
