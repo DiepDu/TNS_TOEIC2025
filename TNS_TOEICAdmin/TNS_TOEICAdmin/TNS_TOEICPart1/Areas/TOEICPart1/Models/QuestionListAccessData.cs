@@ -27,6 +27,90 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
             public double? CorrectRate { get; set; }
             public int? Anomaly { get; set; }
         }
+        // THÊM METHOD MỚI (đặt sau method GetList)
+        public static int GetTotalCount(string Search, int Level, string StatusFilter)
+        {
+            string zSQL = @"SELECT COUNT(*) 
+                   FROM [dbo].[TEC_Part1_Question] 
+                   WHERE QuestionText LIKE @Search 
+                   AND (QuestionKey IS NOT NULL) ";
+
+            if (!string.IsNullOrEmpty(StatusFilter))
+            {
+                if (StatusFilter == "Using")
+                    zSQL += " AND Publish = 1 AND RecordStatus != 99 ";
+                else if (StatusFilter == "Unpublished")
+                    zSQL += " AND Publish = 0 ";
+                else if (StatusFilter == "Deleted")
+                    zSQL += " AND RecordStatus = 99 ";
+            }
+
+            if (Level > 0)
+                zSQL += " AND SkillLevel = @Level ";
+
+            string zConnectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
+            try
+            {
+                using (SqlConnection zConnect = new SqlConnection(zConnectionString))
+                {
+                    zConnect.Open();
+                    using (SqlCommand zCommand = new SqlCommand(zSQL, zConnect))
+                    {
+                        zCommand.Parameters.Add("@Level", SqlDbType.Int).Value = Level;
+                        zCommand.Parameters.Add("@Search", SqlDbType.NVarChar).Value = "%" + Search + "%";
+                        return (int)zCommand.ExecuteScalar();
+                    }
+                }
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+        // THÊM OVERLOAD CHO GetTotalCount với Date
+        public static int GetTotalCount(string Search, int Level, DateTime FromDate, DateTime ToDate, string StatusFilter)
+        {
+            string zSQL = @"SELECT COUNT(*) 
+                   FROM [dbo].[TEC_Part1_Question] 
+                   WHERE (CreatedOn >= @FromDate AND CreatedOn <= @ToDate) 
+                   AND QuestionText LIKE @Search 
+                   AND (QuestionKey IS NOT NULL) ";
+
+            if (!string.IsNullOrEmpty(StatusFilter))
+            {
+                if (StatusFilter == "Using")
+                    zSQL += " AND Publish = 1 AND RecordStatus != 99 ";
+                else if (StatusFilter == "Unpublished")
+                    zSQL += " AND Publish = 0 ";
+                else if (StatusFilter == "Deleted")
+                    zSQL += " AND RecordStatus = 99 ";
+            }
+
+            if (Level > 0)
+                zSQL += " AND SkillLevel = @Level ";
+
+            string zConnectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
+            try
+            {
+                using (SqlConnection zConnect = new SqlConnection(zConnectionString))
+                {
+                    zConnect.Open();
+                    using (SqlCommand zCommand = new SqlCommand(zSQL, zConnect))
+                    {
+                        zCommand.Parameters.Add("@FromDate", SqlDbType.DateTime).Value = new DateTime(FromDate.Year, FromDate.Month, FromDate.Day, 0, 0, 1);
+                        zCommand.Parameters.Add("@ToDate", SqlDbType.DateTime).Value = new DateTime(ToDate.Year, ToDate.Month, ToDate.Day, 23, 59, 59);
+                        zCommand.Parameters.Add("@Search", SqlDbType.NVarChar).Value = "%" + Search + "%";
+                        zCommand.Parameters.Add("@Level", SqlDbType.Int).Value = Level;
+                        return (int)zCommand.ExecuteScalar();
+                    }
+                }
+            }
+            catch
+            {
+                return 0;
+            }
+        }
         public static JsonResult GetList(string Search, int Level, int PageSize, int PageNumber, string StatusFilter)
         {
             string zMessage = "";

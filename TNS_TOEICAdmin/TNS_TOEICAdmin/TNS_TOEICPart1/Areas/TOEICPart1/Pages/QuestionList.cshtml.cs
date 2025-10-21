@@ -57,16 +57,30 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
             if (IsFullAdmin || UserLogin.Role.IsRead)
             {
                 DateTime zFromDate, zToDate;
+                JsonResult dataResult;
+                int totalCount;
+
                 if (request.FromDate.Trim().Length > 0 && request.ToDate.Trim().Length > 0)
                 {
                     zFromDate = DateTime.Parse(request.FromDate);
                     zToDate = DateTime.Parse(request.ToDate);
-                    return QuestionListDataAccess.GetList(request.Search, request.Level, zFromDate, zToDate, request.PageSize, request.PageNumber, request.StatusFilter);
+                    dataResult = QuestionListDataAccess.GetList(request.Search, request.Level, zFromDate, zToDate, request.PageSize, request.PageNumber, request.StatusFilter);
+                    totalCount = QuestionListDataAccess.GetTotalCount(request.Search, request.Level, zFromDate, zToDate, request.StatusFilter);
                 }
                 else
                 {
-                    return QuestionListDataAccess.GetList(request.Search, request.Level, request.PageSize, request.PageNumber, request.StatusFilter);
+                    dataResult = QuestionListDataAccess.GetList(request.Search, request.Level, request.PageSize, request.PageNumber, request.StatusFilter);
+                    totalCount = QuestionListDataAccess.GetTotalCount(request.Search, request.Level, request.StatusFilter);
                 }
+
+                // Lấy data từ JsonResult
+                var data = (dataResult.Value as System.Collections.IEnumerable);
+
+                return new JsonResult(new
+                {
+                    data = data,
+                    totalCount = totalCount
+                });
             }
             else
             {
