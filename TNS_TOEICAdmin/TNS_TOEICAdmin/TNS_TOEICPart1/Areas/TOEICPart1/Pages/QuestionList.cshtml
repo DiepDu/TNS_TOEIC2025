@@ -504,6 +504,45 @@
             height: 28px;
         }
     }
+    /* ===== MODAL STYLING ===== */
+    .modal-content {
+        border-radius: var(--radius-md);
+        border: none;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+
+    .modal-header {
+        border-bottom: 1px solid #dee2e6;
+        border-top-left-radius: var(--radius-md);
+        border-top-right-radius: var(--radius-md);
+    }
+
+        .modal-header.bg-warning {
+            background: linear-gradient(135deg, var(--warning-yellow) 0%, #e67e22 100%) !important;
+        }
+
+        .modal-header.bg-success {
+            background: linear-gradient(135deg, var(--success-green) 0%, #229954 100%) !important;
+        }
+
+        .modal-header.bg-danger {
+            background: linear-gradient(135deg, var(--danger-red) 0%, #c0392b 100%) !important;
+        }
+
+    .modal-body {
+        padding: 1.5rem;
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+
+    .modal-footer {
+        border-top: 1px solid #dee2e6;
+        padding: 1rem 1.5rem;
+    }
+
+    .btn-close-white {
+        filter: brightness(0) invert(1);
+    }
 </style>
 
 <!-- Breadcrumb -->
@@ -537,7 +576,7 @@
                 <input id="txtToDate" class="form-control" type="date" style="max-width: 140px;">
                 <select class="form-control" id="statusFilter" name="statusFilter" style="max-width: 140px;">
                     <option value="">All Status</option>
-                    <option value="Using">Using</option>
+                    <option value="Using" selected>Using</option> <!-- ← THÊM selected -->
                     <option value="Unpublished">Unpublished</option>
                     <option value="Deleted">Deleted</option>
                 </select>
@@ -548,7 +587,7 @@
             <button class="btn-circular btn-refresh" onclick="UpdateStatistics()" title="Update Statistics">
                 <i class="fas fa-sync-alt"></i>
             </button>
-            <a href="/TOEICPart1/Question" class="btn-circular btn-add" title="Add New Question">
+            <a href="/TOEICPart1/Question" class="btn-circular btn-add" title="Add New Question" onclick="savePageState()">
                 <i class="fas fa-plus"></i>
             </a>
         </div>
@@ -560,7 +599,52 @@
         </div>
     </div>
 </div>
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-white">
+                <h5 class="modal-title" id="confirmModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirm Action
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="confirmModalBody">
+                Are you sure you want to proceed?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-primary" id="confirmModalBtn">
+                    <i class="fas fa-check me-2"></i>Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
+<!-- Alert Modal -->
+<div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" id="alertModalHeader">
+                <h5 class="modal-title" id="alertModalLabel">
+                    <i class="fas fa-info-circle me-2"></i>Notification
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="alertModalBody">
+                Message
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                    <i class="fas fa-check me-2"></i>OK
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 <!-- Table Section -->
 <div class="table-container">
     <div class="table-wrapper">
@@ -610,8 +694,9 @@
         let _TotalItems = 0;
         let _SearchTimeout;
 
-        $(document).ready(function () {
-            LV_LoadData_Ajax();
+             $(document).ready(function () {
+            // Restore state if exists, otherwise use default
+            restorePageState();
 
             // Auto-search with debounce (400ms)
             $('#txtSearch, #txtLevel, #txtFromDate, #txtToDate, #statusFilter').on('input change', function() {
@@ -621,37 +706,98 @@
                     LV_LoadData_Ajax();
                 }, 400);
             });
+
+            // ✅ THÊM: Save scroll position when user scrolls
+            $('.table-wrapper').on('scroll', function() {
+                if (sessionStorage.getItem('questionListState')) {
+                    const state = JSON.parse(sessionStorage.getItem('questionListState'));
+                    state.scrollPosition = $('.table-wrapper').scrollTop();
+                    sessionStorage.setItem('questionListState', JSON.stringify(state));
+                }
+            });
         });
+          function savePageState() {
+            const state = {
+                pageNumber: _PageNumber,
+                search: $('#txtSearch').val(),
+                level: $('#txtLevel').val(),
+                fromDate: $('#txtFromDate').val(),
+                toDate: $('#txtToDate').val(),
+                statusFilter: $('#statusFilter').val(),
+                scrollPosition: $('.table-wrapper').scrollTop()
+            };
+            sessionStorage.setItem('questionListState', JSON.stringify(state));
+        }
 
-        function UpdateStatistics() {
-            let btn = document.querySelector(".btn-refresh");
+        function restorePageState() {
+            const savedState = sessionStorage.getItem('questionListState');
+            if (savedState) {
+                const state = JSON.parse(savedState);
 
-            if (confirm("Are you sure you want to update statistics for all questions?")) {
-                btn.classList.add("loading");
-                btn.disabled = true;
+                // Restore form values
+                $('#txtSearch').val(state.search || '');
+                $('#txtLevel').val(state.level || '');
+                $('#txtFromDate').val(state.fromDate || '');
+                $('#txtToDate').val(state.toDate || '');
+                $('#statusFilter').val(state.statusFilter || 'Using');
 
-                $.ajax({
-                    type: 'POST',
-                    url: "/TOEICPart1/QuestionList?handler=UpdateStatistics",
-                    contentType: "application/json",
-                    dataType: "json"
-                })
-                .done(function (data) {
-                    alert(data.status === "OK" ? "✓ Statistics updated successfully!" : "✗ Error: " + data.message);
-                    _PageNumber = 1;
-                    LV_LoadData_Ajax();
-                })
-                .fail(function (error) {
-                    alert("✗ Error: " + error.responseText);
-                })
-                .always(function () {
-                    btn.classList.remove("loading");
-                    btn.disabled = false;
+                // Restore page number
+                _PageNumber = state.pageNumber || 1;
+
+                // Load data with restored state
+                LV_LoadData_Ajax(function() {
+                    // Restore scroll position after data loaded
+                    if (state.scrollPosition) {
+                        setTimeout(function() {
+                            $('.table-wrapper').scrollTop(state.scrollPosition);
+                        }, 100);
+                    }
                 });
+            } else {
+                LV_LoadData_Ajax();
             }
         }
 
-        function LV_LoadData_Ajax() {
+        function clearPageState() {
+            sessionStorage.removeItem('questionListState');
+        }
+                  function UpdateStatistics() {
+            let btn = document.querySelector(".btn-refresh");
+
+            showConfirmModal(
+                "Are you sure you want to update statistics for all questions? This may take a few moments.",
+                function() {
+                    btn.classList.add("loading");
+                    btn.disabled = true;
+
+                    $.ajax({
+                        type: 'POST',
+                        url: "/TOEICPart1/QuestionList?handler=UpdateStatistics",
+                        contentType: "application/json",
+                        dataType: "json"
+                    })
+                    .done(function (data) {
+                        if (data.status === "OK") {
+                            showAlertModal("Statistics updated successfully!", "success");
+                        } else {
+                            showAlertModal("Error: " + data.message, "error");
+                        }
+                        _PageNumber = 1;
+                        LV_LoadData_Ajax();
+                    })
+                    .fail(function (error) {
+                        showAlertModal("Error: " + error.responseText, "error");
+                    })
+                    .always(function () {
+                        btn.classList.remove("loading");
+                        btn.disabled = false;
+                    });
+                },
+                'Update Statistics'
+            );
+        }
+
+               function LV_LoadData_Ajax(callback) {
             $("#LV_Waiting").css("display", "");
             var zSearch = $("#txtSearch").val();
             var zFromDate = $('#txtFromDate').val();
@@ -681,15 +827,20 @@
             .done(function (dataResponse) {
                 _DataView = dataResponse.data || dataResponse;
                 _TotalItems = dataResponse.totalCount || _DataView.length;
-                
+
                 LV_DisplayData();
                 renderPagination();
-                
+
                 $("#LV_Waiting").css("display", "none");
                 $("#Info_View").html("<i class='fas fa-info-circle me-2'></i>Total: " + _TotalItems + " questions");
+
+                // ✅ THÊM: Execute callback if provided
+                if (typeof callback === 'function') {
+                    callback();
+                }
             })
             .fail(function (error) {
-                alert('✗ Error: ' + error.responseText);
+                showAlertModal('Error: ' + error.responseText, 'error');
                 $("#LV_Waiting").css("display", "none");
             });
         }
@@ -788,40 +939,106 @@
             }
         }
 
-        function EditRecord(QuestionKey) {
+             function EditRecord(QuestionKey) {
+            savePageState(); // ✅ THÊM: Save state trước khi chuyển trang
             window.location = "/TOEICPart1/Question?Key=" + QuestionKey;
         }
 
         function btnAnswer_Click(QuestionKey) {
+            savePageState(); // ✅ THÊM: Save state trước khi chuyển trang
             window.location = "/TOEICPart1/AnswerList?Key=" + QuestionKey;
         }
 
-        function togglePublish(button, questionKey) {
+     
+
+             function togglePublish(button, questionKey) {
             const isOn = $(button).hasClass('btn-on');
             const newState = !isOn;
-            const confirmMessage = newState ? "Turn ON this question?" : "Turn OFF this question?";
+            const confirmMessage = newState
+                ? "Do you want to turn ON this question?"
+                : "Do you want to turn OFF this question?";
 
-            if (confirm(confirmMessage)) {
-                $.ajax({
-                    type: 'POST',
-                    url: '/TOEICPart1/QuestionList?handler=TogglePublish',
-                    data: JSON.stringify({ questionKey: questionKey, publish: newState }),
-                    contentType: 'application/json',
-                    dataType: 'json'
-                }).done(data => {
-                    if (data.status === 'OK') {
-                        if (newState) {
-                            $(button).removeClass('btn-off').addClass('btn-on').text('ON');
+            showConfirmModal(
+                confirmMessage,
+                function() {
+                    $.ajax({
+                        type: 'POST',
+                        url: '/TOEICPart1/QuestionList?handler=TogglePublish',
+                        data: JSON.stringify({ questionKey: questionKey, publish: newState }),
+                        contentType: 'application/json',
+                        dataType: 'json'
+                    }).done(data => {
+                        if (data.status === 'OK') {
+                            if (newState) {
+                                $(button).removeClass('btn-off').addClass('btn-on').text('ON');
+                                showAlertModal("Question turned ON successfully!", "success");
+                            } else {
+                                $(button).removeClass('btn-on').addClass('btn-off').text('OFF');
+                                showAlertModal("Question turned OFF successfully!", "success");
+                            }
                         } else {
-                            $(button).removeClass('btn-on').addClass('btn-off').text('OFF');
+                            showAlertModal("Error: " + data.message, "error");
                         }
-                    } else {
-                        alert('✗ Error: ' + data.message);
-                    }
-                }).fail(error => {
-                    alert('✗ Error: ' + error.responseText);
-                });
+                    }).fail(error => {
+                        showAlertModal("Error: " + error.responseText, "error");
+                    });
+                },
+                'Change Status'
+            );
+        }
+                // ===== MODAL HELPER FUNCTIONS =====
+        function showConfirmModal(message, onConfirm, title = 'Confirm Action') {
+            $('#confirmModalLabel').html(`<i class="fas fa-exclamation-triangle me-2"></i>${title}`);
+            $('#confirmModalBody').text(message);
+
+            const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+
+            // Remove old event listeners
+            $('#confirmModalBtn').off('click');
+
+            // Add new event listener
+            $('#confirmModalBtn').on('click', function() {
+                confirmModal.hide();
+                if (typeof onConfirm === 'function') {
+                    onConfirm();
+                }
+            });
+
+            confirmModal.show();
+        }
+
+        function showAlertModal(message, type = 'success', title = null) {
+            const alertModal = new bootstrap.Modal(document.getElementById('alertModal'));
+            const header = $('#alertModalHeader');
+            const titleElement = $('#alertModalLabel');
+
+            // Reset classes
+            header.removeClass('bg-success bg-danger bg-warning text-white');
+
+            // Set icon and title based on type
+            let icon = 'fa-info-circle';
+            let defaultTitle = 'Notification';
+            let headerClass = 'bg-primary text-white';
+
+            if (type === 'success') {
+                icon = 'fa-check-circle';
+                defaultTitle = 'Success';
+                headerClass = 'bg-success text-white';
+            } else if (type === 'error' || type === 'danger') {
+                icon = 'fa-times-circle';
+                defaultTitle = 'Error';
+                headerClass = 'bg-danger text-white';
+            } else if (type === 'warning') {
+                icon = 'fa-exclamation-triangle';
+                defaultTitle = 'Warning';
+                headerClass = 'bg-warning text-white';
             }
+
+            header.addClass(headerClass);
+            titleElement.html(`<i class="fas ${icon} me-2"></i>${title || defaultTitle}`);
+            $('#alertModalBody').text(message);
+
+            alertModal.show();
         }
     </script>
 }
