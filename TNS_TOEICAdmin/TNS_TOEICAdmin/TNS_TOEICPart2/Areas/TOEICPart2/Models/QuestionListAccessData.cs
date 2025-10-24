@@ -22,45 +22,72 @@ namespace TNS_TOEICPart2.Areas.TOEICPart2.Models
 
     public static class QuestionListDataAccess
     {
-        // Phương thức không có ngày
+        // ✅ THÊM: Helper method để build WHERE clause
+        private static string BuildWhereClause(bool hasDateFilter)
+        {
+            string where = hasDateFilter
+                ? "WHERE (CreatedOn >= @FromDate AND CreatedOn <= @ToDate) AND QuestionText LIKE @Search AND (QuestionKey IS NOT NULL) "
+                : "WHERE QuestionText LIKE @Search AND (QuestionKey IS NOT NULL) ";
+            return where;
+        }
+
+        private static string BuildStatusFilter(string statusFilter)
+        {
+            if (string.IsNullOrEmpty(statusFilter)) return "";
+
+            if (statusFilter == "Using")
+                return " AND Publish = 1 AND RecordStatus != 99 ";
+            else if (statusFilter == "Unpublished")
+                return " AND Publish = 0 ";
+            else if (statusFilter == "Deleted")
+                return " AND RecordStatus = 99 ";
+
+            return "";
+        }
+
+        // ✅ SỬA: Phương thức không có ngày - Trả về totalCount
         public static JsonResult GetList(string Search, int Level, int PageSize, int PageNumber, string StatusFilter)
         {
             string zMessage = "";
-            string zSQL = @"SELECT QuestionKey, QuestionText, QuestionVoice, SkillLevel, AmountAccess,CorrectRate, Anomaly, Publish, RecordStatus 
-                       FROM [dbo].[TEC_Part2_Question] 
-                       WHERE QuestionText LIKE @Search 
-                       AND (QuestionKey IS NOT NULL) ";
 
-            if (!string.IsNullOrEmpty(StatusFilter))
-            {
-                if (StatusFilter == "Using")
-                {
-                    zSQL += " AND Publish = 1 AND RecordStatus != 99 ";
-                }
-                else if (StatusFilter == "Unpublished")
-                {
-                    zSQL += " AND Publish = 0 ";
-                }
-                else if (StatusFilter == "Deleted")
-                {
-                    zSQL += " AND RecordStatus = 99 ";
-                }
-            }
+            // ✅ THÊM: Query count total
+            string zCountSQL = @"SELECT COUNT(*) FROM [dbo].[TEC_Part2_Question] " + BuildWhereClause(false);
+            if (Level > 0)
+                zCountSQL += " AND SkillLevel = @Level ";
+            zCountSQL += BuildStatusFilter(StatusFilter);
+
+            // Query data với pagination
+            string zDataSQL = @"SELECT QuestionKey, QuestionText, QuestionVoice, SkillLevel, AmountAccess, CorrectRate, Anomaly, Publish, RecordStatus 
+                       FROM [dbo].[TEC_Part2_Question] " + BuildWhereClause(false);
 
             if (Level > 0)
-                zSQL += " AND SkillLevel = @Level ";
+                zDataSQL += " AND SkillLevel = @Level ";
 
-            zSQL += " ORDER BY CreatedOn DESC ";
-            zSQL += " OFFSET @PageSize * (@PageNumber - 1) ROWS FETCH NEXT @PageSize ROWS ONLY OPTION(RECOMPILE)";
+            zDataSQL += BuildStatusFilter(StatusFilter);
+            zDataSQL += " ORDER BY CreatedOn DESC ";
+            zDataSQL += " OFFSET @PageSize * (@PageNumber - 1) ROWS FETCH NEXT @PageSize ROWS ONLY OPTION(RECOMPILE)";
 
             DataTable zTable = new DataTable();
+            int totalCount = 0;
             string zConnectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
+
             try
             {
                 using (SqlConnection zConnect = new SqlConnection(zConnectionString))
                 {
                     zConnect.Open();
-                    using (SqlCommand zCommand = new SqlCommand(zSQL, zConnect))
+
+                    // ✅ THÊM: Lấy total count trước
+                    using (SqlCommand zCountCommand = new SqlCommand(zCountSQL, zConnect))
+                    {
+                        zCountCommand.CommandType = CommandType.Text;
+                        zCountCommand.Parameters.Add("@Level", SqlDbType.Int).Value = Level;
+                        zCountCommand.Parameters.Add("@Search", SqlDbType.NVarChar).Value = "%" + Search + "%";
+                        totalCount = (int)zCountCommand.ExecuteScalar();
+                    }
+
+                    // Lấy data với pagination
+                    using (SqlCommand zCommand = new SqlCommand(zDataSQL, zConnect))
                     {
                         zCommand.CommandType = CommandType.Text;
                         zCommand.Parameters.Add("@Level", SqlDbType.Int).Value = Level;
@@ -78,11 +105,11 @@ namespace TNS_TOEICPart2.Areas.TOEICPart2.Models
             {
                 zMessage = ex.ToString();
             }
+
             var zDataList = zTable.AsEnumerable().Select(row => new
             {
                 QuestionKey = row["QuestionKey"].ToString(),
                 QuestionText = row["QuestionText"].ToString() ?? "",
-                //QuestionImage = row["QuestionImage"].ToString() ?? "",
                 QuestionVoice = row["QuestionVoice"].ToString() ?? "",
                 SkillLevel = row["SkillLevel"] != DBNull.Value ? Convert.ToInt32(row["SkillLevel"]) : 0,
                 AmountAccess = row["AmountAccess"] != DBNull.Value ? Convert.ToInt32(row["AmountAccess"]) : 0,
@@ -92,49 +119,55 @@ namespace TNS_TOEICPart2.Areas.TOEICPart2.Models
                 Anomaly = row["Anomaly"] != DBNull.Value ? Convert.ToInt32(row["Anomaly"]) : (int?)null
             }).ToList();
 
-            return new JsonResult(zDataList);
+            // ✅ THÊM: Trả về object với data và totalCount
+            return new JsonResult(new { data = zDataList, totalCount = totalCount });
         }
 
-        // Phương thức có ngày
+        // ✅ SỬA: Phương thức có ngày - Trả về totalCount
         public static JsonResult GetList(string Search, int Level, DateTime FromDate, DateTime ToDate, int PageSize, int PageNumber, string StatusFilter)
         {
             string zMessage = "";
-            string zSQL = @"SELECT QuestionKey, QuestionText, QuestionVoice, SkillLevel, AmountAccess,CorrectRate, Anomaly, Publish, RecordStatus 
-                       FROM [dbo].[TEC_Part2_Question] 
-                       WHERE (CreatedOn >= @FromDate AND CreatedOn <= @ToDate) 
-                       AND QuestionText LIKE @Search 
-                       AND (QuestionKey IS NOT NULL) ";
 
-            if (!string.IsNullOrEmpty(StatusFilter))
-            {
-                if (StatusFilter == "Using")
-                {
-                    zSQL += " AND Publish = 1 AND RecordStatus != 99 ";
-                }
-                else if (StatusFilter == "Unpublished")
-                {
-                    zSQL += " AND Publish = 0 ";
-                }
-                else if (StatusFilter == "Deleted")
-                {
-                    zSQL += " AND RecordStatus = 99 ";
-                }
-            }
+            // ✅ THÊM: Query count total
+            string zCountSQL = @"SELECT COUNT(*) FROM [dbo].[TEC_Part2_Question] " + BuildWhereClause(true);
+            if (Level > 0)
+                zCountSQL += " AND SkillLevel = @Level ";
+            zCountSQL += BuildStatusFilter(StatusFilter);
+
+            // Query data với pagination
+            string zDataSQL = @"SELECT QuestionKey, QuestionText, QuestionVoice, SkillLevel, AmountAccess, CorrectRate, Anomaly, Publish, RecordStatus 
+                       FROM [dbo].[TEC_Part2_Question] " + BuildWhereClause(true);
 
             if (Level > 0)
-                zSQL += " AND SkillLevel = @Level ";
+                zDataSQL += " AND SkillLevel = @Level ";
 
-            zSQL += " ORDER BY CreatedOn DESC ";
-            zSQL += " OFFSET @PageSize * (@PageNumber - 1) ROWS FETCH NEXT @PageSize ROWS ONLY OPTION(RECOMPILE)";
+            zDataSQL += BuildStatusFilter(StatusFilter);
+            zDataSQL += " ORDER BY CreatedOn DESC ";
+            zDataSQL += " OFFSET @PageSize * (@PageNumber - 1) ROWS FETCH NEXT @PageSize ROWS ONLY OPTION(RECOMPILE)";
 
             DataTable zTable = new DataTable();
+            int totalCount = 0;
             string zConnectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
+
             try
             {
                 using (SqlConnection zConnect = new SqlConnection(zConnectionString))
                 {
                     zConnect.Open();
-                    using (SqlCommand zCommand = new SqlCommand(zSQL, zConnect))
+
+                    // ✅ THÊM: Lấy total count trước
+                    using (SqlCommand zCountCommand = new SqlCommand(zCountSQL, zConnect))
+                    {
+                        zCountCommand.CommandType = CommandType.Text;
+                        zCountCommand.Parameters.Add("@FromDate", SqlDbType.DateTime).Value = new DateTime(FromDate.Year, FromDate.Month, FromDate.Day, 0, 0, 1);
+                        zCountCommand.Parameters.Add("@ToDate", SqlDbType.DateTime).Value = new DateTime(ToDate.Year, ToDate.Month, ToDate.Day, 23, 59, 59);
+                        zCountCommand.Parameters.Add("@Search", SqlDbType.NVarChar).Value = "%" + Search + "%";
+                        zCountCommand.Parameters.Add("@Level", SqlDbType.Int).Value = Level;
+                        totalCount = (int)zCountCommand.ExecuteScalar();
+                    }
+
+                    // Lấy data với pagination
+                    using (SqlCommand zCommand = new SqlCommand(zDataSQL, zConnect))
                     {
                         zCommand.CommandType = CommandType.Text;
                         zCommand.Parameters.Add("@FromDate", SqlDbType.DateTime).Value = new DateTime(FromDate.Year, FromDate.Month, FromDate.Day, 0, 0, 1);
@@ -154,11 +187,11 @@ namespace TNS_TOEICPart2.Areas.TOEICPart2.Models
             {
                 zMessage = ex.ToString();
             }
+
             var zDataList = zTable.AsEnumerable().Select(row => new
             {
                 QuestionKey = row["QuestionKey"].ToString(),
                 QuestionText = row["QuestionText"].ToString() ?? "",
-                //QuestionImage = row["QuestionImage"].ToString() ?? "",
                 QuestionVoice = row["QuestionVoice"].ToString() ?? "",
                 SkillLevel = row["SkillLevel"] != DBNull.Value ? Convert.ToInt32(row["SkillLevel"]) : 0,
                 AmountAccess = row["AmountAccess"] != DBNull.Value ? Convert.ToInt32(row["AmountAccess"]) : 0,
@@ -168,7 +201,8 @@ namespace TNS_TOEICPart2.Areas.TOEICPart2.Models
                 Anomaly = row["Anomaly"] != DBNull.Value ? Convert.ToInt32(row["Anomaly"]) : (int?)null
             }).ToList();
 
-            return new JsonResult(zDataList);
+            // ✅ THÊM: Trả về object với data và totalCount
+            return new JsonResult(new { data = zDataList, totalCount = totalCount });
         }
     }
 }

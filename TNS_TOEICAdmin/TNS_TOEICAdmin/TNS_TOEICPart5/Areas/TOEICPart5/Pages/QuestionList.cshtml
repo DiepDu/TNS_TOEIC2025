@@ -7,110 +7,641 @@
 <link href="~/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
 <link href="~/lib/datatables/css/dataTables.min.css" rel="stylesheet" type="text/css" />
 
-<div style="width:100%; margin:-20px 0 0 -20px">
-    <div style="padding:5px; font-weight:bold; font-size:13px">
-        <a href="~/Index" style="text-decoration:none; color:#4c4c4c">Home</a>
-        <span class="uil-angle-double-right"></span>
-        <a href="~/Index" style="text-decoration:none; color:#4c4c4c">TOEIC</a>
-        <span class="uil-angle-double-right"></span>
-        <span style="color:maroon">PART 5</span>
-    </div>
+<style>
+    /* ===== ROOT VARIABLES ===== */
+    :root {
+        --primary-blue: #3498db;
+        --primary-dark: #2980b9;
+        --success-green: #27ae60;
+        --danger-red: #e74c3c;
+        --warning-yellow: #f39c12;
+        --warning-brown: #d68910;
+        --text-dark: #2c3e50;
+        --bg-white: #ffffff;
+        --bg-light-blue: #f0f8ff;
+        --shadow-sm: 0 2px 8px rgba(0,0,0,0.1);
+        --shadow-md: 0 4px 12px rgba(0,0,0,0.15);
+        --radius-sm: 8px;
+        --radius-md: 12px;
+    }
+
+    /* ===== PAGE TITLE ===== */
+    .page-title-container {
+        text-align: center;
+        margin: 1rem 0;
+        padding: 1rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-md);
+    }
+
+    .page-title {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #ffffff;
+        margin: 0;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+        .page-title i {
+            margin-right: 0.5rem;
+            font-size: 1.8rem;
+        }
+
+    .breadcrumb-custom {
+        background: var(--bg-white);
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius-sm);
+        margin-bottom: 1rem;
+        box-shadow: var(--shadow-sm);
+    }
+
+        .breadcrumb-custom a {
+            color: var(--text-dark);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+            .breadcrumb-custom a:hover {
+                color: var(--primary-blue);
+            }
+
+        .breadcrumb-custom .current {
+            color: var(--danger-red);
+            font-weight: 600;
+        }
+
+    /* ===== CONTROLS CONTAINER ===== */
+    .controls-container {
+        background: var(--bg-white);
+        padding: 1rem;
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 1rem;
+    }
+
+    .input-group .form-control {
+        border: 2px solid #e0e0e0;
+        border-radius: var(--radius-sm);
+        padding: 0.6rem 1rem;
+        transition: all 0.3s ease;
+    }
+
+        .input-group .form-control:focus {
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+            outline: none;
+        }
+
+    .info-view {
+        color: var(--danger-red);
+        font-weight: 600;
+        font-size: 0.95rem;
+        margin-top: 0;
+        padding-left: 0.5rem;
+    }
+
+    /* ===== CIRCULAR ACTION BUTTONS ===== */
+    .btn-circular {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: var(--shadow-sm);
+        font-size: 1.3rem;
+        color: #ffffff;
+        margin-left: 0.5rem;
+        flex-shrink: 0;
+        margin-bottom: 0;
+        text-decoration: none !important;
+    }
+
+    .btn-add {
+        background: linear-gradient(135deg, var(--success-green) 0%, #229954 100%);
+        text-decoration: none !important;
+    }
+
+        .btn-add:hover {
+            background: linear-gradient(135deg, #229954 0%, #1e8449 100%);
+            transform: scale(1.1);
+            box-shadow: var(--shadow-md);
+            text-decoration: none !important;
+        }
+
+    /* ===== TABLE CONTAINER ===== */
+    .table-container {
+        background: var(--bg-white);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+    }
+
+    .table-wrapper {
+        max-height: 600px;
+        overflow-y: auto;
+        position: relative;
+    }
+
+        .table-wrapper::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .table-wrapper::-webkit-scrollbar-track {
+            background: linear-gradient(180deg, #F0F8FF 0%, #E8F4F9 100%);
+            border-radius: 10px;
+        }
+
+        .table-wrapper::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #3498DB 0%, #2980B9 100%);
+            border-radius: 10px;
+            border: 2px solid #F0F8FF;
+        }
+
+            .table-wrapper::-webkit-scrollbar-thumb:hover {
+                background: linear-gradient(180deg, #2980B9 0%, #1E5A8E 100%);
+            }
+
+    /* ===== TABLE STYLING ===== */
+    #LV_Datatable {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin: 0;
+    }
+
+        #LV_Datatable thead th {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #ffffff;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            padding: 1rem 0.75rem;
+            text-align: center;
+            vertical-align: middle;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            letter-spacing: 0.5px;
+        }
+
+        #LV_Datatable tbody tr {
+            background-color: #ffffff;
+            transition: all 0.25s ease;
+        }
+
+            #LV_Datatable tbody tr:nth-of-type(even) {
+                background-color: var(--bg-light-blue);
+            }
+
+            #LV_Datatable tbody tr:hover {
+                background: linear-gradient(90deg, #E8F4FD 0%, #D1E7FA 100%);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+            }
+
+        #LV_Datatable tbody td {
+            padding: 0.9rem 0.75rem;
+            border: 1px solid #e9ecef;
+            vertical-align: middle;
+            text-align: center;
+            transition: all 0.3s ease;
+            background-color: transparent;
+        }
+
+            #LV_Datatable tbody td:nth-child(1) {
+                font-weight: 700;
+                color: #667eea;
+                font-size: 0.95rem;
+            }
+
+            #LV_Datatable tbody td:nth-child(2) {
+                text-align: left;
+                font-weight: 500;
+                color: #2c3e50;
+                cursor: pointer;
+            }
+
+                #LV_Datatable tbody td:nth-child(2):hover {
+                    color: var(--primary-blue);
+                    text-decoration: underline;
+                }
+
+            #LV_Datatable tbody td:nth-child(3) {
+                font-weight: 600;
+                color: var(--danger-red);
+            }
+
+            #LV_Datatable tbody td:nth-child(4) {
+                color: #7f8c8d;
+                font-weight: 500;
+            }
+
+            #LV_Datatable tbody td:nth-child(5) {
+                font-weight: 700;
+                font-size: 0.95rem;
+            }
+
+    .correct-rate-high {
+        color: var(--warning-yellow);
+    }
+
+    .correct-rate-medium {
+        color: var(--warning-brown);
+    }
+
+    .correct-rate-low {
+        color: var(--danger-red);
+    }
+
+    #LV_Datatable tbody td:nth-child(6) {
+        font-weight: 600;
+        color: var(--warning-yellow);
+    }
+
+    /* ===== BUTTONS IN TABLE ===== */
+    .btn-answer {
+        background: linear-gradient(135deg, var(--warning-yellow) 0%, #e67e22 100%);
+        color: #ffffff;
+        border: none;
+        padding: 0.45rem 0.9rem;
+        border-radius: var(--radius-sm);
+        font-weight: 600;
+        font-size: 0.8rem;
+        transition: all 0.3s ease;
+        box-shadow: var(--shadow-sm);
+    }
+
+        .btn-answer:hover {
+            background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+    .btn-toggle-publish {
+        padding: 0.45rem 0.9rem;
+        border: none;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        min-width: 60px;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .btn-on {
+        background: linear-gradient(135deg, var(--success-green) 0%, #229954 100%);
+        color: white;
+    }
+
+        .btn-on:hover {
+            background: linear-gradient(135deg, #229954 0%, #1e8449 100%);
+            transform: scale(1.05);
+        }
+
+    .btn-off {
+        background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+        color: white;
+    }
+
+        .btn-off:hover {
+            background: linear-gradient(135deg, #7f8c8d 0%, #566573 100%);
+            transform: scale(1.05);
+        }
+
+    /* ===== PAGINATION ===== */
+    .pagination-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 1rem;
+        background: var(--bg-white);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 1rem;
+    }
+
+    .pagination {
+        display: flex;
+        gap: 0.5rem;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+        .pagination .page-link {
+            border-radius: 50% !important;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-blue);
+            border: 2px solid var(--primary-blue);
+            background: #ffffff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+            .pagination .page-link:hover {
+                background: var(--primary-blue);
+                color: #ffffff;
+                transform: translateY(-2px);
+                box-shadow: var(--shadow-sm);
+            }
+
+        .pagination .page-item.active .page-link {
+            background: var(--primary-blue);
+            color: #ffffff;
+            border-color: var(--primary-blue);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+        }
+
+    /* ===== LOADING SPINNER ===== */
+    #LV_Waiting {
+        text-align: center;
+        padding: 3rem;
+    }
+
+    .spinner-border {
+        width: 3rem;
+        height: 3rem;
+        border-width: 0.3rem;
+    }
+
+    /* ===== MODAL STYLING ===== */
+    .modal-content {
+        border-radius: var(--radius-md);
+        border: none;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+
+    .modal-header.bg-warning {
+        background: linear-gradient(135deg, var(--warning-yellow) 0%, #e67e22 100%) !important;
+    }
+
+    .modal-header.bg-success {
+        background: linear-gradient(135deg, var(--success-green) 0%, #229954 100%) !important;
+    }
+
+    .modal-header.bg-danger {
+        background: linear-gradient(135deg, var(--danger-red) 0%, #c0392b 100%) !important;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @@media (max-width: 768px) {
+        .page-title
+
+    {
+        font-size: 1.4rem;
+    }
+
+    .btn-circular {
+        width: 38px;
+        height: 38px;
+        font-size: 1.1rem;
+    }
+
+    #LV_Datatable thead th {
+        font-size: 0.75rem;
+        padding: 0.75rem 0.5rem;
+    }
+
+    #LV_Datatable tbody td {
+        padding: 0.7rem 0.5rem;
+        font-size: 0.85rem;
+    }
+
+    }
+</style>
+
+<!-- Breadcrumb -->
+<div class="breadcrumb-custom">
+    <a href="~/Index"><i class="fas fa-home me-1"></i>Home</a>
+    <span class="mx-2">›</span>
+    <a href="~/Index">TOEIC</a>
+    <span class="mx-2">›</span>
+    <span class="current">PART 5</span>
 </div>
-<div class="row">
-    <div class="col-12 text-center text-primary" style="font-size:26px; font-weight:bold">
-        QUESTION PART 5
-    </div>
+
+<!-- Page Title -->
+<div class="page-title-container">
+    <h1 class="page-title">
+        <i class="fas fa-book-open"></i>
+        TOEIC Part 5 - Questions Management
+    </h1>
 </div>
-<div class="row mb-2">
-    <div class="col-md-10">
-        <div>
+
+<!-- Controls Section -->
+<div class="controls-container">
+    <div class="row align-items-start">
+        <div class="col-lg-9">
             <div class="input-group">
-                <input id="txtSearch" type="text" class="form-control w-auto" placeholder="Search" aria-label="Search" aria-describedby="button-addon2">
-                <input id="txtLevel" type="text" class="form-control" placeholder="Level" aria-label="Level" aria-describedby="button-addon2">
-                <input id="txtFromDate" class="form-control" type="date">
-                <input id="txtToDate" class="form-control" type="date">
-                <div class="form-group">
-                    <select class="form-control" id="statusFilter" name="statusFilter">
-                        <option value="">All</option>
-                        <option value="Using">Using</option>
-                        <option value="Unpublished">Unpublished</option>
-                        <option value="Deleted">Deleted</option>
-                    </select>
-                </div>
-                <button class="btn btn-primary" onclick="btn_Search_Click()">
-                    <i class="fas fa-search"></i>
+                <input id="txtSearch" type="text" class="form-control" placeholder="Search questions..." aria-label="Search">
+                <input id="txtLevel" type="text" class="form-control" placeholder="Level" aria-label="Level" style="max-width: 100px;">
+                <input id="txtFromDate" class="form-control" type="date" style="max-width: 140px;">
+                <input id="txtToDate" class="form-control" type="date" style="max-width: 140px;">
+                <select class="form-control" id="statusFilter" name="statusFilter" style="max-width: 140px;">
+                    <option value="">All Status</option>
+                    <option value="Using" selected>Using</option>
+                    <option value="Unpublished">Unpublished</option>
+                    <option value="Deleted">Deleted</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-lg-3 text-end d-flex justify-content-end align-items-start">
+            <a href="/TOEICPart5/Question" class="btn-circular btn-add" title="Add New Question" onclick="savePageState()">
+                <i class="fas fa-plus"></i>
+            </a>
+        </div>
+    </div>
+    <div class="row mt-2">
+        <div class="col-12">
+            <div class="info-view" id="Info_View"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-white">
+                <h5 class="modal-title" id="confirmModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirm Action
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="confirmModalBody">
+                Are you sure you want to proceed?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-primary" id="confirmModalBtn">
+                    <i class="fas fa-check me-2"></i>Confirm
                 </button>
             </div>
         </div>
-        <div style="color:maroon; font-weight:bold; padding-left:10px">
-            <div id="Info_View"></div>
-        </div>
-    </div>
-    <div class="col-md-2 text-end">
-        <a href="/TOEICPart5/Question" class="btn btn-success" role="button" aria-pressed="true"> <i class="uil-file-blank"></i>Add New</a>
     </div>
 </div>
 
-<div class="row">
-    <table id="LV_Datatable" class="table table-striped table-bordered" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
-        <thead>
-            <tr>
-                <th class="text-center align-middle text-light bg-primary" style="width:80px">No</th>
-                <th class="text-center align-middle text-light bg-primary">question</th>
-               @*  <th class="text-center align-middle text-light bg-primary" style="width:120px">Audio</th> *@
-                @*                 <th class="text-center align-middle text-light bg-primary">Image</th> *@
-                <th class="text-center align-middle text-light bg-primary" style="width:90px">Level</th>
-                <th class="text-center align-middle text-light bg-primary" style="width:120px">Access</th>
-                <th class="text-center align-middle text-light bg-primary" style="width:100px">Correct Rate</th>
-                <th class="text-center align-middle text-light bg-primary" style="width:100px">Anomaly</th>
-                <th class="text-center align-middle text-light bg-primary" style="width:100px">Answer</th>
-                <th class="text-center align-middle text-light bg-primary" style="width:100px">Status</th>
-            </tr>
-        </thead>
-        <tbody id="LV_DataBody">
-        </tbody>
-    </table>
-    <div class="row">
-        <div class="col-12 text-end" style="cursor:pointer" onclick="LV_LoadData_More()">More...</div>
-    </div>
-    <div id="LV_Waiting" style="display:none">
-        <div class='text-center'>
-            <div class='spinner-border text-primary m-5' role='status'>
-                <span class='sr-only'>Loading...</span>
+<!-- Alert Modal -->
+<div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" id="alertModalHeader">
+                <h5 class="modal-title" id="alertModalLabel">
+                    <i class="fas fa-info-circle me-2"></i>Notification
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="alertModalBody">
+                Message
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                    <i class="fas fa-check me-2"></i>OK
+                </button>
             </div>
         </div>
     </div>
 </div>
 
-<div>
-    <div style="cursor:pointer" onclick="Log_Show()">
-        <i class="uil-apple"></i>
+<!-- Table Section -->
+<div class="table-container">
+    <div class="table-wrapper">
+        <table id="LV_Datatable">
+            <thead>
+                <tr>
+                    <th style="width:60px">No</th>
+                    <th style="width:250px">Question</th>
+                    <th style="width:70px">Level</th>
+                    <th style="width:80px">Access</th>
+                    <th style="width:110px">Correct Rate</th>
+                    <th style="width:90px">Anomaly</th>
+                    <th style="width:100px">Answer</th>
+                    <th style="width:80px">Status</th>
+                </tr>
+            </thead>
+            <tbody id="LV_DataBody"></tbody>
+        </table>
     </div>
-    <div id="Log_ViewData" class="row" style="display:none; padding:20px;">
+</div>
+
+<!-- Pagination -->
+<div class="pagination-container">
+    <nav aria-label="Page navigation">
+        <ul class="pagination" id="pagination"></ul>
+    </nav>
+</div>
+
+<!-- Loading Spinner -->
+<div id="LV_Waiting" style="display:none">
+    <div class='spinner-border text-primary' role='status'>
+        <span class='visually-hidden'>Loading...</span>
     </div>
 </div>
 
 @section Scripts {
     <script>
+        let _DataView;
+        let _PageSize = 10;
+        let _PageNumber = 1;
+        let _TotalItems = 0;
+        let _SearchTimeout;
+
+        // ===== STATE MANAGEMENT =====
+        function savePageState() {
+            const state = {
+                pageNumber: _PageNumber,
+                search: $('#txtSearch').val(),
+                level: $('#txtLevel').val(),
+                fromDate: $('#txtFromDate').val(),
+                toDate: $('#txtToDate').val(),
+                statusFilter: $('#statusFilter').val(),
+                tableScrollPosition: $('.table-wrapper').scrollTop(),
+                pageScrollPosition: $(window).scrollTop()
+            };
+            sessionStorage.setItem('part5QuestionListState', JSON.stringify(state));
+        }
+
+        function restorePageState() {
+            const savedState = sessionStorage.getItem('part5QuestionListState');
+            if (savedState) {
+                const state = JSON.parse(savedState);
+                $('#txtSearch').val(state.search || '');
+                $('#txtLevel').val(state.level || '');
+                $('#txtFromDate').val(state.fromDate || '');
+                $('#txtToDate').val(state.toDate || '');
+                $('#statusFilter').val(state.statusFilter || 'Using');
+                _PageNumber = state.pageNumber || 1;
+
+                LV_LoadData_Ajax(function() {
+                    if (state.tableScrollPosition) {
+                        setTimeout(function() {
+                            $('.table-wrapper').scrollTop(state.tableScrollPosition);
+                        }, 100);
+                    }
+                    if (state.pageScrollPosition) {
+                        setTimeout(function() {
+                            $('html, body').scrollTop(state.pageScrollPosition);
+                        }, 150);
+                    }
+                });
+            } else {
+                $('#statusFilter').val('Using');
+                LV_LoadData_Ajax();
+            }
+        }
+
+        function clearPageState() {
+            sessionStorage.removeItem('part5QuestionListState');
+        }
+
+        // ===== INITIALIZATION =====
         $(document).ready(function () {
-            LV_LoadData_Ajax();
+            restorePageState();
+
+            $('#txtSearch, #txtLevel, #txtFromDate, #txtToDate, #statusFilter').on('input change', function() {
+                clearTimeout(_SearchTimeout);
+                _SearchTimeout = setTimeout(function() {
+                    _PageNumber = 1;
+                    LV_LoadData_Ajax();
+                }, 400);
+            });
+
+            $('.table-wrapper').on('scroll', function() {
+                if (sessionStorage.getItem('part5QuestionListState')) {
+                    const state = JSON.parse(sessionStorage.getItem('part5QuestionListState'));
+                    state.tableScrollPosition = $('.table-wrapper').scrollTop();
+                    sessionStorage.setItem('part5QuestionListState', JSON.stringify(state));
+                }
+            });
+
+            $(window).on('scroll', function() {
+                if (sessionStorage.getItem('part5QuestionListState')) {
+                    const state = JSON.parse(sessionStorage.getItem('part5QuestionListState'));
+                    state.pageScrollPosition = $(window).scrollTop();
+                    sessionStorage.setItem('part5QuestionListState', JSON.stringify(state));
+                }
+            });
         });
 
-        function Log_Show() {
-            $("#Log_ViewData").css("display", "");
-        }
-
-        var _DataView;
-        var _PageSize = 25;
-        var _PageNumber = 1;
-
-        function btn_Search_Click() {
-            $("#LV_DataBody").html("");
-            _PageNumber = 1;
-            LV_LoadData_Ajax();
-        }
-
-        function LV_LoadData_Ajax() {
+        function LV_LoadData_Ajax(callback) {
             $("#LV_Waiting").css("display", "");
             var zSearch = $("#txtSearch").val();
             var zFromDate = $('#txtFromDate').val();
@@ -119,10 +650,15 @@
             var zStatusFilter = $('#statusFilter').val();
             if (zLevel.length == 0)
                 zLevel = 0;
+
             var zDataRequest = {
-                "Search": zSearch, "Level": zLevel,
-                "fromDate": zFromDate, "toDate": zToDate,
-                "pageSize": _PageSize, "pageNumber": _PageNumber, "StatusFilter": zStatusFilter
+                "Search": zSearch,
+                "Level": zLevel,
+                "fromDate": zFromDate,
+                "toDate": zToDate,
+                "pageSize": _PageSize,
+                "pageNumber": _PageNumber,
+                "StatusFilter": zStatusFilter
             };
 
             $.ajax({
@@ -132,142 +668,205 @@
                 contentType: "application/json",
                 dataType: "json",
             })
-                .done(function (dataResponse) {
-                    _DataView = dataResponse;
-                    LV_DisplayData();
-                    $("#LV_Waiting").css("display", "none");
-                    $("#Info_View").html("Total: " + dataResponse.length + " items");
-                })
-                .fail(function (error) {
-                    alert('Error : ' + error.responseText);
-                });
+            .done(function (dataResponse) {
+                _DataView = dataResponse.data || dataResponse;
+                _TotalItems = dataResponse.totalCount || _DataView.length;
+
+                LV_DisplayData();
+                renderPagination();
+
+                $("#LV_Waiting").css("display", "none");
+                $("#Info_View").html("<i class='fas fa-info-circle me-2'></i>Total: " + _TotalItems + " questions");
+
+                if (typeof callback === 'function') {
+                    callback();
+                }
+            })
+            .fail(function (error) {
+                showAlertModal('Error: ' + error.responseText, 'error');
+                $("#LV_Waiting").css("display", "none");
+            });
         }
 
         function LV_DisplayData() {
             var zContent = "";
-            var n = 0;
-            if (_DataView != null) {
-                n = _DataView.length;
-            }
+            var n = _DataView ? _DataView.length : 0;
             var zNo = 1 + (_PageNumber - 1) * _PageSize;
+
             for (i = 0; i < n; i++) {
                 var isPublished = _DataView[i].Publish && _DataView[i].RecordStatus !== 99;
-                var correctRate = _DataView[i].CorrectRate !== null ? _DataView[i].CorrectRate + "%" : "N/A";
+                var correctRate = _DataView[i].CorrectRate !== null ? _DataView[i].CorrectRate : null;
+                var correctRateText = correctRate !== null ? correctRate.toFixed(2) + "%" : "N/A";
+                var correctRateClass = "";
+
+                if (correctRate !== null) {
+                    if (correctRate >= 70) {
+                        correctRateClass = "correct-rate-high";
+                    } else if (correctRate <= 30) {
+                        correctRateClass = "correct-rate-low";
+                    } else {
+                        correctRateClass = "correct-rate-medium";
+                    }
+                }
+
                 var anomaly = _DataView[i].Anomaly !== null ? _DataView[i].Anomaly : "N/A";
-                zContent += "       <tr>";
-                zContent += "           <td class='centered-cell'>";
-                zContent += "               <div> " + zNo + " </div>";
-                zContent += "           </td>";
-                zContent += "           <td class='centered-cell' onclick='EditRecord(\"" + _DataView[i].QuestionKey + "\")' style='cursor:pointer'>" + _DataView[i].QuestionText + "</td>";
-                // zContent += "           <td class='centered-cell'><audio controls class='audio-player'><source src='" + _DataView[i].QuestionVoice + "' type='audio/mp3'></audio></td>";
-                // zContent += "           <td class='centered-cell'><img src='" + _DataView[i].QuestionImage + "' class='centered-image' width='100' height='100' /></td>";
-                zContent += "           <td class='centered-cell'>" + _DataView[i].SkillLevel + "</td>";
-                zContent += "           <td class='centered-cell'>" + _DataView[i].AmountAccess + "</td>";
-                zContent += "           <td class='centered-cell'>" + correctRate + "</td>";
-                zContent += "           <td class='centered-cell'>" + anomaly + "</td>";
-                zContent += "           <td class='centered-cell'> <button type='button' class='btn btn-warning' onclick='btnAnswer_Click(\"" + _DataView[i].QuestionKey + "\")'>Answers</button></td>";
-                zContent += "           <td class='centered-cell'><button class='btn-toggle-publish " + (isPublished ? "btn-on" : "btn-off") + "' data-question-key='" + _DataView[i].QuestionKey + "' onclick='togglePublish(this, \"" + _DataView[i].QuestionKey + "\")'>" + (isPublished ? "ON" : "OFF") + "</button></td>";
-                zContent += "       </tr>";
+
+                zContent += "<tr>";
+                zContent += "<td>" + zNo + "</td>";
+                zContent += "<td onclick='EditRecord(\"" + _DataView[i].QuestionKey + "\")'>" + (_DataView[i].QuestionText || "") + "</td>";
+                zContent += "<td>" + _DataView[i].SkillLevel + "</td>";
+                zContent += "<td>" + _DataView[i].AmountAccess + "</td>";
+                zContent += "<td class='" + correctRateClass + "'>" + correctRateText + "</td>";
+                zContent += "<td>" + anomaly + "</td>";
+                zContent += "<td><button type='button' class='btn btn-answer' onclick='btnAnswer_Click(\"" + _DataView[i].QuestionKey + "\")'>View</button></td>";
+                zContent += "<td><button class='btn-toggle-publish " + (isPublished ? "btn-on" : "btn-off") + "' onclick='togglePublish(this, \"" + _DataView[i].QuestionKey + "\")'>" + (isPublished ? "ON" : "OFF") + "</button></td>";
+                zContent += "</tr>";
                 zNo++;
             }
-            var zDataCurrent = $("#LV_DataBody").html();
-            $("#LV_DataBody").html(zDataCurrent + zContent);
+
+            $("#LV_DataBody").html(zContent);
+        }
+
+        function renderPagination() {
+            const totalPages = Math.ceil(_TotalItems / _PageSize);
+            const pagination = $('#pagination');
+            pagination.empty();
+
+            if (totalPages <= 1) return;
+
+            pagination.append(`
+                <li class="page-item ${_PageNumber === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="goToPage(${_PageNumber - 1}); return false;" aria-label="Previous">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
+            `);
+
+            let startPage = Math.max(1, _PageNumber - 2);
+            let endPage = Math.min(totalPages, startPage + 4);
+
+            if (endPage - startPage < 4) {
+                startPage = Math.max(1, endPage - 4);
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                pagination.append(`
+                    <li class="page-item ${i === _PageNumber ? 'active' : ''}">
+                        <a class="page-link" href="#" onclick="goToPage(${i}); return false;">${i}</a>
+                    </li>
+                `);
+            }
+
+            pagination.append(`
+                <li class="page-item ${_PageNumber === totalPages ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="goToPage(${_PageNumber + 1}); return false;" aria-label="Next">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+            `);
+        }
+
+        function goToPage(page) {
+            const totalPages = Math.ceil(_TotalItems / _PageSize);
+            if (page >= 1 && page <= totalPages) {
+                _PageNumber = page;
+                LV_LoadData_Ajax();
+                $('.table-wrapper').scrollTop(0);
+            }
         }
 
         function EditRecord(QuestionKey) {
-            zUrl = "/TOEICPart5/Question?Key=" + QuestionKey;
-            window.location = zUrl;
+            savePageState();
+            window.location = "/TOEICPart5/Question?Key=" + QuestionKey;
         }
 
         function btnAnswer_Click(QuestionKey) {
-            zUrl = "/TOEICPart5/AnswerList?Key=" + QuestionKey;
-            window.location = zUrl;
-        }
-
-        function LV_LoadData_More() {
-            _PageNumber++;
-            LV_LoadData_Ajax();
+            savePageState();
+            window.location = "/TOEICPart5/AnswerList?Key=" + QuestionKey;
         }
 
         function togglePublish(button, questionKey) {
             const isOn = $(button).hasClass('btn-on');
             const newState = !isOn;
-            const confirmMessage = newState ? "Bạn có chắc chắn muốn bật câu hỏi này?" : "Bạn có chắc chắn muốn tắt câu hỏi này?";
+            const confirmMessage = newState
+                ? "Do you want to turn ON this question?"
+                : "Do you want to turn OFF this question?";
 
-            if (confirm(confirmMessage)) {
-                $.ajax({
-                    type: 'POST',
-                    url: '/TOEICPart5/QuestionList?handler=TogglePublish',
-                    data: JSON.stringify({ questionKey: questionKey, publish: newState }),
-                    contentType: 'application/json',
-                    dataType: 'json'
-                }).done(data => {
-                    if (data.status === 'OK') {
-                        if (newState) {
-                            $(button).removeClass('btn-off').addClass('btn-on').text('ON');
-                            _DataView.find(q => q.QuestionKey === questionKey).Publish = true;
-                            _DataView.find(q => q.QuestionKey === questionKey).RecordStatus = 0;
+            showConfirmModal(
+                confirmMessage,
+                function() {
+                    $.ajax({
+                        type: 'POST',
+                        url: '/TOEICPart5/QuestionList?handler=TogglePublish',
+                        data: JSON.stringify({ questionKey: questionKey, publish: newState }),
+                        contentType: 'application/json',
+                        dataType: 'json'
+                    }).done(data => {
+                        if (data.status === 'OK') {
+                            if (newState) {
+                                $(button).removeClass('btn-off').addClass('btn-on').text('ON');
+                                showAlertModal("Question turned ON successfully!", "success");
+                            } else {
+                                $(button).removeClass('btn-on').addClass('btn-off').text('OFF');
+                                showAlertModal("Question turned OFF successfully!", "success");
+                            }
                         } else {
-                            $(button).removeClass('btn-on').addClass('btn-off').text('OFF');
-                            _DataView.find(q => q.QuestionKey === questionKey).Publish = false;
+                            showAlertModal("Error: " + data.message, "error");
                         }
-                    } else {
-                        alert('Lỗi: ' + data.message);
-                    }
-                }).fail(error => {
-                    alert('Lỗi: ' + error.responseText);
-                });
+                    }).fail(error => {
+                        showAlertModal("Error: " + error.responseText, "error");
+                    });
+                },
+                'Change Status'
+            );
+        }
+
+        function showConfirmModal(message, onConfirm, title = 'Confirm Action') {
+            $('#confirmModalLabel').html(`<i class="fas fa-exclamation-triangle me-2"></i>${title}`);
+            $('#confirmModalBody').text(message);
+
+            const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+            $('#confirmModalBtn').off('click');
+            $('#confirmModalBtn').on('click', function() {
+                confirmModal.hide();
+                if (typeof onConfirm === 'function') {
+                    onConfirm();
+                }
+            });
+
+            confirmModal.show();
+        }
+
+        function showAlertModal(message, type = 'success', title = null) {
+            const alertModal = new bootstrap.Modal(document.getElementById('alertModal'));
+            const header = $('#alertModalHeader');
+            const titleElement = $('#alertModalLabel');
+
+            header.removeClass('bg-success bg-danger bg-warning text-white');
+
+            let icon = 'fa-info-circle';
+            let defaultTitle = 'Notification';
+            let headerClass = 'bg-primary text-white';
+
+            if (type === 'success') {
+                icon = 'fa-check-circle';
+                defaultTitle = 'Success';
+                headerClass = 'bg-success text-white';
+            } else if (type === 'error' || type === 'danger') {
+                icon = 'fa-times-circle';
+                defaultTitle = 'Error';
+                headerClass = 'bg-danger text-white';
+            } else if (type === 'warning') {
+                icon = 'fa-exclamation-triangle';
+                defaultTitle = 'Warning';
+                headerClass = 'bg-warning text-white';
             }
+
+            header.addClass(headerClass);
+            titleElement.html(`<i class="fas ${icon} me-2"></i>${title || defaultTitle}`);
+            $('#alertModalBody').text(message);
+
+            alertModal.show();
         }
     </script>
 }
-<style>
-    .tns-field-name {
-        width: 140px;
-    }
-
-    .centered-cell {
-        text-align: center;
-        vertical-align: middle;
-    }
-
-    .centered-image {
-        display: block;
-        margin: auto;
-        width: 77px;
-        height: 77px;
-    }
-
-    .audio-player {
-        display: block;
-        margin: auto;
-    }
-
-    .answer-label {
-        display: inline-block;
-        margin: 0 5px;
-        padding: 5px 10px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-
-    .btn-toggle-publish {
-        padding: 5px 10px;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: background-color 0.3s;
-        min-width: 60px;
-    }
-
-    .btn-on {
-        background-color: #28a745;
-        color: white;
-    }
-
-    .btn-off {
-        background-color: #6c757d;
-        color: white;
-    }
-</style>
