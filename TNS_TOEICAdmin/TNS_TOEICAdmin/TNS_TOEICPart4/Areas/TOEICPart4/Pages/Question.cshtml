@@ -3,17 +3,26 @@
 @{
     Layout = "_Layout";
 }
+
 <link href="~/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+<link href="~/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 
+<!-- Breadcrumb -->
+<div class="breadcrumb-custom">
+    <a href="~/Index"><i class="fas fa-home me-2"></i>Home</a>
+    <span class="mx-2">›</span>
+    <a href="/TOEICPart4/QuestionList">TOEIC Part 4</a>
+    <span class="mx-2">›</span>
+    <span class="current">Question Editor</span>
+</div>
 
-<div style="width: 100%; margin: -20px 0 0 -20px">
-    <div style="padding: 5px; font-weight: bold; font-size: 13px; background-color: #f8f9fa; border-radius: 5px;">
-        <a href="~/Index" style="text-decoration: none; color: #4c4c4c">Home</a>
-        <span class="uil-angle-double-right"></span>
-        <a href="/TOEICPart4/QuestionList" style="text-decoration: none; color: #4c4c4c">TOEIC</a>
-        <span class="uil-angle-double-right"></span>
-        <span style="color: maroon">PART 4</span>
-    </div>
+<!-- Page Title -->
+<div class="page-title-container">
+    <h1 class="page-title">
+        <i class="fas fa-edit me-2"></i>
+        Question Editor
+    </h1>
 </div>
 
 <!-- Main Content -->
@@ -28,11 +37,12 @@
                             <i class="fas fa-text-height me-2"></i> Text
                         </div>
                         <div class="card-body">
-                            <textarea id="txtQuestionText" name="area" class="form-control" rows="5"></textarea>
+                            <textarea id="txtQuestionText" class="form-control" rows="5" placeholder="Enter question text here..."></textarea>
                         </div>
                     </div>
                 </div>
 
+                <!-- Image Section (Show/Hide based on Source) -->
                 <div class="mb-4" id="imageSection">
                     <div class="card border-success">
                         <div class="card-header bg-success text-white">
@@ -52,7 +62,7 @@
                     </div>
                 </div>
 
-                <!-- Voice Section -->
+                <!-- Voice Section (Show/Hide based on Source) -->
                 <div class="mb-4" id="voiceSection">
                     <div class="card border-danger">
                         <div class="card-header bg-danger text-white">
@@ -61,7 +71,7 @@
                         <div class="card-body">
                             <audio id="objQuestionVoice" controls class="w-100 mb-2">
                                 <source src="" type="audio/mpeg">
-                                Trình duyệt của bạn không hỗ trợ thẻ audio.
+                                Your browser does not support the audio element.
                             </audio>
                             <div id="FormUploadVoice" class="mb-3">
                                 <form method="post" enctype="multipart/form-data">
@@ -81,7 +91,7 @@
                             <i class="fas fa-book-open me-2"></i> Explanation
                         </div>
                         <div class="card-body">
-                            <textarea id="txtExplanation" class="form-control" rows="5"></textarea>
+                            <textarea id="txtExplanation" class="form-control" rows="5" placeholder="Enter explanation here..."></textarea>
                         </div>
                     </div>
                 </div>
@@ -90,10 +100,10 @@
                 <div class="mb-4">
                     <div class="card border-info">
                         <div class="card-header bg-info text-white">
-                            <i class="fas fa-level-up-alt me-2"></i> Level
+                            <i class="fas fa-level-up-alt me-2"></i> Level (1-5)
                         </div>
                         <div class="card-body">
-                            <input id="txtSkillLevel" type="number" class="form-control" value="0" min="0" max="5" />
+                            <input id="txtSkillLevel" type="number" class="form-control" placeholder="Enter level 1-5" min="1" max="5" />
                         </div>
                     </div>
                 </div>
@@ -156,39 +166,48 @@
             </div>
             <!-- Buttons -->
             <div class="card-footer bg-white text-end">
-                <button type="button" id="btnDel" class="btn btn-danger me-2" onclick="btnDel_Click()">Delete</button>
-                <button type="button" id="btnUpdate" class="btn btn-primary me-2" onclick="btnUpdate_Click()">Update</button>
-                <button type="button" id="btnCreate" class="btn btn-success" onclick="btnCreate_Click()">Create</button>
+                <button type="button" id="btnDel" class="btn btn-danger me-2" onclick="btnDel_Click()">
+                    <i class="fas fa-trash me-2"></i>Delete
+                </button>
+                <button type="button" id="btnUpdate" class="btn btn-primary me-2" onclick="btnUpdate_Click()">
+                    <i class="fas fa-save me-2"></i>Update
+                </button>
+                <button type="button" id="btnCreate" class="btn btn-success" onclick="btnCreate_Click()">
+                    <i class="fas fa-plus me-2"></i>Create
+                </button>
             </div>
         </div>
     </div>
 
     <!-- Sidebar -->
     <div class="col-md-3">
-        <div class="card shadow-sm border-primary info-card">
-            <div class="card-header bg-primary text-white" onclick="toggleInfo()" style="cursor: pointer;">
-                <i class="fas fa-info-circle me-2"></i> Information
-            </div>
-            <div class="card-body" id="infoBody" style="display: none;">
-                <dl class="row mb-0">
-                    <dt class="col-sm-5 text-muted">Created On</dt>
-                    <dd class="col-sm-7" id="createdOn"></dd>
-                    <dt class="col-sm-5 text-muted">Created By</dt>
-                    <dd class="col-sm-7" id="createdBy"></dd>
-                    <dt class="col-sm-5 text-muted">Modified On</dt>
-                    <dd class="col-sm-7" id="modifiedOn"></dd>
-                    <dt class="col-sm-5 text-muted">Modified By</dt>
-                    <dd class="col-sm-7" id="modifiedBy"></dd>
-                </dl>
-            </div>
-        </div>
-        <hr />
-        <div class="card shadow-sm border-primary">
-            <div class="card-header bg-primary text-white">
+        <!-- Ranking Card -->
+        <div class="card shadow-sm border-purple mb-3" id="rankingCard" style="display: none;">
+            <div class="card-header bg-purple text-white">
                 <i class="fas fa-sort-numeric-up me-2"></i> Ranking
             </div>
             <div class="card-body p-2">
                 <input id="txtRanking" type="number" class="form-control" value="0" min="1" max="3" style="font-size: 14px; padding: 5px;" />
+            </div>
+        </div>
+
+        <!-- Information Card -->
+        <div class="card shadow-sm border-primary info-card">
+            <div class="card-header bg-primary text-white" onclick="toggleInfo()">
+                <i class="fas fa-info-circle me-2"></i> Information
+                <i class="fas fa-chevron-down float-end" id="infoToggleIcon"></i>
+            </div>
+            <div class="card-body" id="infoBody" style="display: none;">
+                <dl class="row mb-0">
+                    <dt class="col-5">Created On</dt>
+                    <dd class="col-7" id="createdOn">N/A</dd>
+                    <dt class="col-5">Created By</dt>
+                    <dd class="col-7" id="createdBy">N/A</dd>
+                    <dt class="col-5">Modified On</dt>
+                    <dd class="col-7" id="modifiedOn">N/A</dd>
+                    <dt class="col-5">Modified By</dt>
+                    <dd class="col-7" id="modifiedBy">N/A</dd>
+                </dl>
             </div>
         </div>
     </div>
@@ -200,7 +219,7 @@
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title" id="ModalMessage_Title">Message</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="d-flex align-items-center">
@@ -212,12 +231,7 @@
     </div>
 </div>
 
-<div class="container">
-    <div class="row text-wrap text-break" style="padding: 20px">
-        <div id="Message"></div>
-    </div>
-</div>
-<div id="Log_ViewData"></div>
+<!-- Hidden Data -->
 <div style="display: none">
     <div id="QuestionKey">@Model.QuestionKey</div>
     <div id="Parent">@Model.Parent</div>
@@ -230,179 +244,256 @@
 
 @section Scripts {
     <script>
-        console.log('Script đã load');
-
-        function InitEditor(elementId) {
-            tinymce.init({
-                selector: '#' + elementId,
-                plugins: 'advlist autolink lists link image charmap print preview',
-                toolbar: 'undo redo | bold italic | alignleft aligncenter alignright | bullist numlist outdent indent',
-                height: 200,
-                setup: function (editor) {
-                    editor.on('init', function () {
-                        console.log('TinyMCE initialized for ' + elementId);
-                    });
-                }
-            });
-        }
-
-        $(document).ready(() => {
-            console.log('DOM đã sẵn sàng');
-            InitEditor('txtQuestionText');
-            InitEditor('txtExplanation');
-            loadDropdowns();
-
-            const source = $('#Source').text().trim();
-            console.log('Source:', source);
-
-            // Hiển thị/ẩn section dựa trên Source
-            if (source === 'QuestionList') {
-                $('#imageSection').hide();
-                $('#voiceSection').show();
-            } else if (source === 'QuestionSubList') {
-                $('#imageSection').show();
-                $('#voiceSection').hide();
-            } else {
-                // Nếu không có source, hiển thị cả hai (mặc định)
-                $('#imageSection').show();
-                $('#voiceSection').show();
-            }
-
-            // Kiểm tra QuestionKey từ Model
-            const questionKey = $('#QuestionKey').text().trim();
-            const parentKey = $('#Parent').text().trim();
-
-            // Nếu không có QuestionKey hợp lệ (rỗng hoặc undefined), khởi tạo trạng thái mới
-            if (!questionKey || questionKey === 'undefined' || questionKey === '') {
-                record = { QuestionKey: null, Parent: parentKey || null };
-                console.log('No valid QuestionKey, initializing new record with Parent:', parentKey);
-                RecordView();
-                updateButtons();
-                loadInfoData({});
-            } else {
-                // Nếu có QuestionKey, gọi API để đọc dữ liệu
-                RecordRead(questionKey);
-                loadInformation(questionKey);
-            }
-
-            const txtUploadImage = document.getElementById('txtUploadImage');
-            if (txtUploadImage) {
-                txtUploadImage.addEventListener('change', function () {
-                    console.log('Sự kiện change được kích hoạt cho txtUploadImage');
-                    PreviewImage_Ajax();
-                });
-            }
-
-            const txtUploadVoice = document.getElementById('txtUploadVoice');
-            if (txtUploadVoice) {
-                txtUploadVoice.addEventListener('change', function () {
-                    console.log('Sự kiện change được kích hoạt cho txtUploadVoice');
-                    PreviewVoice_Ajax();
-                });
-            }
-        });
-
-        function loadInfoData(record) {
-            $('#createdOn').text(record.CreatedOn || 'N/A');
-            $('#createdBy').text(record.CreatedBy || 'N/A');
-            $('#modifiedOn').text(record.ModifiedOn || 'N/A');
-            $('#modifiedBy').text(record.ModifiedBy || 'N/A');
-        }
-
-        // Hàm toggle hiển thị/ẩn Information
-        function toggleInfo() {
-            $('#infoBody').slideToggle('fast');
-        }
-
-        function loadInformation(questionKey) {
-            $.ajax({
-                type: 'POST',
-                url: '/TOEICPart4/Question?handler=GetInfo',
-                data: JSON.stringify({ questionKey: questionKey }),
-                contentType: 'application/json',
-                dataType: 'json',
-                headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() }
-            }).done(data => {
-                loadInfoData(data); // Hiển thị dữ liệu vào card-body
-            }).fail(error => {
-                console.error('Error loading info:', error.responseText);
-                loadInfoData({}); // Hiển thị N/A nếu lỗi
-            });
-        }
-
+        // ===== GLOBAL VARIABLES =====
         let record = {};
         const roles = { create: true, read: true, update: true, delete: true };
         let tempImageFile = null;
         let tempVoiceFile = null;
+        let editorsReady = false;
 
-        // Tải dữ liệu cho các combobox
+        // ===== INITIALIZATION =====
+        $(document).ready(() => {
+            const questionKey = $('#QuestionKey').text().trim();
+            const parentKey = $('#Parent').text().trim();
+            const source = $('#Source').text().trim();
+
+            console.log('Source:', source, 'Parent:', parentKey);
+
+            // ✅ Show/Hide sections based on Source
+            if (source === 'QuestionList') {
+                $('#imageSection').hide();
+                $('#voiceSection').show();
+                $('#rankingCard').hide();
+            } else if (source === 'QuestionSubList') {
+                $('#imageSection').show();
+                $('#voiceSection').hide();
+                $('#rankingCard').show();
+            } else {
+                $('#imageSection').show();
+                $('#voiceSection').show();
+                $('#rankingCard').hide();
+            }
+
+            // Initialize in sequence with Promise chain
+            Promise.resolve()
+                .then(() => initializeTinyMCE())
+                .then(() => loadDropdowns())
+                .then(() => initializeSelect2())
+                .then(() => {
+                    if (!questionKey || questionKey === 'undefined' || questionKey === '') {
+                        record = { QuestionKey: null, Parent: parentKey || null };
+                        RecordView();
+                        updateButtons();
+                        loadInfoData({});
+                    } else {
+                        return Promise.all([
+                            RecordRead(questionKey),
+                            loadInformation(questionKey)
+                        ]);
+                    }
+                })
+                .then(() => {
+                    // Setup file upload event listeners
+                    setupFileUploadListeners();
+                })
+                .catch(error => {
+                    console.error('Initialization error:', error);
+                    alert('Error loading page. Please refresh.');
+                });
+        });
+
+        // ===== TINYMCE INITIALIZATION =====
+        function initializeTinyMCE() {
+            return new Promise((resolve) => {
+                let editorsInitialized = 0;
+                const totalEditors = 2;
+
+                const initEditor = (elementId) => {
+                    tinymce.init({
+                        selector: '#' + elementId,
+                        plugins: 'advlist autolink lists link image charmap print preview',
+                        toolbar: 'undo redo | bold italic | alignleft aligncenter alignright | bullist numlist outdent indent',
+                        height: 200,
+                        setup: function (editor) {
+                            editor.on('init', function () {
+                                editorsInitialized++;
+                                if (editorsInitialized === totalEditors) {
+                                    editorsReady = true;
+                                    resolve();
+                                }
+                            });
+                        }
+                    });
+                };
+
+                initEditor('txtQuestionText');
+                initEditor('txtExplanation');
+            });
+        }
+
+        // ===== DROPDOWNS LOADING =====
         function loadDropdowns() {
-            $.ajax({
-                type: 'POST',
-                url: '/TOEICPart4/Question?handler=LoadDropdowns',
-                contentType: 'application/json',
-                dataType: 'json'
-            }).done(data => {
-                populateDropdown('#ddlCategory', data.categories, 'CategoryKey', 'CategoryName');
-                populateDropdown('#ddlGrammarTopic', data.grammarTopics, 'GrammarTopicID', 'TopicName');
-                populateDropdown('#ddlVocabularyTopic', data.vocabularyTopics, 'VocabularyTopicID', 'TopicName');
-                populateDropdown('#ddlErrorType', data.errorTypes, 'ErrorTypeID', 'ErrorDescription');
-            }).fail(error => alert('Error loading dropdowns: ' + error.responseText));
+            return new Promise((resolve, reject) => {
+                $.ajax({
+                    type: 'POST',
+                    url: '/TOEICPart4/Question?handler=LoadDropdowns',
+                    contentType: 'application/json',
+                    dataType: 'json'
+                }).done(data => {
+                    populateDropdown('#ddlCategory', data.categories, 'CategoryKey', 'CategoryName');
+                    populateDropdown('#ddlGrammarTopic', data.grammarTopics, 'GrammarTopicID', 'TopicName');
+                    populateDropdown('#ddlVocabularyTopic', data.vocabularyTopics, 'VocabularyTopicID', 'TopicName');
+                    populateDropdown('#ddlErrorType', data.errorTypes, 'ErrorTypeID', 'ErrorDescription');
+                    resolve();
+                }).fail(error => {
+                    console.error('Error loading dropdowns:', error);
+                    alert('Error loading dropdowns: ' + error.responseText);
+                    reject(error);
+                });
+            });
         }
 
         function populateDropdown(selector, data, valueField, textField) {
             const $dropdown = $(selector);
             $dropdown.empty();
             $dropdown.append('<option value="">Select...</option>');
-            data.forEach(item => {
-                $dropdown.append(`<option value="${item[valueField]}">${item[textField]}</option>`);
-            });
+            if (data && data.length > 0) {
+                data.forEach(item => {
+                    $dropdown.append(`<option value="${item[valueField]}">${item[textField]}</option>`);
+                });
+            }
         }
 
-        function RecordRead(key) {
-            $.ajax({
-                type: 'POST',
-                url: '/TOEICPart4/Question?handler=RecordRead',
-                data: JSON.stringify({ questionKey: key }),
-                contentType: 'application/json',
-                dataType: 'json'
-            }).done(data => {
-                // Nếu API trả về null hoặc không có dữ liệu, khởi tạo record mới
-                if (!data || !data.QuestionKey) {
-                    record = { QuestionKey: null };
-                    console.log('Record not found, initializing new record');
-                } else {
-                    record = data;
-                    console.log('Record data:', JSON.stringify(record, null, 2));
+        // ===== SELECT2 INITIALIZATION =====
+        function initializeSelect2() {
+            return new Promise((resolve) => {
+                try {
+                    const select2Config = {
+                        allowClear: true,
+                        width: '100%',
+                        theme: 'bootstrap-5'
+                    };
+
+                    $('#ddlCategory').select2({
+                        ...select2Config,
+                        placeholder: 'Search or select category...'
+                    });
+
+                    $('#ddlGrammarTopic').select2({
+                        ...select2Config,
+                        placeholder: 'Search or select grammar topic...'
+                    });
+
+                    $('#ddlVocabularyTopic').select2({
+                        ...select2Config,
+                        placeholder: 'Search or select vocabulary topic...'
+                    });
+
+                    $('#ddlErrorType').select2({
+                        ...select2Config,
+                        placeholder: 'Search or select error type...'
+                    });
+
+                    setTimeout(resolve, 100);
+                } catch (error) {
+                    console.error('Error initializing Select2:', error);
+                    resolve();
                 }
-                RecordView();
-                updateButtons();
-            }).fail(error => {
-                console.error('Error fetching record:', error.responseText);
-                record = { QuestionKey: null }; // Khởi tạo mới nếu API lỗi
-                RecordView();
-                updateButtons();
             });
         }
 
+        // ===== RECORD READING =====
+        function RecordRead(key) {
+            return new Promise((resolve, reject) => {
+                $.ajax({
+                    type: 'POST',
+                    url: '/TOEICPart4/Question?handler=RecordRead',
+                    data: JSON.stringify({ questionKey: key }),
+                    contentType: 'application/json',
+                    dataType: 'json'
+                }).done(data => {
+                    if (!data || !data.QuestionKey) {
+                        record = { QuestionKey: null };
+                    } else {
+                        record = data;
+                    }
+                    RecordView();
+                    updateButtons();
+                    resolve();
+                }).fail(error => {
+                    console.error('Error fetching record:', error);
+                    record = { QuestionKey: null };
+                    RecordView();
+                    updateButtons();
+                    reject(error);
+                });
+            });
+        }
+
+        // ===== RECORD VIEW =====
         function RecordView() {
-            tinymce.get('txtQuestionText')?.setContent(record.QuestionText || '');
+            if (!editorsReady) {
+                setTimeout(RecordView, 100);
+                return;
+            }
+
+            const textEditor = tinymce.get('txtQuestionText');
+            const explanationEditor = tinymce.get('txtExplanation');
+
+            if (textEditor) {
+                textEditor.setContent(record.QuestionText || '');
+            }
+
+            if (explanationEditor) {
+                explanationEditor.setContent(record.Explanation || '');
+            }
+
             $('#objQuestionImage').attr('src', record.QuestionImage || '/images/icon_Pic.png');
-            $('#objQuestionVoice source').attr('src', record.QuestionVoice || '').parent()[0].load();
-            tinymce.get('txtExplanation')?.setContent(record.Explanation || '');
-            $('#txtSkillLevel').val(record.SkillLevel || 0);
+
+            const audioSource = $('#objQuestionVoice source');
+            if (audioSource.length) {
+                audioSource.attr('src', record.QuestionVoice || '');
+                $('#objQuestionVoice')[0].load();
+            }
+
+            if (record.SkillLevel && record.SkillLevel > 0) {
+                $('#txtSkillLevel').val(record.SkillLevel);
+            } else {
+                $('#txtSkillLevel').val('');
+            }
+
             $('#txtRanking').val(record.Ranking || 0);
-            $('#ddlCategory').val(record.Category || '');
-            $('#ddlGrammarTopic').val(record.GrammarTopic || '');
-            $('#ddlVocabularyTopic').val(record.VocabularyTopic || '');
-            $('#ddlErrorType').val(record.ErrorType || '');
+
+            setTimeout(() => {
+                try {
+                    $('#ddlCategory').val(record.Category || null).trigger('change.select2');
+                    $('#ddlGrammarTopic').val(record.GrammarTopic || null).trigger('change.select2');
+                    $('#ddlVocabularyTopic').val(record.VocabularyTopic || null).trigger('change.select2');
+                    $('#ddlErrorType').val(record.ErrorType || null).trigger('change.select2');
+                } catch (e) {
+                    $('#ddlCategory').val(record.Category || '');
+                    $('#ddlGrammarTopic').val(record.GrammarTopic || '');
+                    $('#ddlVocabularyTopic').val(record.VocabularyTopic || '');
+                    $('#ddlErrorType').val(record.ErrorType || '');
+                }
+            }, 150);
+
             $('#Parent').text(record.Parent || '');
         }
 
+        // ===== RECORD INPUT =====
         function RecordInput() {
-            record.QuestionText = tinymce.get('txtQuestionText')?.getContent() || '';
-            record.Explanation = tinymce.get('txtExplanation')?.getContent() || '';
-            record.SkillLevel = parseInt($('#txtSkillLevel').val()) || 0;
+            const textEditor = tinymce.get('txtQuestionText');
+            const explanationEditor = tinymce.get('txtExplanation');
+
+            record.QuestionText = textEditor ? textEditor.getContent() : '';
+            record.Explanation = explanationEditor ? explanationEditor.getContent() : '';
+
+            const skillLevelValue = $('#txtSkillLevel').val();
+            record.SkillLevel = (skillLevelValue && parseInt(skillLevelValue) >= 1)
+                ? parseInt(skillLevelValue)
+                : null;
+
             record.Ranking = parseInt($('#txtRanking').val()) || 0;
             record.Category = $('#ddlCategory').val() || null;
             record.GrammarTopic = $('#ddlGrammarTopic').val() || null;
@@ -411,9 +502,38 @@
             record.Parent = $('#Parent').text().trim() || null;
         }
 
+        // ===== INFORMATION LOADING =====
+        function loadInformation(questionKey) {
+            return new Promise((resolve) => {
+                $.ajax({
+                    type: 'POST',
+                    url: '/TOEICPart4/Question?handler=GetInfo',
+                    data: JSON.stringify({ questionKey: questionKey }),
+                    contentType: 'application/json',
+                    dataType: 'json',
+                    headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() }
+                }).done(data => {
+                    loadInfoData(data);
+                    resolve();
+                }).fail(error => {
+                    console.error('Error loading info:', error);
+                    loadInfoData({});
+                    resolve();
+                });
+            });
+        }
+
+        function loadInfoData(record) {
+            $('#createdOn').text(record.CreatedOn || 'N/A');
+            $('#createdBy').text(record.CreatedBy || 'N/A');
+            $('#modifiedOn').text(record.ModifiedOn || 'N/A');
+            $('#modifiedBy').text(record.ModifiedBy || 'N/A');
+        }
+
+        // ===== CRUD OPERATIONS =====
         function handleOperation(handler, message, redirect = null) {
             $('#ModalMessage_Icon').html('<img src="/images/Waiting.gif" width="80px"/>');
-            $('#ModalMessage_Content').html('Waiting');
+            $('#ModalMessage_Content').html('Processing...');
             $('#ModalMessage').modal('show');
             RecordInput();
 
@@ -439,40 +559,39 @@
                     updateButtons();
                     setTimeout(() => {
                         $('#ModalMessage').modal('hide');
-                        $('#ModalMessage').one('hidden.bs.modal', () => {
-                            $('body').focus();
-                            if (redirect) window.location.href = redirect;
-                        });
+                        if (redirect) window.location.href = redirect;
                     }, 2000);
                 } else {
                     $('#ModalMessage_Icon').html('<img src="/images/icon_error.png"/>');
-                    $('#ModalMessage_Content').html(data.message);
-                    setTimeout(() => {
-                        $('#ModalMessage').modal('hide');
-                        $('#ModalMessage').one('hidden.bs.modal', () => {
-                            $('body').focus();
-                        });
-                    }, 2000);
+                    $('#ModalMessage_Content').html(data.message || 'Operation failed');
+                    setTimeout(() => $('#ModalMessage').modal('hide'), 2000);
                 }
             }).fail(error => {
-                alert(error.responseText);
-                $('#ModalMessage').modal('hide');
+                $('#ModalMessage_Icon').html('<img src="/images/icon_error.png"/>');
+                $('#ModalMessage_Content').html('Error: ' + error.responseText);
+                setTimeout(() => $('#ModalMessage').modal('hide'), 2000);
             });
         }
 
-        function createRecord() { handleOperation('RecordCreate', 'Question created successfully'); }
-        function updateRecord() { handleOperation('RecordUpdate', 'Question updated successfully'); }
-        function deleteRecord() {
-            $('#ModalMessage_Icon').html('<img src="/images/Waiting.gif" width="80px"/>');
-            $('#ModalMessage_Content').html('Waiting');
-            $('#ModalMessage').modal('show');
+        function createRecord() {
+            handleOperation('RecordCreate', 'Question created successfully');
+        }
 
-            const requestData = { questionKey: record.QuestionKey };
+        function updateRecord() {
+            handleOperation('RecordUpdate', 'Question updated successfully');
+        }
+
+        function deleteRecord() {
+            if (!confirm('Are you sure you want to delete this question?')) return;
+
+            $('#ModalMessage_Icon').html('<img src="/images/Waiting.gif" width="80px"/>');
+            $('#ModalMessage_Content').html('Deleting...');
+            $('#ModalMessage').modal('show');
 
             $.ajax({
                 type: 'POST',
                 url: '/TOEICPart4/Question?handler=RecordDel',
-                data: JSON.stringify(requestData),
+                data: JSON.stringify({ questionKey: record.QuestionKey }),
                 contentType: 'application/json',
                 dataType: 'json'
             }).done(data => {
@@ -481,40 +600,56 @@
                     $('#ModalMessage_Content').html('Question deleted successfully');
                     setTimeout(() => {
                         $('#ModalMessage').modal('hide');
-                        $('body').focus();
                         window.location.href = '/TOEICPart4/QuestionList';
                     }, 2000);
                 } else {
                     $('#ModalMessage_Icon').html('<img src="/images/icon_error.png"/>');
-                    $('#ModalMessage_Content').html(data.Message || 'Failed to delete question');
-                    setTimeout(() => {
-                        $('#ModalMessage').modal('hide');
-                        $('body').focus();
-                    }, 2000);
+                    $('#ModalMessage_Content').html(data.Message || 'Delete failed');
+                    setTimeout(() => $('#ModalMessage').modal('hide'), 2000);
                 }
             }).fail(error => {
                 $('#ModalMessage_Icon').html('<img src="/images/icon_error.png"/>');
                 $('#ModalMessage_Content').html('Error: ' + error.responseText);
-                setTimeout(() => {
-                    $('#ModalMessage').modal('hide');
-                    $('body').focus();
-                }, 2000);
+                setTimeout(() => $('#ModalMessage').modal('hide'), 2000);
             });
         }
 
+        // ===== UI HELPERS =====
         function updateButtons() {
             const isNew = !record.QuestionKey || record.QuestionKey === 'undefined' || record.QuestionKey === '';
             $('#btnCreate').toggle(roles.create && isNew);
             $('#btnUpdate').toggle(roles.update && !isNew);
             $('#btnDel').toggle(roles.delete && !isNew);
-            console.log('Button state updated - isNew:', isNew);
+        }
+
+        function toggleInfo() {
+            $('#infoBody').slideToggle('fast', function() {
+                const icon = $('#infoToggleIcon');
+                if ($('#infoBody').is(':visible')) {
+                    icon.removeClass('fa-chevron-down').addClass('fa-chevron-up');
+                } else {
+                    icon.removeClass('fa-chevron-up').addClass('fa-chevron-down');
+                }
+            });
+        }
+
+        // ===== FILE UPLOAD =====
+        function setupFileUploadListeners() {
+            const txtUploadImage = document.getElementById('txtUploadImage');
+            if (txtUploadImage) {
+                txtUploadImage.addEventListener('change', PreviewImage_Ajax);
+            }
+
+            const txtUploadVoice = document.getElementById('txtUploadVoice');
+            if (txtUploadVoice) {
+                txtUploadVoice.addEventListener('change', PreviewVoice_Ajax);
+            }
         }
 
         function PreviewImage_Ajax() {
             const fileInput = document.getElementById('txtUploadImage');
             if (fileInput && fileInput.files.length > 0) {
                 tempImageFile = fileInput.files[0];
-                console.log('Hình ảnh đã chọn:', tempImageFile.name);
                 const imageElement = document.getElementById('objQuestionImage');
                 if (imageElement) {
                     imageElement.src = URL.createObjectURL(tempImageFile);
@@ -526,7 +661,6 @@
             const fileInput = document.getElementById('txtUploadVoice');
             if (fileInput && fileInput.files.length > 0) {
                 tempVoiceFile = fileInput.files[0];
-                console.log('Âm thanh đã chọn:', tempVoiceFile.name);
                 const source = document.querySelector('#objQuestionVoice source');
                 if (source) {
                     source.src = URL.createObjectURL(tempVoiceFile);
@@ -536,50 +670,252 @@
             }
         }
 
-        // Gán sự kiện cho các nút
+        // ===== BUTTON CLICK HANDLERS =====
         const btnDel_Click = deleteRecord;
         const btnUpdate_Click = updateRecord;
         const btnCreate_Click = createRecord;
-        const TaskShareSearch_DisplayForm = () => $('#infoBody').toggle();
     </script>
 }
 
 <style>
+    /* ===== ROOT VARIABLES ===== */
+    :root {
+        --primary-blue: #3498db;
+        --success-green: #27ae60;
+        --danger-red: #e74c3c;
+        --warning-yellow: #f39c12;
+        --info-cyan: #17a2b8;
+        --purple: #9b59b6;
+        --shadow-sm: 0 2px 8px rgba(0,0,0,0.1);
+        --shadow-md: 0 4px 12px rgba(0,0,0,0.15);
+        --radius-md: 12px;
+    }
+
+    /* ===== BREADCRUMB ===== */
+    .breadcrumb-custom {
+        background: #ffffff;
+        padding: 0.75rem 1.25rem;
+        border-radius: var(--radius-md);
+        margin: -20px 0 20px -20px;
+        box-shadow: var(--shadow-sm);
+    }
+
+        .breadcrumb-custom a {
+            color: #4c4c4c;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+            .breadcrumb-custom a:hover {
+                color: var(--primary-blue);
+            }
+
+        .breadcrumb-custom .current {
+            color: maroon;
+            font-weight: 600;
+        }
+
+    /* ===== PAGE TITLE ===== */
+    .page-title-container {
+        text-align: center;
+        margin: 1rem 0;
+        padding: 1rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-md);
+    }
+
+    .page-title {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #ffffff;
+        margin: 0;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    /* ===== CARDS ===== */
     .card {
-        border-radius: 10px;
-        transition: all 0.3s;
+        border-radius: var(--radius-md);
+        transition: all 0.3s ease;
+        border: 2px solid #e9ecef;
+        margin-bottom: 1.5rem;
     }
 
         .card:hover {
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+            transform: translateY(-2px);
         }
 
     .card-header {
-        font-weight: bold;
-        border-radius: 10px 10px 0 0;
+        font-weight: 600;
+        font-size: 1rem;
+        border-radius: var(--radius-md) var(--radius-md) 0 0 !important;
+        padding: 1rem 1.25rem;
+        letter-spacing: 0.3px;
     }
 
-    .form-control {
-        border-radius: 5px;
+    .card-body {
+        padding: 1.25rem;
     }
 
-    .custom-select {
-        border-radius: 5px;
-        padding: 8px;
-        appearance: none;
-        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-chevron-down" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg>') no-repeat right 0.75rem center/12px 12px;
-        background-color: #fff;
-        border: 1px solid #ced4da;
+    /* ===== PURPLE CARD ===== */
+    .border-purple {
+        border-color: var(--purple) !important;
     }
 
-        .custom-select:focus {
-            border-color: #86b7fe;
-            outline: 0;
-            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    .bg-purple {
+        background: linear-gradient(135deg, var(--purple) 0%, #8e44ad 100%);
+    }
+
+    /* ===== FORM CONTROLS ===== */
+    .form-control, textarea, .custom-select {
+        border-radius: 8px;
+        border: 2px solid #e0e0e0;
+        padding: 0.75rem;
+        transition: all 0.3s ease;
+        font-size: 0.95rem;
+    }
+
+        .form-control:focus, textarea:focus, .custom-select:focus {
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+            outline: none;
         }
 
+    input[type="number"] {
+        -moz-appearance: textfield;
+    }
+
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            opacity: 1;
+            height: 40px;
+        }
+
+    /* ===== BUTTONS ===== */
     .btn {
-        border-radius: 5px;
-        padding: 8px 20px;
+        border-radius: 8px;
+        padding: 0.65rem 1.5rem;
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: var(--shadow-sm);
+    }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--primary-blue) 0%, #2980b9 100%);
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, var(--success-green) 0%, #229954 100%);
+    }
+
+    .btn-danger {
+        background: linear-gradient(135deg, var(--danger-red) 0%, #c0392b 100%);
+    }
+
+    /* ===== SELECT2 STYLING ===== */
+    .select2-container--bootstrap-5 .select2-selection {
+        border: 2px solid #e0e0e0 !important;
+        border-radius: 8px !important;
+        padding: 0.5rem !important;
+        min-height: 45px !important;
+        transition: all 0.3s ease !important;
+    }
+
+    .select2-container--bootstrap-5.select2-container--focus .select2-selection,
+    .select2-container--bootstrap-5.select2-container--open .select2-selection {
+        border-color: var(--primary-blue) !important;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2) !important;
+    }
+
+    .select2-dropdown {
+        border: 2px solid var(--primary-blue) !important;
+        border-radius: 8px !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    }
+
+    .select2-results__option--highlighted {
+        background-color: var(--primary-blue) !important;
+        color: white !important;
+    }
+
+    /* ===== INFO SIDEBAR ===== */
+    .info-card .card-header {
+        cursor: pointer;
+        user-select: none;
+        transition: background-color 0.3s ease;
+    }
+
+        .info-card .card-header:hover {
+            background: linear-gradient(135deg, #2980b9 0%, #1e5a8e 100%) !important;
+        }
+
+    .info-card dt {
+        font-weight: 600;
+        color: #7f8c8d;
+        font-size: 0.85rem;
+    }
+
+    .info-card dd {
+        margin-bottom: 0.75rem;
+        color: #2c3e50;
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+
+    /* ===== MODAL ===== */
+    .modal-content {
+        border-radius: var(--radius-md);
+        border: none;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+
+    .modal-header {
+        border-top-left-radius: var(--radius-md);
+        border-top-right-radius: var(--radius-md);
+        background: linear-gradient(135deg, var(--primary-blue) 0%, #2980b9 100%);
+    }
+
+    /* ===== ANIMATIONS ===== */
+    @@keyframes fadeIn {
+        from
+
+    {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    }
+
+    .card {
+        animation: fadeIn 0.4s ease-out;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @@media (max-width: 768px) {
+        .card-body
+
+    {
+        padding: 1rem;
+    }
+
+    .btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+    }
+
     }
 </style>

@@ -694,7 +694,7 @@
         let _TotalItems = 0;
         let _SearchTimeout;
 
-             $(document).ready(function () {
+        $(document).ready(function () {
             // Restore state if exists, otherwise use default
             restorePageState();
 
@@ -707,16 +707,26 @@
                 }, 400);
             });
 
-            // ✅ THÊM: Save scroll position when user scrolls
+            // ✅ SAVE: Table scroll position
             $('.table-wrapper').on('scroll', function() {
                 if (sessionStorage.getItem('questionListState')) {
                     const state = JSON.parse(sessionStorage.getItem('questionListState'));
-                    state.scrollPosition = $('.table-wrapper').scrollTop();
+                    state.tableScrollPosition = $('.table-wrapper').scrollTop();
+                    sessionStorage.setItem('questionListState', JSON.stringify(state));
+                }
+            });
+
+            // ✅ SAVE: Page scroll position
+            $(window).on('scroll', function() {
+                if (sessionStorage.getItem('questionListState')) {
+                    const state = JSON.parse(sessionStorage.getItem('questionListState'));
+                    state.pageScrollPosition = $(window).scrollTop();
                     sessionStorage.setItem('questionListState', JSON.stringify(state));
                 }
             });
         });
-          function savePageState() {
+
+        function savePageState() {
             const state = {
                 pageNumber: _PageNumber,
                 search: $('#txtSearch').val(),
@@ -724,7 +734,8 @@
                 fromDate: $('#txtFromDate').val(),
                 toDate: $('#txtToDate').val(),
                 statusFilter: $('#statusFilter').val(),
-                scrollPosition: $('.table-wrapper').scrollTop()
+                tableScrollPosition: $('.table-wrapper').scrollTop(),
+                pageScrollPosition: $(window).scrollTop()
             };
             sessionStorage.setItem('questionListState', JSON.stringify(state));
         }
@@ -746,11 +757,18 @@
 
                 // Load data with restored state
                 LV_LoadData_Ajax(function() {
-                    // Restore scroll position after data loaded
-                    if (state.scrollPosition) {
+                    // ✅ RESTORE: Table scroll position
+                    if (state.tableScrollPosition) {
                         setTimeout(function() {
-                            $('.table-wrapper').scrollTop(state.scrollPosition);
+                            $('.table-wrapper').scrollTop(state.tableScrollPosition);
                         }, 100);
+                    }
+
+                    // ✅ RESTORE: Page scroll position
+                    if (state.pageScrollPosition) {
+                        setTimeout(function() {
+                            $('html, body').scrollTop(state.pageScrollPosition);
+                        }, 150);
                     }
                 });
             } else {
@@ -761,7 +779,8 @@
         function clearPageState() {
             sessionStorage.removeItem('questionListState');
         }
-                  function UpdateStatistics() {
+
+        function UpdateStatistics() {
             let btn = document.querySelector(".btn-refresh");
 
             showConfirmModal(
@@ -797,7 +816,7 @@
             );
         }
 
-               function LV_LoadData_Ajax(callback) {
+        function LV_LoadData_Ajax(callback) {
             $("#LV_Waiting").css("display", "");
             var zSearch = $("#txtSearch").val();
             var zFromDate = $('#txtFromDate').val();
@@ -834,7 +853,6 @@
                 $("#LV_Waiting").css("display", "none");
                 $("#Info_View").html("<i class='fas fa-info-circle me-2'></i>Total: " + _TotalItems + " questions");
 
-                // ✅ THÊM: Execute callback if provided
                 if (typeof callback === 'function') {
                     callback();
                 }
@@ -855,8 +873,7 @@
                 var correctRate = _DataView[i].CorrectRate !== null ? _DataView[i].CorrectRate : null;
                 var correctRateText = correctRate !== null ? correctRate.toFixed(2) + "%" : "N/A";
                 var correctRateClass = "";
-                
-                // Color coding for Correct Rate
+
                 if (correctRate !== null) {
                     if (correctRate >= 70) {
                         correctRateClass = "correct-rate-high";
@@ -871,7 +888,7 @@
 
                 zContent += "<tr>";
                 zContent += "<td>" + zNo + "</td>";
-        zContent += "<td onclick='EditRecord(\"" + _DataView[i].QuestionKey + "\")'>" + (_DataView[i].QuestionText || "") + "</td>";
+                zContent += "<td onclick='EditRecord(\"" + _DataView[i].QuestionKey + "\")'>" + (_DataView[i].QuestionText || "") + "</td>";
                 zContent += "<td><audio controls class='audio-player'><source src='" + _DataView[i].QuestionVoice + "' type='audio/mp3'></audio></td>";
                 zContent += "<td><img src='" + _DataView[i].QuestionImage + "' class='centered-image' /></td>";
                 zContent += "<td>" + _DataView[i].SkillLevel + "</td>";
@@ -883,7 +900,7 @@
                 zContent += "</tr>";
                 zNo++;
             }
-            
+
             $("#LV_DataBody").html(zContent);
         }
 
@@ -894,7 +911,6 @@
 
             if (totalPages <= 1) return;
 
-            // Previous button
             pagination.append(`
                 <li class="page-item ${_PageNumber === 1 ? 'disabled' : ''}">
                     <a class="page-link" href="#" onclick="goToPage(${_PageNumber - 1}); return false;" aria-label="Previous">
@@ -903,7 +919,6 @@
                 </li>
             `);
 
-            // Page numbers (show max 5 pages)
             let startPage = Math.max(1, _PageNumber - 2);
             let endPage = Math.min(totalPages, startPage + 4);
 
@@ -919,7 +934,6 @@
                 `);
             }
 
-            // Next button
             pagination.append(`
                 <li class="page-item ${_PageNumber === totalPages ? 'disabled' : ''}">
                     <a class="page-link" href="#" onclick="goToPage(${_PageNumber + 1}); return false;" aria-label="Next">
@@ -934,24 +948,21 @@
             if (page >= 1 && page <= totalPages) {
                 _PageNumber = page;
                 LV_LoadData_Ajax();
-                // Scroll to top of table
                 $('.table-wrapper').scrollTop(0);
             }
         }
 
-             function EditRecord(QuestionKey) {
-            savePageState(); // ✅ THÊM: Save state trước khi chuyển trang
+        function EditRecord(QuestionKey) {
+            savePageState();
             window.location = "/TOEICPart1/Question?Key=" + QuestionKey;
         }
 
         function btnAnswer_Click(QuestionKey) {
-            savePageState(); // ✅ THÊM: Save state trước khi chuyển trang
+            savePageState();
             window.location = "/TOEICPart1/AnswerList?Key=" + QuestionKey;
         }
 
-     
-
-             function togglePublish(button, questionKey) {
+        function togglePublish(button, questionKey) {
             const isOn = $(button).hasClass('btn-on');
             const newState = !isOn;
             const confirmMessage = newState
@@ -986,17 +997,13 @@
                 'Change Status'
             );
         }
-                // ===== MODAL HELPER FUNCTIONS =====
+
         function showConfirmModal(message, onConfirm, title = 'Confirm Action') {
             $('#confirmModalLabel').html(`<i class="fas fa-exclamation-triangle me-2"></i>${title}`);
             $('#confirmModalBody').text(message);
 
             const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
-
-            // Remove old event listeners
             $('#confirmModalBtn').off('click');
-
-            // Add new event listener
             $('#confirmModalBtn').on('click', function() {
                 confirmModal.hide();
                 if (typeof onConfirm === 'function') {
@@ -1012,10 +1019,8 @@
             const header = $('#alertModalHeader');
             const titleElement = $('#alertModalLabel');
 
-            // Reset classes
             header.removeClass('bg-success bg-danger bg-warning text-white');
 
-            // Set icon and title based on type
             let icon = 'fa-info-circle';
             let defaultTitle = 'Notification';
             let headerClass = 'bg-primary text-white';

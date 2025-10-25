@@ -4,175 +4,610 @@
     Layout = "_Layout";
 }
 
+<link href="~/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+<link href="~/lib/datatables/css/dataTables.min.css" rel="stylesheet" type="text/css" />
+
 <style>
-    .tns-field-name {
-        width: 140px;
+    /* ===== ROOT VARIABLES ===== */
+    :root {
+        --primary-blue: #3498db;
+        --primary-dark: #2980b9;
+        --success-green: #27ae60;
+        --danger-red: #e74c3c;
+        --warning-yellow: #f39c12;
+        --warning-brown: #d68910;
+        --text-dark: #2c3e50;
+        --bg-white: #ffffff;
+        --bg-light-blue: #f0f8ff;
+        --shadow-sm: 0 2px 8px rgba(0,0,0,0.1);
+        --shadow-md: 0 4px 12px rgba(0,0,0,0.15);
+        --radius-sm: 8px;
+        --radius-md: 12px;
+    }
+
+    /* ===== BREADCRUMB ===== */
+    .breadcrumb-custom {
+        background: var(--bg-white);
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius-sm);
+        margin: -20px 0 1rem -20px;
+        box-shadow: var(--shadow-sm);
+    }
+
+        .breadcrumb-custom a {
+            color: var(--text-dark);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+            .breadcrumb-custom a:hover {
+                color: var(--primary-blue);
+            }
+
+        .breadcrumb-custom .current {
+            color: maroon;
+            font-weight: 600;
+        }
+
+    /* ===== PAGE TITLE ===== */
+    .page-title-container {
+        text-align: center;
+        margin: 1rem 0;
+        padding: 1rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-md);
+    }
+
+    .page-title {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #ffffff;
+        margin: 0;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+        .page-title i {
+            margin-right: 0.5rem;
+            font-size: 1.8rem;
+        }
+
+    /* ===== CONTROLS CONTAINER ===== */
+    .controls-container {
+        background: var(--bg-white);
+        padding: 1rem;
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 1rem;
+    }
+
+    .info-view {
+        color: var(--danger-red);
+        font-weight: 600;
+        font-size: 0.95rem;
+        padding-left: 0.5rem;
+    }
+
+    /* ===== CIRCULAR BUTTONS ===== */
+    .btn-circular {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: var(--shadow-sm);
+        font-size: 1.3rem;
+        color: #ffffff;
+        margin-left: 0.5rem;
+        flex-shrink: 0;
+    }
+
+    .btn-add {
+        background: linear-gradient(135deg, var(--success-green) 0%, #229954 100%);
+    }
+
+        .btn-add:hover {
+            background: linear-gradient(135deg, #229954 0%, #1e8449 100%);
+            transform: scale(1.1);
+            box-shadow: var(--shadow-md);
+        }
+
+    /* ===== TABLE CONTAINER ===== */
+    .table-container {
+        background: var(--bg-white);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+    }
+
+    .table-wrapper {
+        max-height: 600px;
+        overflow-y: auto;
+        position: relative;
+    }
+
+        .table-wrapper::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .table-wrapper::-webkit-scrollbar-track {
+            background: linear-gradient(180deg, #F0F8FF 0%, #E8F4F9 100%);
+            border-radius: 10px;
+        }
+
+        .table-wrapper::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #3498DB 0%, #2980B9 100%);
+            border-radius: 10px;
+            border: 2px solid #F0F8FF;
+        }
+
+            .table-wrapper::-webkit-scrollbar-thumb:hover {
+                background: linear-gradient(180deg, #2980B9 0%, #1E5A8E 100%);
+            }
+
+    /* ===== TABLE STYLING ===== */
+    #LV_Datatable {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin: 0;
+    }
+
+        #LV_Datatable thead th {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #ffffff;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            padding: 1rem 0.75rem;
+            text-align: center;
+            vertical-align: middle;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            letter-spacing: 0.5px;
+        }
+
+        #LV_Datatable tbody tr {
+            background-color: #ffffff;
+            transition: all 0.25s ease;
+        }
+
+            #LV_Datatable tbody tr:nth-of-type(even) {
+                background-color: var(--bg-light-blue);
+            }
+
+            #LV_Datatable tbody tr:hover {
+                background: linear-gradient(90deg, #E8F4FD 0%, #D1E7FA 100%);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+            }
+
+        #LV_Datatable tbody td {
+            padding: 0.9rem 0.75rem;
+            border: 1px solid #e9ecef;
+            vertical-align: baseline;
+            text-align: center;
+            transition: all 0.3s ease;
+            background-color: transparent;
+            /* <--- XÓA DÒNG line-height Ở ĐÂY */
+        }
+
+            #LV_Datatable tbody td:nth-child(1) {
+                font-weight: 700;
+                color: #667eea;
+                font-size: 0.95rem;
+            }
+
+            #LV_Datatable tbody td:nth-child(2) {
+                text-align: left;
+                font-weight: 500;
+                color: #2c3e50;
+                cursor: pointer;
+            }
+
+                #LV_Datatable tbody td:nth-child(2):hover {
+                    color: var(--primary-blue);
+                    text-decoration: underline;
+                }
+
+            #LV_Datatable tbody td:nth-child(4) {
+                font-weight: 600;
+                color: var(--danger-red);
+            }
+
+            #LV_Datatable tbody td:nth-child(5) {
+                color: #7f8c8d;
+                font-weight: 500;
+            }
+
+            /* ✅ Correct Rate Column - Color Coding */
+            #LV_Datatable tbody td:nth-child(6) {
+                font-weight: 700;
+                font-size: 0.95rem;
+            }
+
+    .correct-rate-high {
+        color: var(--warning-yellow);
+    }
+
+    .correct-rate-medium {
+        color: var(--warning-brown);
+    }
+
+    .correct-rate-low {
+        color: var(--danger-red);
+    }
+
+    /* ✅ Anomaly Column */
+    #LV_Datatable tbody td:nth-child(7) {
+        font-weight: 600;
+        color: var(--warning-yellow);
+    }
+
+    /* Ranking Column */
+    #LV_Datatable tbody td:nth-child(8) {
+        font-weight: 700;
+        color: #9b59b6;
+        font-size: 1.1rem;
+    }
+
+    /* ===== IMAGE STYLING ===== */
+    .centered-image {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: var(--radius-sm);
+        box-shadow: var(--shadow-sm);
+        transition: transform 0.3s ease;
+    }
+
+        .centered-image:hover {
+            transform: scale(1.1);
+        }
+
+    /* ===== BUTTONS IN TABLE ===== */
+    .btn-answer {
+        background: linear-gradient(135deg, var(--warning-yellow) 0%, #e67e22 100%);
+        color: #ffffff;
+        border: none;
+        padding: 0.45rem 0.9rem;
+        border-radius: var(--radius-sm);
+        font-weight: 600;
+        font-size: 0.8rem;
+        transition: all 0.3s ease;
+        box-shadow: var(--shadow-sm);
+    }
+
+        .btn-answer:hover {
+            background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+    /* ===== EMPTY STATE ===== */
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+    }
+
+        .empty-state i {
+            font-size: 4rem;
+            color: #bdc3c7;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state p {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+    /* ===== LOADING SPINNER ===== */
+    #LV_Waiting {
+        text-align: center;
+        padding: 3rem;
+    }
+
+    .spinner-border {
+        width: 3rem;
+        height: 3rem;
+        border-width: 0.3rem;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @@media (max-width: 768px) {
+        .page-title
+
+    {
+        font-size: 1.4rem;
+    }
+
+    .btn-circular {
+        width: 38px;
+        height: 38px;
+        font-size: 1.1rem;
+    }
+
+    #LV_Datatable thead th {
+        font-size: 0.75rem;
+        padding: 0.75rem 0.5rem;
+    }
+
+    #LV_Datatable tbody td {
+        padding: 0.7rem 0.5rem;
+        font-size: 0.85rem;
+    }
+
+    .centered-image {
+        width: 60px;
+        height: 60px;
+    }
+
+    }
+
+    #LV_Datatable tbody td * {
+        vertical-align: baseline; /* <--- SỬA Ở ĐÂY */
     }
 </style>
 
-<div style="width:100%; margin:-20px 0 0 -20px">
-    <div style="padding:5px; font-weight:bold; font-size:13px">
-        <a href="~/Index" style="text-decoration:none; color:#4c4c4c">Home</a>
-        <span class="uil-angle-double-right"></span>
-        <a href="~/ToeicPart3/Index" style="text-decoration:none; color:#4c4c4c">TOEIC</a>
-        <span class="uil-angle-double-right"></span>
-        <a href="~/ToeicPart3/QuestionList" style="text-decoration:none; color:#4c4c4c">PART 3</a>
-        <span class="uil-angle-double-right"></span>
-        <span style="color:maroon">Question</span>
-    </div>
+<!-- Breadcrumb -->
+<div class="breadcrumb-custom">
+    <a href="~/Index"><i class="fas fa-home me-1"></i>Home</a>
+    <span class="mx-2">›</span>
+    <a href="/TOEICPart3/QuestionList">TOEIC Part 3</a>
+    <span class="mx-2">›</span>
+    <a href="/TOEICPart3/QuestionList">Passages</a>
+    <span class="mx-2">›</span>
+    <span class="current">Sub Questions</span>
 </div>
 
-<div class="row mb-2">
-    <div class="col-md-10">
-        <div class="col-12 text-center text-primary" style="font-size:26px; font-weight:bold">
-        </div>
-        <div style="color:maroon; font-weight:bold; padding-left:10px">
-            <div id="Info_View"></div>
-        </div>
-    </div>
-    <div class="col-md-2 text-end">
-        <button type="button" id="btnDel" class="btn btn-success" onclick="AddRecord_Click()">Add New</button>
-    </div>
+<!-- Page Title -->
+<div class="page-title-container">
+    <h1 class="page-title">
+        <i class="fas fa-list-ol"></i>
+        Sub Questions Management
+    </h1>
 </div>
 
-<div class="row">
-    <table id="LV_Datatable" class="table table-striped table-bordered" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
-        <thead>
-            <tr>
-                <th class="text-center align-middle text-light bg-primary" style="width:80px">No</th>
-                <th class="text-center align-middle text-light bg-primary">Question</th>
-                 <th class="text-center align-middle text-light bg-primary" style="width:120px">Image</th>
-                <th class="text-center align-middle text-light bg-primary" style="width:90px">Level</th>
-                <th class="text-center align-middle text-light bg-primary" style="width:120px">Access</th>
-                <th class="text-center align-middle text-light bg-primary" style="width:100px">Correct Rate</th>
-                <th class="text-center align-middle text-light bg-primary" style="width:100px">Anomaly</th>
-                <th class="text-center align-middle text-light bg-primary" style="width:90px">Ranking</th>
-                <th class="text-center align-middle text-light bg-primary" style="width:100px">Answer</th>
-            </tr>
-        </thead>
-        <tbody id="LV_DataBody"></tbody>
-    </table>
-
-    <div id="LV_Waiting" style="display:none">
-        <div class='text-center'>
-            <div class='spinner-border text-primary m-5' role='status'>
-                <span class='sr-only'>Loading...</span>
+<!-- Controls Section -->
+<div class="controls-container">
+    <div class="row align-items-center">
+        <div class="col-md-10">
+            <div class="info-view" id="Info_View">
+                <i class="fas fa-info-circle me-2"></i>Loading...
             </div>
         </div>
+        <div class="col-md-2 text-end">
+            <button type="button" class="btn-circular btn-add" onclick="AddRecord_Click()" title="Add New Sub Question">
+                <i class="fas fa-plus"></i>
+            </button>
+        </div>
     </div>
 </div>
 
+<!-- Table Section -->
+<div class="table-container">
+    <div class="table-wrapper">
+        <table id="LV_Datatable">
+            <thead>
+                <tr>
+                    <th style="width:60px">No</th>
+                    <th style="width:200px">Question</th>
+                    <th style="width:100px">Image</th>
+                    <th style="width:70px">Level</th>
+                    <th style="width:80px">Access</th>
+                    <th style="width:110px">Correct Rate</th>
+                    <th style="width:90px">Anomaly</th>
+                    <th style="width:80px">Ranking</th>
+                    <th style="width:100px">Answer</th>
+                </tr>
+            </thead>
+            <tbody id="LV_DataBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Loading Spinner -->
+<div id="LV_Waiting" style="display:none">
+    <div class='spinner-border text-primary' role='status'>
+        <span class='visually-hidden'>Loading...</span>
+    </div>
+</div>
+
+<!-- Hidden Data -->
 <div style="display:none">
     <div id="QuestionKey">@Model.QuestionKey</div>
 </div>
 
-<div>
-    <div style="cursor:pointer" onclick="Log_Show()">
-        <i class="uil-apple"></i>
-    </div>
-    <div id="Log_ViewData" class="row" style="display:none; padding:20px;"></div>
-</div>
-
 @section Scripts {
     <script>
+        let _DataView;
+
         $(document).ready(function () {
-            LV_LoadData_Ajax();
+            restorePageState();
+
+            $('.table-wrapper').on('scroll', function() {
+                if (sessionStorage.getItem('part3QuestionSubListState')) {
+                    const state = JSON.parse(sessionStorage.getItem('part3QuestionSubListState'));
+                    state.tableScrollPosition = $('.table-wrapper').scrollTop();
+                    sessionStorage.setItem('part3QuestionSubListState', JSON.stringify(state));
+                }
+            });
+
+            $(window).on('scroll', function() {
+                if (sessionStorage.getItem('part3QuestionSubListState')) {
+                    const state = JSON.parse(sessionStorage.getItem('part3QuestionSubListState'));
+                    state.pageScrollPosition = $(window).scrollTop();
+                    sessionStorage.setItem('part3QuestionSubListState', JSON.stringify(state));
+                }
+            });
         });
 
-        function Log_Show() {
-            $("#Log_ViewData").css("display", "");
+        function savePageState() {
+            const state = {
+                questionKey: $('#QuestionKey').text().trim(),
+                tableScrollPosition: $('.table-wrapper').scrollTop(),
+                pageScrollPosition: $(window).scrollTop()
+            };
+            sessionStorage.setItem('part3QuestionSubListState', JSON.stringify(state));
         }
 
-        var _DataView;
-        function LV_LoadData_Ajax() {
-            $("#LV_Waiting").css("display", "");
-            var zQuestionKey = $("#QuestionKey").text();
-            var zDataRequest = { "QuestionKey": zQuestionKey };
+        function restorePageState() {
+            const savedState = sessionStorage.getItem('part3QuestionSubListState');
+
+            LV_LoadData_Ajax(function() {
+                if (savedState) {
+                    const state = JSON.parse(savedState);
+
+                    if (state.tableScrollPosition) {
+                        setTimeout(function() {
+                            $('.table-wrapper').scrollTop(state.tableScrollPosition);
+                        }, 100);
+                    }
+
+                    if (state.pageScrollPosition) {
+                        setTimeout(function() {
+                            $('html, body').scrollTop(state.pageScrollPosition);
+                        }, 150);
+                    }
+                }
+            });
+        }
+
+        function clearPageState() {
+            sessionStorage.removeItem('part3QuestionSubListState');
+        }
+
+        function LV_LoadData_Ajax(callback) {
+            $("#LV_Waiting").css("display", "flex");
+            const zQuestionKey = $("#QuestionKey").text().trim();
+            const zDataRequest = { "QuestionKey": zQuestionKey };
+
             $.ajax({
                 type: 'POST',
-                url: "/ToeicPart3/QuestionSubList?handler=LoadData",
+                url: "/TOEICPart3/QuestionSubList?handler=LoadData",
                 data: JSON.stringify(zDataRequest),
                 contentType: "application/json",
                 dataType: "json",
                 headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() }
             })
-                .done(function (dataResponse) {
-                    $("#Log_ViewData").html(JSON.stringify(dataResponse));
-                    _DataView = dataResponse;
-                    LV_DisplayData();
-                    $("#LV_Waiting").css("display", "none");
-                })
-                .fail(function (error) {
-                    alert('Error: ' + error.responseText);
-                });
+            .done(function (dataResponse) {
+                _DataView = dataResponse;
+                LV_DisplayData();
+                $("#LV_Waiting").css("display", "none");
+
+                const totalQuestions = dataResponse ? dataResponse.length : 0;
+                $("#Info_View").html(`<i class='fas fa-info-circle me-2'></i>Total: <strong>${totalQuestions}</strong> sub question${totalQuestions !== 1 ? 's' : ''}`);
+
+                if (typeof callback === 'function') {
+                    callback();
+                }
+            })
+            .fail(function (error) {
+                $("#LV_Waiting").css("display", "none");
+                console.error('Error loading sub questions:', error);
+                alert('Error: ' + error.responseText);
+            });
         }
-        function LV_DisplayData() {
-            var zContent = "";
-            var n = _DataView ? _DataView.length : 0;
-            var zNo = 1;
+
+              function LV_DisplayData() {
+            let zContent = "";
+            const n = _DataView ? _DataView.length : 0;
+
             if (n === 0) {
-                zContent = "<tr><td colspan='5' class='text-center'>No data available</td></tr>";
+                zContent = `
+                    <tr>
+                        <td colspan="9" class="text-center py-5">
+                            <div class="empty-state">
+                                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                <p class="text-muted fw-bold">No sub questions found.</p>
+                                <p class="text-muted small">Click "Add New" to create the first question.</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
             } else {
-                for (var i = 0; i < n; i++) {
-                    var correctRate = _DataView[i].CorrectRate !== null ? _DataView[i].CorrectRate + "%" : "N/A";
-                    var anomaly = _DataView[i].Anomaly !== null ? _DataView[i].Anomaly : "N/A";
-                    zContent += "<tr>";
-                    zContent += "<td class='text-center'>" + zNo + "</td>";
-                    zContent += "<td onclick='EditRecord(\"" + _DataView[i].QuestionKey + "\")' style='cursor:pointer'>" + (_DataView[i].QuestionText || "") + "</td>";
-                    zContent += "           <td class='centered-cell'><img src='" + _DataView[i].QuestionImage + "' class='centered-image' width='100' height='100' /></td>";
-                    zContent += "           <td class='centered-cell'>" + _DataView[i].SkillLevel + "</td>";
-                    zContent += "           <td class='centered-cell'>" + _DataView[i].AmountAccess + "</td>";
-                    zContent += "           <td class='centered-cell'>" + correctRate + "</td>";
-                    zContent += "           <td class='centered-cell'>" + anomaly + "</td>";
-                    zContent += "<td class='text-center'>" + (_DataView[i].Ranking || 0) + "</td>";
-                    zContent += "<td class='text-center'><button type='button' class='btn btn-warning' onclick='btnAnswer_Click(\"" + _DataView[i].QuestionKey + "\")'>Answer</button></td>";
+                for (let i = 0; i < n; i++) {
+                    // Process CorrectRate with color coding
+                    let correctRate = _DataView[i].CorrectRate !== null ? _DataView[i].CorrectRate : null;
+                    let correctRateText = correctRate !== null ? correctRate.toFixed(2) + "%" : "N/A";
+                    let correctRateClass = "";
+
+                    if (correctRate !== null) {
+                        if (correctRate >= 70) {
+                            correctRateClass = "correct-rate-high";
+                        } else if (correctRate <= 30) {
+                            correctRateClass = "correct-rate-low";
+                        } else {
+                            correctRateClass = "correct-rate-medium";
+                        }
+                    }
+
+                    let anomaly = _DataView[i].Anomaly !== null ? _DataView[i].Anomaly : "N/A";
+
+                    // ✅ COPY EXACT từ AnswerList - Inline styles trong HTML
+                    zContent += `<tr class='data-row' style='height:70px;'>`;
+
+                    // No Column
+                    zContent += `<td class='text-center' style='height:70px;padding:1rem 0.75rem;vertical-align:middle;'><strong>${i + 1}</strong></td>`;
+
+                    // Question Column
+                    zContent += `<td class='text-start' style='height:70px;padding:1rem 0.75rem;vertical-align:middle;cursor:pointer;' onclick='EditRecord("${_DataView[i].QuestionKey}")'>${_DataView[i].QuestionText || ''}</td>`;
+
+                    // Image Column
+                    zContent += `<td class='text-center' style='height:70px;padding:1rem 0.75rem;vertical-align:middle;'><img src='${_DataView[i].QuestionImage || '/images/icon_Pic.png'}' class='centered-image' /></td>`;
+
+                    // Level Column
+                    zContent += `<td class='text-center' style='height:70px;padding:1rem 0.75rem;vertical-align:middle;'>${_DataView[i].SkillLevel || 0}</td>`;
+
+                    // Access Column
+                    zContent += `<td class='text-center' style='height:70px;padding:1rem 0.75rem;vertical-align:middle;'>${_DataView[i].AmountAccess || 0}</td>`;
+
+                    // Correct Rate Column with color
+                    zContent += `<td class='text-center ${correctRateClass}' style='height:70px;padding:1rem 0.75rem;vertical-align:middle;'>${correctRateText}</td>`;
+
+                    // Anomaly Column
+                    zContent += `<td class='text-center' style='height:70px;padding:1rem 0.75rem;vertical-align:middle;'>${anomaly}</td>`;
+
+                    // Ranking Column
+                    zContent += `<td class='text-center' style='height:70px;padding:1rem 0.75rem;vertical-align:middle;'>${_DataView[i].Ranking || 0}</td>`;
+
+                    // Answer Button Column
+                    zContent += `<td class='text-center' style='height:70px;padding:1rem 0.75rem;vertical-align:middle;'><button type='button' class='btn btn-answer' onclick='btnAnswer_Click("${_DataView[i].QuestionKey}")'>View</button></td>`;
+
                     zContent += "</tr>";
-                    zNo++;
                 }
             }
+
             $("#LV_DataBody").html(zContent);
         }
 
-     function EditRecord(QuestionKey) {
-    var zUrl = "/ToeicPart3/Question?Key=" + QuestionKey + "&source=QuestionSubList"; 
-    window.location = zUrl;
-}
+        function EditRecord(QuestionKey) {
+            savePageState();
+            const zUrl = "/TOEICPart3/Question?Key=" + QuestionKey + "&source=QuestionSubList";
+            window.location = zUrl;
+        }
 
         function btnAnswer_Click(QuestionKey) {
-            var zUrl = "/ToeicPart3/AnswerList?Key=" + QuestionKey;
+            savePageState();
+            const zUrl = "/TOEICPart3/AnswerList?Key=" + QuestionKey;
             window.location = zUrl;
         }
 
         function AddRecord_Click() {
-            var zQuestionKey = $("#QuestionKey").text();
-            var zUrl = "/ToeicPart3/Question?ParentKey=" + zQuestionKey + "&source=QuestionSubList";
+            savePageState();
+            const zQuestionKey = $("#QuestionKey").text().trim();
+            const zUrl = "/TOEICPart3/Question?ParentKey=" + zQuestionKey + "&source=QuestionSubList";
             window.location = zUrl;
-        }
-
-        function LV_LoadData_More() {
-            _PageNumber++;
-            LV_LoadData_Ajax();
         }
     </script>
 }
-<style>
-    .tns-field-name {
-        width: 140px;
-    }
-    .image-cell {
-        width: 120px; /* Giới hạn chiều rộng ô */
-        max-width: 120px; /* Đảm bảo không vượt quá */
-        text-align: center; /* Căn giữa nội dung */
-    }
-    .question-image {
-        width: 100px; /* Kích thước cố định */
-        height: 100px; /* Kích thước cố định */
-        object-fit: cover; /* Giữ tỷ lệ hình ảnh */
-        display: block; /* Đảm bảo hình ảnh là block để căn giữa */
-        margin: 0 auto; /* Căn giữa hình ảnh trong ô */
-    }
-
-    table td, table th {
-        vertical-align: middle !important;
-        text-align: center !important;}
-</style>
