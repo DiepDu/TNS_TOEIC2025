@@ -374,13 +374,13 @@
                 font-size: 1rem;
             }
 
-            /* Answer Text Column - LEFT ALIGN */
+            /* Answer Text Column - CENTER ALIGN */
             .table tbody td:nth-child(2) .cell-content {
-                justify-content: flex-start !important; /* ← KEY FIX */
+                justify-content: center !important; /* ← CHANGED */
                 font-weight: 500;
                 color: #2c3e50;
                 font-size: 0.95rem;
-                text-align: left;
+                text-align: center; /* ← CHANGED */
             }
 
             /* Correct Column - CENTER */
@@ -411,11 +411,11 @@
             justify-content: center;
         }
 
-        /* ✅ FORCE FIX - CRITICAL RULES */
+        /* ✅ FORCE FIX - CENTER ALIGN */
         .table tbody td:nth-child(2) .cell-content {
             display: flex !important;
             align-items: center !important;
-            justify-content: flex-start !important;
+            justify-content: center !important; /* ← CHANGED */
             height: 70px !important;
             line-height: normal !important;
             padding-top: 0 !important;

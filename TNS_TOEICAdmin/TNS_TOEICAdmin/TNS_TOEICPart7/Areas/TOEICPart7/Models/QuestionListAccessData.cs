@@ -4,59 +4,87 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TNS_TOEICPart7.Areas.TOEICPart7.Models
 {
     public static class QuestionListDataAccess
     {
-        // Phương thức không có ngày
+        // ✅ Phương thức không có ngày - CÓ TOTAL COUNT
         public static JsonResult GetList(string Search, int Level, int PageSize, int PageNumber, string StatusFilter)
         {
             string zMessage = "";
-            string zSQL = @"SELECT QuestionKey, QuestionText, SkillLevel, AmountAccess, CorrectRate, Anomaly, Publish, RecordStatus 
+
+            // ✅ Query để đếm tổng số records
+            string zCountSQL = @"SELECT COUNT(*) 
                        FROM [dbo].[TEC_Part7_Question] 
                        WHERE QuestionText LIKE @Search AND Parent IS NULL
                        AND (QuestionKey IS NOT NULL) ";
 
+            // ✅ Query để lấy data phân trang
+            string zDataSQL = @"SELECT QuestionKey, QuestionText, SkillLevel, AmountAccess, Publish, RecordStatus 
+                       FROM [dbo].[TEC_Part7_Question] 
+                       WHERE QuestionText LIKE @Search AND Parent IS NULL
+                       AND (QuestionKey IS NOT NULL) ";
+
+            // Apply StatusFilter cho cả 2 queries
+            string statusFilterClause = "";
             if (!string.IsNullOrEmpty(StatusFilter))
             {
                 if (StatusFilter == "Using")
                 {
-                    zSQL += " AND Publish = 1 AND RecordStatus != 99 ";
+                    statusFilterClause = " AND Publish = 1 AND RecordStatus != 99 ";
                 }
                 else if (StatusFilter == "Unpublished")
                 {
-                    zSQL += " AND Publish = 0 ";
+                    statusFilterClause = " AND Publish = 0 ";
                 }
                 else if (StatusFilter == "Deleted")
                 {
-                    zSQL += " AND RecordStatus = 99 ";
+                    statusFilterClause = " AND RecordStatus = 99 ";
                 }
             }
 
-            if (Level > 0)
-                zSQL += " AND SkillLevel = @Level ";
+            zCountSQL += statusFilterClause;
+            zDataSQL += statusFilterClause;
 
-            zSQL += " ORDER BY CreatedOn DESC ";
-            zSQL += " OFFSET @PageSize * (@PageNumber - 1) ROWS FETCH NEXT @PageSize ROWS ONLY OPTION(RECOMPILE)";
+            // Apply Level filter
+            if (Level > 0)
+            {
+                zCountSQL += " AND SkillLevel = @Level ";
+                zDataSQL += " AND SkillLevel = @Level ";
+            }
+
+            zDataSQL += " ORDER BY CreatedOn DESC ";
+            zDataSQL += " OFFSET @PageSize * (@PageNumber - 1) ROWS FETCH NEXT @PageSize ROWS ONLY OPTION(RECOMPILE)";
 
             DataTable zTable = new DataTable();
+            int totalCount = 0;
             string zConnectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
+
             try
             {
                 using (SqlConnection zConnect = new SqlConnection(zConnectionString))
                 {
                     zConnect.Open();
-                    using (SqlCommand zCommand = new SqlCommand(zSQL, zConnect))
+
+                    // ✅ Đếm tổng số records
+                    using (SqlCommand zCountCommand = new SqlCommand(zCountSQL, zConnect))
                     {
-                        zCommand.CommandType = CommandType.Text;
-                        zCommand.Parameters.Add("@Level", SqlDbType.Int).Value = Level;
-                        zCommand.Parameters.Add("@Search", SqlDbType.NVarChar).Value = "%" + Search + "%";
-                        zCommand.Parameters.Add("@PageSize", SqlDbType.Int).Value = PageSize;
-                        zCommand.Parameters.Add("@PageNumber", SqlDbType.Int).Value = PageNumber;
-                        using (SqlDataAdapter zAdapter = new SqlDataAdapter(zCommand))
+                        zCountCommand.CommandType = CommandType.Text;
+                        zCountCommand.Parameters.Add("@Level", SqlDbType.Int).Value = Level;
+                        zCountCommand.Parameters.Add("@Search", SqlDbType.NVarChar).Value = "%" + Search + "%";
+                        totalCount = (int)zCountCommand.ExecuteScalar();
+                    }
+
+                    // ✅ Lấy data phân trang
+                    using (SqlCommand zDataCommand = new SqlCommand(zDataSQL, zConnect))
+                    {
+                        zDataCommand.CommandType = CommandType.Text;
+                        zDataCommand.Parameters.Add("@Level", SqlDbType.Int).Value = Level;
+                        zDataCommand.Parameters.Add("@Search", SqlDbType.NVarChar).Value = "%" + Search + "%";
+                        zDataCommand.Parameters.Add("@PageSize", SqlDbType.Int).Value = PageSize;
+                        zDataCommand.Parameters.Add("@PageNumber", SqlDbType.Int).Value = PageNumber;
+                        using (SqlDataAdapter zAdapter = new SqlDataAdapter(zDataCommand))
                         {
                             zAdapter.Fill(zTable);
                         }
@@ -67,71 +95,107 @@ namespace TNS_TOEICPart7.Areas.TOEICPart7.Models
             {
                 zMessage = ex.ToString();
             }
+
             var zDataList = zTable.AsEnumerable().Select(row => new
             {
                 QuestionKey = row["QuestionKey"].ToString(),
                 QuestionText = row["QuestionText"].ToString() ?? "",
-                //QuestionVoice = row["QuestionVoice"].ToString() ?? "",
                 SkillLevel = row["SkillLevel"] != DBNull.Value ? Convert.ToInt32(row["SkillLevel"]) : 0,
                 AmountAccess = row["AmountAccess"] != DBNull.Value ? Convert.ToInt32(row["AmountAccess"]) : 0,
                 Publish = row["Publish"] != DBNull.Value ? Convert.ToBoolean(row["Publish"]) : false,
-                RecordStatus = row["RecordStatus"] != DBNull.Value ? Convert.ToInt32(row["RecordStatus"]) : 0,
-                CorrectRate = row["CorrectRate"] != DBNull.Value ? Convert.ToDouble(row["CorrectRate"]) : (double?)null,
-                Anomaly = row["Anomaly"] != DBNull.Value ? Convert.ToInt32(row["Anomaly"]) : (int?)null
+                RecordStatus = row["RecordStatus"] != DBNull.Value ? Convert.ToInt32(row["RecordStatus"]) : 0
             }).ToList();
 
-            return new JsonResult(zDataList);
+            // ✅ Trả về object với data và totalCount
+            return new JsonResult(new
+            {
+                data = zDataList,
+                totalCount = totalCount
+            });
         }
 
-        // Phương thức có ngày
+        // ✅ Phương thức có ngày - CÓ TOTAL COUNT
         public static JsonResult GetList(string Search, int Level, DateTime FromDate, DateTime ToDate, int PageSize, int PageNumber, string StatusFilter)
         {
             string zMessage = "";
-            string zSQL = @"SELECT QuestionKey, QuestionText, SkillLevel, AmountAccess,CorrectRate, Anomaly, Publish, RecordStatus 
+
+            // ✅ Query để đếm tổng số records
+            string zCountSQL = @"SELECT COUNT(*) 
                        FROM [dbo].[TEC_Part7_Question] 
                        WHERE (CreatedOn >= @FromDate AND CreatedOn <= @ToDate) 
                        AND QuestionText LIKE @Search AND Parent IS NULL
                        AND (QuestionKey IS NOT NULL) ";
 
+            // ✅ Query để lấy data phân trang
+            string zDataSQL = @"SELECT QuestionKey, QuestionText, SkillLevel, AmountAccess, Publish, RecordStatus 
+                       FROM [dbo].[TEC_Part7_Question] 
+                       WHERE (CreatedOn >= @FromDate AND CreatedOn <= @ToDate) 
+                       AND QuestionText LIKE @Search AND Parent IS NULL
+                       AND (QuestionKey IS NOT NULL) ";
+
+            // Apply StatusFilter
+            string statusFilterClause = "";
             if (!string.IsNullOrEmpty(StatusFilter))
             {
                 if (StatusFilter == "Using")
                 {
-                    zSQL += " AND Publish = 1 AND RecordStatus != 99 ";
+                    statusFilterClause = " AND Publish = 1 AND RecordStatus != 99 ";
                 }
                 else if (StatusFilter == "Unpublished")
                 {
-                    zSQL += " AND Publish = 0 ";
+                    statusFilterClause = " AND Publish = 0 ";
                 }
                 else if (StatusFilter == "Deleted")
                 {
-                    zSQL += " AND RecordStatus = 99 ";
+                    statusFilterClause = " AND RecordStatus = 99 ";
                 }
             }
 
-            if (Level > 0)
-                zSQL += " AND SkillLevel = @Level ";
+            zCountSQL += statusFilterClause;
+            zDataSQL += statusFilterClause;
 
-            zSQL += " ORDER BY CreatedOn DESC ";
-            zSQL += " OFFSET @PageSize * (@PageNumber - 1) ROWS FETCH NEXT @PageSize ROWS ONLY OPTION(RECOMPILE)";
+            // Apply Level filter
+            if (Level > 0)
+            {
+                zCountSQL += " AND SkillLevel = @Level ";
+                zDataSQL += " AND SkillLevel = @Level ";
+            }
+
+            zDataSQL += " ORDER BY CreatedOn DESC ";
+            zDataSQL += " OFFSET @PageSize * (@PageNumber - 1) ROWS FETCH NEXT @PageSize ROWS ONLY OPTION(RECOMPILE)";
 
             DataTable zTable = new DataTable();
+            int totalCount = 0;
             string zConnectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
+
             try
             {
                 using (SqlConnection zConnect = new SqlConnection(zConnectionString))
                 {
                     zConnect.Open();
-                    using (SqlCommand zCommand = new SqlCommand(zSQL, zConnect))
+
+                    // ✅ Đếm tổng số records
+                    using (SqlCommand zCountCommand = new SqlCommand(zCountSQL, zConnect))
                     {
-                        zCommand.CommandType = CommandType.Text;
-                        zCommand.Parameters.Add("@FromDate", SqlDbType.DateTime).Value = new DateTime(FromDate.Year, FromDate.Month, FromDate.Day, 0, 0, 1);
-                        zCommand.Parameters.Add("@ToDate", SqlDbType.DateTime).Value = new DateTime(ToDate.Year, ToDate.Month, ToDate.Day, 23, 59, 59);
-                        zCommand.Parameters.Add("@Search", SqlDbType.NVarChar).Value = "%" + Search + "%";
-                        zCommand.Parameters.Add("@Level", SqlDbType.Int).Value = Level;
-                        zCommand.Parameters.Add("@PageSize", SqlDbType.Int).Value = PageSize;
-                        zCommand.Parameters.Add("@PageNumber", SqlDbType.Int).Value = PageNumber;
-                        using (SqlDataAdapter zAdapter = new SqlDataAdapter(zCommand))
+                        zCountCommand.CommandType = CommandType.Text;
+                        zCountCommand.Parameters.Add("@FromDate", SqlDbType.DateTime).Value = new DateTime(FromDate.Year, FromDate.Month, FromDate.Day, 0, 0, 1);
+                        zCountCommand.Parameters.Add("@ToDate", SqlDbType.DateTime).Value = new DateTime(ToDate.Year, ToDate.Month, ToDate.Day, 23, 59, 59);
+                        zCountCommand.Parameters.Add("@Search", SqlDbType.NVarChar).Value = "%" + Search + "%";
+                        zCountCommand.Parameters.Add("@Level", SqlDbType.Int).Value = Level;
+                        totalCount = (int)zCountCommand.ExecuteScalar();
+                    }
+
+                    // ✅ Lấy data phân trang
+                    using (SqlCommand zDataCommand = new SqlCommand(zDataSQL, zConnect))
+                    {
+                        zDataCommand.CommandType = CommandType.Text;
+                        zDataCommand.Parameters.Add("@FromDate", SqlDbType.DateTime).Value = new DateTime(FromDate.Year, FromDate.Month, FromDate.Day, 0, 0, 1);
+                        zDataCommand.Parameters.Add("@ToDate", SqlDbType.DateTime).Value = new DateTime(ToDate.Year, ToDate.Month, ToDate.Day, 23, 59, 59);
+                        zDataCommand.Parameters.Add("@Search", SqlDbType.NVarChar).Value = "%" + Search + "%";
+                        zDataCommand.Parameters.Add("@Level", SqlDbType.Int).Value = Level;
+                        zDataCommand.Parameters.Add("@PageSize", SqlDbType.Int).Value = PageSize;
+                        zDataCommand.Parameters.Add("@PageNumber", SqlDbType.Int).Value = PageNumber;
+                        using (SqlDataAdapter zAdapter = new SqlDataAdapter(zDataCommand))
                         {
                             zAdapter.Fill(zTable);
                         }
@@ -142,22 +206,26 @@ namespace TNS_TOEICPart7.Areas.TOEICPart7.Models
             {
                 zMessage = ex.ToString();
             }
+
             var zDataList = zTable.AsEnumerable().Select(row => new
             {
                 QuestionKey = row["QuestionKey"].ToString(),
                 QuestionText = row["QuestionText"].ToString() ?? "",
-                //QuestionVoice = row["QuestionVoice"].ToString() ?? "",
                 SkillLevel = row["SkillLevel"] != DBNull.Value ? Convert.ToInt32(row["SkillLevel"]) : 0,
                 AmountAccess = row["AmountAccess"] != DBNull.Value ? Convert.ToInt32(row["AmountAccess"]) : 0,
                 Publish = row["Publish"] != DBNull.Value ? Convert.ToBoolean(row["Publish"]) : false,
-                RecordStatus = row["RecordStatus"] != DBNull.Value ? Convert.ToInt32(row["RecordStatus"]) : 0,
-                CorrectRate = row["CorrectRate"] != DBNull.Value ? Convert.ToDouble(row["CorrectRate"]) : (double?)null,
-                Anomaly = row["Anomaly"] != DBNull.Value ? Convert.ToInt32(row["Anomaly"]) : (int?)null
+                RecordStatus = row["RecordStatus"] != DBNull.Value ? Convert.ToInt32(row["RecordStatus"]) : 0
             }).ToList();
 
-            return new JsonResult(zDataList);
+            // ✅ Trả về object với data và totalCount
+            return new JsonResult(new
+            {
+                data = zDataList,
+                totalCount = totalCount
+            });
         }
     }
+
     public class ItemRequest
     {
         public string FromDate { get; set; }

@@ -373,13 +373,13 @@
                 font-size: 1rem;
             }
 
-            /* Answer Text Column - LEFT ALIGN */
+            /* Answer Text Column - CENTER ALIGN */
             .table tbody td:nth-child(2) .cell-content {
-                justify-content: flex-start !important; /* ← KEY FIX */
+                justify-content: center !important; /* ← CHANGED */
                 font-weight: 500;
                 color: #2c3e50;
                 font-size: 0.95rem;
-                text-align: left;
+                text-align: center; /* ← CHANGED */
             }
 
             /* Correct Column - CENTER */
@@ -410,11 +410,11 @@
             justify-content: center;
         }
 
-        /* ✅ FORCE FIX - CRITICAL RULES */
+        /* ✅ FORCE FIX - CENTER ALIGN */
         .table tbody td:nth-child(2) .cell-content {
             display: flex !important;
             align-items: center !important;
-            justify-content: flex-start !important;
+            justify-content: center !important; /* ← CHANGED */
             height: 70px !important;
             line-height: normal !important;
             padding-top: 0 !important;
@@ -454,9 +454,13 @@
             line-height: 1 !important; /* ← THÊM line-height */
         }
 
+        /* Override Bootstrap and any inherited styles */
         #LV_Datatable tbody td:nth-child(2) .cell-content {
-            justify-content: flex-start !important;
-            text-align: left !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important; /* ← CHANGED */
+            height: 70px !important;
+            line-height: 1 !important;
         }
 
         #LV_Datatable tbody td:first-child .cell-content,
@@ -575,8 +579,8 @@
         }
 
         #LV_Datatable tbody td:nth-child(2) div {
-            justify-content: flex-start !important;
-            padding-left: 0.75rem !important;
+            justify-content: center !important; /* ← CHANGED */
+            padding-left: 0 !important; /* ← REMOVE LEFT PADDING */
         }
 
         #LV_Datatable tbody td:first-child div,
