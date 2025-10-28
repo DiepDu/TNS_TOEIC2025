@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System;
+using System.Collections.Generic;
 using TNS_TOEICPart5.Areas.TOEICPart5.Models;
 
 namespace TNS_TOEICPart5.Areas.TOEICPart5.Pages
@@ -78,22 +79,95 @@ namespace TNS_TOEICPart5.Areas.TOEICPart5.Pages
         public IActionResult OnPostTogglePublish([FromBody] ToggleRequest request)
         {
             CheckAuth();
-            if (!(UserLogin.Role.IsUpdate || IsFullAdmin))
-                return new JsonResult(new { status = "ERROR", message = "ACCESS DENIED" });
+            if (!(IsFullAdmin && UserLogin.Role.IsApproval))
+                return new JsonResult(new { status = "ERROR", message = "Bạn không có quyền phê duyệt câu hỏi!" });
 
+            // --- Logic kiểm tra khi BẬT câu hỏi ---
+            if (request.Publish) // Chỉ kiểm tra khi BẬT (Publish = true)
+            {
+                // Tải bản ghi câu hỏi để kiểm tra
+                var zValidationRecord = new QuestionAccessData.Part5_Question_Info(request.QuestionKey);
+                if (zValidationRecord.Status != "OK")
+                    return new JsonResult(new { status = "ERROR", message = "Không tìm thấy câu hỏi để kiểm tra!" });
+
+                List<string> errors = new List<string>();
+
+                // 1. Kiểm tra số lượng đáp án (gọi hàm mới)
+                int answerCount = QuestionListDataAccess.GetAnswerCount(request.QuestionKey);
+                if (answerCount != 4)
+                {
+                    errors.Add($"Phải có đủ 4 đáp án (hiện có {answerCount}).");
+                }
+
+             
+
+
+
+                // User yêu cầu "Voice Explanation" -> Explanation
+                if (string.IsNullOrWhiteSpace(zValidationRecord.Explanation))
+                {
+                    errors.Add("Voice Explanation (Explanation) không được trống.");
+                }
+
+                // User yêu cầu "Level" -> SkillLevel
+                if (zValidationRecord.SkillLevel <= 0) // Giả sử 0 là chưa set
+                {
+                    errors.Add("Level (SkillLevel) phải được cài đặt.");
+                }
+
+                // User yêu cầu "Category"
+                if (string.IsNullOrWhiteSpace(zValidationRecord.Category))
+                {
+                    errors.Add("Category không được trống.");
+                }
+
+                // User yêu cầu "Grammar Topic"
+                if (string.IsNullOrWhiteSpace(zValidationRecord.GrammarTopic))
+                {
+                    errors.Add("Grammar Topic không được trống.");
+                }
+
+                // User yêu cầu "Vocabulary Topic"
+                if (string.IsNullOrWhiteSpace(zValidationRecord.VocabularyTopic))
+                {
+                    errors.Add("Vocabulary Topic không được trống.");
+                }
+
+                // User yêu cầu "Error Type"
+                if (string.IsNullOrWhiteSpace(zValidationRecord.ErrorType))
+                {
+                    errors.Add("Error Type không được trống.");
+                }
+
+                // 3. Trả về lỗi nếu có
+                if (errors.Count > 0)
+                {
+                    return new JsonResult(new
+                    {
+                        status = "VALIDATION_ERROR",
+                        message = "Không thể bật câu hỏi do thiếu thông tin:",
+                        errors = errors
+                    });
+                }
+            }
+
+            // === PHẦN BỊ THIẾU BẮT ĐẦU TỪ ĐÂY ===
+
+            // Nếu không BẬT, hoặc nếu đã BẬT và vượt qua kiểm tra -> chạy logic cập nhật
             var zRecord = new QuestionAccessData.Part5_Question_Info(request.QuestionKey);
             if (zRecord.Status != "OK")
-                return new JsonResult(new { status = "ERROR", message = "Question not found" });
+                return new JsonResult(new { status = "ERROR", message = "Không tìm thấy câu hỏi để cập nhật!" });
 
             zRecord.Publish = request.Publish;
-            if (request.Publish) // Khi bật
-                zRecord.RecordStatus = 0; // Đặt RecordStatus = 0
-            // Khi tắt, giữ nguyên RecordStatus (không thay đổi trừ khi bạn muốn RecordStatus = 99)
+            if (request.Publish)
+                zRecord.RecordStatus = 0; // Khi bật, đảm bảo RecordStatus là 0 (đang sử dụng)
 
             zRecord.ModifiedBy = UserLogin.Employee.Key;
             zRecord.ModifiedName = UserLogin.Employee.Name;
 
             zRecord.Update();
+
+            // Đây là lệnh return cho trường hợp thành công (hoặc thất bại khi update)
             return new JsonResult(new { status = zRecord.Status, message = zRecord.Message });
         }
 

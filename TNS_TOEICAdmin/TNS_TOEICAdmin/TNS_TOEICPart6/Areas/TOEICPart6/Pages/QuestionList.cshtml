@@ -1033,7 +1033,7 @@
             window.location = "/TOEICPart6/QuestionSubList?QuestionKey=" + QuestionKey;
         }
 
-        function togglePublish(button, questionKey) {
+             function togglePublish(button, questionKey) {
             const isOn = $(button).hasClass('btn-on');
             const newState = !isOn;
             const confirmMessage = newState
@@ -1058,6 +1058,13 @@
                                 $(button).removeClass('btn-on').addClass('btn-off').text('OFF');
                                 showAlertModal("Passage turned OFF successfully!", "success");
                             }
+                        } else if (data.status === 'VALIDATION_ERROR') {
+                            // Display detailed validation errors
+                            let errorMessage = data.message + "\n\n";
+                            if (data.errors && data.errors.length > 0) {
+                                errorMessage += data.errors.map((err, idx) => `${idx + 1}. ${err}`).join('\n');
+                            }
+                            showAlertModal(errorMessage, "warning", "Validation Failed");
                         } else {
                             showAlertModal("Error: " + data.message, "error");
                         }
@@ -1068,7 +1075,6 @@
                 'Change Status'
             );
         }
-
         function showConfirmModal(message, onConfirm, title = 'Confirm Action') {
             $('#confirmModalLabel').html(`<i class="fas fa-exclamation-triangle me-2"></i>${title}`);
             $('#confirmModalBody').text(message);
@@ -1112,7 +1118,13 @@
 
             header.addClass(headerClass);
             titleElement.html(`<i class="fas ${icon} me-2"></i>${title || defaultTitle}`);
-            $('#alertModalBody').text(message);
+
+            // Convert line breaks to <br> and format list
+            const formattedMessage = message
+                .replace(/\n/g, '<br>')
+                .replace(/(\d+\.\s)/g, '<strong>$1</strong>');
+
+            $('#alertModalBody').html(`<div style="text-align: left; line-height: 1.6;">${formattedMessage}</div>`);
 
             alertModal.show();
         }

@@ -9,24 +9,22 @@ namespace TNS_TOEICPart6.Areas.TOEICPart6.Models
 {
     public static class QuestionListDataAccess
     {
-        // ✅ Phương thức không có ngày - CÓ TOTAL COUNT
+        // ===== EXISTING METHODS (giữ nguyên GetList methods) =====
         public static JsonResult GetList(string Search, int Level, int PageSize, int PageNumber, string StatusFilter)
         {
+            // ... code hiện tại giữ nguyên ...
             string zMessage = "";
 
-            // ✅ Query để đếm tổng số records
             string zCountSQL = @"SELECT COUNT(*) 
                        FROM [dbo].[TEC_Part6_Question] 
                        WHERE QuestionText LIKE @Search AND Parent IS NULL
                        AND (QuestionKey IS NOT NULL) ";
 
-            // ✅ Query để lấy data phân trang
             string zDataSQL = @"SELECT QuestionKey, QuestionText, SkillLevel, AmountAccess, Publish, CorrectRate, Anomaly, RecordStatus 
                        FROM [dbo].[TEC_Part6_Question] 
                        WHERE QuestionText LIKE @Search AND Parent IS NULL
                        AND (QuestionKey IS NOT NULL) ";
 
-            // Apply StatusFilter cho cả 2 queries
             string statusFilterClause = "";
             if (!string.IsNullOrEmpty(StatusFilter))
             {
@@ -47,7 +45,6 @@ namespace TNS_TOEICPart6.Areas.TOEICPart6.Models
             zCountSQL += statusFilterClause;
             zDataSQL += statusFilterClause;
 
-            // Apply Level filter
             if (Level > 0)
             {
                 zCountSQL += " AND SkillLevel = @Level ";
@@ -67,7 +64,6 @@ namespace TNS_TOEICPart6.Areas.TOEICPart6.Models
                 {
                     zConnect.Open();
 
-                    // ✅ Đếm tổng số records
                     using (SqlCommand zCountCommand = new SqlCommand(zCountSQL, zConnect))
                     {
                         zCountCommand.CommandType = CommandType.Text;
@@ -76,7 +72,6 @@ namespace TNS_TOEICPart6.Areas.TOEICPart6.Models
                         totalCount = (int)zCountCommand.ExecuteScalar();
                     }
 
-                    // ✅ Lấy data phân trang
                     using (SqlCommand zDataCommand = new SqlCommand(zDataSQL, zConnect))
                     {
                         zDataCommand.CommandType = CommandType.Text;
@@ -108,7 +103,6 @@ namespace TNS_TOEICPart6.Areas.TOEICPart6.Models
                 Anomaly = row["Anomaly"] != DBNull.Value ? Convert.ToInt32(row["Anomaly"]) : (int?)null
             }).ToList();
 
-            // ✅ Trả về object với data và totalCount
             return new JsonResult(new
             {
                 data = zDataList,
@@ -116,26 +110,23 @@ namespace TNS_TOEICPart6.Areas.TOEICPart6.Models
             });
         }
 
-        // ✅ Phương thức có ngày - CÓ TOTAL COUNT
         public static JsonResult GetList(string Search, int Level, DateTime FromDate, DateTime ToDate, int PageSize, int PageNumber, string StatusFilter)
         {
+            // ... code hiện tại giữ nguyên ...
             string zMessage = "";
 
-            // ✅ Query để đếm tổng số records
             string zCountSQL = @"SELECT COUNT(*) 
                        FROM [dbo].[TEC_Part6_Question] 
                        WHERE (CreatedOn >= @FromDate AND CreatedOn <= @ToDate) 
                        AND QuestionText LIKE @Search AND Parent IS NULL
                        AND (QuestionKey IS NOT NULL) ";
 
-            // ✅ Query để lấy data phân trang
             string zDataSQL = @"SELECT QuestionKey, QuestionText, SkillLevel, AmountAccess, Publish, CorrectRate, Anomaly, RecordStatus 
                        FROM [dbo].[TEC_Part6_Question] 
                        WHERE (CreatedOn >= @FromDate AND CreatedOn <= @ToDate) 
                        AND QuestionText LIKE @Search AND Parent IS NULL
                        AND (QuestionKey IS NOT NULL) ";
 
-            // Apply StatusFilter
             string statusFilterClause = "";
             if (!string.IsNullOrEmpty(StatusFilter))
             {
@@ -156,7 +147,6 @@ namespace TNS_TOEICPart6.Areas.TOEICPart6.Models
             zCountSQL += statusFilterClause;
             zDataSQL += statusFilterClause;
 
-            // Apply Level filter
             if (Level > 0)
             {
                 zCountSQL += " AND SkillLevel = @Level ";
@@ -176,7 +166,6 @@ namespace TNS_TOEICPart6.Areas.TOEICPart6.Models
                 {
                     zConnect.Open();
 
-                    // ✅ Đếm tổng số records
                     using (SqlCommand zCountCommand = new SqlCommand(zCountSQL, zConnect))
                     {
                         zCountCommand.CommandType = CommandType.Text;
@@ -187,7 +176,6 @@ namespace TNS_TOEICPart6.Areas.TOEICPart6.Models
                         totalCount = (int)zCountCommand.ExecuteScalar();
                     }
 
-                    // ✅ Lấy data phân trang
                     using (SqlCommand zDataCommand = new SqlCommand(zDataSQL, zConnect))
                     {
                         zDataCommand.CommandType = CommandType.Text;
@@ -221,12 +209,218 @@ namespace TNS_TOEICPart6.Areas.TOEICPart6.Models
                 Anomaly = row["Anomaly"] != DBNull.Value ? Convert.ToInt32(row["Anomaly"]) : (int?)null
             }).ToList();
 
-            // ✅ Trả về object với data và totalCount
             return new JsonResult(new
             {
                 data = zDataList,
                 totalCount = totalCount
             });
+        }
+
+        // ===== ✅ THÊM CÁC PHƯƠNG THỨC VALIDATION MỚI CHO PART6 =====
+
+        /// <summary>
+        /// Count the number of answers for a question (not deleted)
+        /// </summary>
+        public static int GetAnswerCount(string QuestionKey)
+        {
+            string zSQL = @"SELECT COUNT(*) 
+                           FROM [dbo].[TEC_Part6_Answer] 
+                           WHERE QuestionKey = @QuestionKey 
+                           AND RecordStatus != 99";
+
+            string zConnectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
+            try
+            {
+                using (SqlConnection zConnect = new SqlConnection(zConnectionString))
+                {
+                    zConnect.Open();
+                    using (SqlCommand zCommand = new SqlCommand(zSQL, zConnect))
+                    {
+                        zCommand.CommandType = CommandType.Text;
+                        zCommand.Parameters.Add("@QuestionKey", SqlDbType.UniqueIdentifier).Value = new Guid(QuestionKey);
+                        return (int)zCommand.ExecuteScalar();
+                    }
+                }
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+        /// <summary>
+        /// Count the number of correct answers for a question
+        /// </summary>
+        public static int GetCorrectAnswerCount(string QuestionKey)
+        {
+            string zSQL = @"SELECT COUNT(*) 
+                           FROM [dbo].[TEC_Part6_Answer] 
+                           WHERE QuestionKey = @QuestionKey 
+                           AND RecordStatus != 99 
+                           AND AnswerCorrect = 1";
+
+            string zConnectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
+            try
+            {
+                using (SqlConnection zConnect = new SqlConnection(zConnectionString))
+                {
+                    zConnect.Open();
+                    using (SqlCommand zCommand = new SqlCommand(zSQL, zConnect))
+                    {
+                        zCommand.CommandType = CommandType.Text;
+                        zCommand.Parameters.Add("@QuestionKey", SqlDbType.UniqueIdentifier).Value = new Guid(QuestionKey);
+                        return (int)zCommand.ExecuteScalar();
+                    }
+                }
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+        /// <summary>
+        /// Validate child questions (sub-questions) of a parent question (passage)
+        /// ✅ PART6 SPECIFIC: Requires minimum 4 sub-questions
+        /// </summary>
+        public static List<string> ValidateChildQuestions(string parentQuestionKey)
+        {
+            List<string> errors = new List<string>();
+            string zConnectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
+
+            string countSQL = @"SELECT COUNT(*) 
+                               FROM [dbo].[TEC_Part6_Question] 
+                               WHERE Parent = @ParentKey 
+                               AND RecordStatus != 99";
+
+            string listSQL = @"SELECT QuestionKey, QuestionText, Explanation, SkillLevel, 
+                                      Category, GrammarTopic, VocabularyTopic, ErrorType, Ranking
+                               FROM [dbo].[TEC_Part6_Question] 
+                               WHERE Parent = @ParentKey 
+                               AND RecordStatus != 99
+                               ORDER BY Ranking";
+
+            try
+            {
+                using (SqlConnection zConnect = new SqlConnection(zConnectionString))
+                {
+                    zConnect.Open();
+
+                    int childCount = 0;
+                    using (SqlCommand countCmd = new SqlCommand(countSQL, zConnect))
+                    {
+                        countCmd.Parameters.Add("@ParentKey", SqlDbType.UniqueIdentifier).Value = new Guid(parentQuestionKey);
+                        childCount = (int)countCmd.ExecuteScalar();
+                    }
+
+                    // ✅ PART6: Phải có ít nhất 4 câu hỏi con (thay vì 3)
+                    if (childCount < 4)
+                    {
+                        errors.Add($"Passage must have at least 4 sub-questions (currently has {childCount}).");
+                        return errors;
+                    }
+
+                    List<SubQuestionValidation> subQuestions = new List<SubQuestionValidation>();
+
+                    using (SqlCommand listCmd = new SqlCommand(listSQL, zConnect))
+                    {
+                        listCmd.Parameters.Add("@ParentKey", SqlDbType.UniqueIdentifier).Value = new Guid(parentQuestionKey);
+
+                        using (SqlDataReader reader = listCmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                subQuestions.Add(new SubQuestionValidation
+                                {
+                                    QuestionKey = reader["QuestionKey"].ToString(),
+                                    QuestionText = reader["QuestionText"]?.ToString(),
+                                    Explanation = reader["Explanation"]?.ToString(),
+                                    SkillLevel = reader["SkillLevel"] == DBNull.Value ? 0 : Convert.ToInt32(reader["SkillLevel"]),
+                                    Category = reader["Category"]?.ToString(),
+                                    GrammarTopic = reader["GrammarTopic"]?.ToString(),
+                                    VocabularyTopic = reader["VocabularyTopic"]?.ToString(),
+                                    ErrorType = reader["ErrorType"]?.ToString(),
+                                    Ranking = reader["Ranking"] == DBNull.Value ? 0 : Convert.ToInt32(reader["Ranking"])
+                                });
+                            }
+                        }
+                    }
+
+                    for (int i = 0; i < subQuestions.Count; i++)
+                    {
+                        var child = subQuestions[i];
+                        int childIndex = i + 1;
+                        List<string> childErrors = new List<string>();
+
+                        if (string.IsNullOrWhiteSpace(child.QuestionText))
+                            childErrors.Add("Text");
+
+                        if (string.IsNullOrWhiteSpace(child.Explanation))
+                            childErrors.Add("Explanation");
+
+                        if (child.SkillLevel <= 0)
+                            childErrors.Add("Level");
+
+                        if (string.IsNullOrWhiteSpace(child.Category))
+                            childErrors.Add("Category");
+
+                        if (string.IsNullOrWhiteSpace(child.GrammarTopic))
+                            childErrors.Add("Grammar Topic");
+
+                        if (string.IsNullOrWhiteSpace(child.VocabularyTopic))
+                            childErrors.Add("Vocabulary Topic");
+
+                        if (string.IsNullOrWhiteSpace(child.ErrorType))
+                            childErrors.Add("Error Type");
+
+                        if (child.Ranking <= 0)
+                            childErrors.Add("Ranking");
+
+                        if (childErrors.Count > 0)
+                        {
+                            errors.Add($"Sub-question #{childIndex} is missing: {string.Join(", ", childErrors)}");
+                        }
+
+                        int answerCount = GetAnswerCount(child.QuestionKey);
+                        if (answerCount != 4)
+                        {
+                            errors.Add($"Sub-question #{childIndex} must have exactly 4 answers (currently has {answerCount}).");
+                        }
+
+                        int correctAnswerCount = GetCorrectAnswerCount(child.QuestionKey);
+                        if (correctAnswerCount != 1)
+                        {
+                            if (correctAnswerCount == 0)
+                            {
+                                errors.Add($"Sub-question #{childIndex} must have exactly 1 correct answer (currently has none).");
+                            }
+                            else
+                            {
+                                errors.Add($"Sub-question #{childIndex} must have exactly 1 correct answer (currently has {correctAnswerCount}).");
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                errors.Add($"Error validating sub-questions: {ex.Message}");
+            }
+
+            return errors;
+        }
+
+        private class SubQuestionValidation
+        {
+            public string QuestionKey { get; set; }
+            public string QuestionText { get; set; }
+            public string Explanation { get; set; }
+            public int SkillLevel { get; set; }
+            public string Category { get; set; }
+            public string GrammarTopic { get; set; }
+            public string VocabularyTopic { get; set; }
+            public string ErrorType { get; set; }
+            public int Ranking { get; set; }
         }
     }
 

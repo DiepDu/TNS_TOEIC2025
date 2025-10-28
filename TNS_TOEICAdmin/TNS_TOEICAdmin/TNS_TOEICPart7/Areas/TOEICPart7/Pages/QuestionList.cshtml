@@ -798,7 +798,7 @@
             sessionStorage.setItem('part7QuestionListState', JSON.stringify(state));
         }
 
-        function restorePageState() {
+               function restorePageState() {
             const savedState = sessionStorage.getItem('part7QuestionListState');
             if (savedState) {
                 const state = JSON.parse(savedState);
@@ -806,7 +806,16 @@
                 $('#txtLevel').val(state.level || '');
                 $('#txtFromDate').val(state.fromDate || '');
                 $('#txtToDate').val(state.toDate || '');
-                $('#statusFilter').val(state.statusFilter || 'Using');
+
+                // ✅ FIX: Kiểm tra rõ ràng nếu statusFilter là undefined hoặc null
+                // Chỉ default về 'Using' nếu KHÔNG CÓ giá trị saved
+                // Nếu có giá trị (kể cả empty string "") thì giữ nguyên
+                if (state.hasOwnProperty('statusFilter')) {
+                    $('#statusFilter').val(state.statusFilter);
+                } else {
+                    $('#statusFilter').val('Using');
+                }
+
                 _PageNumber = state.pageNumber || 1;
 
                 LV_LoadData_Ajax(function() {
@@ -822,6 +831,8 @@
                     }
                 });
             } else {
+                // ✅ Khi KHÔNG CÓ saved state, default là 'Using'
+                $('#statusFilter').val('Using');
                 LV_LoadData_Ajax();
             }
         }
@@ -1049,7 +1060,7 @@
             window.location = "/TOEICPart7/QuestionSubList?Key=" + QuestionKey; // ✅ ĐÚNG
         }
 
-        function togglePublish(button, questionKey) {
+              function togglePublish(button, questionKey) {
             const isOn = $(button).hasClass('btn-on');
             const newState = !isOn;
             const confirmMessage = newState
@@ -1074,6 +1085,13 @@
                                 $(button).removeClass('btn-on').addClass('btn-off').text('OFF');
                                 showAlertModal("Passage turned OFF successfully!", "success");
                             }
+                        } else if (data.status === 'VALIDATION_ERROR') {
+                            // Display detailed validation errors
+                            let errorMessage = data.message + "\n\n";
+                            if (data.errors && data.errors.length > 0) {
+                                errorMessage += data.errors.map((err, idx) => `${idx + 1}. ${err}`).join('\n');
+                            }
+                            showAlertModal(errorMessage, "warning", "Validation Failed");
                         } else {
                             showAlertModal("Error: " + data.message, "error");
                         }
@@ -1101,7 +1119,7 @@
             confirmModal.show();
         }
 
-        function showAlertModal(message, type = 'success', title = null) {
+           function showAlertModal(message, type = 'success', title = null) {
             const alertModal = new bootstrap.Modal(document.getElementById('alertModal'));
             const header = $('#alertModalHeader');
             const titleElement = $('#alertModalLabel');
@@ -1128,7 +1146,13 @@
 
             header.addClass(headerClass);
             titleElement.html(`<i class="fas ${icon} me-2"></i>${title || defaultTitle}`);
-            $('#alertModalBody').text(message);
+
+            // Convert line breaks to <br> and format list
+            const formattedMessage = message
+                .replace(/\n/g, '<br>')
+                .replace(/(\d+\.\s)/g, '<strong>$1</strong>');
+
+            $('#alertModalBody').html(`<div style="text-align: left; line-height: 1.6;">${formattedMessage}</div>`);
 
             alertModal.show();
         }

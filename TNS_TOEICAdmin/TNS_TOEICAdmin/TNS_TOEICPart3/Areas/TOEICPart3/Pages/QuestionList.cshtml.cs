@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Data.SqlClient;
 using System;
+using System.Collections.Generic;
 using TNS_TOEICPart3.Areas.TOEICPart3.Models;
 
 namespace TNS_TOEICPart3.Areas.TOEICPart3.Pages
@@ -80,23 +81,95 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Pages
         {
             CheckAuth();
             if (!(UserLogin.Role.IsUpdate || IsFullAdmin))
-                return new JsonResult(new { status = "ERROR", message = "ACCESS DENIED" });
+                return new JsonResult(new { status = "ERROR", message = "You do not have permission to approve questions!" });
 
+            // --- Validation logic when TURNING ON question ---
+            if (request.Publish) // Only validate when turning ON (Publish = true)
+            {
+                // Load question record for validation
+                var zValidationRecord = new QuestionAccessData.Part3_Question_Info(request.QuestionKey);
+                if (zValidationRecord.Status != "OK")
+                    return new JsonResult(new { status = "ERROR", message = "Passage not found for validation!" });
+
+                List<string> errors = new List<string>();
+
+                // === VALIDATE PARENT QUESTION (PASSAGE) ===
+
+                // 1. Check Voice
+                if (string.IsNullOrWhiteSpace(zValidationRecord.QuestionVoice))
+                {
+                    errors.Add("Voice cannot be empty.");
+                }
+
+               
+
+                // 3. Check Level (SkillLevel)
+                if (zValidationRecord.SkillLevel <= 0)
+                {
+                    errors.Add("Level must be set.");
+                }
+
+                // 4. Check Category
+                if (string.IsNullOrWhiteSpace(zValidationRecord.Category))
+                {
+                    errors.Add("Category cannot be empty.");
+                }
+
+                // 5. Check Grammar Topic
+                if (string.IsNullOrWhiteSpace(zValidationRecord.GrammarTopic))
+                {
+                    errors.Add("Grammar Topic cannot be empty.");
+                }
+
+                // 6. Check Vocabulary Topic
+                if (string.IsNullOrWhiteSpace(zValidationRecord.VocabularyTopic))
+                {
+                    errors.Add("Vocabulary Topic cannot be empty.");
+                }
+
+                // 7. Check Error Type
+                if (string.IsNullOrWhiteSpace(zValidationRecord.ErrorType))
+                {
+                    errors.Add("Error Type cannot be empty.");
+                }
+
+                // === VALIDATE CHILD QUESTIONS (SUB QUESTIONS) ===
+                var childErrors = QuestionListDataAccess.ValidateChildQuestions(request.QuestionKey);
+                if (childErrors.Count > 0)
+                {
+                    errors.AddRange(childErrors);
+                }
+
+                // 8. Return errors if any
+                if (errors.Count > 0)
+                {
+                    return new JsonResult(new
+                    {
+                        status = "VALIDATION_ERROR",
+                        message = "Cannot turn on passage due to missing information:",
+                        errors = errors
+                    });
+                }
+            }
+
+            // === UPDATE STATUS ===
             var zRecord = new QuestionAccessData.Part3_Question_Info(request.QuestionKey);
             if (zRecord.Status != "OK")
-                return new JsonResult(new { status = "ERROR", message = "Question not found" });
+                return new JsonResult(new { status = "ERROR", message = "Passage not found for update!" });
 
             zRecord.Publish = request.Publish;
-            if (request.Publish) // Khi bật
-                zRecord.RecordStatus = 0; // Đặt RecordStatus = 0
-            // Khi tắt, giữ nguyên RecordStatus (không thay đổi trừ khi bạn muốn RecordStatus = 99)
+            if (request.Publish)
+                zRecord.RecordStatus = 0; // When turning on, ensure RecordStatus is 0
 
             zRecord.ModifiedBy = UserLogin.Employee.Key;
             zRecord.ModifiedName = UserLogin.Employee.Name;
 
             zRecord.Update();
+
             if (zRecord.Status != "OK")
                 return new JsonResult(new { status = zRecord.Status, message = zRecord.Message });
+
+            // Update child questions
             try
             {
                 string connectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
@@ -116,12 +189,11 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Pages
                     {
                         cmd.Parameters.AddWithValue("@QuestionKey", request.QuestionKey);
                         cmd.Parameters.AddWithValue("@Publish", request.Publish);
-                        cmd.Parameters.AddWithValue("@RecordStatus", request.Publish ? 0 : zRecord.RecordStatus); // Khi bật: 0, khi tắt: giữ nguyên
+                        cmd.Parameters.AddWithValue("@RecordStatus", request.Publish ? 0 : zRecord.RecordStatus);
                         cmd.Parameters.AddWithValue("@ModifiedBy", UserLogin.Employee.Key);
                         cmd.Parameters.AddWithValue("@ModifiedName", UserLogin.Employee.Name);
 
-                        int rowsAffected = cmd.ExecuteNonQuery();
-                        // Có thể ghi log số lượng câu hỏi con được cập nhật nếu muốn
+                        cmd.ExecuteNonQuery();
                     }
                 }
             }
@@ -129,7 +201,8 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Pages
             {
                 return new JsonResult(new { status = "ERROR", message = $"Failed to update sub-questions: {ex.Message}" });
             }
-            return new JsonResult(new { status = zRecord.Status, message = zRecord.Message });
+
+            return new JsonResult(new { status = "OK", message = "Updated successfully!" });
         }
 
         public class ToggleRequest

@@ -27,7 +27,6 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
             public double? CorrectRate { get; set; }
             public int? Anomaly { get; set; }
         }
-        // THÊM METHOD MỚI (đặt sau method GetList)
         public static int GetTotalCount(string Search, int Level, string StatusFilter)
         {
             string zSQL = @"SELECT COUNT(*) 
@@ -258,7 +257,33 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
 
             return new JsonResult(zDataList);
         }
+        public static int GetAnswerCount(string QuestionKey)
+        {
+            // Đếm số lượng đáp án chưa bị xóa (RecordStatus != 99)
+            string zSQL = @"SELECT COUNT(*) 
+                           FROM [dbo].[TEC_Part1_Answer] 
+                           WHERE QuestionKey = @QuestionKey 
+                           AND RecordStatus != 99";
 
+            string zConnectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
+            try
+            {
+                using (SqlConnection zConnect = new SqlConnection(zConnectionString))
+                {
+                    zConnect.Open();
+                    using (SqlCommand zCommand = new SqlCommand(zSQL, zConnect))
+                    {
+                        zCommand.Parameters.Add("@QuestionKey", SqlDbType.NVarChar).Value = QuestionKey;
+                        return (int)zCommand.ExecuteScalar();
+                    }
+                }
+            }
+            catch
+            {
+                // Trả về 0 nếu có lỗi
+                return 0;
+            }
+        }
 
         private static List<QuestionStat> GetQuestionStatistics()
         {

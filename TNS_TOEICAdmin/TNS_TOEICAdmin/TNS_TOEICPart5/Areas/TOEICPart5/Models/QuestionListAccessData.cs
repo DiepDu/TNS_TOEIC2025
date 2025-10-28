@@ -202,5 +202,32 @@ namespace TNS_TOEICPart5.Areas.TOEICPart5.Models
 
             return new JsonResult(new { data = zDataList, totalCount = totalCount });
         }
+        public static int GetAnswerCount(string QuestionKey)
+        {
+            // Đếm số lượng đáp án chưa bị xóa (RecordStatus != 99)
+            string zSQL = @"SELECT COUNT(*) 
+                     FROM [dbo].[TEC_Part5_Answer] 
+                     WHERE QuestionKey = @QuestionKey 
+                     AND RecordStatus != 99";
+
+            string zConnectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
+            try
+            {
+                using (SqlConnection zConnect = new SqlConnection(zConnectionString))
+                {
+                    zConnect.Open();
+                    using (SqlCommand zCommand = new SqlCommand(zSQL, zConnect))
+                    {
+                        zCommand.Parameters.Add("@QuestionKey", SqlDbType.NVarChar).Value = QuestionKey;
+                        return (int)zCommand.ExecuteScalar();
+                    }
+                }
+            }
+            catch
+            {
+                // Trả về 0 nếu có lỗi
+                return 0;
+            }
+        }
     }
 }
