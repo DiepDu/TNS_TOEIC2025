@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using TNS_TOEICPart1.Areas.TOEICPart1.Models;
 
 namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
@@ -110,7 +111,28 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
                 return new JsonResult(new { status = "ERROR", message = "Đã xảy ra lỗi trong quá trình cập nhật: " + ex.Message });
             }
         }
+        public async Task<IActionResult> OnPostUpdateFullIrtAsync()
+        {
+            CheckAuth();
+            if (!IsFullAdmin)
+                return new JsonResult(new { status = "ERROR", message = "Bạn không có quyền cập nhật IRT!" });
 
+            try
+            {
+                // ✅ GỌI TỪ FILE RIÊNG IrtDataAccess
+                var (success, message) = await IrtDataAccess.UpdateFullIrtAsync();
+
+                return new JsonResult(new
+                {
+                    status = success ? "OK" : "ERROR",
+                    message = message
+                });
+            }
+            catch (Exception ex)
+            {
+                return new JsonResult(new { status = "ERROR", message = "❌ Exception: " + ex.Message });
+            }
+        }
         public IActionResult OnPostTogglePublish([FromBody] ToggleRequest request)
         {
             CheckAuth();
