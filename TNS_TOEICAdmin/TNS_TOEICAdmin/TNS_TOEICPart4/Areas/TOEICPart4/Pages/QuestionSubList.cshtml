@@ -366,6 +366,82 @@
     }
 
     }
+    /* ===== IRT QUALITY BADGE ===== */
+    .irt-quality-badge {
+        display: inline-block;
+        padding: 0.35rem 0.7rem;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        cursor: help;
+        transition: all 0.3s ease;
+    }
+
+    .irt-quality-good {
+        background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+        color: white;
+        box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3);
+    }
+
+        .irt-quality-good:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.5);
+        }
+
+    .irt-quality-fair {
+        background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+        color: white;
+        box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3);
+    }
+
+        .irt-quality-fair:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(243, 156, 18, 0.5);
+        }
+
+    .irt-quality-poor {
+        background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        color: white;
+        box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+    }
+
+        .irt-quality-poor:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.5);
+        }
+
+    .irt-quality-na {
+        background: #95a5a6;
+        color: white;
+        font-style: italic;
+    }
+
+    /* ===== BOOTSTRAP TOOLTIP OVERRIDE ===== */
+    .tooltip-inner {
+        max-width: 400px !important;
+        padding: 1rem !important;
+        text-align: left !important;
+        background: #2c3e50 !important;
+        border-radius: 8px !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+    }
+
+        .tooltip-inner strong {
+            color: #3498db;
+            display: block;
+            margin-top: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .tooltip-inner .irt-param {
+            margin: 0.3rem 0;
+            padding-left: 0.5rem;
+            border-left: 3px solid #3498db;
+        }
+    /* IRT Column */
+    #LV_Datatable tbody td:nth-child(8) > div {
+        font-weight: 600;
+    }
 </style>
 
 <!-- Breadcrumb -->
@@ -416,6 +492,7 @@
                     <th style="width:80px">Access</th>
                     <th style="width:110px">Correct Rate</th>
                     <th style="width:90px">Anomaly</th>
+                    <th style="width:100px">IRT</th> <!-- ✅ NEW COLUMN -->
                     <th style="width:80px">Ranking</th>
                     <th style="width:100px">Answer</th>
                 </tr>
@@ -528,15 +605,14 @@
             });
         }
 
-        // ✅ WRAP content trong <div> + CÓ Correct Rate & Anomaly
-        function LV_DisplayData() {
+                function LV_DisplayData() {
             let zContent = "";
             const n = _DataView ? _DataView.length : 0;
 
             if (n === 0) {
                 zContent = `
                     <tr>
-                        <td colspan="9" class="text-center py-5">
+                        <td colspan="10" class="text-center py-5">
                             <div class="empty-state">
                                 <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
                                 <p class="text-muted fw-bold">No sub questions found.</p>
@@ -547,47 +623,196 @@
                 `;
             } else {
                 for (let i = 0; i < n; i++) {
-                    // ✅ Process CorrectRate with color coding
-                    let correctRate = _DataView[i].CorrectRate !== null ? _DataView[i].CorrectRate : null;
+                    const item = _DataView[i];
+
+                    // ===== CORRECT RATE =====
+                    let correctRate = item.CorrectRate !== null ? item.CorrectRate : null;
                     let correctRateText = correctRate !== null ? correctRate.toFixed(2) + "%" : "N/A";
                     let correctRateClass = "";
 
                     if (correctRate !== null) {
-                        if (correctRate >= 70) {
-                            correctRateClass = "correct-rate-high";
-                        } else if (correctRate <= 30) {
-                            correctRateClass = "correct-rate-low";
-                        } else {
-                            correctRateClass = "correct-rate-medium";
-                        }
+                        if (correctRate >= 70) correctRateClass = "correct-rate-high";
+                        else if (correctRate <= 30) correctRateClass = "correct-rate-low";
+                        else correctRateClass = "correct-rate-medium";
                     }
 
-                    // ✅ Process Anomaly
-                    let anomaly = _DataView[i].Anomaly !== null ? _DataView[i].Anomaly : "N/A";
+                    let anomaly = item.Anomaly !== null ? item.Anomaly : "N/A";
 
+                    // ===== IRT PROCESSING =====
+                    let quality = item.Quality || "";
+                    let irtDiff = item.IrtDifficulty;
+                    let irtDisc = item.IrtDiscrimination;
+                    let irtGuess = item.IrtGuessing;
+                    let confidence = item.ConfidenceLevel || "";
+                    let lastAnalyzed = item.LastAnalyzed || "";
+
+                    let qualityBadge = "";
+                    let tooltipContent = "";
+
+                    if (quality === "" || quality === "N/A" || !irtDiff || !irtDisc || !irtGuess) {
+                        qualityBadge = "<span class='irt-quality-badge irt-quality-na'>N/A</span>";
+                    } else {
+                        let reasons = [];
+                        let diffText = "";
+                        let diffClass = "";
+                        let discText = "";
+                        let guessText = "";
+                        let reliableIcon = "";
+                        let reliableText = "";
+
+                        // Difficulty
+                        if (irtDiff < -1) {
+                            diffText = "Very Easy (< -1.0)";
+                            diffClass = "🟢";
+                        } else if (irtDiff < 0) {
+                            diffText = "Easy (-1.0 to 0)";
+                            diffClass = "🟢";
+                        } else if (irtDiff < 1) {
+                            diffText = "Medium (0 to 1.0)";
+                            diffClass = "🟡";
+                        } else if (irtDiff < 2) {
+                            diffText = "Hard (1.0 to 2.0)";
+                            diffClass = "🔴";
+                        } else {
+                            diffText = "Very Hard (> 2.0)";
+                            diffClass = "🔴";
+                            if (irtDiff > 2.5) reasons.push("Difficulty too extreme (> 2.5)");
+                        }
+
+                        // Discrimination
+                        if (irtDisc < 0.5) {
+                            discText = "Poor (< 0.5) - Cannot differentiate students";
+                            reasons.push("Low discrimination (< 0.5)");
+                        } else if (irtDisc < 1.0) {
+                            discText = "Fair (0.5-1.0)";
+                        } else {
+                            discText = "Good (≥ 1.0) - Differentiates well";
+                        }
+
+                        // Guessing
+                        if (irtGuess < 0.2) {
+                            guessText = "Good (< 0.2) - Hard to guess";
+                        } else if (irtGuess < 0.3) {
+                            guessText = "Fair (0.2-0.3)";
+                        } else {
+                            guessText = "Poor (≥ 0.3) - Easy to guess";
+                            if (irtGuess > 0.4) reasons.push("High guessing probability (> 0.4)");
+                        }
+
+                        // Reliability
+                        if (confidence === "High") {
+                            reliableIcon = "🟢";
+                            reliableText = "High (≥ 100 responses)";
+                        } else if (confidence === "Medium") {
+                            reliableIcon = "🟡";
+                            reliableText = "Medium (30-99 responses)";
+                        } else if (confidence === "Low") {
+                            reliableIcon = "🔴";
+                            reliableText = "Low (< 30 responses)";
+                            reasons.push("Insufficient data (< 30 responses)");
+                        } else {
+                            reliableIcon = "⚪";
+                            reliableText = "Unknown";
+                        }
+
+                        // Build tooltip
+                        tooltipContent = "<div style='font-size: 0.9rem; line-height: 1.6;'>";
+                        tooltipContent += "<strong style='color: #3498db; font-size: 1rem; display: block; margin-bottom: 0.5rem;'>IRT Parameters (3PL Model)</strong>";
+
+                        tooltipContent += "<div class='irt-param'>";
+                        tooltipContent += "<strong>📊 Difficulty (b):</strong> " + irtDiff.toFixed(2) + "<br>";
+                        tooltipContent += "<span style='color: #ecf0f1;'>" + diffClass + " " + diffText + "</span>";
+                        tooltipContent += "</div>";
+
+                        tooltipContent += "<div class='irt-param'>";
+                        tooltipContent += "<strong>🎯 Discrimination (a):</strong> " + irtDisc.toFixed(2) + "<br>";
+                        tooltipContent += "<span style='color: #ecf0f1;'>" + discText + "</span>";
+                        tooltipContent += "</div>";
+
+                        tooltipContent += "<div class='irt-param'>";
+                        tooltipContent += "<strong>🎲 Guessing (c):</strong> " + irtGuess.toFixed(2) + "<br>";
+                        tooltipContent += "<span style='color: #ecf0f1;'>" + guessText + "</span>";
+                        tooltipContent += "</div>";
+
+                        tooltipContent += "<div class='irt-param'>";
+                        tooltipContent += "<strong>📈 Reliability:</strong> " + reliableIcon + " " + reliableText;
+                        tooltipContent += "</div>";
+
+                        if (lastAnalyzed) {
+                            tooltipContent += "<div class='irt-param'>";
+                            tooltipContent += "<strong>🕒 Last Analyzed:</strong> " + lastAnalyzed;
+                            tooltipContent += "</div>";
+                        }
+
+                        if (reasons.length > 0) {
+                            tooltipContent += "<div style='margin-top: 0.7rem; padding-top: 0.7rem; border-top: 1px solid #34495e;'>";
+                            tooltipContent += "<strong style='color: #e74c3c;'>⚠️ Issues Detected:</strong><br>";
+                            reasons.forEach(function(reason) {
+                                tooltipContent += "<span style='color: #ecf0f1;'>• " + reason + "</span><br>";
+                            });
+                            tooltipContent += "</div>";
+                        }
+
+                        tooltipContent += "</div>";
+
+                        // Badge class
+                        let qualityClass = "";
+                        let qualityIcon = "";
+
+                        if (quality === "Good" || quality === "Tốt") {
+                            qualityClass = "irt-quality-good";
+                            qualityIcon = "✅";
+                        } else if (quality === "Fair" || quality === "Cần xem lại") {
+                            qualityClass = "irt-quality-fair";
+                            qualityIcon = "⚠️";
+                        } else if (quality === "Poor" || quality === "Kém") {
+                            qualityClass = "irt-quality-poor";
+                            qualityIcon = "❌";
+                        } else {
+                            qualityClass = "irt-quality-na";
+                            qualityIcon = "❓";
+                        }
+
+                        let displayQuality = quality;
+                        if (quality === "Tốt") displayQuality = "Good";
+                        else if (quality === "Cần xem lại") displayQuality = "Fair";
+                        else if (quality === "Kém") displayQuality = "Poor";
+
+                        qualityBadge = "<span class='irt-quality-badge " + qualityClass + "' " +
+                                      "data-bs-toggle='tooltip' " +
+                                      "data-bs-html='true' " +
+                                      "data-bs-placement='left' " +
+                                      "title=\"" + tooltipContent.replace(/"/g, '&quot;') + "\">" +
+                                      qualityIcon + " " + displayQuality +
+                                      "</span>";
+                    }
+
+                    // ===== BUILD TABLE ROW =====
                     zContent += `<tr>`;
-
-                    // ✅ WRAP EVERYTHING trong <div>
                     zContent += `<td><div><strong>${i + 1}</strong></div></td>`;
-                    zContent += `<td><div onclick='EditRecord("${_DataView[i].QuestionKey}")'>${_DataView[i].QuestionText || ''}</div></td>`;
-                    zContent += `<td><div><img src='${_DataView[i].QuestionImage || '/images/icon_Pic.png'}' class='centered-image' /></div></td>`;
-                    zContent += `<td><div>${_DataView[i].SkillLevel || 0}</div></td>`;
-                    zContent += `<td><div>${_DataView[i].AmountAccess || 0}</div></td>`;
-
-                    // ✅ Correct Rate with color
+                    zContent += `<td><div onclick='EditRecord("${item.QuestionKey}")'>${item.QuestionText || ''}</div></td>`;
+                    zContent += `<td><div><img src='${item.QuestionImage || '/images/icon_Pic.png'}' class='centered-image' /></div></td>`;
+                    zContent += `<td><div>${item.SkillLevel || 0}</div></td>`;
+                    zContent += `<td><div>${item.AmountAccess || 0}</div></td>`;
                     zContent += `<td><div class='${correctRateClass}'>${correctRateText}</div></td>`;
-
-                    // ✅ Anomaly
                     zContent += `<td><div>${anomaly}</div></td>`;
-
-                    zContent += `<td><div>${_DataView[i].Ranking || 0}</div></td>`;
-                    zContent += `<td><div><button type='button' class='btn btn-answer' onclick='btnAnswer_Click("${_DataView[i].QuestionKey}")'>View</button></div></td>`;
-
+                    zContent += `<td><div>${qualityBadge}</div></td>`; // ✅ IRT COLUMN
+                    zContent += `<td><div>${item.Ranking || 0}</div></td>`;
+                    zContent += `<td><div><button type='button' class='btn btn-answer' onclick='btnAnswer_Click("${item.QuestionKey}")'>View</button></div></td>`;
                     zContent += "</tr>";
                 }
             }
 
             $("#LV_DataBody").html(zContent);
+
+            // ✅ Initialize Bootstrap tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl, {
+                    html: true,
+                    trigger: 'hover focus'
+                });
+            });
         }
 
         function EditRecord(QuestionKey) {

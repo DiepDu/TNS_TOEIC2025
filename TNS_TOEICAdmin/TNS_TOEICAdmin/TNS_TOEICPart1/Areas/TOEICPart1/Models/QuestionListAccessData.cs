@@ -113,7 +113,10 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
         public static JsonResult GetList(string Search, int Level, int PageSize, int PageNumber, string StatusFilter)
         {
             string zMessage = "";
-            string zSQL = @"SELECT QuestionKey, QuestionText, QuestionImage, QuestionVoice, SkillLevel, AmountAccess, CorrectRate, Anomaly, Publish, RecordStatus 
+            // ✅ CHỈ THAY ĐỔI DÒNG SQL NÀY - THÊM 6 CỘT IRT
+            string zSQL = @"SELECT QuestionKey, QuestionText, QuestionImage, QuestionVoice, SkillLevel, AmountAccess, 
+                           CorrectRate, Anomaly, Publish, RecordStatus,
+                           IrtDifficulty, IrtDiscrimination, IrtGuessing, Quality, ConfidenceLevel, LastAnalyzed
                        FROM [dbo].[TEC_Part1_Question] 
                        WHERE QuestionText LIKE @Search 
                        AND (QuestionKey IS NOT NULL) ";
@@ -165,6 +168,8 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
             {
                 zMessage = ex.ToString();
             }
+
+            // ✅ THAY ĐỔI 2: THÊM 6 PROPERTIES IRT VÀO RESPONSE
             var zDataList = zTable.AsEnumerable().Select(row => new
             {
                 QuestionKey = row["QuestionKey"].ToString(),
@@ -175,18 +180,28 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                 AmountAccess = row["AmountAccess"] != DBNull.Value ? Convert.ToInt32(row["AmountAccess"]) : 0,
                 Publish = row["Publish"] != DBNull.Value ? Convert.ToBoolean(row["Publish"]) : false,
                 RecordStatus = row["RecordStatus"] != DBNull.Value ? Convert.ToInt32(row["RecordStatus"]) : 0,
-                  CorrectRate = row["CorrectRate"] != DBNull.Value ? Convert.ToDouble(row["CorrectRate"]) : (double?)null,
-                Anomaly = row["Anomaly"] != DBNull.Value ? Convert.ToInt32(row["Anomaly"]) : (int?)null
+                CorrectRate = row["CorrectRate"] != DBNull.Value ? Convert.ToDouble(row["CorrectRate"]) : (double?)null,
+                Anomaly = row["Anomaly"] != DBNull.Value ? Convert.ToInt32(row["Anomaly"]) : (int?)null,
+                // ✅ THÊM 6 DÒNG NÀY
+                IrtDifficulty = row["IrtDifficulty"] != DBNull.Value ? Convert.ToDouble(row["IrtDifficulty"]) : (double?)null,
+                IrtDiscrimination = row["IrtDiscrimination"] != DBNull.Value ? Convert.ToDouble(row["IrtDiscrimination"]) : (double?)null,
+                IrtGuessing = row["IrtGuessing"] != DBNull.Value ? Convert.ToDouble(row["IrtGuessing"]) : (double?)null,
+                Quality = row["Quality"].ToString() ?? "",
+                ConfidenceLevel = row["ConfidenceLevel"].ToString() ?? "",
+                LastAnalyzed = row["LastAnalyzed"] != DBNull.Value ? Convert.ToDateTime(row["LastAnalyzed"]).ToString("yyyy-MM-dd HH:mm") : ""
             }).ToList();
 
             return new JsonResult(zDataList);
         }
 
-        // Phương thức có ngày
+        // ✅ THAY ĐỔI 3: TƯƠNG TỰ CHO HÀM OVERLOAD
         public static JsonResult GetList(string Search, int Level, DateTime FromDate, DateTime ToDate, int PageSize, int PageNumber, string StatusFilter)
         {
             string zMessage = "";
-            string zSQL = @"SELECT QuestionKey, QuestionText, QuestionImage, QuestionVoice, SkillLevel, AmountAccess, Publish, RecordStatus, Anomaly, CorrectRate
+            // ✅ CHỈ THAY ĐỔI DÒNG SQL NÀY - THÊM 6 CỘT IRT
+            string zSQL = @"SELECT QuestionKey, QuestionText, QuestionImage, QuestionVoice, SkillLevel, AmountAccess, 
+                           Publish, RecordStatus, Anomaly, CorrectRate,
+                           IrtDifficulty, IrtDiscrimination, IrtGuessing, Quality, ConfidenceLevel, LastAnalyzed
                        FROM [dbo].[TEC_Part1_Question] 
                        WHERE (CreatedOn >= @FromDate AND CreatedOn <= @ToDate) 
                        AND QuestionText LIKE @Search 
@@ -241,6 +256,8 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
             {
                 zMessage = ex.ToString();
             }
+
+            // ✅ THAY ĐỔI 4: THÊM 6 PROPERTIES IRT VÀO RESPONSE
             var zDataList = zTable.AsEnumerable().Select(row => new
             {
                 QuestionKey = row["QuestionKey"].ToString(),
@@ -252,7 +269,14 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                 Publish = row["Publish"] != DBNull.Value ? Convert.ToBoolean(row["Publish"]) : false,
                 RecordStatus = row["RecordStatus"] != DBNull.Value ? Convert.ToInt32(row["RecordStatus"]) : 0,
                 CorrectRate = row["CorrectRate"] != DBNull.Value ? Convert.ToDouble(row["CorrectRate"]) : (double?)null,
-                Anomaly = row["Anomaly"] != DBNull.Value ? Convert.ToInt32(row["Anomaly"]) : (int?)null
+                Anomaly = row["Anomaly"] != DBNull.Value ? Convert.ToInt32(row["Anomaly"]) : (int?)null,
+                // ✅ THÊM 6 DÒNG NÀY
+                IrtDifficulty = row["IrtDifficulty"] != DBNull.Value ? Convert.ToDouble(row["IrtDifficulty"]) : (double?)null,
+                IrtDiscrimination = row["IrtDiscrimination"] != DBNull.Value ? Convert.ToDouble(row["IrtDiscrimination"]) : (double?)null,
+                IrtGuessing = row["IrtGuessing"] != DBNull.Value ? Convert.ToDouble(row["IrtGuessing"]) : (double?)null,
+                Quality = row["Quality"].ToString() ?? "",
+                ConfidenceLevel = row["ConfidenceLevel"].ToString() ?? "",
+                LastAnalyzed = row["LastAnalyzed"] != DBNull.Value ? Convert.ToDateTime(row["LastAnalyzed"]).ToString("yyyy-MM-dd HH:mm") : ""
             }).ToList();
 
             return new JsonResult(zDataList);

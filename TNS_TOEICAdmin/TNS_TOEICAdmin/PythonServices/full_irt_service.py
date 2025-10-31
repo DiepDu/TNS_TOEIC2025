@@ -183,14 +183,17 @@ def health_check():
         "status": "OK",
         "service": "Full IRT Analysis Service (3PL + EM Algorithm)",
         "timestamp": datetime.utcnow().isoformat(),
-        "version": "2.0.0",
+        "version": "2.1.0-REPEATED-MEASURES",
         "method": "Pyro Probabilistic Programming + SVI"
     })
 
 @app.route('/analyze', methods=['POST'])
 def analyze_irt():
     """
-    Full IRT Analysis endpoint
+    Full IRT Analysis endpoint - SUPPORTS REPEATED MEASURES
+    
+    Handles cases where same member answers same question multiple times (retakes).
+    Each attempt is treated as a separate observation from a unique "virtual subject".
     
     Expected JSON:
     {
@@ -203,25 +206,13 @@ def analyze_irt():
     Returns:
     {
         "status": "OK",
-        "questionParams": {
-            "question_id": {
-                "difficulty": float,
-                "discrimination": float,
-                "guessing": float,
-                "quality": str,
-                "confidenceLevel": str,
-                "attemptCount": int,
-                "converged": bool
-            }
-        },
-        "memberAbilities": {
-            "member_id": float (theta)
-        },
+        "questionParams": {...},
+        "memberAbilities": {...},
         "metadata": {...}
     }
     """
     try:
-        logging.info("=== Full IRT Analysis Request Started ===")
+        logging.info("=== Full IRT Analysis Request Started (REPEATED MEASURES MODE) ===")
         
         if not request.json or 'data' not in request.json:
             logging.error("Missing 'data' field")
@@ -230,11 +221,11 @@ def analyze_irt():
         raw_data = request.json['data']
         logging.info(f"Received {len(raw_data)} responses")
         
-        if len(raw_data) < 100:
+        if len(raw_data) < 50:
             logging.warning(f"Insufficient data: {len(raw_data)} responses")
             return jsonify({
                 "error": "Insufficient data",
-                "message": f"Need at least 100 responses, got {len(raw_data)}"
+                "message": f"Need at least 50 responses, got {len(raw_data)}"
             }), 400
         
         # Prepare DataFrame
@@ -245,30 +236,37 @@ def analyze_irt():
             'isCorrect': 'response'
         })
         
-        original_count = len(df)
-        df = df.drop_duplicates(subset=['subject_id', 'item_id'])
-        logging.info(f"Removed {original_count - len(df)} duplicates")
+        # ✅ KEY CHANGE: CREATE UNIQUE ID FOR EACH ATTEMPT
+        # Instead of aggregating, treat each row as a separate "virtual subject"
+        # Member A doing Q1 three times = 3 different "subjects" in IRT model
+        df['attempt_id'] = df.groupby(['subject_id', 'item_id']).cumcount()
+        df['virtual_subject_id'] = df['subject_id'].astype(str) + '_attempt_' + df['attempt_id'].astype(str)
+        
+        logging.info(f"Created {df['virtual_subject_id'].nunique()} virtual subjects from {df['subject_id'].nunique()} real members")
+        logging.info(f"Processing all {len(df)} responses (including retakes)")
         
         df['response'] = df['response'].astype(int)
         
-        # Check data sufficiency
+        # Count responses per question (now ALL responses count)
         question_counts = df.groupby('item_id').size()
-        valid_questions = question_counts[question_counts >= 10].index.tolist()
+        min_responses_per_question = 3
+        valid_questions = question_counts[question_counts >= min_responses_per_question].index.tolist()
         
-        logging.info(f"Questions with >= 10 responses: {len(valid_questions)}")
+        logging.info(f"Questions with >= {min_responses_per_question} responses: {len(valid_questions)}")
+        logging.info(f"Response distribution: min={question_counts.min()}, max={question_counts.max()}, mean={question_counts.mean():.1f}")
         
         if len(valid_questions) == 0:
             logging.error("No questions with sufficient data")
             return jsonify({
                 "error": "No questions with sufficient data",
-                "message": "Each question needs at least 10 responses"
+                "message": f"Each question needs at least {min_responses_per_question} responses"
             }), 400
         
         df_filtered = df[df['item_id'].isin(valid_questions)]
         logging.info(f"Filtered dataset: {len(df_filtered)} responses")
         
-        # Create response matrix
-        subjects = df_filtered['subject_id'].unique()
+        # Create response matrix using VIRTUAL SUBJECTS
+        subjects = df_filtered['virtual_subject_id'].unique()
         items = df_filtered['item_id'].unique()
         
         subject_map = {subj: idx for idx, subj in enumerate(subjects)}
@@ -276,24 +274,27 @@ def analyze_irt():
         
         response_matrix = np.full((len(subjects), len(items)), -1.0)
         
+        # Map to original member keys for ability tracking
+        virtual_to_real_member = df_filtered.set_index('virtual_subject_id')['subject_id'].to_dict()
+        
         for _, row in df_filtered.iterrows():
-            subj_idx = subject_map[row['subject_id']]
+            subj_idx = subject_map[row['virtual_subject_id']]
             item_idx = item_map[row['item_id']]
             response_matrix[subj_idx, item_idx] = row['response']
         
-        # CRITICAL: Only keep subjects with >= 3 responses (more flexible)
+        # Filter subjects with minimum responses
         response_counts_per_subject = (response_matrix >= 0).sum(axis=1)
-        min_responses = max(3, int(len(items) * 0.2))  # At least 3, or 20% of items
+        min_responses = max(2, int(len(items) * 0.1))
         valid_subject_mask = response_counts_per_subject >= min_responses
         
         response_matrix = response_matrix[valid_subject_mask, :]
         valid_subjects = subjects[valid_subject_mask]
         
-        logging.info(f"Kept {len(valid_subjects)} subjects with >= {min_responses} responses")
+        logging.info(f"Kept {len(valid_subjects)} virtual subjects with >= {min_responses} responses")
         
-        # CRITICAL: Only keep items with >= 5 responses from valid subjects
+        # Filter items with minimum responses
         response_counts_per_item = (response_matrix >= 0).sum(axis=0)
-        min_item_responses = max(5, int(len(valid_subjects) * 0.1))  # At least 5, or 10% of subjects
+        min_item_responses = max(2, int(len(valid_subjects) * 0.05))
         valid_item_mask = response_counts_per_item >= min_item_responses
         
         response_matrix = response_matrix[:, valid_item_mask]
@@ -301,19 +302,18 @@ def analyze_irt():
         
         logging.info(f"Final matrix shape: {response_matrix.shape}")
         
-        if response_matrix.shape[0] < 5 or response_matrix.shape[1] < 2:
+        if response_matrix.shape[0] < 2 or response_matrix.shape[1] < 2:
             return jsonify({
                 "error": "Insufficient complete data after filtering",
                 "message": f"Only {response_matrix.shape[0]} subjects and {response_matrix.shape[1]} items remaining"
             }), 400
         
-        # Fill missing values with rounded item mean (Bernoulli requires 0 or 1)
+        # Fill missing values
         for j in range(response_matrix.shape[1]):
             item_responses = response_matrix[:, j]
             valid_responses = item_responses[item_responses >= 0]
             if len(valid_responses) > 0:
                 mean_response = valid_responses.mean()
-                # Round to nearest integer (0 or 1) for Bernoulli
                 fill_value = np.round(mean_response)
                 response_matrix[item_responses < 0, j] = fill_value
         
@@ -333,9 +333,9 @@ def analyze_irt():
         for idx, item_id in enumerate(valid_items):
             n_responses = question_counts.get(item_id, 0)
             
-            if n_responses >= 100:
+            if n_responses >= 50:
                 confidence = "High"
-            elif n_responses >= 30:
+            elif n_responses >= 10:
                 confidence = "Medium"
             else:
                 confidence = "Low"
@@ -356,12 +356,22 @@ def analyze_irt():
                 'converged': True
             }
         
+        # ✅ AGGREGATE abilities back to REAL members (average across attempts)
+        real_member_abilities = {}
+        for idx, virtual_subj in enumerate(valid_subjects):
+            real_member = virtual_to_real_member.get(virtual_subj)
+            if real_member:
+                if real_member not in real_member_abilities:
+                    real_member_abilities[real_member] = []
+                real_member_abilities[real_member].append(subject_abilities[idx])
+        
+        # Average abilities across attempts
         member_abilities = {
-            str(valid_subjects[idx]): float(ability) 
-            for idx, ability in enumerate(subject_abilities)
+            str(member): float(np.mean(abilities))
+            for member, abilities in real_member_abilities.items()
         }
         
-        logging.info(f"Complete: {len(question_params)} questions, {len(member_abilities)} members")
+        logging.info(f"Complete: {len(question_params)} questions, {len(member_abilities)} real members ({len(valid_subjects)} attempts)")
         
         return jsonify({
             "status": "OK",
@@ -370,9 +380,10 @@ def analyze_irt():
             "metadata": {
                 "totalQuestions": len(question_params),
                 "totalMembers": len(member_abilities),
+                "totalAttempts": len(valid_subjects),
                 "totalResponses": len(df_filtered),
                 "timestamp": datetime.utcnow().isoformat(),
-                "modelType": "3PL Full IRT (EM Algorithm)",
+                "modelType": "3PL Full IRT (EM Algorithm) - Repeated Measures",
                 "iterations": model.max_iter
             }
         })
@@ -414,6 +425,7 @@ if __name__ == '__main__':
     print("🐍 Full IRT Analysis Service Starting...")
     print("📊 Method: 3PL Model + EM Algorithm (Probabilistic Programming)")
     print("🧠 Framework: PyTorch + Pyro")
+    print("🔁 Mode: REPEATED MEASURES (supports retakes)")
     print("📊 Listening on: http://localhost:5001")
     print("❤️  Health check: http://localhost:5001/health")
     print("=" * 70)

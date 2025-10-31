@@ -1,5 +1,4 @@
-﻿
-@page
+﻿@page
 @model TNS_TOEICPart1.Areas.TOEICPart1.Pages.QuestionListModel
 @{
     Layout = "_Layout";
@@ -29,15 +28,15 @@
     /* ===== PAGE TITLE ===== */
     .page-title-container {
         text-align: center;
-        margin: 1rem 0; /* ← GIẢM từ "2rem 0 1.5rem 0" */
-        padding: 1rem; /* ← GIẢM từ 1.5rem xuống 1rem */
+        margin: 1rem 0;
+        padding: 1rem;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         border-radius: var(--radius-md);
         box-shadow: var(--shadow-md);
     }
 
     .page-title {
-        font-size: 1.6rem; /* ← GIẢM từ 1.8rem */
+        font-size: 1.6rem;
         font-weight: 700;
         color: #ffffff;
         margin: 0;
@@ -46,45 +45,40 @@
 
         .page-title i {
             margin-right: 0.5rem;
-            font-size: 1.8rem; /* ← GIẢM từ 2rem */
+            font-size: 1.8rem;
         }
-
-    .page-title i {
-        margin-right: 0.5rem;
-        font-size: 2rem;
-    }
 
     .breadcrumb-custom {
         background: var(--bg-white);
-        padding: 0.5rem 1rem; /* ← GIẢM từ 0.75rem xuống 0.5rem */
+        padding: 0.5rem 1rem;
         border-radius: var(--radius-sm);
-        margin-bottom: 1rem; /* ← GIẢM từ 1.5rem xuống 1rem */
+        margin-bottom: 1rem;
         box-shadow: var(--shadow-sm);
     }
 
-    .breadcrumb-custom a {
-        color: var(--text-dark);
-        text-decoration: none;
-        font-weight: 500;
-        transition: color 0.3s ease;
-    }
+        .breadcrumb-custom a {
+            color: var(--text-dark);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
 
-    .breadcrumb-custom a:hover {
-        color: var(--primary-blue);
-    }
+            .breadcrumb-custom a:hover {
+                color: var(--primary-blue);
+            }
 
-    .breadcrumb-custom .current {
-        color: var(--danger-red);
-        font-weight: 600;
-    }
+        .breadcrumb-custom .current {
+            color: var(--danger-red);
+            font-weight: 600;
+        }
 
     /* ===== CONTROLS CONTAINER ===== */
     .controls-container {
         background: var(--bg-white);
-        padding: 1rem; /* ← GIẢM từ 1.5rem xuống 1rem */
+        padding: 1rem;
         border-radius: var(--radius-md);
         box-shadow: var(--shadow-sm);
-        margin-bottom: 1rem; /* ← GIẢM từ 1.5rem xuống 1rem */
+        margin-bottom: 1rem;
     }
 
     .input-group .form-control {
@@ -94,18 +88,18 @@
         transition: all 0.3s ease;
     }
 
-    .input-group .form-control:focus {
-        border-color: var(--primary-blue);
-        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
-        outline: none;
-    }
+        .input-group .form-control:focus {
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+            outline: none;
+        }
 
     .info-view {
         color: var(--danger-red);
         font-weight: 600;
         font-size: 0.95rem;
-        margin-top: 0; /* ← SỬA: từ -15px về 0 */
-        padding-left: 0.5rem; /* ← THÊM: padding trái nhẹ */
+        margin-top: 0;
+        padding-left: 0.5rem;
     }
 
     /* ===== CIRCULAR ACTION BUTTONS ===== */
@@ -125,7 +119,7 @@
         margin-left: 0.5rem;
         flex-shrink: 0;
         margin-bottom: 0;
-        text-decoration: none !important; /* ← THÊM */
+        text-decoration: none !important;
     }
 
     .btn-refresh {
@@ -154,14 +148,14 @@
 
     .btn-add {
         background: linear-gradient(135deg, var(--success-green) 0%, #229954 100%);
-        text-decoration: none !important; /* ← THÊM */
+        text-decoration: none !important;
     }
 
         .btn-add:hover {
             background: linear-gradient(135deg, #229954 0%, #1e8449 100%);
             transform: scale(1.1);
             box-shadow: var(--shadow-md);
-            text-decoration: none !important; /* ← THÊM */
+            text-decoration: none !important;
         }
 
     /* ===== TABLE CONTAINER ===== */
@@ -179,25 +173,25 @@
         position: relative;
     }
 
-    /* Custom Scrollbar */
-    .table-wrapper::-webkit-scrollbar {
-        width: 10px;
-    }
+        /* Custom Scrollbar */
+        .table-wrapper::-webkit-scrollbar {
+            width: 10px;
+        }
 
-    .table-wrapper::-webkit-scrollbar-track {
-        background: linear-gradient(180deg, #F0F8FF 0%, #E8F4F9 100%);
-        border-radius: 10px;
-    }
+        .table-wrapper::-webkit-scrollbar-track {
+            background: linear-gradient(180deg, #F0F8FF 0%, #E8F4F9 100%);
+            border-radius: 10px;
+        }
 
-    .table-wrapper::-webkit-scrollbar-thumb {
-        background: linear-gradient(180deg, #3498DB 0%, #2980B9 100%);
-        border-radius: 10px;
-        border: 2px solid #F0F8FF;
-    }
+        .table-wrapper::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #3498DB 0%, #2980B9 100%);
+            border-radius: 10px;
+            border: 2px solid #F0F8FF;
+        }
 
-    .table-wrapper::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(180deg, #2980B9 0%, #1E5A8E 100%);
-    }
+            .table-wrapper::-webkit-scrollbar-thumb:hover {
+                background: linear-gradient(180deg, #2980B9 0%, #1E5A8E 100%);
+            }
 
     /* ===== TABLE STYLING ===== */
     #LV_Datatable {
@@ -207,86 +201,86 @@
         margin: 0;
     }
 
-    /* Sticky Header - SINGLE COLOR */
-    #LV_Datatable thead th {
-        position: sticky;
-        top: 0;
-        z-index: 100;
-        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-        color: #ffffff;
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 0.85rem;
-        padding: 1rem 0.75rem;
-        text-align: center;
-        vertical-align: middle;
-        border: 1px solid rgba(255,255,255,0.1);
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        letter-spacing: 0.5px;
-    }
+        /* Sticky Header - SINGLE COLOR */
+        #LV_Datatable thead th {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #ffffff;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            padding: 1rem 0.75rem;
+            text-align: center;
+            vertical-align: middle;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            letter-spacing: 0.5px;
+        }
 
-    /* Table Body - Alternating Colors */
-    #LV_Datatable tbody tr {
-        background-color: #ffffff;
-        transition: all 0.25s ease;
-    }
+        /* Table Body - Alternating Colors */
+        #LV_Datatable tbody tr {
+            background-color: #ffffff;
+            transition: all 0.25s ease;
+        }
 
-    #LV_Datatable tbody tr:nth-of-type(even) {
-        background-color: var(--bg-light-blue);
-    }
+            #LV_Datatable tbody tr:nth-of-type(even) {
+                background-color: var(--bg-light-blue);
+            }
 
-    #LV_Datatable tbody tr:hover {
-        background: linear-gradient(90deg, #E8F4FD 0%, #D1E7FA 100%);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
-    }
+            #LV_Datatable tbody tr:hover {
+                background: linear-gradient(90deg, #E8F4FD 0%, #D1E7FA 100%);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+            }
 
-    #LV_Datatable tbody td {
-        padding: 0.9rem 0.75rem;
-        border: 1px solid #e9ecef;
-        vertical-align: middle;
-        text-align: center;
-        transition: all 0.3s ease;
-        background-color: transparent;
-    }
+        #LV_Datatable tbody td {
+            padding: 0.9rem 0.75rem;
+            border: 1px solid #e9ecef;
+            vertical-align: middle;
+            text-align: center;
+            transition: all 0.3s ease;
+            background-color: transparent;
+        }
 
-    /* No Column */
-    #LV_Datatable tbody td:nth-child(1) {
-        font-weight: 700;
-        color: #667eea;
-        font-size: 0.95rem;
-    }
+            /* No Column */
+            #LV_Datatable tbody td:nth-child(1) {
+                font-weight: 700;
+                color: #667eea;
+                font-size: 0.95rem;
+            }
 
-    /* Question Column - Left align, clickable */
-    #LV_Datatable tbody td:nth-child(2) {
-        text-align: left;
-        font-weight: 500;
-        color: #2c3e50;
-        cursor: pointer;
-    }
+            /* Question Column - Left align, clickable */
+            #LV_Datatable tbody td:nth-child(2) {
+                text-align: left;
+                font-weight: 500;
+                color: #2c3e50;
+                cursor: pointer;
+            }
 
-    #LV_Datatable tbody td:nth-child(2):hover {
-        color: var(--primary-blue);
-        text-decoration: underline;
-    }
+                #LV_Datatable tbody td:nth-child(2):hover {
+                    color: var(--primary-blue);
+                    text-decoration: underline;
+                }
 
-    /* Level Column */
-    #LV_Datatable tbody td:nth-child(5) {
-        font-weight: 600;
-        color: var(--danger-red);
-    }
+            /* Level Column */
+            #LV_Datatable tbody td:nth-child(5) {
+                font-weight: 600;
+                color: var(--danger-red);
+            }
 
-    /* Access Column */
-    #LV_Datatable tbody td:nth-child(6) {
-        color: #7f8c8d;
-        font-weight: 500;
-    }
+            /* Access Column */
+            #LV_Datatable tbody td:nth-child(6) {
+                color: #7f8c8d;
+                font-weight: 500;
+            }
 
-    /* Correct Rate Column - Color Coding */
-    #LV_Datatable tbody td:nth-child(7) {
-        font-weight: 700;
-        font-size: 0.95rem;
-    }
+            /* Correct Rate Column - Color Coding */
+            #LV_Datatable tbody td:nth-child(7) {
+                font-weight: 700;
+                font-size: 0.95rem;
+            }
 
     .correct-rate-high {
         color: var(--warning-yellow);
@@ -316,14 +310,14 @@
         transition: transform 0.3s ease;
     }
 
-    .centered-image:hover {
-        transform: scale(1.1);
-    }
+        .centered-image:hover {
+            transform: scale(1.1);
+        }
 
     /* COMPACT AUDIO PLAYER */
     .audio-player {
         width: 100%;
-        max-width: 280px;
+        max-width: 300px;
         height: 32px;
     }
 
@@ -357,11 +351,11 @@
         box-shadow: var(--shadow-sm);
     }
 
-    .btn-answer:hover {
-        background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-md);
-    }
+        .btn-answer:hover {
+            background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
 
     .btn-toggle-publish {
         padding: 0.45rem 0.9rem;
@@ -381,27 +375,27 @@
         color: white;
     }
 
-    .btn-on:hover {
-        background: linear-gradient(135deg, #229954 0%, #1e8449 100%);
-        transform: scale(1.05);
-    }
+        .btn-on:hover {
+            background: linear-gradient(135deg, #229954 0%, #1e8449 100%);
+            transform: scale(1.05);
+        }
 
     .btn-off {
         background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
         color: white;
     }
 
-    .btn-off:hover {
-        background: linear-gradient(135deg, #7f8c8d 0%, #566573 100%);
-        transform: scale(1.05);
-    }
+        .btn-off:hover {
+            background: linear-gradient(135deg, #7f8c8d 0%, #566573 100%);
+            transform: scale(1.05);
+        }
 
     /* ===== PAGINATION ===== */
     .pagination-container {
         display: flex;
         justify-content: center;
         align-items: center;
-        padding: 1rem; /* ← GIẢM từ 1.5rem xuống 1rem */
+        padding: 1rem;
         background: var(--bg-white);
         border-radius: var(--radius-md);
         box-shadow: var(--shadow-sm);
@@ -417,7 +411,7 @@
     }
 
         .pagination .page-link {
-            border-radius: 50% !important; /* ← THÊM !important để force */
+            border-radius: 50% !important;
             width: 40px;
             height: 40px;
             display: flex;
@@ -432,10 +426,9 @@
             text-decoration: none;
         }
 
-        /* Đảm bảo nút Previous/Next cũng tròn */
         .pagination .page-item:first-child .page-link,
         .pagination .page-item:last-child .page-link {
-            border-radius: 50% !important; /* ← THÊM rule cụ thể */
+            border-radius: 50% !important;
         }
 
         .pagination .page-link:hover {
@@ -497,13 +490,14 @@
             width: 60px;
             height: 60px;
         }
-        /* COMPACT AUDIO PLAYER */
+
         .audio-player {
             width: 100%;
-            max-width: 150px; /* ← TĂNG từ 180px lên 220px */
+            max-width: 150px;
             height: 28px;
         }
     }
+
     /* ===== MODAL STYLING ===== */
     .modal-content {
         border-radius: var(--radius-md);
@@ -543,6 +537,311 @@
     .btn-close-white {
         filter: brightness(0) invert(1);
     }
+
+    /* ===== SPLIT BUTTON STYLING ===== */
+    .btn-update-stats {
+        font-weight: 600;
+        padding: 0.5rem 1rem;
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+
+    .dropdown-toggle-split {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+    }
+
+        .dropdown-toggle-split::after {
+            margin-left: 0;
+        }
+
+    /* ===== DROPDOWN MENU STYLING ===== */
+    .dropdown-menu {
+        min-width: 300px;
+        padding: 0.5rem 0;
+        box-shadow: var(--shadow-md);
+        border-radius: var(--radius-md);
+        border: 1px solid #e0e0e0;
+    }
+
+    .dropdown-item {
+        padding: 0.75rem 1rem;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: start;
+        gap: 0.5rem;
+    }
+
+        .dropdown-item:hover {
+            background: linear-gradient(90deg, #E8F4FD 0%, #D1E7FA 100%);
+            color: var(--primary-blue);
+        }
+
+        .dropdown-item.active {
+            background: linear-gradient(90deg, #D1E7FA 0%, #B8DEFA 100%);
+            color: var(--primary-blue);
+            font-weight: 600;
+        }
+
+        .dropdown-item small {
+            display: block;
+            margin-top: 0.25rem;
+            font-size: 0.75rem;
+        }
+
+    .dropdown-divider {
+        margin: 0.5rem 0;
+    }
+
+    .text-purple {
+        color: #9b59b6;
+    }
+
+    .gap-2 {
+        gap: 0.5rem;
+    }
+
+    /* ===== IRT QUALITY BADGE ===== */
+    .irt-quality-badge {
+        display: inline-block;
+        padding: 0.35rem 0.7rem;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        cursor: help;
+        transition: all 0.3s ease;
+    }
+
+    .irt-quality-good {
+        background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+        color: white;
+        box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3);
+    }
+
+        .irt-quality-good:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.5);
+        }
+
+    .irt-quality-fair {
+        background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+        color: white;
+        box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3);
+    }
+
+        .irt-quality-fair:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(243, 156, 18, 0.5);
+        }
+
+    .irt-quality-poor {
+        background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        color: white;
+        box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+    }
+
+        .irt-quality-poor:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.5);
+        }
+
+    .irt-quality-na {
+        background: #95a5a6;
+        color: white;
+        font-style: italic;
+    }
+
+    /* ===== BOOTSTRAP TOOLTIP OVERRIDE ===== */
+    .tooltip-inner {
+        max-width: 400px !important;
+        padding: 1rem !important;
+        text-align: left !important;
+        background: #2c3e50 !important;
+        border-radius: 8px !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+    }
+
+        .tooltip-inner strong {
+            color: #3498db;
+            display: block;
+            margin-top: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .tooltip-inner .irt-param {
+            margin: 0.3rem 0;
+            padding-left: 0.5rem;
+            border-left: 3px solid #3498db;
+        }
+    /* ===== IRT UPDATE OVERLAY ===== */
+    #irtLoadingOverlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(8px);
+        z-index: 9999;
+        display: none;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .irt-loading-content {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 20px;
+        padding: 3rem 4rem;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        text-align: center;
+        max-width: 500px;
+        animation: slideInUp 0.5s ease;
+    }
+
+    @@keyframes slideInUp {
+        from
+
+    {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    }
+
+    .irt-loading-title {
+        color: #ffffff;
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .irt-loading-subtitle {
+        color: #e0e6f0;
+        font-size: 1.1rem;
+        margin-bottom: 2rem;
+    }
+
+    /* Animated Brain Icon */
+    .brain-icon {
+        font-size: 4rem;
+        margin-bottom: 1.5rem;
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    @@keyframes pulse {
+        0%, 100%
+
+    {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+
+    }
+
+    /* Progress Steps */
+    .irt-progress-steps {
+        margin: 2rem 0;
+        text-align: left;
+    }
+
+    .progress-step {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        padding: 1rem;
+        background: rgba(255,255,255,0.1);
+        border-radius: 12px;
+        transition: all 0.3s ease;
+    }
+
+        .progress-step.active {
+            background: rgba(255,255,255,0.2);
+            box-shadow: 0 4px 12px rgba(255,255,255,0.2);
+        }
+
+        .progress-step.completed {
+            background: rgba(39, 174, 96, 0.3);
+        }
+
+    .step-icon {
+        font-size: 1.5rem;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255,255,255,0.2);
+        border-radius: 50%;
+    }
+
+    .progress-step.active .step-icon {
+        animation: spin 1s linear infinite;
+    }
+
+    .progress-step.completed .step-icon {
+        background: #27ae60;
+    }
+
+    .step-text {
+        color: #ffffff;
+        font-weight: 600;
+        flex: 1;
+    }
+
+    .step-time {
+        color: #e0e6f0;
+        font-size: 0.9rem;
+    }
+
+    /* Spinner */
+    .irt-spinner {
+        width: 60px;
+        height: 60px;
+        border: 6px solid rgba(255,255,255,0.2);
+        border-top-color: #ffffff;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 2rem auto;
+    }
+
+    /* Progress Bar */
+    .irt-progress-bar {
+        width: 100%;
+        height: 8px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 10px;
+        overflow: hidden;
+        margin-top: 2rem;
+    }
+
+    .irt-progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #27ae60 0%, #2ecc71 100%);
+        border-radius: 10px;
+        width: 0%;
+        transition: width 0.5s ease;
+    }
+
+    .irt-loading-footer {
+        color: #e0e6f0;
+        font-size: 0.9rem;
+        margin-top: 1.5rem;
+        font-style: italic;
+    }
 </style>
 
 <!-- Breadcrumb -->
@@ -563,11 +862,8 @@
 </div>
 
 <!-- Controls Section -->
-<!-- Controls Section -->
-<!-- Controls Section -->
 <div class="controls-container">
     <div class="row align-items-start">
-        <!-- ← SỬA: align-items-center → align-items-start -->
         <div class="col-lg-9">
             <div class="input-group">
                 <input id="txtSearch" type="text" class="form-control" placeholder="Search questions..." aria-label="Search">
@@ -576,29 +872,58 @@
                 <input id="txtToDate" class="form-control" type="date" style="max-width: 140px;">
                 <select class="form-control" id="statusFilter" name="statusFilter" style="max-width: 140px;">
                     <option value="">All Status</option>
-                    <option value="Using" selected>Using</option> <!-- ← THÊM selected -->
+                    <option value="Using" selected>Using</option>
                     <option value="Unpublished">Unpublished</option>
                     <option value="Deleted">Deleted</option>
                 </select>
             </div>
         </div>
-        <div class="col-lg-3 text-end d-flex justify-content-end align-items-start">
-            <!-- ← SỬA: align-items-center → align-items-start -->
-            <button class="btn-circular btn-refresh" onclick="UpdateStatistics()" title="Update Statistics">
-                <i class="fas fa-sync-alt"></i>
-            </button>
-            <a href="/TOEICPart1/Question" class="btn-circular btn-add" title="Add New Question" onclick="savePageState()">
-                <i class="fas fa-plus"></i>
+        <div class="col-lg-3 text-end d-flex justify-content-end align-items-start gap-2">
+            <!-- SPLIT BUTTON GROUP -->
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-primary btn-update-stats" onclick="UpdateStatisticsWithOption(2)" title="Quick update: CorrectRate & Anomaly">
+                    <i class="fas fa-sync-alt me-2"></i>
+                </button>
+                <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split"
+                        data-bs-toggle="dropdown" aria-expanded="false" title="More options">
+                    <span class="visually-hidden">More update options</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <a class="dropdown-item active" href="#" onclick="UpdateStatisticsWithOption(2); return false;">
+                            <i class="fas fa-chart-line text-warning me-2"></i>
+                            <div>
+                                <strong>Basic Update</strong>
+                                <br><small class="text-muted">CorrectRate & Anomaly • 30 seconds</small>
+                            </div>
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <a class="dropdown-item" href="#" onclick="UpdateStatisticsWithOption(3); return false;">
+                            <i class="fas fa-brain text-purple me-2"></i>
+                            <div>
+                                <strong>Full IRT Analysis</strong>
+                                <br><small class="text-muted">Complete 3PL Model • 2-3 minutes</small>
+                            </div>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- ADD BUTTON -->
+            <a href="/TOEICPart1/Question" class="btn btn-success" title="Add New Question" onclick="savePageState()">
+                <i class="fas fa-plus me-2"></i>
             </a>
         </div>
     </div>
-    <!-- ← THÊM ROW MỚI cho Total ở dưới -->
     <div class="row mt-2">
         <div class="col-12">
             <div class="info-view" id="Info_View"></div>
         </div>
     </div>
 </div>
+
 <!-- Confirmation Modal -->
 <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
@@ -645,22 +970,24 @@
         </div>
     </div>
 </div>
+
 <!-- Table Section -->
 <div class="table-container">
     <div class="table-wrapper">
         <table id="LV_Datatable">
             <thead>
                 <tr>
-                    <th style="width:60px">No</th>
-                    <th style="width:170px">Question</th>
-                    <th style="width:280px">Audio</th>
-                    <th style="width:100px">Image</th>
-                    <th style="width:70px">Level</th>
-                    <th style="width:80px">Access</th>
-                    <th style="width:110px">Correct Rate</th>
-                    <th style="width:90px">Anomaly</th>
-                    <th style="width:100px">Answer</th>
-                    <th style="width:80px">Status</th>
+                    <th style="width:45px">No</th>
+                    <th style="width:160px">Question</th>
+                    <th style="width:320px">Audio</th>
+                    <th style="width:90px">Image</th>
+                    <th style="width:50px">Level</th>
+                    <th style="width:60px">Access</th>
+                    <th style="width:85px">Correct<br>Rate</th>
+                    <th style="width:70px">Anomaly</th>
+                    <th style="width:100px">IRT</th>
+                    <th style="width:80px">Answer</th>
+                    <th style="width:65px">Status</th>
                 </tr>
             </thead>
             <tbody id="LV_DataBody">
@@ -685,7 +1012,48 @@
         <span class='visually-hidden'>Loading...</span>
     </div>
 </div>
+<!-- IRT Update Loading Overlay -->
+<div id="irtLoadingOverlay">
+    <div class="irt-loading-content">
+        <div class="brain-icon">🧠</div>
+        <h2 class="irt-loading-title">IRT Analysis Running</h2>
+        <p class="irt-loading-subtitle">Processing 3PL Model...</p>
 
+        <div class="irt-progress-steps">
+            <div class="progress-step" id="step1">
+                <div class="step-icon">📊</div>
+                <div class="step-text">CorrectRate & Anomaly</div>
+                <div class="step-time">~30s</div>
+            </div>
+            <div class="progress-step" id="step2">
+                <div class="step-icon">🔄</div>
+                <div class="step-text">Fetching Response Data</div>
+                <div class="step-time">~10s</div>
+            </div>
+            <div class="progress-step" id="step3">
+                <div class="step-icon">🧮</div>
+                <div class="step-text">3PL Model Training</div>
+                <div class="step-time">~60-90s</div>
+            </div>
+            <div class="progress-step" id="step4">
+                <div class="step-icon">💾</div>
+                <div class="step-text">Updating Database</div>
+                <div class="step-time">~20s</div>
+            </div>
+        </div>
+
+        <div class="irt-progress-bar">
+            <div class="irt-progress-fill" id="irtProgressFill"></div>
+        </div>
+
+        <div class="irt-spinner"></div>
+
+        <p class="irt-loading-footer">
+            ⚠️ Please do not close this window<br>
+            Estimated time: 2-3 minutes
+        </p>
+    </div>
+</div>
 @section Scripts {
     <script>
         let _DataView;
@@ -695,10 +1063,8 @@
         let _SearchTimeout;
 
         $(document).ready(function () {
-            // Restore state if exists, otherwise use default
             restorePageState();
 
-            // Auto-search with debounce (400ms)
             $('#txtSearch, #txtLevel, #txtFromDate, #txtToDate, #statusFilter').on('input change', function() {
                 clearTimeout(_SearchTimeout);
                 _SearchTimeout = setTimeout(function() {
@@ -707,7 +1073,6 @@
                 }, 400);
             });
 
-            // ✅ SAVE: Table scroll position
             $('.table-wrapper').on('scroll', function() {
                 if (sessionStorage.getItem('questionListState')) {
                     const state = JSON.parse(sessionStorage.getItem('questionListState'));
@@ -716,7 +1081,6 @@
                 }
             });
 
-            // ✅ SAVE: Page scroll position
             $(window).on('scroll', function() {
                 if (sessionStorage.getItem('questionListState')) {
                     const state = JSON.parse(sessionStorage.getItem('questionListState'));
@@ -745,26 +1109,21 @@
             if (savedState) {
                 const state = JSON.parse(savedState);
 
-                // Restore form values
                 $('#txtSearch').val(state.search || '');
                 $('#txtLevel').val(state.level || '');
                 $('#txtFromDate').val(state.fromDate || '');
                 $('#txtToDate').val(state.toDate || '');
                 $('#statusFilter').val(state.statusFilter || 'Using');
 
-                // Restore page number
                 _PageNumber = state.pageNumber || 1;
 
-                // Load data with restored state
                 LV_LoadData_Ajax(function() {
-                    // ✅ RESTORE: Table scroll position
                     if (state.tableScrollPosition) {
                         setTimeout(function() {
                             $('.table-wrapper').scrollTop(state.tableScrollPosition);
                         }, 100);
                     }
 
-                    // ✅ RESTORE: Page scroll position
                     if (state.pageScrollPosition) {
                         setTimeout(function() {
                             $('html, body').scrollTop(state.pageScrollPosition);
@@ -780,40 +1139,207 @@
             sessionStorage.removeItem('questionListState');
         }
 
-        function UpdateStatistics() {
-            let btn = document.querySelector(".btn-refresh");
+                  function UpdateStatisticsWithOption(option) {
+            if (option === 1) {
+                console.log('Update statistics cancelled');
+                return;
+            }
+
+            let btn = document.querySelector(".btn-update-stats");
+            let confirmMessage = "";
+            let actionType = "";
+
+            if (option === 2) {
+                confirmMessage = "📊 Update CorrectRate & Anomaly?\n\n" +
+                                "• Difficulty (CorrectRate)\n" +
+                                "• Anomaly Detection\n\n" +
+                                "⏱️ Estimated time: 30 seconds";
+                actionType = "basic";
+            } else if (option === 3) {
+                confirmMessage = "🧠 Update ALL (CorrectRate + Anomaly + Full IRT)?\n\n" +
+                                "• Difficulty (CorrectRate)\n" +
+                                "• Anomaly Detection\n" +
+                                "• Full IRT Analysis (3PL Model):\n" +
+                                "  - Difficulty (b)\n" +
+                                "  - Discrimination (a)\n" +
+                                "  - Guessing (c)\n" +
+                                "  - IRT Ability (θ)\n\n" +
+                                "⏱️ Estimated time: 2-3 minutes\n" +
+                                "⚠️ Make sure Python service is running!";
+                actionType = "full";
+            }
 
             showConfirmModal(
-                "Are you sure you want to update statistics for all questions? This may take a few moments.",
+                confirmMessage,
                 function() {
                     btn.classList.add("loading");
                     btn.disabled = true;
 
-                    $.ajax({
-                        type: 'POST',
-                        url: "/TOEICPart1/QuestionList?handler=UpdateStatistics",
-                        contentType: "application/json",
-                        dataType: "json"
-                    })
-                    .done(function (data) {
-                        if (data.status === "OK") {
-                            showAlertModal("Statistics updated successfully!", "success");
-                        } else {
-                            showAlertModal("Error: " + data.message, "error");
-                        }
-                        _PageNumber = 1;
-                        LV_LoadData_Ajax();
-                    })
-                    .fail(function (error) {
-                        showAlertModal("Error: " + error.responseText, "error");
-                    })
-                    .always(function () {
-                        btn.classList.remove("loading");
-                        btn.disabled = false;
-                    });
+                    if (actionType === "basic") {
+                        // Basic update (no overlay needed - fast)
+                        $.ajax({
+                            type: 'POST',
+                            url: "/TOEICPart1/QuestionList?handler=UpdateStatistics",
+                            contentType: "application/json",
+                            dataType: "json"
+                        })
+                        .done(function (data) {
+                            if (data.status === "OK") {
+                                showAlertModal(data.message, "success", "✅ Success!");
+                            } else {
+                                showAlertModal("Error: " + data.message, "error", "❌ Error!");
+                            }
+                            _PageNumber = 1;
+                            LV_LoadData_Ajax();
+                        })
+                        .fail(function (error) {
+                            showAlertModal("Error: " + error.responseText, "error", "❌ Error!");
+                        })
+                        .always(function () {
+                            btn.classList.remove("loading");
+                            btn.disabled = false;
+                        });
+
+                    } else if (actionType === "full") {
+                        // ✅ SHOW OVERLAY FOR FULL IRT
+                        showIrtLoadingOverlay();
+
+                        // Step 1: CorrectRate & Anomaly
+                        updateIrtStep(1, 'active');
+                        updateIrtProgress(10);
+
+                        $.ajax({
+                            type: 'POST',
+                            url: "/TOEICPart1/QuestionList?handler=UpdateStatistics",
+                            contentType: "application/json",
+                            dataType: "json"
+                        })
+                        .done(function (data) {
+                            if (data.status === "OK") {
+                                console.log('✅ Step 1/2: CorrectRate & Anomaly updated');
+                                updateIrtStep(1, 'completed');
+                                updateIrtProgress(25);
+
+                                // Step 2: Fetch data
+                                setTimeout(() => {
+                                    updateIrtStep(2, 'active');
+                                    updateIrtProgress(35);
+                                }, 500);
+
+                                // Step 3: IRT Training
+                                setTimeout(() => {
+                                    updateIrtStep(2, 'completed');
+                                    updateIrtStep(3, 'active');
+                                    updateIrtProgress(50);
+                                }, 2000);
+
+                                $.ajax({
+                                    type: 'POST',
+                                    url: "/TOEICPart1/QuestionList?handler=UpdateFullIrt",
+                                    contentType: "application/json",
+                                    dataType: "json"
+                                })
+                                .done(function (irtData) {
+                                    if (irtData.status === "OK") {
+                                        console.log('✅ Step 2/2: Full IRT completed');
+                                        updateIrtStep(3, 'completed');
+                                        updateIrtProgress(80);
+
+                                        // Step 4: Update DB
+                                        setTimeout(() => {
+                                            updateIrtStep(4, 'active');
+                                            updateIrtProgress(90);
+                                        }, 500);
+
+                                        setTimeout(() => {
+                                            updateIrtStep(4, 'completed');
+                                            updateIrtProgress(100);
+
+                                            // Hide overlay after 1s
+                                            setTimeout(() => {
+                                                hideIrtLoadingOverlay();
+                                                showAlertModal(
+                                                    "✅ ALL Updates Successful!\n\n" +
+                                                    "📊 CorrectRate & Anomaly: OK\n" +
+                                                    "🧠 Full IRT Analysis: OK\n\n" +
+                                                    irtData.message,
+                                                    "success",
+                                                    "🎉 Complete!"
+                                                );
+                                                _PageNumber = 1;
+                                                LV_LoadData_Ajax();
+                                            }, 1000);
+                                        }, 1500);
+                                    } else {
+                                        hideIrtLoadingOverlay();
+                                        showAlertModal(
+                                            "⚠️ CorrectRate & Anomaly: OK\n" +
+                                            "❌ Full IRT: FAILED\n\n" +
+                                            irtData.message,
+                                            "warning",
+                                            "⚠️ Partially Successful"
+                                        );
+                                    }
+                                })
+                                .fail(function (xhr, status, error) {
+                                    hideIrtLoadingOverlay();
+                                    showAlertModal(
+                                        "⚠️ CorrectRate & Anomaly: OK\n" +
+                                        "❌ Full IRT: CONNECTION ERROR\n\n" +
+                                        (xhr.responseText || error),
+                                        "warning",
+                                        "⚠️ Python service not connected"
+                                    );
+                                })
+                                .always(function () {
+                                    btn.classList.remove("loading");
+                                    btn.disabled = false;
+                                });
+
+                            } else {
+                                hideIrtLoadingOverlay();
+                                showAlertModal("❌ Step 1 failed: " + data.message, "error", "❌ Error!");
+                                btn.classList.remove("loading");
+                                btn.disabled = false;
+                            }
+                        })
+                        .fail(function (error) {
+                            hideIrtLoadingOverlay();
+                            showAlertModal("Error: " + error.responseText, "error", "❌ Error!");
+                            btn.classList.remove("loading");
+                            btn.disabled = false;
+                        });
+                    }
                 },
-                'Update Statistics'
+                actionType === "basic" ? '📊 Update Statistics' : '🧠 Update All'
             );
+        }
+
+        // ✅ HELPER FUNCTIONS FOR IRT OVERLAY
+        function showIrtLoadingOverlay() {
+            $('#irtLoadingOverlay').css('display', 'flex');
+            // Reset all steps
+            $('.progress-step').removeClass('active completed');
+            $('#irtProgressFill').css('width', '0%');
+        }
+
+        function hideIrtLoadingOverlay() {
+            $('#irtLoadingOverlay').fadeOut(300);
+        }
+
+        function updateIrtStep(stepNumber, status) {
+            const step = $('#step' + stepNumber);
+            step.removeClass('active completed');
+            if (status === 'active') {
+                step.addClass('active');
+            } else if (status === 'completed') {
+                step.addClass('completed');
+                step.find('.step-icon').html('✅');
+            }
+        }
+
+        function updateIrtProgress(percentage) {
+            $('#irtProgressFill').css('width', percentage + '%');
         }
 
         function LV_LoadData_Ajax(callback) {
@@ -869,39 +1395,187 @@
             var zNo = 1 + (_PageNumber - 1) * _PageSize;
 
             for (i = 0; i < n; i++) {
-                var isPublished = _DataView[i].Publish && _DataView[i].RecordStatus !== 99;
-                var correctRate = _DataView[i].CorrectRate !== null ? _DataView[i].CorrectRate : null;
+                var item = _DataView[i];
+                var isPublished = item.Publish && item.RecordStatus !== 99;
+
+                var correctRate = item.CorrectRate !== null ? item.CorrectRate : null;
                 var correctRateText = correctRate !== null ? correctRate.toFixed(2) + "%" : "N/A";
                 var correctRateClass = "";
-
                 if (correctRate !== null) {
-                    if (correctRate >= 70) {
-                        correctRateClass = "correct-rate-high";
-                    } else if (correctRate <= 30) {
-                        correctRateClass = "correct-rate-low";
-                    } else {
-                        correctRateClass = "correct-rate-medium";
-                    }
+                    if (correctRate >= 70) correctRateClass = "correct-rate-high";
+                    else if (correctRate <= 30) correctRateClass = "correct-rate-low";
+                    else correctRateClass = "correct-rate-medium";
                 }
 
-                var anomaly = _DataView[i].Anomaly !== null ? _DataView[i].Anomaly : "N/A";
+                var anomaly = item.Anomaly !== null ? item.Anomaly : "N/A";
+
+                var quality = item.Quality || "";
+                var irtDiff = item.IrtDifficulty;
+                var irtDisc = item.IrtDiscrimination;
+                var irtGuess = item.IrtGuessing;
+                var confidence = item.ConfidenceLevel || "";
+                var lastAnalyzed = item.LastAnalyzed || "";
+
+                var qualityBadge = "";
+                var tooltipContent = "";
+
+                if (quality === "" || quality === "N/A" || !irtDiff || !irtDisc || !irtGuess) {
+                    qualityBadge = "<span class='irt-quality-badge irt-quality-na'>N/A</span>";
+                } else {
+                    var reasons = [];
+                    var diffText = "";
+                    var diffClass = "";
+                    var discText = "";
+                    var guessText = "";
+                    var reliableIcon = "";
+                    var reliableText = "";
+
+                    if (irtDiff < -1) {
+                        diffText = "Very Easy (< -1.0)";
+                        diffClass = "🟢";
+                    } else if (irtDiff < 0) {
+                        diffText = "Easy (-1.0 to 0)";
+                        diffClass = "🟢";
+                    } else if (irtDiff < 1) {
+                        diffText = "Medium (0 to 1.0)";
+                        diffClass = "🟡";
+                    } else if (irtDiff < 2) {
+                        diffText = "Hard (1.0 to 2.0)";
+                        diffClass = "🔴";
+                    } else {
+                        diffText = "Very Hard (> 2.0)";
+                        diffClass = "🔴";
+                        if (irtDiff > 2.5) reasons.push("Difficulty too extreme (> 2.5)");
+                    }
+
+                    if (irtDisc < 0.5) {
+                        discText = "Poor (< 0.5) - Cannot differentiate students";
+                        reasons.push("Low discrimination (< 0.5)");
+                    } else if (irtDisc < 1.0) {
+                        discText = "Fair (0.5-1.0)";
+                    } else {
+                        discText = "Good (≥ 1.0) - Differentiates well";
+                    }
+
+                    if (irtGuess < 0.2) {
+                        guessText = "Good (< 0.2) - Hard to guess";
+                    } else if (irtGuess < 0.3) {
+                        guessText = "Fair (0.2-0.3)";
+                    } else {
+                        guessText = "Poor (≥ 0.3) - Easy to guess";
+                        if (irtGuess > 0.4) reasons.push("High guessing probability (> 0.4)");
+                    }
+
+                    if (confidence === "High") {
+                        reliableIcon = "🟢";
+                        reliableText = "High (≥ 100 responses)";
+                    } else if (confidence === "Medium") {
+                        reliableIcon = "🟡";
+                        reliableText = "Medium (30-99 responses)";
+                    } else if (confidence === "Low") {
+                        reliableIcon = "🔴";
+                        reliableText = "Low (< 30 responses)";
+                        reasons.push("Insufficient data (< 30 responses)");
+                    } else {
+                        reliableIcon = "⚪";
+                        reliableText = "Unknown";
+                    }
+
+                    tooltipContent = "<div style='font-size: 0.9rem; line-height: 1.6;'>";
+                    tooltipContent += "<strong style='color: #3498db; font-size: 1rem; display: block; margin-bottom: 0.5rem;'>IRT Parameters (3PL Model)</strong>";
+
+                    tooltipContent += "<div class='irt-param'>";
+                    tooltipContent += "<strong>📊 Difficulty (b):</strong> " + irtDiff.toFixed(2) + "<br>";
+                    tooltipContent += "<span style='color: #ecf0f1;'>" + diffClass + " " + diffText + "</span>";
+                    tooltipContent += "</div>";
+
+                    tooltipContent += "<div class='irt-param'>";
+                    tooltipContent += "<strong>🎯 Discrimination (a):</strong> " + irtDisc.toFixed(2) + "<br>";
+                    tooltipContent += "<span style='color: #ecf0f1;'>" + discText + "</span>";
+                    tooltipContent += "</div>";
+
+                    tooltipContent += "<div class='irt-param'>";
+                    tooltipContent += "<strong>🎲 Guessing (c):</strong> " + irtGuess.toFixed(2) + "<br>";
+                    tooltipContent += "<span style='color: #ecf0f1;'>" + guessText + "</span>";
+                    tooltipContent += "</div>";
+
+                    tooltipContent += "<div class='irt-param'>";
+                    tooltipContent += "<strong>📈 Reliability:</strong> " + reliableIcon + " " + reliableText;
+                    tooltipContent += "</div>";
+
+                    if (lastAnalyzed) {
+                        tooltipContent += "<div class='irt-param'>";
+                        tooltipContent += "<strong>🕒 Last Analyzed:</strong> " + lastAnalyzed;
+                        tooltipContent += "</div>";
+                    }
+
+                    if (reasons.length > 0) {
+                        tooltipContent += "<div style='margin-top: 0.7rem; padding-top: 0.7rem; border-top: 1px solid #34495e;'>";
+                        tooltipContent += "<strong style='color: #e74c3c;'>⚠️ Issues Detected:</strong><br>";
+                        reasons.forEach(function(reason) {
+                            tooltipContent += "<span style='color: #ecf0f1;'>• " + reason + "</span><br>";
+                        });
+                        tooltipContent += "</div>";
+                    }
+
+                    tooltipContent += "</div>";
+
+                    var qualityClass = "";
+                    var qualityIcon = "";
+
+                    if (quality === "Good" || quality === "Tốt") {
+                        qualityClass = "irt-quality-good";
+                        qualityIcon = "✅";
+                    } else if (quality === "Fair" || quality === "Cần xem lại") {
+                        qualityClass = "irt-quality-fair";
+                        qualityIcon = "⚠️";
+                    } else if (quality === "Poor" || quality === "Kém") {
+                        qualityClass = "irt-quality-poor";
+                        qualityIcon = "❌";
+                    } else {
+                        qualityClass = "irt-quality-na";
+                        qualityIcon = "❓";
+                    }
+
+                    var displayQuality = quality;
+                    if (quality === "Tốt") displayQuality = "Good";
+                    else if (quality === "Cần xem lại") displayQuality = "Fair";
+                    else if (quality === "Kém") displayQuality = "Poor";
+
+                    qualityBadge = "<span class='irt-quality-badge " + qualityClass + "' " +
+                                  "data-bs-toggle='tooltip' " +
+                                  "data-bs-html='true' " +
+                                  "data-bs-placement='left' " +
+                                  "title=\"" + tooltipContent.replace(/"/g, '&quot;') + "\">" +
+                                  qualityIcon + " " + displayQuality +
+                                  "</span>";
+                }
 
                 zContent += "<tr>";
                 zContent += "<td>" + zNo + "</td>";
-                zContent += "<td onclick='EditRecord(\"" + _DataView[i].QuestionKey + "\")'>" + (_DataView[i].QuestionText || "") + "</td>";
-                zContent += "<td><audio controls class='audio-player'><source src='" + _DataView[i].QuestionVoice + "' type='audio/mp3'></audio></td>";
-                zContent += "<td><img src='" + _DataView[i].QuestionImage + "' class='centered-image' /></td>";
-                zContent += "<td>" + _DataView[i].SkillLevel + "</td>";
-                zContent += "<td>" + _DataView[i].AmountAccess + "</td>";
+                zContent += "<td onclick='EditRecord(\"" + item.QuestionKey + "\")'>" + (item.QuestionText || "") + "</td>";
+                zContent += "<td><audio controls class='audio-player'><source src='" + item.QuestionVoice + "' type='audio/mp3'></audio></td>";
+                zContent += "<td><img src='" + item.QuestionImage + "' class='centered-image' /></td>";
+                zContent += "<td>" + item.SkillLevel + "</td>";
+                zContent += "<td>" + item.AmountAccess + "</td>";
                 zContent += "<td class='" + correctRateClass + "'>" + correctRateText + "</td>";
                 zContent += "<td>" + anomaly + "</td>";
-                zContent += "<td><button type='button' class='btn btn-answer' onclick='btnAnswer_Click(\"" + _DataView[i].QuestionKey + "\")'>View</button></td>";
-                zContent += "<td><button class='btn-toggle-publish " + (isPublished ? "btn-on" : "btn-off") + "' onclick='togglePublish(this, \"" + _DataView[i].QuestionKey + "\")'>" + (isPublished ? "ON" : "OFF") + "</button></td>";
+                zContent += "<td>" + qualityBadge + "</td>";
+                zContent += "<td><button type='button' class='btn btn-answer' onclick='btnAnswer_Click(\"" + item.QuestionKey + "\")'>View</button></td>";
+                zContent += "<td><button class='btn-toggle-publish " + (isPublished ? "btn-on" : "btn-off") + "' onclick='togglePublish(this, \"" + item.QuestionKey + "\")'>" + (isPublished ? "ON" : "OFF") + "</button></td>";
                 zContent += "</tr>";
                 zNo++;
             }
 
             $("#LV_DataBody").html(zContent);
+
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl, {
+                    html: true,
+                    trigger: 'hover focus'
+                });
+            });
         }
 
         function renderPagination() {

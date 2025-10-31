@@ -94,7 +94,7 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
         {
             CheckAuth();
             if (!IsFullAdmin)
-                return new JsonResult(new { status = "ERROR", message = "Bạn không có quyền cập nhật thống kê!" });
+                return new JsonResult(new { status = "ERROR", message = "You do not have permission to update statistics!" });
 
             try
             {
@@ -103,19 +103,19 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Pages
                 // Gọi hàm phân tích bất thường
                 QuestionListDataAccess.UpdateAnomaly();
 
-                return new JsonResult(new { status = "OK", message = "Cập nhật thống kê (Độ khó & Bất thường) thành công!" });
+                return new JsonResult(new { status = "OK", message = "Statistics updated successfully (Difficulty & Unusual)!" });
             }
             catch (Exception ex)
             {
                 // Ghi lại lỗi chi tiết hơn nếu cần (ví dụ: vào một file log)
-                return new JsonResult(new { status = "ERROR", message = "Đã xảy ra lỗi trong quá trình cập nhật: " + ex.Message });
+                return new JsonResult(new { status = "ERROR", message = "An error occurred during the update:" + ex.Message });
             }
         }
         public async Task<IActionResult> OnPostUpdateFullIrtAsync()
         {
             CheckAuth();
             if (!IsFullAdmin)
-                return new JsonResult(new { status = "ERROR", message = "Bạn không có quyền cập nhật IRT!" });
+                return new JsonResult(new { status = "ERROR", message = "You do not have permission to update IRT!" });
 
             try
             {

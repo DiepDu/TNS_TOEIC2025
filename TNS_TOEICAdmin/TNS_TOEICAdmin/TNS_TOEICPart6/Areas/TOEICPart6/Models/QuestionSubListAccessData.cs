@@ -4,56 +4,61 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-
 
 public class QuestionSubListAccessData
+{
+    public static JsonResult GetList(string QuestionKey)
     {
-        public static JsonResult GetList(string QuestionKey)
+        // 💡 **Phòng tránh lỗi:** Nếu QuestionKey là null hoặc rỗng, trả về danh sách trống
+        if (string.IsNullOrEmpty(QuestionKey))
         {
-            // 💡 **Phòng tránh lỗi:** Nếu QuestionKey là null hoặc rỗng, trả về danh sách trống ngay lập tức.
-            if (string.IsNullOrEmpty(QuestionKey))
-            {
-                return new JsonResult(new List<object>()); // Trả về mảng rỗng
-            }
+            return new JsonResult(new List<object>());
+        }
 
-            string zMessage = "";
-            string zSQL = @"SELECT QuestionKey, QuestionText,QuestionImage, SkillLevel, AmountAccess, CorrectRate, Anomaly, Ranking
+        string zMessage = "";
+
+        // ✅ UPDATED: Added IRT columns
+        string zSQL = @"SELECT QuestionKey, QuestionText, QuestionImage, SkillLevel, 
+                               AmountAccess, CorrectRate, Anomaly, Ranking,
+                               IrtDifficulty, IrtDiscrimination, IrtGuessing, 
+                               Quality, ConfidenceLevel, LastAnalyzed
                         FROM [dbo].[TEC_Part6_Question] 
                         WHERE RecordStatus != 99 AND Parent = @QuestionKey
-                        ORDER BY Ranking ";
-            DataTable zTable = new DataTable();
-            string zConnectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
-            try
+                        ORDER BY Ranking";
+
+        DataTable zTable = new DataTable();
+        string zConnectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
+
+        try
+        {
+            using (SqlConnection zConnect = new SqlConnection(zConnectionString))
             {
-                SqlConnection zConnect = new SqlConnection(zConnectionString);
                 zConnect.Open();
-                SqlCommand zCommand = new SqlCommand(zSQL, zConnect);
-                zCommand.CommandType = CommandType.Text;
+                using (SqlCommand zCommand = new SqlCommand(zSQL, zConnect))
+                {
+                    zCommand.CommandType = CommandType.Text;
+                    zCommand.Parameters.Add("@QuestionKey", SqlDbType.UniqueIdentifier).Value = Guid.Parse(QuestionKey);
 
-                // Đảm bảo kiểu dữ liệu là UniqueIdentifier
-                zCommand.Parameters.Add("@QuestionKey", SqlDbType.UniqueIdentifier).Value = Guid.Parse(QuestionKey);
-
-                SqlDataAdapter zAdapter = new SqlDataAdapter(zCommand);
-                zAdapter.Fill(zTable);
-                zCommand.Dispose();
-                zConnect.Close();
+                    using (SqlDataAdapter zAdapter = new SqlDataAdapter(zCommand))
+                    {
+                        zAdapter.Fill(zTable);
+                    }
+                }
             }
-            catch (Exception ex)
-            {
-                zMessage = ex.ToString();
-                // Bạn nên ghi log lỗi này thay vì chỉ gán vào chuỗi
-            }
+        }
+        catch (Exception ex)
+        {
+            zMessage = ex.ToString();
+            return new JsonResult(new { Status = "ERROR", Message = zMessage });
+        }
 
-            if (!string.IsNullOrEmpty(zMessage))
-            {
-                // Trả về một đối tượng lỗi để client có thể xử lý
-                return new JsonResult(new { Status = "ERROR", Message = zMessage });
-            }
+        if (!string.IsNullOrEmpty(zMessage))
+        {
+            return new JsonResult(new { Status = "ERROR", Message = zMessage });
+        }
 
-            var zDataList = zTable.AsEnumerable().Select(row => new Dictionary<string, object>
+        // ✅ UPDATED: Added IRT fields to output
+        var zDataList = zTable.AsEnumerable().Select(row => new Dictionary<string, object>
         {
             { "QuestionKey", row["QuestionKey"] },
             { "QuestionText", row["QuestionText"] },
@@ -62,11 +67,16 @@ public class QuestionSubListAccessData
             { "AmountAccess", row["AmountAccess"] },
             { "CorrectRate", row["CorrectRate"] == DBNull.Value ? null : Convert.ToDouble(row["CorrectRate"]) },
             { "Anomaly", row["Anomaly"] == DBNull.Value ? null : Convert.ToInt32(row["Anomaly"]) },
-            { "Ranking", row["Ranking"] }
+            { "Ranking", row["Ranking"] },
+            // ✅ NEW: IRT Parameters
+            { "IrtDifficulty", row["IrtDifficulty"] == DBNull.Value ? null : Convert.ToDouble(row["IrtDifficulty"]) },
+            { "IrtDiscrimination", row["IrtDiscrimination"] == DBNull.Value ? null : Convert.ToDouble(row["IrtDiscrimination"]) },
+            { "IrtGuessing", row["IrtGuessing"] == DBNull.Value ? null : Convert.ToDouble(row["IrtGuessing"]) },
+            { "Quality", row["Quality"] == DBNull.Value ? "" : row["Quality"].ToString() },
+            { "ConfidenceLevel", row["ConfidenceLevel"] == DBNull.Value ? "" : row["ConfidenceLevel"].ToString() },
+            { "LastAnalyzed", row["LastAnalyzed"] == DBNull.Value ? "" : Convert.ToDateTime(row["LastAnalyzed"]).ToString("yyyy-MM-dd HH:mm") }
         }).ToList();
 
-            return new JsonResult(zDataList);
-        }
+        return new JsonResult(zDataList);
     }
-
-
+}

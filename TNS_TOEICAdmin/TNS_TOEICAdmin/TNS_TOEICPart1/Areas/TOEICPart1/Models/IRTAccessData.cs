@@ -44,16 +44,16 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                 bool isHealthy = await irtClient.HealthCheckAsync();
                 if (!isHealthy)
                 {
-                    return (false, "❌ Python IRT service không hoạt động!\n\n" +
-                                   "📋 HƯỚNG DẪN KHỞI ĐỘNG:\n\n" +
-                                   "1️⃣ Mở PowerShell/Terminal mới\n" +
-                                   "2️⃣ cd D:\\Document\\TNS_TOEIC2025\\TNS_TOEICAdmin\\TNS_TOEICAdmin\\PythonServices\n" +
-                                   "3️⃣ irt_env\\Scripts\\activate\n" +
-                                   "4️⃣ python full_irt_service.py\n\n" +
-                                   "Khi thấy thông báo:\n" +
-                                   "  * Running on http://127.0.0.1:5001\n" +
-                                   "→ Quay lại đây và click 'Update Full IRT' lại.\n\n" +
-                                   "🔗 Test health: http://localhost:5001/health");
+                    return (false, "❌ Python IRT service is not running!\n\n" +
+"📋 STARTUP INSTRUCTIONS:\n\n" +
+"1️⃣ Open a new PowerShell/Terminal\n" +
+"2️⃣ cd D:\\Document\\TNS_TOEIC2025\\TNS_TOEICAdmin\\TNS_TOEICAdmin\\PythonServices\n" +
+"3️⃣ irt_env\\Scripts\\activate\n" +
+"4️⃣ python full_irt_service.py\n\n" +
+"When you see the message:\n" +
+" * Running on http://127.0.0.1:5001\n" +
+"→ Come back here and click 'Update Full IRT' again.\n\n" +
+"🔗 Test health: http://localhost:5001/health");
                 }
 
                 // Analyze
@@ -71,45 +71,45 @@ namespace TNS_TOEICPart1.Areas.TOEICPart1.Models
                 int updatedMembers = UpdateMemberAbilities(result);
 
                 // Format success message with details
-                string successMessage = $"✅ Cập nhật IRT thành công!\n\n" +
-                                      $"📊 Phân tích từ Python service:\n" +
-                                      $"   • Total Questions Analyzed: {result.Metadata.TotalQuestions}\n" +
-                                      $"   • Total Members: {result.Metadata.TotalMembers}\n" +
-                                      $"   • Total Responses Processed: {result.Metadata.TotalResponses}\n" +
-                                      $"   • Input Data Sent: {responses.Count} responses\n\n" +
-                                      $"💾 Cập nhật vào Database:\n" +
-                                      $"   • Questions Updated: {updatedQuestions} (across 7 parts)\n" +
-                                      $"   • Members Updated: {updatedMembers}\n\n" +
-                                      $"🔬 Model: {result.Metadata.ModelType}\n" +
-                                      $"⏱️ Training Iterations: {result.Metadata.Iterations}\n" +
-                                      $"📅 Timestamp: {result.Metadata.Timestamp}";
+                string successMessage = $"✅ IRT update successful!\n\n" +
+$"📊 Parsing from Python service:\n" +
+$" • Total Questions Analyzed: {result.Metadata.TotalQuestions}\n" +
+$" • Total Members: {result.Metadata.TotalMembers}\n" +
+$" • Total Responses Processed: {result.Metadata.TotalResponses}\n" +
+$" • Input Data Sent: {responses.Count} responses\n\n" +
+$"💾 Update to Database:\n" +
+$" • Questions Updated: {updatedQuestions} (across 7 parts)\n" +
+$" • Members Updated: {updatedMembers}\n\n" +
+$"🔬 Model: {result.Metadata.ModelType}\n" +
+$"⏱️ Training Iterations: {result.Metadata.Iterations}\n" +
+$"📅 Timestamp: {result.Metadata.Timestamp}";
 
                 return (true, successMessage);
             }
             catch (HttpRequestException ex)
             {
-                return (false, $"❌ Không thể kết nối đến Python service!\n\n" +
-                              $"Chi tiết lỗi:\n{ex.Message}\n\n" +
-                              $"Vui lòng:\n" +
-                              $"1. Kiểm tra Python service đã chạy chưa\n" +
-                              $"2. Kiểm tra port 5001 có bị chiếm bởi app khác không\n" +
-                              $"3. Thử restart Python service");
+                return (false, $"❌ Unable to connect to Python service!\n\n" +
+$"Error details:\n{ex.Message}\n\n" +
+$"Please:\n" +
+$"1. Check if Python service is running\n" +
+$"2. Check if port 5001 is occupied by another app\n" +
+$"3. Try restarting Python service");
             }
             catch (TaskCanceledException)
             {
                 int responseCount = responses?.Count ?? 0; // ✅ NULL-SAFE
-                return (false, $"❌ Timeout! IRT analysis mất quá 5 phút.\n\n" +
-                              $"Có thể do:\n" +
-                              $"• Dữ liệu quá lớn ({responseCount} responses)\n" +
-                              $"• Python service bị treo\n\n" +
-                              $"Giải pháp:\n" +
-                              $"• Restart Python service\n" +
-                              $"• Thử lại với ít data hơn");
+                return (false, $"❌ Timeout! IRT analysis took more than 5 minutes.\n\n" +
+$"Maybe because:\n" +
+$"• Data is too large ({responseCount} responses)\n" +
+$"• Python service is frozen\n\n" +
+$"Solution:\n" +
+$"• Restart Python service\n" +
+$"• Try again with less data");
             }
             catch (Exception ex)
             {
-                return (false, $"❌ Lỗi không xác định:\n\n{ex.Message}\n\n" +
-                              $"Stack Trace:\n{ex.StackTrace}");
+                return (false, $"❌ Unknown error:\n\n{ex.Message}\n\n" +
+$"Stack Trace:\n{ex.StackTrace}");
             }
         }
 

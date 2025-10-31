@@ -9,13 +9,15 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Models
 {
     public class QuestionSubListAccessData
     {
-        // ✅ GIỮ LẠI CorrectRate và Anomaly cho sub-questions
         public static JsonResult GetList(string QuestionKey)
         {
             string zMessage = "";
 
+            // ✅ UPDATED: Added IRT columns
             string zSQL = @"SELECT QuestionKey, QuestionText, QuestionImage, SkillLevel, 
-                                   AmountAccess, CorrectRate, Anomaly, Ranking
+                                   AmountAccess, CorrectRate, Anomaly, Ranking,
+                                   IrtDifficulty, IrtDiscrimination, IrtGuessing, 
+                                   Quality, ConfidenceLevel, LastAnalyzed
                            FROM [dbo].[TEC_Part3_Question] 
                            WHERE RecordStatus != 99 AND Parent = @QuestionKey
                            ORDER BY Ranking";
@@ -42,9 +44,10 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Models
             catch (Exception ex)
             {
                 zMessage = ex.ToString();
+                return new JsonResult(new { error = zMessage });
             }
 
-            // ✅ GIỮ LẠI CorrectRate và Anomaly
+            // ✅ UPDATED: Added IRT fields to output
             var zDataList = zTable.AsEnumerable().Select(row => new Dictionary<string, object>
             {
                 { "QuestionKey", row["QuestionKey"] },
@@ -54,7 +57,14 @@ namespace TNS_TOEICPart3.Areas.TOEICPart3.Models
                 { "AmountAccess", row["AmountAccess"] },
                 { "CorrectRate", row["CorrectRate"] == DBNull.Value ? null : Convert.ToDouble(row["CorrectRate"]) },
                 { "Anomaly", row["Anomaly"] == DBNull.Value ? null : Convert.ToInt32(row["Anomaly"]) },
-                { "Ranking", row["Ranking"] }
+                { "Ranking", row["Ranking"] },
+                // ✅ NEW: IRT Parameters
+                { "IrtDifficulty", row["IrtDifficulty"] == DBNull.Value ? null : Convert.ToDouble(row["IrtDifficulty"]) },
+                { "IrtDiscrimination", row["IrtDiscrimination"] == DBNull.Value ? null : Convert.ToDouble(row["IrtDiscrimination"]) },
+                { "IrtGuessing", row["IrtGuessing"] == DBNull.Value ? null : Convert.ToDouble(row["IrtGuessing"]) },
+                { "Quality", row["Quality"] == DBNull.Value ? "" : row["Quality"].ToString() },
+                { "ConfidenceLevel", row["ConfidenceLevel"] == DBNull.Value ? "" : row["ConfidenceLevel"].ToString() },
+                { "LastAnalyzed", row["LastAnalyzed"] == DBNull.Value ? "" : Convert.ToDateTime(row["LastAnalyzed"]).ToString("yyyy-MM-dd HH:mm") }
             }).ToList();
 
             return new JsonResult(zDataList);

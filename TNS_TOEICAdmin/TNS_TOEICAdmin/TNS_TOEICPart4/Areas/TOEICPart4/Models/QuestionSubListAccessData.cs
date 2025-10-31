@@ -4,8 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TNS_TOEICPart4.Areas.TOEICPart4.Models
 {
@@ -14,42 +12,62 @@ namespace TNS_TOEICPart4.Areas.TOEICPart4.Models
         public static JsonResult GetList(string QuestionKey)
         {
             string zMessage = "";
-            string zSQL = @"SELECT QuestionKey, QuestionText, QuestionImage, SkillLevel, AmountAccess, CorrectRate, Anomaly, Ranking";
-            zSQL += " FROM [dbo].[TEC_Part4_Question] ";
-            zSQL += " WHERE RecordStatus != 99 AND Parent = @QuestionKey";
-            zSQL += " ORDER BY Ranking ";
+
+            // ✅ UPDATED: Added IRT columns
+            string zSQL = @"SELECT QuestionKey, QuestionText, QuestionImage, SkillLevel, 
+                                   AmountAccess, CorrectRate, Anomaly, Ranking,
+                                   IrtDifficulty, IrtDiscrimination, IrtGuessing, 
+                                   Quality, ConfidenceLevel, LastAnalyzed
+                           FROM [dbo].[TEC_Part4_Question] 
+                           WHERE RecordStatus != 99 AND Parent = @QuestionKey
+                           ORDER BY Ranking";
+
             DataTable zTable = new DataTable();
             string zConnectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
+
             try
             {
-                SqlConnection zConnect = new SqlConnection(zConnectionString);
-                zConnect.Open();
-                SqlCommand zCommand = new SqlCommand(zSQL, zConnect);
-                zCommand.CommandType = CommandType.Text;
-                zCommand.Parameters.Add("@QuestionKey", SqlDbType.NVarChar).Value = QuestionKey;
-                SqlDataAdapter zAdapter = new SqlDataAdapter(zCommand);
-                zAdapter.Fill(zTable);
-                zCommand.Dispose();
-                zConnect.Close();
+                using (SqlConnection zConnect = new SqlConnection(zConnectionString))
+                {
+                    zConnect.Open();
+                    using (SqlCommand zCommand = new SqlCommand(zSQL, zConnect))
+                    {
+                        zCommand.CommandType = CommandType.Text;
+                        zCommand.Parameters.Add("@QuestionKey", SqlDbType.NVarChar).Value = QuestionKey;
+                        using (SqlDataAdapter zAdapter = new SqlDataAdapter(zCommand))
+                        {
+                            zAdapter.Fill(zTable);
+                        }
+                    }
+                }
             }
             catch (Exception ex)
             {
                 zMessage = ex.ToString();
+                return new JsonResult(new { error = zMessage });
             }
+
+            // ✅ UPDATED: Added IRT fields to output
             var zDataList = zTable.AsEnumerable().Select(row => new Dictionary<string, object>
-    {
-        { "QuestionKey", row["QuestionKey"] },
-        { "QuestionText", row["QuestionText"] },
-        { "QuestionImage", row["QuestionImage"] },
-        { "SkillLevel", row["SkillLevel"] },
-        { "AmountAccess", row["AmountAccess"] },
-        { "CorrectRate", row["CorrectRate"] == DBNull.Value ? null : Convert.ToDouble(row["CorrectRate"]) },
-        { "Anomaly", row["Anomaly"] == DBNull.Value ? null : Convert.ToInt32(row["Anomaly"]) },
-        { "Ranking", row["Ranking"] }
-    }).ToList();
+            {
+                { "QuestionKey", row["QuestionKey"] },
+                { "QuestionText", row["QuestionText"] },
+                { "QuestionImage", row["QuestionImage"] },
+                { "SkillLevel", row["SkillLevel"] },
+                { "AmountAccess", row["AmountAccess"] },
+                { "CorrectRate", row["CorrectRate"] == DBNull.Value ? null : Convert.ToDouble(row["CorrectRate"]) },
+                { "Anomaly", row["Anomaly"] == DBNull.Value ? null : Convert.ToInt32(row["Anomaly"]) },
+                { "Ranking", row["Ranking"] },
+                // ✅ NEW: IRT Parameters
+                { "IrtDifficulty", row["IrtDifficulty"] == DBNull.Value ? null : Convert.ToDouble(row["IrtDifficulty"]) },
+                { "IrtDiscrimination", row["IrtDiscrimination"] == DBNull.Value ? null : Convert.ToDouble(row["IrtDiscrimination"]) },
+                { "IrtGuessing", row["IrtGuessing"] == DBNull.Value ? null : Convert.ToDouble(row["IrtGuessing"]) },
+                { "Quality", row["Quality"] == DBNull.Value ? "" : row["Quality"].ToString() },
+                { "ConfidenceLevel", row["ConfidenceLevel"] == DBNull.Value ? "" : row["ConfidenceLevel"].ToString() },
+                { "LastAnalyzed", row["LastAnalyzed"] == DBNull.Value ? "" : Convert.ToDateTime(row["LastAnalyzed"]).ToString("yyyy-MM-dd HH:mm") }
+            }).ToList();
 
             return new JsonResult(zDataList);
-
         }
     }
 }

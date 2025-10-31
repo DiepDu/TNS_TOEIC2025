@@ -4,8 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TNS_TOEICPart5.Areas.TOEICPart5.Models
 {
@@ -22,7 +20,6 @@ namespace TNS_TOEICPart5.Areas.TOEICPart5.Models
 
     public static class QuestionListDataAccess
     {
-        // ✅ Helper methods
         private static string BuildWhereClause(bool hasDateFilter)
         {
             string where = hasDateFilter
@@ -45,19 +42,22 @@ namespace TNS_TOEICPart5.Areas.TOEICPart5.Models
             return "";
         }
 
-        // ✅ Method without date - Returns data + totalCount
+        // ✅ UPDATED: Added IRT columns to SELECT
+        private static string GetSelectColumns()
+        {
+            return @"QuestionKey, QuestionText, QuestionVoice, SkillLevel, AmountAccess, 
+                     CorrectRate, Anomaly, Publish, RecordStatus,
+                     IrtDifficulty, IrtDiscrimination, IrtGuessing, Quality, ConfidenceLevel, LastAnalyzed";
+        }
+
         public static JsonResult GetList(string Search, int Level, int PageSize, int PageNumber, string StatusFilter)
         {
-            string zMessage = "";
-
-            // Count query
             string zCountSQL = @"SELECT COUNT(*) FROM [dbo].[TEC_Part5_Question] " + BuildWhereClause(false);
             if (Level > 0)
                 zCountSQL += " AND SkillLevel = @Level ";
             zCountSQL += BuildStatusFilter(StatusFilter);
 
-            // Data query with pagination
-            string zDataSQL = @"SELECT QuestionKey, QuestionText, QuestionVoice, SkillLevel, AmountAccess, CorrectRate, Anomaly, Publish, RecordStatus 
+            string zDataSQL = $@"SELECT {GetSelectColumns()} 
                        FROM [dbo].[TEC_Part5_Question] " + BuildWhereClause(false);
 
             if (Level > 0)
@@ -77,7 +77,6 @@ namespace TNS_TOEICPart5.Areas.TOEICPart5.Models
                 {
                     zConnect.Open();
 
-                    // Get total count
                     using (SqlCommand zCountCommand = new SqlCommand(zCountSQL, zConnect))
                     {
                         zCountCommand.CommandType = CommandType.Text;
@@ -86,7 +85,6 @@ namespace TNS_TOEICPart5.Areas.TOEICPart5.Models
                         totalCount = (int)zCountCommand.ExecuteScalar();
                     }
 
-                    // Get data
                     using (SqlCommand zCommand = new SqlCommand(zDataSQL, zConnect))
                     {
                         zCommand.CommandType = CommandType.Text;
@@ -103,7 +101,7 @@ namespace TNS_TOEICPart5.Areas.TOEICPart5.Models
             }
             catch (Exception ex)
             {
-                zMessage = ex.ToString();
+                return new JsonResult(new { error = ex.Message });
             }
 
             var zDataList = zTable.AsEnumerable().Select(row => new
@@ -116,25 +114,27 @@ namespace TNS_TOEICPart5.Areas.TOEICPart5.Models
                 Publish = row["Publish"] != DBNull.Value ? Convert.ToBoolean(row["Publish"]) : false,
                 RecordStatus = row["RecordStatus"] != DBNull.Value ? Convert.ToInt32(row["RecordStatus"]) : 0,
                 CorrectRate = row["CorrectRate"] != DBNull.Value ? Convert.ToDouble(row["CorrectRate"]) : (double?)null,
-                Anomaly = row["Anomaly"] != DBNull.Value ? Convert.ToInt32(row["Anomaly"]) : (int?)null
+                Anomaly = row["Anomaly"] != DBNull.Value ? Convert.ToInt32(row["Anomaly"]) : (int?)null,
+                // ✅ NEW: IRT fields
+                IrtDifficulty = row["IrtDifficulty"] != DBNull.Value ? Convert.ToDouble(row["IrtDifficulty"]) : (double?)null,
+                IrtDiscrimination = row["IrtDiscrimination"] != DBNull.Value ? Convert.ToDouble(row["IrtDiscrimination"]) : (double?)null,
+                IrtGuessing = row["IrtGuessing"] != DBNull.Value ? Convert.ToDouble(row["IrtGuessing"]) : (double?)null,
+                Quality = row["Quality"].ToString(),
+                ConfidenceLevel = row["ConfidenceLevel"].ToString(),
+                LastAnalyzed = row["LastAnalyzed"] != DBNull.Value ? Convert.ToDateTime(row["LastAnalyzed"]).ToString("yyyy-MM-dd HH:mm") : ""
             }).ToList();
 
             return new JsonResult(new { data = zDataList, totalCount = totalCount });
         }
 
-        // ✅ Method with date - Returns data + totalCount
         public static JsonResult GetList(string Search, int Level, DateTime FromDate, DateTime ToDate, int PageSize, int PageNumber, string StatusFilter)
         {
-            string zMessage = "";
-
-            // Count query
             string zCountSQL = @"SELECT COUNT(*) FROM [dbo].[TEC_Part5_Question] " + BuildWhereClause(true);
             if (Level > 0)
                 zCountSQL += " AND SkillLevel = @Level ";
             zCountSQL += BuildStatusFilter(StatusFilter);
 
-            // Data query with pagination
-            string zDataSQL = @"SELECT QuestionKey, QuestionText, QuestionVoice, SkillLevel, AmountAccess, CorrectRate, Anomaly, Publish, RecordStatus 
+            string zDataSQL = $@"SELECT {GetSelectColumns()} 
                        FROM [dbo].[TEC_Part5_Question] " + BuildWhereClause(true);
 
             if (Level > 0)
@@ -154,7 +154,6 @@ namespace TNS_TOEICPart5.Areas.TOEICPart5.Models
                 {
                     zConnect.Open();
 
-                    // Get total count
                     using (SqlCommand zCountCommand = new SqlCommand(zCountSQL, zConnect))
                     {
                         zCountCommand.CommandType = CommandType.Text;
@@ -165,7 +164,6 @@ namespace TNS_TOEICPart5.Areas.TOEICPart5.Models
                         totalCount = (int)zCountCommand.ExecuteScalar();
                     }
 
-                    // Get data
                     using (SqlCommand zCommand = new SqlCommand(zDataSQL, zConnect))
                     {
                         zCommand.CommandType = CommandType.Text;
@@ -184,7 +182,7 @@ namespace TNS_TOEICPart5.Areas.TOEICPart5.Models
             }
             catch (Exception ex)
             {
-                zMessage = ex.ToString();
+                return new JsonResult(new { error = ex.Message });
             }
 
             var zDataList = zTable.AsEnumerable().Select(row => new
@@ -197,18 +195,25 @@ namespace TNS_TOEICPart5.Areas.TOEICPart5.Models
                 Publish = row["Publish"] != DBNull.Value ? Convert.ToBoolean(row["Publish"]) : false,
                 RecordStatus = row["RecordStatus"] != DBNull.Value ? Convert.ToInt32(row["RecordStatus"]) : 0,
                 CorrectRate = row["CorrectRate"] != DBNull.Value ? Convert.ToDouble(row["CorrectRate"]) : (double?)null,
-                Anomaly = row["Anomaly"] != DBNull.Value ? Convert.ToInt32(row["Anomaly"]) : (int?)null
+                Anomaly = row["Anomaly"] != DBNull.Value ? Convert.ToInt32(row["Anomaly"]) : (int?)null,
+                // ✅ NEW: IRT fields
+                IrtDifficulty = row["IrtDifficulty"] != DBNull.Value ? Convert.ToDouble(row["IrtDifficulty"]) : (double?)null,
+                IrtDiscrimination = row["IrtDiscrimination"] != DBNull.Value ? Convert.ToDouble(row["IrtDiscrimination"]) : (double?)null,
+                IrtGuessing = row["IrtGuessing"] != DBNull.Value ? Convert.ToDouble(row["IrtGuessing"]) : (double?)null,
+                Quality = row["Quality"].ToString(),
+                ConfidenceLevel = row["ConfidenceLevel"].ToString(),
+                LastAnalyzed = row["LastAnalyzed"] != DBNull.Value ? Convert.ToDateTime(row["LastAnalyzed"]).ToString("yyyy-MM-dd HH:mm") : ""
             }).ToList();
 
             return new JsonResult(new { data = zDataList, totalCount = totalCount });
         }
+
         public static int GetAnswerCount(string QuestionKey)
         {
-            // Đếm số lượng đáp án chưa bị xóa (RecordStatus != 99)
             string zSQL = @"SELECT COUNT(*) 
-                     FROM [dbo].[TEC_Part5_Answer] 
-                     WHERE QuestionKey = @QuestionKey 
-                     AND RecordStatus != 99";
+                           FROM [dbo].[TEC_Part5_Answer] 
+                           WHERE QuestionKey = @QuestionKey 
+                           AND RecordStatus != 99";
 
             string zConnectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
             try
@@ -225,7 +230,6 @@ namespace TNS_TOEICPart5.Areas.TOEICPart5.Models
             }
             catch
             {
-                // Trả về 0 nếu có lỗi
                 return 0;
             }
         }
