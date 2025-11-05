@@ -1,18 +1,16 @@
-﻿
-<button id="ai-chatbot-toggler" class="ai-chat-bubble">
+﻿<button id="ai-chatbot-toggler" class="ai-chat-bubble">
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path><path d="M5 3v4"></path><path d="M19 17v4"></path><path d="M3 5h4"></path><path d="M17 19h4"></path></svg>
 </button>
 
 <!-- Khung Popup của Chatbot -->
 <div class="ai-chatbot-popup" data-conversation-id="">
-    <!-- Sidebar Lịch sử Chat - Mặc định ẩn -->
+    <!-- Sidebar Lịch sử Chat - Overlay Mode -->
     <div class="ai-history-sidebar">
         <button id="ai-new-chat-btn">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"></line><line x1="5" x2="19" y1="12" y2="12"></line></svg>
             <span>New Conversation</span>
         </button>
         <div class="ai-conversations-list">
-            <!-- Danh sách các cuộc hội thoại sẽ được load vào đây -->
             <div class="ai-history-loader"></div>
         </div>
     </div>
@@ -20,34 +18,32 @@
     <!-- Khung Chat Chính -->
     <div class="ai-chat-main">
         <div class="ai-chat-header">
-            <button id="ai-history-toggler" class="ai-header-btn">
+            <button id="ai-history-toggler" class="ai-header-btn" title="History">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" x2="21" y1="12" y2="12"></line><line x1="3" x2="21" y1="6" y2="6"></line><line x1="3" x2="21" y1="18" y2="18"></line></svg>
             </button>
-            <h2>Mr.TOEIC</h2>
-            <button id="ai-close-chatbot" class="ai-header-btn">
+            <h2>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 8px;"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path></svg>
+                Mr.TOEIC
+            </h2>
+            <button id="ai-close-chatbot" class="ai-header-btn" title="Close">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" x2="6" y1="6" y2="18"></line><line x1="6" x2="18" y1="6" y2="18"></line></svg>
             </button>
         </div>
-   
+
         <div class="ai-chat-body">
-            <!-- Tin nhắn sẽ được load vào đây -->
+            <!-- Messages loaded here -->
         </div>
 
         <div class="ai-chat-footer">
             <div id="ai-file-preview-container"></div>
-
             <form id="ai-chat-form" class="ai-chat-form">
                 <textarea id="ai-message-input" placeholder="Ask Mr.TOEIC anything..." required></textarea>
                 <div class="ai-chat-controls">
                     <input type="file" id="ai-file-input" hidden multiple accept="image/*,.pdf,.txt,.docx">
-
                     <button type="button" id="ai-file-upload-btn" title="Attach file">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
                     </button>
-
-                  
-
-                    <button type="submit" id="ai-send-message-btn" title="Send message">
+                    <button type="submit" id="ai-send-message-btn" title="Send">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" x2="11" y1="2" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                     </button>
                 </div>
@@ -59,155 +55,276 @@
 <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
 <style>
     :root {
         --ai-primary-color: #007bff;
+        --ai-primary-hover: #0056b3;
         --ai-bg-color: #ffffff;
         --ai-header-bg: #f8f9fa;
         --ai-sidebar-bg: #f1f3f5;
         --ai-user-msg-bg: #007bff;
-        --ai-bot-msg-bg: #e9ecef;
+        --ai-bot-msg-bg: #f0f2f5;
         --ai-text-color: #212529;
         --ai-light-text: #6c757d;
-        --ai-border-color: #dee2e6;
+        --ai-border-color: #e0e0e0;
+        --ai-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        --ai-shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.2);
     }
 
-    /* Nút bấm mở chat */
+    /* ========================================
+           🎯 TOGGLE BUTTON
+           ======================================== */
     .ai-chat-bubble {
         position: fixed;
         bottom: 20px;
         right: 20px;
         width: 60px;
         height: 60px;
-        background: var(--ai-primary-color);
+        background: linear-gradient(135deg, var(--ai-primary-color), #0056b3);
         color: white;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        box-shadow: var(--ai-shadow);
         z-index: 999;
         cursor: pointer;
         border: none;
-        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-    }
-    .ai-chat-bubble:hover {
-        transform: scale(1.1);
-        box-shadow: 0 6px 16px rgba(0,0,0,0.25);
-    }
-    .ai-chat-bubble svg {
-        transition: opacity 0.2s, transform 0.2s;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    /* Khung Chat Popup */
+        .ai-chat-bubble:hover {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: var(--ai-shadow-lg);
+        }
+
+        .ai-chat-bubble svg {
+            transition: transform 0.3s ease;
+        }
+
+    body.show-ai-chatbot .ai-chat-bubble svg {
+        transform: rotate(180deg);
+    }
+
+    /* ========================================
+           🏗️ MAIN POPUP - Fixed Layout
+           ======================================== */
     .ai-chatbot-popup {
         position: fixed;
-        bottom: 100px;
-        right: 20px;
-        width: 450px;
-        max-width: 95vw;
-        height: 75vh;
-        max-height: 700px;
+        bottom: 0;
+        right: 100px;
+        width: 900px;
+        height: 100vh;
         background: var(--ai-bg-color);
-        border-radius: 15px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        border-radius: 20px 20px 0 0;
+        box-shadow: var(--ai-shadow-lg);
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
         overflow: hidden;
         z-index: 1000;
-        /* === CÁC THUỘC TÍNH QUAN TRỌNG ĐỂ ẨN ĐI BAN ĐẦU === */
-        transform: scale(0.5);
+        transform: translateY(100%);
         opacity: 0;
-        pointer-events: none; /* <-- Rất quan trọng, ngăn tương tác khi bị ẩn */
-        transform-origin: bottom right;
-        transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+        pointer-events: none;
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease;
     }
 
     body.show-ai-chatbot .ai-chatbot-popup {
-        /* === CÁC THUỘC TÍNH ĐỂ HIỆN RA KHI CÓ CLASS 'show-ai-chatbot' === */
-        transform: scale(1);
+        transform: translateY(0);
         opacity: 1;
-        pointer-events: auto; /* <-- Rất quan trọng, cho phép tương tác khi hiện ra */
+        pointer-events: auto;
     }
 
-    /* Sidebar Lịch sử Chat */
+    /* ========================================
+           📜 HISTORY SIDEBAR - Absolute Overlay
+           ======================================== */
     .ai-history-sidebar {
-        position: absolute;
+        position: absolute; /* ✅ KEY FIX: Absolute positioning */
         top: 0;
         left: 0;
-        width: 80%;
+        width: 320px;
         height: 100%;
         background: var(--ai-sidebar-bg);
-        z-index: 1100;
-        transform: translateX(-100%);
-        transition: transform 0.3s ease-in-out;
+        border-right: 1px solid var(--ai-border-color);
         display: flex;
         flex-direction: column;
+        z-index: 10; /* ✅ Above chat-main */
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 4px 0 12px rgba(0, 0, 0, 0.1);
     }
+
     .ai-chatbot-popup.show-history .ai-history-sidebar {
         transform: translateX(0);
     }
+
     #ai-new-chat-btn {
         display: flex;
         align-items: center;
         gap: 10px;
-        width: calc(100% - 20px);
-        margin: 10px;
-        padding: 12px;
-        border: 1px solid var(--ai-border-color);
+        margin: 15px;
+        padding: 14px 18px;
+        border: 2px solid var(--ai-primary-color);
         background: var(--ai-bg-color);
-        color: var(--ai-text-color);
-        border-radius: 8px;
+        color: var(--ai-primary-color);
+        border-radius: 12px;
         cursor: pointer;
         font-size: 1rem;
-        transition: background-color 0.2s;
+        font-weight: 600;
+        transition: all 0.2s ease;
     }
-    #ai-new-chat-btn:hover {
-        background-color: #f8f9fa;
-    }
+
+        #ai-new-chat-btn:hover {
+            background: var(--ai-primary-color);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+        }
+
+    /* ========================================
+           💬 CONVERSATION LIST
+           ======================================== */
     .ai-conversations-list {
         flex-grow: 1;
         overflow-y: auto;
         padding: 0 10px 10px 10px;
     }
+
     .ai-conversation-item {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 10px;
         padding: 12px;
+        border-radius: 12px;
+        cursor: pointer;
+        margin-bottom: 8px;
+        transition: all 0.2s ease;
+        min-height: 70px;
+        max-height: 90px;
+    }
+
+        .ai-conversation-item:hover {
+            background-color: rgba(0, 123, 255, 0.08);
+            transform: translateX(4px);
+        }
+
+        .ai-conversation-item.active {
+            background-color: rgba(0, 123, 255, 0.15);
+            border-left: 3px solid var(--ai-primary-color);
+        }
+
+    .ai-conversation-content {
+        flex-grow: 1;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .ai-conversation-item .title {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--ai-text-color);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .ai-conversation-item .last-message {
+        font-size: 0.75rem;
+        color: var(--ai-light-text);
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.3;
+    }
+
+    /* ========================================
+           🎬 CONVERSATION ACTIONS
+           ======================================== */
+    .ai-conversation-actions {
+        display: none;
+        gap: 4px;
+        flex-shrink: 0;
+    }
+
+    .ai-conversation-item:hover .ai-conversation-actions {
+        display: flex;
+        animation: fadeIn 0.2s ease;
+    }
+
+    .ai-conversation-actions button {
+        width: 32px;
+        height: 32px;
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid var(--ai-border-color);
         border-radius: 8px;
         cursor: pointer;
-        margin-bottom: 5px;
-        transition: background-color 0.2s;
-    }
-    .ai-conversation-item:hover, .ai-conversation-item.active {
-        background-color: #dee2e6;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
-        .ai-conversation-item .title {
-            font-weight: 600;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            font-size: 0.9rem; /* Added: Make title smaller */
+        .ai-conversation-actions button:hover {
+            background: var(--ai-primary-color);
+            color: white;
+            transform: scale(1.1);
         }
 
-        .ai-conversation-item .last-message {
-            font-size: 0.75rem; /* Changed: Make last message smaller */
-            color: var(--ai-light-text);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            margin-top: 2px; /* Changed: Reduce space */
+    .rename-container {
+        display: none;
+        flex-grow: 1;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .ai-conversation-item.renaming .ai-conversation-content {
+        display: none;
+    }
+
+    .ai-conversation-item.renaming .rename-container {
+        display: flex;
+    }
+
+    .rename-container input {
+        flex-grow: 1;
+        border: 2px solid var(--ai-primary-color);
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 0.9rem;
+    }
+
+    .rename-container button {
+        padding: 6px 12px;
+        border: 1px solid var(--ai-border-color);
+        border-radius: 6px;
+        background: white;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+        .rename-container button:hover {
+            background: var(--ai-primary-color);
+            color: white;
         }
 
-    /* Khung Chat chính */
+    /* ========================================
+           💬 CHAT MAIN AREA - No Transform
+           ======================================== */
     .ai-chat-main {
-        width: 100%;
+        width: 100%; /* ✅ Always full width */
         height: 100%;
         display: flex;
         flex-direction: column;
-        transition: transform 0.3s ease-in-out;
-    }
-    .ai-chatbot-popup.show-history .ai-chat-main {
-        transform: translateX(80%);
+        position: relative;
+        z-index: 1;
+        /* ❌ REMOVED: No transform needed */
     }
 
     /* Header */
@@ -215,330 +332,510 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 10px 15px;
-        background: var(--ai-header-bg);
+        padding: 16px 20px;
+        background: linear-gradient(135deg, #f8f9fa, #ffffff);
         border-bottom: 1px solid var(--ai-border-color);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
-    .ai-chat-header h2 {
-        margin: 0;
-        font-size: 1.2rem;
-        color: var(--ai-text-color);
-    }
+
+        .ai-chat-header h2 {
+            margin: 0;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--ai-text-color);
+            display: flex;
+            align-items: center;
+        }
+
     .ai-header-btn {
-        background: none;
+        width: 40px;
+        height: 40px;
+        background: transparent;
         border: none;
         cursor: pointer;
         color: var(--ai-light-text);
-        padding: 5px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
+        transition: all 0.2s ease;
     }
-     .ai-header-btn:hover {
-        background-color: #dee2e6;
-     }
 
-    /* Body (khung tin nhắn) */
+        .ai-header-btn:hover {
+            background-color: rgba(0, 123, 255, 0.1);
+            color: var(--ai-primary-color);
+            transform: scale(1.1);
+        }
+
+    /* ========================================
+           💬 CHAT BODY
+           ======================================== */
     .ai-chat-body {
         flex-grow: 1;
-        padding: 15px;
+        padding: 20px;
         overflow-y: auto;
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 16px;
+        background: linear-gradient(to bottom, #fafafa, #ffffff);
     }
+
+        .ai-chat-body::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .ai-chat-body::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 10px;
+        }
+
+    /* ========================================
+           📩 MESSAGE BUBBLES
+           ======================================== */
     .ai-message {
         display: flex;
         align-items: flex-end;
         gap: 10px;
-        max-width: 85%;
+        max-width: 80%;
+        animation: messageSlideUp 0.3s ease;
+    }
+
+    @@keyframes messageSlideUp {
+        from
+
+    {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
     }
 
     .ai-message-text {
-        padding: 8px 12px; /* Changed: Reduce padding */
+        padding: 12px 16px;
         border-radius: 18px;
         word-wrap: break-word;
-        font-size: 0.95rem; /* Added: Set base font size */
+        font-size: 0.95rem;
+        line-height: 1.5;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     }
+
     .user-message {
         align-self: flex-end;
     }
-    .user-message .ai-message-text {
-        background: var(--ai-user-msg-bg);
-        color: white;
-        border-bottom-right-radius: 4px;
-    }
+
+        .user-message .ai-message-text {
+            background: linear-gradient(135deg, var(--ai-primary-color), var(--ai-primary-hover));
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
     .bot-message {
         align-self: flex-start;
     }
-    .bot-message .ai-message-text {
-        background: var(--ai-bot-msg-bg);
-        color: var(--ai-text-color);
-        border-bottom-left-radius: 4px;
-    }
-    .thinking-indicator {
-        display: flex; gap: 5px; padding: 10px 0;
-    }
-    .thinking-indicator .dot {
-        width: 8px; height: 8px; background: #999; border-radius: 50%;
-        animation: bounce 1.4s infinite ease-in-out both;
-    }
-    .thinking-indicator .dot:nth-child(1) { animation-delay: -0.32s; }
-    .thinking-indicator .dot:nth-child(2) { animation-delay: -0.16s; }
-    @@keyframes bounce {
-      0%, 80%, 100% { transform: scale(0); }
-      40% { transform: scale(1.0); }
-    }
 
-    /* Footer (khung nhập liệu) */
-    .ai-chat-footer {
-        padding: 10px 15px;
-        border-top: 1px solid var(--ai-border-color);
-    }
-    .ai-chat-form {
-        display: flex;
-        align-items: flex-end;
-        gap: 10px;
-    }
-    #ai-message-input {
-        flex-grow: 1;
-        border: 1px solid var(--ai-border-color);
-        border-radius: 20px;
-        padding: 10px 15px;
-        resize: none;
-        max-height: 100px;
-        font-size: 1rem;
-        outline: none;
-    }
-    .ai-chat-controls {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-    }
-    .ai-chat-controls button {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        border: none;
-        background: none;
-        color: var(--ai-light-text);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: background-color 0.2s;
-    }
-    .ai-chat-controls button:hover {
-        background-color: #f1f3f5;
-    }
-    .ai-chat-controls .toggle-btn.active {
-        background-color: var(--ai-primary-color);
-        color: white;
-    }
-
-    /* Loader */
-    .ai-history-loader {
-        border: 4px solid #f3f3f3;
-        border-top: 4px solid var(--ai-primary-color);
-        border-radius: 50%;
-        width: 30px;
-        height: 30px;
-        animation: spin 1s linear infinite;
-        margin: 20px auto;
-    }
-    @@keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    .ai-conversation-item {
-        position: relative; /* Cần thiết để định vị các nút */
-        display: flex; /* Sắp xếp lại để chứa các nút */
-        align-items: center;
-        gap: 10px;
-    }
-
-    .ai-conversation-content {
-        flex-grow: 1;
-        overflow: hidden; /* Ngăn nội dung tràn ra ngoài */
-    }
-
-    .ai-conversation-actions {
-        display: none; /* Ẩn mặc định */
-        flex-shrink: 0;
-    }
-
-    .ai-conversation-item:hover .ai-conversation-actions {
-        display: flex; /* Hiện khi di chuột vào item */
-        gap: 5px;
-    }
-
-    .ai-conversation-actions button {
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 5px;
-        border-radius: 50%;
-    }
-
-        .ai-conversation-actions button:hover {
-            background-color: #c9d2de;
+        .bot-message .ai-message-text {
+            background: var(--ai-bot-msg-bg);
+            color: var(--ai-text-color);
+            border-bottom-left-radius: 4px;
         }
 
-    /* Bổ sung style cho trạng thái sửa tên */
-    .ai-conversation-item.renaming .ai-conversation-content {
-        display: none; /* Ẩn tiêu đề cũ khi đang sửa */
+    /* ========================================
+           🖼️ IMAGES IN MESSAGES - Force Display
+           ======================================== */
+    .ai-message-text img {
+        max-width: 350px !important;
+        max-height: 350px !important;
+        width: auto !important;
+        height: auto !important;
+        object-fit: contain;
+        border-radius: 12px;
+        margin: 10px 0;
+        display: block !important; /* ✅ Force block display */
+        border: 2px solid var(--ai-border-color);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        transition: transform 0.2s ease;
     }
 
-    .rename-container {
-        display: none; /* Ẩn mặc định */
-        flex-grow: 1;
-        align-items: center;
-        gap: 5px;
-    }
+        .ai-message-text img:hover {
+            transform: scale(1.05);
+        }
 
-    .ai-conversation-item.renaming .rename-container {
-        display: flex; /* Hiện ra khi đang sửa */
-    }
-
-    .rename-container input {
+    /* ========================================
+           🎵 AUDIO PLAYER - Force Display & Style
+           ======================================== */
+    .ai-message-text audio {
+        display: block !important; /* ✅ Force display */
         width: 100%;
-        flex-grow: 1;
-        border: 1px solid var(--ai-primary-color);
-        border-radius: 5px;
-        padding: 8px;
-    }
-
-    .rename-container button {
-        background: none;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        cursor: pointer;
-        padding: 4px 8px;
-    }
-
-    #ai-file-preview-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        padding: 0 0 8px 0;
-        max-height: 120px;
-        overflow-y: auto;
-        border-bottom: 1px solid var(--ai-border-color); /* Thêm đường kẻ phân cách */
-        margin-bottom: 8px; /* Thêm khoảng cách với ô input */
-    }
-
-    .ai-file-preview-item {
-        position: relative;
-        border: 1px solid var(--ai-border-color);
+        max-width: 400px;
+        margin: 12px 0;
         border-radius: 8px;
-        padding: 5px;
-        background: #f8f9fa;
-        display: flex;
-        align-items: center;
-        max-width: 150px;
+        outline: none;
+        height: 40px; /* ✅ Set height */
+        background: #f0f0f0;
+        border: 1px solid var(--ai-border-color);
     }
 
-        .ai-file-preview-item .preview-content {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            overflow: hidden;
+        .ai-message-text audio::-webkit-media-controls-panel {
+            background: linear-gradient(to right, #f8f9fa, #ffffff);
         }
 
-        .ai-file-preview-item img, .ai-file-preview-item video {
-            width: 40px;
-            height: 40px;
-            object-fit: cover;
-            border-radius: 4px;
+        .ai-message-text audio::-webkit-media-controls-play-button {
+            background-color: var(--ai-primary-color);
+            border-radius: 50%;
         }
 
-        .ai-file-preview-item .file-icon {
-            font-size: 24px;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .ai-file-preview-item .file-name {
-            font-size: 0.8rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 80px;
-        }
-
-    .remove-file-btn {
-        position: absolute;
-        top: -5px;
-        right: -5px;
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        background: #6c757d;
-        color: white;
-        border: none;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
-        line-height: 1;
-        z-index: 1;
-    }
-
-    .audio-preview {
-        display: none; /* Ẩn trình phát audio mặc định */
-    }
-
-    .ai-message-text h1, .ai-message-text h2, .ai-message-text h3 {
-        margin-top: 10px;
-        margin-bottom: 5px;
-    }
-
-    .ai-message-text p {
-        margin-bottom: 8px; /* Thêm khoảng cách giữa các đoạn văn */
-    }
-
-    .ai-message-text ul, .ai-message-text ol {
-        padding-left: 20px; /* Thụt lề cho danh sách */
-        margin-bottom: 8px;
-    }
-
-    .ai-message-text li {
-        margin-bottom: 4px; /* Khoảng cách giữa các mục trong danh sách */
-    }
-
-    .ai-message-text strong {
-        font-weight: 600; /* Làm cho chữ đậm nổi bật hơn */
-    }
-
-    .ai-message-text code {
-        background-color: #f0f0f0;
-        padding: 2px 4px;
-        border-radius: 4px;
-        font-family: monospace;
-    }
-
-    .bot-message .ai-message-text code {
-        background-color: #dcdcdc; /* Màu nền code trong tin nhắn của bot */
-    }
-
+    /* ========================================
+           💻 CODE BLOCKS
+           ======================================== */
     .ai-message-text pre {
         background-color: #2d2d2d;
         color: #f8f8f2;
-        padding: 10px;
-        border-radius: 8px;
-        overflow-x: auto; /* Thêm thanh cuộn ngang nếu code quá dài */
-        margin-bottom: 8px;
+        padding: 16px;
+        border-radius: 10px;
+        overflow-x: auto;
+        margin: 10px 0;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
 
         .ai-message-text pre code {
             background-color: transparent;
             padding: 0;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
         }
 
+    .ai-message-text code {
+        background-color: rgba(0, 0, 0, 0.05);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 0.9em;
+    }
+
+    /* ========================================
+           ⏳ THINKING INDICATOR
+           ======================================== */
+    .thinking-indicator {
+        display: flex;
+        gap: 6px;
+        padding: 12px 16px;
+        background: var(--ai-bot-msg-bg);
+        border-radius: 18px;
+        border-bottom-left-radius: 4px;
+        width: fit-content;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+        .thinking-indicator .dot {
+            width: 10px;
+            height: 10px;
+            background: var(--ai-primary-color);
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+            .thinking-indicator .dot:nth-child(1) {
+                animation-delay: -0.32s;
+            }
+
+            .thinking-indicator .dot:nth-child(2) {
+                animation-delay: -0.16s;
+            }
+
+    @@keyframes bounce {
+        0%, 80%, 100%
+
+    {
+        transform: scale(0);
+    }
+
+    40% {
+        transform: scale(1.0);
+    }
+
+    }
+
+    /* ========================================
+           📝 CHAT FOOTER
+           ======================================== */
+    .ai-chat-footer {
+        padding: 16px 20px;
+        border-top: 1px solid var(--ai-border-color);
+        background: var(--ai-bg-color);
+        box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .ai-chat-form {
+        display: flex;
+        align-items: flex-end;
+        gap: 12px;
+    }
+
+    #ai-message-input {
+        flex-grow: 1;
+        border: 2px solid var(--ai-border-color);
+        border-radius: 24px;
+        padding: 12px 20px;
+        resize: none;
+        max-height: 120px;
+        font-size: 1rem;
+        outline: none;
+        transition: border-color 0.2s ease;
+        font-family: inherit;
+    }
+
+        #ai-message-input:focus {
+            border-color: var(--ai-primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
+
+    .ai-chat-controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .ai-chat-controls button {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: none;
+            background: var(--ai-primary-color);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+        }
+
+            .ai-chat-controls button:hover {
+                background: var(--ai-primary-hover);
+                transform: scale(1.1);
+            }
+
+    #ai-file-upload-btn {
+        background: transparent;
+        color: var(--ai-light-text);
+        border: 2px solid var(--ai-border-color);
+        box-shadow: none;
+    }
+
+        #ai-file-upload-btn:hover {
+            background: rgba(0, 123, 255, 0.1);
+            color: var(--ai-primary-color);
+            border-color: var(--ai-primary-color);
+        }
+
+    /* ========================================
+           📎 FILE PREVIEW
+           ======================================== */
+    #ai-file-preview-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 0 0 12px 0;
+        max-height: 150px;
+        overflow-y: auto;
+        border-bottom: 1px solid var(--ai-border-color);
+        margin-bottom: 12px;
+    }
+
+    .ai-file-preview-item {
+        position: relative;
+        border: 2px solid var(--ai-border-color);
+        border-radius: 10px;
+        padding: 8px;
+        background: #f8f9fa;
+        display: flex;
+        align-items: center;
+        max-width: 180px;
+        transition: all 0.2s ease;
+    }
+
+        .ai-file-preview-item:hover {
+            border-color: var(--ai-primary-color);
+            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
+        }
+
+        .ai-file-preview-item img {
+            width: 50px !important;
+            height: 50px !important;
+            object-fit: cover;
+            border-radius: 6px;
+            margin-right: 8px;
+        }
+
+        .ai-file-preview-item .file-name {
+            font-size: 0.85rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100px;
+        }
+
+    .remove-file-btn {
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #dc3545;
+        color: white;
+        border: 2px solid white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: bold;
+        transition: all 0.2s ease;
+    }
+
+        .remove-file-btn:hover {
+            background: #c82333;
+            transform: scale(1.15);
+        }
+
+    /* ========================================
+           🔄 LOADER
+           ======================================== */
+    .ai-history-loader {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid var(--ai-primary-color);
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 30px auto;
+    }
+
+    @@keyframes spin {
+        0%
+
+    {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+
+    }
+
+    @@keyframes fadeIn {
+        from
+
+    {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+
+    }
+
+    /* ========================================
+           📱 RESPONSIVE
+           ======================================== */
+    @@media (max-width: 1024px) {
+        .ai-chatbot-popup
+
+    {
+        width: 700px;
+        right: 80px;
+    }
+
+    }
+
+    @@media (max-width: 768px) {
+        .ai-chatbot-popup
+
+    {
+        width: 100vw;
+        right: 0;
+        border-radius: 0;
+    }
+
+    .ai-history-sidebar {
+        width: 280px;
+    }
+
+    }
+    /* ========================================
+           🚨 FORCE MEDIA DISPLAY - Critical Override
+           ======================================== */
+    .ai-message-text img,
+    .ai-message-text audio {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+
+    /* Override any markdown parser styles */
+    .ai-message-text p img {
+        display: block !important;
+        margin: 10px 0 !important;
+    }
+
+    .ai-message-text p audio {
+        display: block !important;
+        margin: 12px 0 !important;
+    }
+
+    /* Ensure images are not hidden by text overflow */
+    .ai-message-text {
+        overflow: visible !important;
+    }
+
+        /* Fix for escaped HTML */
+        .ai-message-text code img,
+        .ai-message-text code audio {
+            display: block !important;
+        }
+          /* Ensure each list item is on its own line */
+    .ai-message-text ul,
+    .ai-message-text ol {
+        padding-left: 25px;
+        margin: 10px 0;
+        list-style-position: outside;
+    }
+
+    .ai-message-text li {
+        display: block !important;
+        margin: 8px 0 !important;
+        line-height: 1.6 !important;
+        word-wrap: break-word;
+    }
+
+    /* Special styling for answer choices (with emoji indicators) */
+    .ai-message-text li:has(> :first-child:is([style*="⚪"], [style*="✅"], [style*="🔴"])),
+    .ai-message-text li:contains("⚪"),
+    .ai-message-text li:contains("✅"),
+    .ai-message-text li:contains("🔴") {
+        display: block !important;
+        margin: 6px 0 !important;
+        padding: 6px 0 !important;
+    }
+
+    /* Ensure paragraphs inside messages don't squash together */
+    .ai-message-text p {
+        margin: 8px 0;
+        line-height: 1.6;
+    }
+
+    /* Force block display for any element containing answer choices */
+    .ai-message-text *:has(> br) {
+        display: block;
+    }
 </style>

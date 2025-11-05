@@ -30,11 +30,11 @@ namespace TNS_TOEICTest.Controllers
             _cache = memoryCache;
         }
 
-        // ✅ OPTION 3: RETRY LOGIC WITH EXPONENTIAL BACKOFF
+        // ✅ RETRY LOGIC WITH EXPONENTIAL BACKOFF
         private async Task<JObject> CallGeminiApiWithRetryAsync(HttpClient client, string apiUrl, object payload, int maxRetries = 5)
         {
             int retryCount = 0;
-            int delayMs = 2000; // Start with 2 seconds
+            int delayMs = 2000;
 
             while (retryCount < maxRetries)
             {
@@ -52,7 +52,6 @@ namespace TNS_TOEICTest.Controllers
                     var errorContent = await httpResponse.Content.ReadAsStringAsync();
                     var errorObj = JObject.Parse(errorContent);
 
-                    // ✅ CHECK FOR 503 OR 429 (RATE LIMIT)
                     var errorCode = errorObj["error"]?["code"]?.ToObject<int>();
                     if (errorCode == 503 || errorCode == 429)
                     {
@@ -61,7 +60,7 @@ namespace TNS_TOEICTest.Controllers
                         {
                             Console.WriteLine($"[Gemini API] {errorCode} Error - Retry {retryCount}/{maxRetries} after {delayMs}ms");
                             await Task.Delay(delayMs);
-                            delayMs = Math.Min(delayMs * 2, 30000); // Cap at 30 seconds
+                            delayMs = Math.Min(delayMs * 2, 30000);
                             continue;
                         }
                     }
@@ -214,13 +213,12 @@ namespace TNS_TOEICTest.Controllers
                 if (string.IsNullOrEmpty(apiKey))
                     return StatusCode(500, new { success = false, message = "AI service not configured." });
 
-                // ✅ THÊM 3 DÒNG NÀY
                 // ✅ DYNAMIC CONTEXT LIMIT
                 int optimalLimit = SmartContextService.GetOptimalLimit(data.Message);
                 SmartContextService.LogTokenEstimate(optimalLimit, data.Message);
                 Console.WriteLine($"[HandleMemberChat] Using {optimalLimit} messages for context");
 
-                // ✅ THÊM: Load basic profile (cached)
+                // ✅ Load basic profile (cached)
                 var cacheKey = $"ChatBasicProfile_Member_{memberKey}";
                 if (!_cache.TryGetValue(cacheKey, out string basicProfile))
                 {
@@ -231,8 +229,69 @@ namespace TNS_TOEICTest.Controllers
                 // ✅ Get chat history with DYNAMIC LIMIT
                 var chatHistory = await ChatWithAIAccessData.GetMessageHistoryForApiAsync(data.ConversationId, optimalLimit);
 
-                // ✅ Build prompt
-                string initialPrompt = _promptService.BuildPromptForMember(basicProfile, chatHistory, data.Message);
+                // ✅✅✅ FILE HANDLING - BUILD MULTIMODAL PROMPT ✅✅✅
+                var initialParts = new List<object>();
+
+                // Build text prompt
+                string textPrompt = _promptService.BuildPromptForMember(basicProfile, chatHistory, data.Message);
+                initialParts.Add(new { text = textPrompt });
+
+                // ✅ PROCESS ATTACHED FILES
+                if (data.Files != null && data.Files.Count > 0)
+                {
+                    Console.WriteLine($"[HandleMemberChat] Processing {data.Files.Count} attached files");
+
+                    foreach (var file in data.Files)
+                    {
+                        try
+                        {
+                            if (file.MimeType.StartsWith("image/"))
+                            {
+                                // ✅ IMAGE FILES - Send directly as inline_data
+                                initialParts.Add(new
+                                {
+                                    inline_data = new
+                                    {
+                                        mime_type = file.MimeType,
+                                        data = file.Base64Data
+                                    }
+                                });
+                                Console.WriteLine($"[HandleMemberChat] ✅ Added image: {file.FileName} ({file.MimeType})");
+                            }
+                            else if (file.MimeType == "application/pdf")
+                            {
+                                // ✅ PDF FILES - Extract text
+                                var pdfText = ExtractTextFromPdf(file.Base64Data);
+                                initialParts.Add(new { text = $"\n\n--- Content from {file.FileName} ---\n{pdfText}\n--- End of {file.FileName} ---\n" });
+                                Console.WriteLine($"[HandleMemberChat] ✅ Extracted text from PDF: {file.FileName}");
+                            }
+                            else if (file.MimeType.StartsWith("text/"))
+                            {
+                                // ✅ TEXT FILES
+                                var textContent = Encoding.UTF8.GetString(Convert.FromBase64String(file.Base64Data));
+                                initialParts.Add(new { text = $"\n\n--- Content from {file.FileName} ---\n{textContent}\n--- End of {file.FileName} ---\n" });
+                                Console.WriteLine($"[HandleMemberChat] ✅ Added text file: {file.FileName}");
+                            }
+                            else if (file.MimeType.Contains("wordprocessingml"))
+                            {
+                                // ✅ DOCX FILES
+                                var docxText = ExtractTextFromDocx(file.Base64Data);
+                                initialParts.Add(new { text = $"\n\n--- Content from {file.FileName} ---\n{docxText}\n--- End of {file.FileName} ---\n" });
+                                Console.WriteLine($"[HandleMemberChat] ✅ Extracted text from DOCX: {file.FileName}");
+                            }
+                            else
+                            {
+                                Console.WriteLine($"[HandleMemberChat] ⚠️ Unsupported file type: {file.FileName} ({file.MimeType})");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"[HandleMemberChat] ❌ Error processing file {file.FileName}: {ex.Message}");
+                            // Continue processing other files
+                        }
+                    }
+                }
+
                 var tools = new List<GeminiTool> {
                     new GeminiTool {
                         FunctionDeclarations = new List<GeminiFunctionDeclaration> {
@@ -275,36 +334,22 @@ namespace TNS_TOEICTest.Controllers
                                     Properties = new Dictionary<string, GeminiSchemaProperty> { }
                                 }
                             },
-                         new GeminiFunctionDeclaration {
-    Name = "get_recommended_questions",
-    Description = @"Get personalized practice questions based on error patterns and IRT ability.
+                            new GeminiFunctionDeclaration {
+                                Name = "get_recommended_questions",
+                                Description = @"Get personalized practice questions based on error patterns and IRT ability.
 
 **IMPORTANT RENDERING RULES:**
 - For Part 3, 4, 6, 7: Questions may share the same passage/audio (ParentText/ParentAudioUrl)
 - When displaying results, show the SHARED PASSAGE ONCE at the top, then list all questions below it
-- DO NOT repeat the passage for each question
-- Example format:
-  
-  ### Shared Passage:
-  [ParentText here]
-  
-  ### Question 1: [QuestionText]
-  - (A) answer1
-  - (B) answer2
-  ...
-  
-  ### Question 2: [QuestionText]
-  - (A) answer1
-  - (B) answer2
-  ...",
-    Parameters = new GeminiSchema {
-        Properties = new Dictionary<string, GeminiSchemaProperty> {
-            { "part", new GeminiSchemaProperty { Type = "NUMBER", Description = "TOEIC part (1-7)" } },
-            { "limit", new GeminiSchemaProperty { Type = "NUMBER", Description = "Number of questions (default: 10)" } }
-        },
-        Required = new List<string> { "part" }
-    }
-},
+- DO NOT repeat the passage for each question",
+                                Parameters = new GeminiSchema {
+                                    Properties = new Dictionary<string, GeminiSchemaProperty> {
+                                        { "part", new GeminiSchemaProperty { Type = "NUMBER", Description = "TOEIC part (1-7)" } },
+                                        { "limit", new GeminiSchemaProperty { Type = "NUMBER", Description = "Number of questions (default: 10)" } }
+                                    },
+                                    Required = new List<string> { "part" }
+                                }
+                            },
                             new GeminiFunctionDeclaration {
                                 Name = "get_test_analysis_by_date",
                                 Description = "Get detailed error analysis for a specific test taken on a given date.",
@@ -332,14 +377,7 @@ namespace TNS_TOEICTest.Controllers
                                 Name = "find_my_incorrect_questions_by_topics",
                                 Description = @"Find incorrect questions by topic names. 
 **IMPORTANT:** ALL database topics are in ENGLISH. 
-You MUST translate Vietnamese keywords to English before calling this tool.
-
-Translation examples:
-- 'giới từ' → 'Preposition' or 'Prepositions'
-- 'thì' → 'Tense' or 'Tenses'
-- 'danh từ' → 'Noun'
-- 'động từ' → 'Verb'
-- 'Marketing' → 'Marketing' (already English)",
+You MUST translate Vietnamese keywords to English before calling this tool.",
                                 Parameters = new GeminiSchema {
                                     Properties = new Dictionary<string, GeminiSchemaProperty> {
                                         {
@@ -390,11 +428,12 @@ Translation examples:
 
                 var apiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={apiKey}";
                 string finalAnswer = null;
+
+                // ✅ USE initialParts INSTEAD OF PLAIN TEXT
                 var contentsList = new List<object> {
-                    new { role = "user", parts = new[] { new { text = initialPrompt } } }
+                    new { role = "user", parts = initialParts }
                 };
 
-                // ✅ FIX: CREATE HttpClient ONCE, OUTSIDE THE LOOP
                 using (var client = new HttpClient())
                 {
                     client.Timeout = TimeSpan.FromMinutes(2);
@@ -404,7 +443,6 @@ Translation examples:
                         JObject responseJson;
                         var payload = new { contents = contentsList, tools };
 
-                        // ✅ REUSE THE SAME CLIENT
                         responseJson = await CallGeminiApiWithRetryAsync(client, apiUrl, payload);
 
                         var candidate = responseJson["candidates"]?[0];
@@ -560,15 +598,45 @@ Translation examples:
                         else
                         {
                             finalAnswer = candidate?["content"]?["parts"]?[0]?["text"]?.ToString();
-                            break; // ✅ EXIT LOOP
+                            break;
                         }
                     }
-                } // ✅ Dispose HttpClient AFTER ALL DONE
+                }
+
+                // ✅ FIX: Prevent double-encoding of HTML
+                if (!string.IsNullOrEmpty(finalAnswer))
+                {
+                    // Step 1: Decode any existing HTML entities
+                    finalAnswer = System.Net.WebUtility.HtmlDecode(finalAnswer);
+
+                    // Step 2: Log for debugging
+                    Console.WriteLine($"[HandleMemberChat] Final answer length: {finalAnswer.Length} chars");
+
+                    if (finalAnswer.Contains("<img") || finalAnswer.Contains("<audio"))
+                    {
+                        Console.WriteLine("[HandleMemberChat] ✅ Response contains HTML media tags");
+                    }
+                    else if (finalAnswer.Contains("http"))
+                    {
+                        Console.WriteLine("[HandleMemberChat] ⚠️ Response contains URLs but no HTML tags");
+                        Console.WriteLine($"[HandleMemberChat] First 500 chars: {finalAnswer.Substring(0, Math.Min(500, finalAnswer.Length))}");
+                    }
+                }
 
                 await ChatWithAIAccessData.SaveMessageAsync(data.ConversationId, "user", data.Message);
                 await ChatWithAIAccessData.SaveMessageAsync(data.ConversationId, "AI", finalAnswer);
 
-                return Ok(new { success = true, message = finalAnswer ?? "Sorry, I couldn't process the request." });
+                // ✅ CRITICAL: Return as ContentResult to prevent auto-encoding
+                return new ContentResult
+                {
+                    StatusCode = 200,
+                    ContentType = "application/json; charset=utf-8",
+                    Content = JsonConvert.SerializeObject(new
+                    {
+                        success = true,
+                        message = finalAnswer ?? "Sorry, I couldn't process the request."
+                    })
+                };
             }
             catch (Exception ex)
             {
@@ -607,7 +675,7 @@ Translation examples:
                     return StatusCode(500, new { success = false, message = "API key is not configured." });
 
                 var backgroundData = await ChatWithAIAccessData.LoadAdminOriginalDataAsync(adminKey);
-                var chatHistory = await ChatWithAIAccessData.GetMessageHistoryForApiAsync(data.ConversationId);
+                var chatHistory = await ChatWithAIAccessData.GetMessageHistoryForApiAsync(data.ConversationId, 10);
                 string initialPrompt = _promptService.BuildPromptForAdmin(backgroundData, chatHistory, data.Message);
 
                 var tools = new List<GeminiTool>
@@ -689,7 +757,7 @@ Translation examples:
                     }
                 };
 
-                var apiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={apiKey}";
+                var apiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key={apiKey}";
                 string finalAnswer = null;
 
                 var contentsList = new List<object>
@@ -697,7 +765,6 @@ Translation examples:
                     new { role = "user", parts = new[] { new { text = initialPrompt } } }
                 };
 
-                // ✅ FIX: CREATE HttpClient ONCE, OUTSIDE THE LOOP
                 using (var client = new HttpClient())
                 {
                     client.Timeout = TimeSpan.FromMinutes(2);
@@ -707,7 +774,6 @@ Translation examples:
                         JObject responseJson;
                         var payload = new { contents = contentsList, tools };
 
-                        // ✅ REUSE THE SAME CLIENT
                         responseJson = await CallGeminiApiWithRetryAsync(client, apiUrl, payload);
 
                         var candidate = responseJson["candidates"]?[0];
@@ -783,10 +849,10 @@ Translation examples:
                         else
                         {
                             finalAnswer = candidate?["content"]?["parts"]?[0]?["text"]?.ToString();
-                            break; // ✅ EXIT LOOP
+                            break;
                         }
                     }
-                } // ✅ Dispose HttpClient AFTER ALL DONE
+                }
 
                 await ChatWithAIAccessData.SaveMessageAsync(data.ConversationId, "user", data.Message);
                 await ChatWithAIAccessData.SaveMessageAsync(data.ConversationId, "AI", finalAnswer);
@@ -845,6 +911,72 @@ Translation examples:
                 return StatusCode(500, new { success = false, message = "Failed to rename conversation." });
             }
         }
+
+        // ═════════════════════════════════════════════════════════════
+        // ✅✅✅ HELPER METHODS FOR FILE PROCESSING ✅✅✅
+        // ═════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Extract text from PDF base64 string using UglyToad.PdfPig
+        /// </summary>
+        private string ExtractTextFromPdf(string base64Data)
+        {
+            try
+            {
+                var pdfBytes = Convert.FromBase64String(base64Data);
+                using (var memoryStream = new MemoryStream(pdfBytes))
+                using (var pdfDocument = PdfDocument.Open(memoryStream))
+                {
+                    var textBuilder = new StringBuilder();
+                    foreach (var page in pdfDocument.GetPages())
+                    {
+                        textBuilder.AppendLine(page.Text);
+                        textBuilder.AppendLine(); // Separate pages
+                    }
+                    return textBuilder.ToString().Trim();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ExtractTextFromPdf ERROR]: {ex.Message}");
+                return $"[Error: Could not extract text from PDF - {ex.Message}]";
+            }
+        }
+
+        /// <summary>
+        /// Extract text from DOCX base64 string using DocumentFormat.OpenXml
+        /// </summary>
+        private string ExtractTextFromDocx(string base64Data)
+        {
+            try
+            {
+                var docxBytes = Convert.FromBase64String(base64Data);
+                using (var memoryStream = new MemoryStream(docxBytes))
+                using (var wordDocument = WordprocessingDocument.Open(memoryStream, false))
+                {
+                    var body = wordDocument.MainDocumentPart?.Document?.Body;
+                    if (body == null)
+                        return "[Empty document]";
+
+                    var textBuilder = new StringBuilder();
+                    foreach (var text in body.Descendants<DocumentFormat.OpenXml.Wordprocessing.Text>())
+                    {
+                        textBuilder.Append(text.Text);
+                    }
+
+                    return textBuilder.ToString().Trim();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ExtractTextFromDocx ERROR]: {ex.Message}");
+                return $"[Error: Could not extract text from DOCX - {ex.Message}]";
+            }
+        }
+
+        // ═════════════════════════════════════════════════════════════
+        // ✅ DTO CLASSES
+        // ═════════════════════════════════════════════════════════════
 
         public class ChatRequest
         {
