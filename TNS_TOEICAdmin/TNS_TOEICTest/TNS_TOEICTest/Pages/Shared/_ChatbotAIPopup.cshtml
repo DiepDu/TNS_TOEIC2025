@@ -803,39 +803,39 @@
         .ai-message-text code audio {
             display: block !important;
         }
-          /* Ensure each list item is on its own line */
-    .ai-message-text ul,
-    .ai-message-text ol {
-        padding-left: 25px;
-        margin: 10px 0;
-        list-style-position: outside;
-    }
+        /* Ensure each list item is on its own line */
+        .ai-message-text ul,
+        .ai-message-text ol {
+            padding-left: 25px;
+            margin: 10px 0;
+            list-style-position: outside;
+        }
 
-    .ai-message-text li {
-        display: block !important;
-        margin: 8px 0 !important;
-        line-height: 1.6 !important;
-        word-wrap: break-word;
-    }
+        .ai-message-text li {
+            display: block !important;
+            margin: 8px 0 !important;
+            line-height: 1.6 !important;
+            word-wrap: break-word;
+        }
 
-    /* Special styling for answer choices (with emoji indicators) */
-    .ai-message-text li:has(> :first-child:is([style*="⚪"], [style*="✅"], [style*="🔴"])),
-    .ai-message-text li:contains("⚪"),
-    .ai-message-text li:contains("✅"),
-    .ai-message-text li:contains("🔴") {
-        display: block !important;
-        margin: 6px 0 !important;
-        padding: 6px 0 !important;
-    }
+            /* Special styling for answer choices (with emoji indicators) */
+            .ai-message-text li:has(> :first-child:is([style*="⚪"], [style*="✅"], [style*="🔴"])),
+            .ai-message-text li:contains("⚪"),
+            .ai-message-text li:contains("✅"),
+            .ai-message-text li:contains("🔴") {
+                display: block !important;
+                margin: 6px 0 !important;
+                padding: 6px 0 !important;
+            }
 
-    /* Ensure paragraphs inside messages don't squash together */
-    .ai-message-text p {
-        margin: 8px 0;
-        line-height: 1.6;
-    }
+        /* Ensure paragraphs inside messages don't squash together */
+        .ai-message-text p {
+            margin: 8px 0;
+            line-height: 1.6;
+        }
 
-    /* Force block display for any element containing answer choices */
-    .ai-message-text *:has(> br) {
-        display: block;
-    }
+        /* Force block display for any element containing answer choices */
+        .ai-message-text *:has(> br) {
+            display: block;
+        }
 </style>
