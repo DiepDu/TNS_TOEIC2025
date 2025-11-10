@@ -87,7 +87,6 @@ namespace TNS_TOEICTest.Models.ChatWithAI.Services
             {
                 await connection.OpenAsync();
 
-                // Bước 1: Tìm cuộc trò chuyện gần đây nhất (không đổi)
                 var convoQuery = @"
             SELECT TOP 1 ConversationAIID, Title, StartedAt 
             FROM ConversationsWithAI 
@@ -113,14 +112,13 @@ namespace TNS_TOEICTest.Models.ChatWithAI.Services
                     }
                 }
 
-                // Bước 2: Lấy 50 tin nhắn gần nhất của cuộc trò chuyện đó
                 if (latestConversationId.HasValue)
                 {
                     var messagesQuery = @"
                 SELECT TOP 50 MessageAIID, SenderRole, Content, Timestamp
                 FROM MessageWithAI
                 WHERE ConversationAIID = @ConversationAIID
-                ORDER BY Timestamp DESC;"; // <-- SỬA TỪ ASC THÀNH DESC ĐỂ LẤY TIN NHẮN MỚI NHẤT
+                ORDER BY Timestamp DESC;";
 
                     using (var messagesCommand = new SqlCommand(messagesQuery, connection))
                     {
@@ -140,6 +138,9 @@ namespace TNS_TOEICTest.Models.ChatWithAI.Services
                             }
                         }
                     }
+
+                    // ✅ CRITICAL FIX: Reverse để trả về oldest first
+                    messages.Reverse();
                 }
             }
 

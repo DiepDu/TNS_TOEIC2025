@@ -244,7 +244,7 @@ ORDER BY AvgScore DESC, QuestionCount DESC, NEWID()";
 
             var inClause = string.Join(",", selectedParentKeys.Select((_, i) => $"@parent{i}"));
             var childQuestionsQuery = $@"
-SELECT TOP 5  -- ✅ THÊM LIMIT: Chỉ lấy tối đa 5 câu đầu tiên
+SELECT TOP 3  -- ✅ THÊM LIMIT: Chỉ lấy tối đa 5 câu đầu tiên
     Q.QuestionKey,
     Q.QuestionText,
     Q.QuestionImage,

@@ -40,81 +40,36 @@ document.addEventListener("DOMContentLoaded", () => {
         let contentHtml = safeContent;
 
         if (sender === 'bot') {
-            // ✅ STEP 1: Decode HTML entities multiple times (aggressive)
+            // ✅ STEP 1: Decode HTML entities CHỈ 1 LẦN
             const textarea = document.createElement('textarea');
             textarea.innerHTML = safeContent;
             let decodedContent = textarea.value;
 
-            // Additional decoding pass
-            textarea.innerHTML = decodedContent;
-            decodedContent = textarea.value;
-
-            // Manual replacements
-            decodedContent = decodedContent
-                .replace(/&lt;/g, '<')
-                .replace(/&gt;/g, '>')
-                .replace(/&quot;/g, '"')
-                .replace(/&#39;/g, "'")
-                .replace(/&amp;/g, '&');
-
-            // ✅ STEP 2: PRE-PROCESS URLs BEFORE Markdown parsing
-            // Convert plain URLs to HTML tags BEFORE marked.js processes them
-
-            // Image URLs → <img> tags
-            const imageUrlRegex = /(https?:\/\/[^\s<>"']+\.(?:jpg|jpeg|png|gif|webp|svg)(?:\?[^\s<>"']*)?)/gi;
-            decodedContent = decodedContent.replace(imageUrlRegex, (url) => {
-                console.log('[Pre-processing] Converting image URL to <img>:', url);
-                return `<img src="${url}" alt="Image" style="display:block; max-width:350px; border-radius:12px; margin:10px 0;">`;
-            });
-
-            // Audio URLs → <audio> tags
-            const audioUrlRegex = /(https?:\/\/[^\s<>"']+\.(?:mp3|wav|ogg|m4a|aac)(?:\?[^\s<>"']*)?)/gi;
-            decodedContent = decodedContent.replace(audioUrlRegex, (url) => {
-                console.log('[Pre-processing] Converting audio URL to <audio>:', url);
-                return `<audio controls src="${url}" style="display:block; width:100%; max-width:400px; margin:12px 0;"></audio>`;
-            });
-
-            // ✅ STEP 3: Configure marked.js
+            // ✅ STEP 2: Parse markdown (breaks: true để xử lý \n)
             marked.setOptions({
                 sanitize: false,
-                breaks: true,
+                breaks: true,  // ✅ Convert \n to <br>
                 gfm: true,
                 headerIds: false,
                 mangle: false
             });
 
-            // ✅ STEP 4: Parse markdown
             contentHtml = marked.parse(decodedContent);
-
-            // ✅ STEP 5: Post-processing cleanup
-            contentHtml = contentHtml
-                .replace(/&lt;img/gi, '<img')
-                .replace(/&lt;audio/gi, '<audio')
-                .replace(/&lt;\/audio&gt;/gi, '</audio>')
-                .replace(/&lt;\/img&gt;/gi, '>');
         }
 
         // ✅ Insert HTML
         messageDiv.innerHTML = `<div class="ai-message-text">${contentHtml}</div>`;
 
-        // ✅ STEP 6: Force-render media
+        // ✅ STEP 3: Force-render media (UNCHANGED)
         if (sender === 'bot') {
             const messageTextDiv = messageDiv.querySelector('.ai-message-text');
 
             // Process images
             const images = messageTextDiv.querySelectorAll('img');
-            console.log(`[createMessageElement] Found ${images.length} image(s)`);
+           
             images.forEach((img, index) => {
-                console.log(`[Image ${index}] src:`, img.src);
+              
                 img.style.cssText = 'display:block !important; max-width:350px; max-height:350px; object-fit:contain; border-radius:12px; margin:10px 0; cursor:pointer; border:2px solid #e0e0e0; box-shadow:0 4px 12px rgba(0,0,0,0.1);';
-
-                if (!img.src || img.src === window.location.href) {
-                    const srcFromAttr = img.getAttribute('src');
-                    if (srcFromAttr) {
-                        img.src = srcFromAttr;
-                        console.log(`[Image ${index}] Fixed src:`, img.src);
-                    }
-                }
 
                 img.addEventListener('click', () => {
                     Swal.fire({
@@ -129,35 +84,27 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
 
                 img.addEventListener('error', (e) => {
-                    console.error(`[Image ${index}] Load error:`, img.src, e);
+                  
                     img.alt = '❌ Image failed to load';
                     img.style.border = '2px solid #dc3545';
                 });
 
                 img.addEventListener('load', () => {
-                    console.log(`[Image ${index}] Loaded successfully:`, img.src);
+                   
                 });
             });
 
             // Process audio
             const audioElements = messageTextDiv.querySelectorAll('audio');
-            console.log(`[createMessageElement] Found ${audioElements.length} audio element(s)`);
+           
             audioElements.forEach((audio, index) => {
-                console.log(`[Audio ${index}] src:`, audio.src);
+              
                 audio.style.cssText = 'display:block !important; width:100%; max-width:400px; margin:12px 0; border-radius:8px; height:40px; background:#f0f0f0; border:1px solid #e0e0e0;';
                 audio.controls = true;
                 audio.preload = 'metadata';
 
-                if (!audio.src || audio.src === window.location.href) {
-                    const srcFromAttr = audio.getAttribute('src');
-                    if (srcFromAttr) {
-                        audio.src = srcFromAttr;
-                        console.log(`[Audio ${index}] Fixed src:`, audio.src);
-                    }
-                }
-
                 audio.addEventListener('error', (e) => {
-                    console.error(`[Audio ${index}] Load error:`, audio.src, e);
+                  
                     const errorMsg = document.createElement('div');
                     errorMsg.textContent = '❌ Audio failed to load';
                     errorMsg.style.cssText = 'color:#dc3545; font-size:0.9rem; margin:8px 0;';
@@ -165,7 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
 
                 audio.addEventListener('loadedmetadata', () => {
-                    console.log(`[Audio ${index}] Loaded successfully:`, audio.src);
+                   
                 });
             });
 
@@ -178,48 +125,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     console.warn('[Syntax Highlighting Failed]:', e);
                 }
             });
-
-            // ✅ FALLBACK: If no media tags found, scan raw text
-            if (images.length === 0 && audioElements.length === 0) {
-                const rawText = messageTextDiv.textContent;
-                console.log('[FALLBACK] No media tags found, scanning raw text...');
-
-                const imageMatches = rawText.match(/https?:\/\/[^\s]+\.(?:jpg|jpeg|png|gif|webp|svg)/gi);
-                const audioMatches = rawText.match(/https?:\/\/[^\s]+\.(?:mp3|wav|ogg|m4a|aac)/gi);
-
-                if (imageMatches) {
-                    console.log('[FALLBACK] Found image URLs:', imageMatches);
-                    imageMatches.forEach((url, i) => {
-                        const img = document.createElement('img');
-                        img.src = url;
-                        img.style.cssText = 'display:block; max-width:350px; border-radius:12px; margin:10px 0; cursor:pointer; border:2px solid #e0e0e0;';
-                        img.addEventListener('click', () => {
-                            Swal.fire({
-                                imageUrl: url,
-                                showCloseButton: true,
-                                showConfirmButton: false,
-                                width: 'auto',
-                                background: 'transparent',
-                                backdrop: 'rgba(0,0,0,0.9)'
-                            });
-                        });
-                        messageTextDiv.appendChild(img);
-                        console.log(`[FALLBACK] Injected image ${i}:`, url);
-                    });
-                }
-
-                if (audioMatches) {
-                    console.log('[FALLBACK] Found audio URLs:', audioMatches);
-                    audioMatches.forEach((url, i) => {
-                        const audio = document.createElement('audio');
-                        audio.src = url;
-                        audio.controls = true;
-                        audio.style.cssText = 'display:block; width:100%; max-width:400px; margin:12px 0; border-radius:8px; height:40px;';
-                        messageTextDiv.appendChild(audio);
-                        console.log(`[FALLBACK] Injected audio ${i}:`, url);
-                    });
-                }
-            }
         }
 
         return messageDiv;
@@ -236,18 +141,17 @@ document.addEventListener("DOMContentLoaded", () => {
         chatBody.scrollTop = chatBody.scrollHeight;
     };
 
-    // ========================================
-    // ✅ FIX #2: ENSURE CORRECT MESSAGE ORDER
-    // ========================================
     const sortMessagesByTimestamp = () => {
         const messages = Array.from(chatBody.querySelectorAll('.ai-message'));
+        if (messages.length === 0) return;
+
         messages.sort((a, b) => {
             const timeA = parseInt(a.dataset.timestamp) || 0;
             const timeB = parseInt(b.dataset.timestamp) || 0;
-            return timeA - timeB; // Ascending order (oldest first)
+            return timeA - timeB;
         });
 
-        // Re-append in correct order
+        chatBody.innerHTML = '';
         messages.forEach(msg => chatBody.appendChild(msg));
     };
 
@@ -318,19 +222,17 @@ document.addEventListener("DOMContentLoaded", () => {
             const oldScrollHeight = chatBody.scrollHeight;
 
             if (olderMessages.length > 0) {
-                olderMessages.forEach(msg => {
+                // ✅ Backend returns oldest first, prepend in reverse
+                for (let i = olderMessages.length - 1; i >= 0; i--) {
+                    const msg = olderMessages[i];
                     const sender = msg.SenderRole.toLowerCase() === 'user' ? 'user' : 'bot';
-                    const messageElement = createMessageElement(msg.Content, sender, new Date(msg.CreatedOn).getTime());
-                    chatBody.prepend(messageElement);
-                });
+                    const timestamp = new Date(msg.Timestamp).getTime();
+                    chatBody.prepend(createMessageElement(msg.Content, sender, timestamp));
+                }
+
                 messagesLoadedCount += olderMessages.length;
-
-                // ✅ Sort after prepending
                 sortMessagesByTimestamp();
-
                 chatBody.scrollTop = chatBody.scrollHeight - oldScrollHeight;
-            } else {
-                console.log("No more messages to load.");
             }
         } catch (error) {
             console.error("Error loading more messages:", error);
@@ -366,28 +268,28 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const response = await fetch('/api/ChatWithAI/GetInitialData');
             if (!response.ok) throw new Error('Failed to load initial data.');
+
             const data = await response.json();
             chatBody.innerHTML = '';
+
             if (data.conversation) {
                 currentConversationId = data.conversation.ConversationAIID;
                 chatbotPopup.dataset.conversationId = data.conversation.ConversationAIID;
 
-                // ✅ Don't reverse, let backend handle ordering
                 data.messages.forEach(msg => {
                     const sender = msg.SenderRole.toLowerCase() === 'user' ? 'user' : 'bot';
-                    const timestamp = new Date(msg.CreatedOn).getTime();
+                    const timestamp = new Date(msg.Timestamp).getTime();
                     chatBody.appendChild(createMessageElement(msg.Content, sender, timestamp));
                 });
 
-                // ✅ Sort after loading
                 sortMessagesByTimestamp();
-
                 messagesLoadedCount = data.messages.length;
             } else {
                 chatbotPopup.dataset.conversationId = '';
                 chatBody.appendChild(createMessageElement("Hello! I am Mr.TOEIC, your personal AI tutor. How can I help you today?", 'bot'));
                 messagesLoadedCount = 0;
             }
+
             scrollToBottom();
         } catch (error) {
             console.error("Error fetching initial data:", error);
@@ -460,26 +362,29 @@ document.addEventListener("DOMContentLoaded", () => {
             chatbotPopup.classList.remove("show-history");
             return;
         }
+
         currentConversationId = conversationId;
         chatbotPopup.dataset.conversationId = conversationId;
         chatBody.innerHTML = '<div class="ai-history-loader"></div>';
         chatbotPopup.classList.remove("show-history");
+
         try {
             const response = await fetch(`/api/ChatWithAI/GetMoreMessages?conversationId=${conversationId}&skipCount=0`);
             if (!response.ok) throw new Error("Failed to load conversation.");
+
             const messages = await response.json();
             chatBody.innerHTML = '';
+
             messages.forEach(msg => {
                 const sender = msg.SenderRole.toLowerCase() === 'user' ? 'user' : 'bot';
-                const timestamp = new Date(msg.CreatedOn).getTime();
+                const timestamp = new Date(msg.Timestamp).getTime();
                 chatBody.appendChild(createMessageElement(msg.Content, sender, timestamp));
             });
 
-            // ✅ Sort after loading
             sortMessagesByTimestamp();
-
             messagesLoadedCount = messages.length;
             scrollToBottom();
+
             document.querySelectorAll('.ai-conversation-item').forEach(item => {
                 item.classList.toggle('active', item.dataset.id === conversationId);
             });

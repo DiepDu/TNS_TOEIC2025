@@ -511,37 +511,42 @@ You MUST translate Vietnamese keywords to English before calling this tool.",
                                 {
                                     int part = args["part"]?.ToObject<int>() ?? 1;
                                     int limit = args["limit"]?.ToObject<int?>() ?? 10;
-                                    Console.WriteLine($"[get_recommended_questions] Calling with Part={part}, Limit={limit}");
+
+                            
+
                                     var result = await ChatWithAIAccessData.GetRecommendedQuestionsAsync(memberKey, part, limit);
 
                                     if (result == null || result.Count == 0)
                                     {
-                                        Console.WriteLine($"[WARNING] No questions found for Part {part}");
+                                        Console.WriteLine($"[EXPLICIT LOG] Result is NULL or EMPTY");
                                         functionResult = new
                                         {
                                             success = false,
                                             message = $"No suitable questions available for Part {part} at this time.",
                                             suggestions = new[]
                                             {
-                                                "Try practicing other parts",
-                                                "Complete more tests to generate personalized recommendations"
-                                            }
+                    "Try practicing other parts",
+                    "Complete more tests to generate personalized recommendations"
+                }
                                         };
                                     }
                                     else
                                     {
                                         var json = JsonConvert.SerializeObject(result);
-                                        Console.WriteLine($"[get_recommended_questions] Questions: {result.Count}, JSON size: {json.Length} chars");
-                                        if (json.Length > 50000)
+                                   
+
+                                        // ✅ LOG FIRST QUESTION DETAILS
+                                        if (result.Count > 0)
                                         {
-                                            Console.WriteLine($"[WARNING] Response is large ({json.Length} chars). AI may take longer to process.");
+                                            var firstQ = result[0];
                                         }
+
                                         functionResult = result;
                                     }
                                 }
                                 catch (Exception ex)
                                 {
-                                    Console.WriteLine($"[get_recommended_questions ERROR]: {ex.Message}");
+                               
                                     functionResult = new
                                     {
                                         success = false,
@@ -603,13 +608,12 @@ You MUST translate Vietnamese keywords to English before calling this tool.",
                     }
                 }
 
-                // ✅ FIX: Prevent double-encoding of HTML
                 if (!string.IsNullOrEmpty(finalAnswer))
                 {
-                    // Step 1: Decode any existing HTML entities
-                    finalAnswer = System.Net.WebUtility.HtmlDecode(finalAnswer);
+                    // ❌ XÓA ĐOẠN NÀY:
+                    // finalAnswer = System.Net.WebUtility.HtmlDecode(finalAnswer);
 
-                    // Step 2: Log for debugging
+                    // ✅ CHỈ GIỮ LOGGING
                     Console.WriteLine($"[HandleMemberChat] Final answer length: {finalAnswer.Length} chars");
 
                     if (finalAnswer.Contains("<img") || finalAnswer.Contains("<audio"))
@@ -619,7 +623,6 @@ You MUST translate Vietnamese keywords to English before calling this tool.",
                     else if (finalAnswer.Contains("http"))
                     {
                         Console.WriteLine("[HandleMemberChat] ⚠️ Response contains URLs but no HTML tags");
-                        Console.WriteLine($"[HandleMemberChat] First 500 chars: {finalAnswer.Substring(0, Math.Min(500, finalAnswer.Length))}");
                     }
                 }
 

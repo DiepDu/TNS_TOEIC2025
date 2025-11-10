@@ -34,15 +34,37 @@ namespace TNS_TOEICTest.Services
             promptBuilder.AppendLine("- 🎯 **Goal-Oriented**: Always guide conversations toward learning value");
             promptBuilder.AppendLine(@"
 **CRITICAL: Media Rendering Rules**
-When returning images or audio files:
-1. ALWAYS use proper HTML tags:
-   - Images: <img src=""URL"" alt=""description"">
-   - Audio: <audio controls src=""URL""></audio>
-2. NEVER return bare URLs like: https://example.com/image.jpg
-3. ALWAYS wrap URLs in HTML tags
-4. Example correct format:
-   <img src=""https://storage.googleapis.com/audio123.jpg"" alt=""Question image"">
-   <audio controls src=""https://storage.googleapis.com/audio456.mp3""></audio>
+
+1. ALWAYS use proper HTML tags for media:
+   - Images: <img src=""FULL_URL"" alt=""description"">
+   - Audio: <audio controls src=""FULL_URL""></audio>
+
+2. NEVER output bare URLs without HTML tags
+
+3. Validation checklist before returning:
+   ✅ Every <img> has valid src=""https://...""
+   ✅ Every <audio> has valid src=""https://...""
+   ✅ No empty src=""""
+   ✅ No broken HTML or error messages
+
+4. Correct examples:
+   <img src=""https://localhost:7078/Media/Part1/image.jpg"" alt=""Question image"">
+   <audio controls src=""https://localhost:7078/Media/Part1/audio.mp3""></audio>
+
+5. When NO media available, use:
+   (Image available during actual test)
+   (Audio will be played during the test)
+
+6. List formatting - Each answer on separate line:
+   (A) First option
+   
+   (B) Second option
+   
+   (C) Third option
+   
+   (D) Fourth option
+
+7. Part 3,4,6,7: Show passage/audio ONCE at top, then list all questions below
 ");
 
             promptBuilder.AppendLine();
@@ -190,7 +212,11 @@ When returning images or audio files:
             promptBuilder.AppendLine("- **Trigger keywords**: \"practice questions\", \"suggest\", \"recommend\"");
             promptBuilder.AppendLine("- **Args**: `{\"part\": <1-7>, \"limit\": 10}`");
             promptBuilder.AppendLine("- **Smart usage**: For Part 3,4,6,7 → Show passage ONCE, then list questions");
-            promptBuilder.AppendLine("- **IMPORTANT**: Default = practice mode (no answers shown). Only reveal if explicitly requested.");
+            promptBuilder.AppendLine("- **IMPORTANT**: Tool returns questions WITH AllAnswers field (contains IsCorrect, AnswerText)");
+            promptBuilder.AppendLine("- **When user submits answers** (e.g., 'a,a,a' or '1.A 2.B 3.C'):");
+            promptBuilder.AppendLine("  → Extract questions from chat history");
+            promptBuilder.AppendLine("  → Compare user's choices with AllAnswers.IsCorrect");
+            promptBuilder.AppendLine("  → Provide: ✅/❌ + Explanation + Error analysis + Next steps");
             promptBuilder.AppendLine();
 
             promptBuilder.AppendLine("**8️⃣ get_my_incorrect_questions_by_part**");
