@@ -512,13 +512,10 @@ You MUST translate Vietnamese keywords to English before calling this tool.",
                                     int part = args["part"]?.ToObject<int>() ?? 1;
                                     int limit = args["limit"]?.ToObject<int?>() ?? 10;
 
-                            
-
                                     var result = await ChatWithAIAccessData.GetRecommendedQuestionsAsync(memberKey, part, limit);
 
                                     if (result == null || result.Count == 0)
                                     {
-                                        Console.WriteLine($"[EXPLICIT LOG] Result is NULL or EMPTY");
                                         functionResult = new
                                         {
                                             success = false,
@@ -532,21 +529,38 @@ You MUST translate Vietnamese keywords to English before calling this tool.",
                                     }
                                     else
                                     {
-                                        var json = JsonConvert.SerializeObject(result);
-                                   
-
-                                        // ✅ LOG FIRST QUESTION DETAILS
-                                        if (result.Count > 0)
-                                        {
-                                            var firstQ = result[0];
-                                        }
-
                                         functionResult = result;
+
+                                        // ✅✅✅ NEW CODE: SWITCH TO LITE PROMPT FOR PART 7 ✅✅✅
+                                        if (part == 7)
+                                        {
+                                            var resultJson = JsonConvert.SerializeObject(result);
+                                            Console.WriteLine($"[Part 7 Detected] Tool result size: {resultJson.Length} chars");
+                                            Console.WriteLine($"[Part 7 Detected] Switching to LITE prompt to reduce payload...");
+
+                                            // ✅ Tạo LITE prompt
+                                            string litePrompt = _promptService.BuildLitePromptForToolResult(
+                                                basicProfile,
+                                                data.Message,  // ← Original user message: "cho tôi câu hỏi Part 7"
+                                                functionName,  // ← "get_recommended_questions"
+                                                part           // ← 7
+                                            );
+
+                                            // ✅ REPLACE contentsList[0] với LITE prompt
+                                            contentsList[0] = new
+                                            {
+                                                role = "user",
+                                                parts = new[] { new { text = litePrompt } }
+                                            };
+
+                                            Console.WriteLine($"[Part 7 Prompt] Original: ~25KB → Lite: {litePrompt.Length} chars");
+                                        }
+                                        // ✅✅✅ END NEW CODE ✅✅✅
                                     }
                                 }
                                 catch (Exception ex)
                                 {
-                               
+                                    Console.WriteLine($"[get_recommended_questions ERROR]: {ex.Message}");
                                     functionResult = new
                                     {
                                         success = false,

@@ -415,7 +415,71 @@ namespace TNS_TOEICTest.Services
 
             return promptBuilder.ToString();
         }
+        public string BuildLitePromptForToolResult(
+          string basicProfile,
+          string originalUserMessage,
+          string toolName,
+          int part)
+        {
+            var sb = new StringBuilder();
 
+            sb.AppendLine("# 🎯 YOUR ROLE");
+            sb.AppendLine("You are **Mr. TOEIC**, an expert AI TOEIC tutor.");
+            sb.AppendLine();
+
+            sb.AppendLine("# 📋 CRITICAL MEDIA RENDERING RULES");
+            sb.AppendLine();
+            sb.AppendLine("1. **HTML Tags for Media:**");
+            sb.AppendLine("   - Images: `<img src=\"FULL_URL\" alt=\"description\">`");
+            sb.AppendLine("   - Audio: `<audio controls src=\"FULL_URL\"></audio>`");
+            sb.AppendLine();
+            sb.AppendLine("2. **Part 3/4/6/7 Special Rule:**");
+            sb.AppendLine("   - Show passage/audio ONCE at the top");
+            sb.AppendLine("   - Then list all questions below");
+            sb.AppendLine("   - NEVER repeat the passage for each question");
+            sb.AppendLine();
+            sb.AppendLine("3. **Answer Formatting:**");
+            sb.AppendLine("   ```");
+            sb.AppendLine("   (A) First option");
+            sb.AppendLine("   ");
+            sb.AppendLine("   (B) Second option");
+            sb.AppendLine("   ");
+            sb.AppendLine("   (C) Third option");
+            sb.AppendLine("   ");
+            sb.AppendLine("   (D) Fourth option");
+            sb.AppendLine("   ```");
+            sb.AppendLine();
+            sb.AppendLine("4. **Validation Checklist:**");
+            sb.AppendLine("   ✅ Every `<img>` has valid `src=\"https://...\"`");
+            sb.AppendLine("   ✅ Every `<audio>` has valid `src=\"https://...\"`");
+            sb.AppendLine("   ✅ No empty `src=\"\"`");
+            sb.AppendLine("   ✅ NEVER show QuestionKey (GUID format)");
+            sb.AppendLine();
+
+            sb.AppendLine("# 👤 STUDENT PROFILE");
+            sb.AppendLine("<student_profile>");
+            sb.AppendLine(basicProfile);
+            sb.AppendLine("</student_profile>");
+            sb.AppendLine();
+
+            sb.AppendLine("# ❓ ORIGINAL REQUEST");
+            sb.AppendLine($"User asked: \"{originalUserMessage}\"");
+            sb.AppendLine();
+
+            sb.AppendLine("# 🛠️ TOOL EXECUTED");
+            sb.AppendLine($"Tool: `{toolName}` (Part {part})");
+            sb.AppendLine("Tool result is attached below (contains questions with full data).");
+            sb.AppendLine();
+
+            sb.AppendLine("# 🎨 YOUR TASK");
+            sb.AppendLine("1. Format the tool result into a beautiful, student-friendly response");
+            sb.AppendLine("2. Use proper HTML tags for all media (images/audio)");
+            sb.AppendLine("3. Show the passage ONCE at top, then questions");
+            sb.AppendLine("4. Add encouraging tone and clear instructions");
+            sb.AppendLine("5. End with a call-to-action (e.g., \"When ready, submit your answers!\")");
+
+            return sb.ToString();
+        }
         public string BuildPromptForAdmin(
        string adminBackgroundData,
        IEnumerable<Content> chatHistory,
