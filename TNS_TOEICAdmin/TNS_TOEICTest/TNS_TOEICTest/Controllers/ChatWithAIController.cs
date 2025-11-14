@@ -229,10 +229,8 @@ namespace TNS_TOEICTest.Controllers
                 // ✅ Get chat history with DYNAMIC LIMIT
                 var chatHistory = await ChatWithAIAccessData.GetMessageHistoryForApiAsync(data.ConversationId, optimalLimit);
 
-                // ✅✅✅ FILE HANDLING - BUILD MULTIMODAL PROMPT ✅✅✅
+                // ✅ FILE HANDLING - BUILD MULTIMODAL PROMPT
                 var initialParts = new List<object>();
-
-                // Build text prompt
                 string textPrompt = _promptService.BuildPromptForMember(basicProfile, chatHistory, data.Message);
                 initialParts.Add(new { text = textPrompt });
 
@@ -247,7 +245,6 @@ namespace TNS_TOEICTest.Controllers
                         {
                             if (file.MimeType.StartsWith("image/"))
                             {
-                                // ✅ IMAGE FILES - Send directly as inline_data
                                 initialParts.Add(new
                                 {
                                     inline_data = new
@@ -256,183 +253,165 @@ namespace TNS_TOEICTest.Controllers
                                         data = file.Base64Data
                                     }
                                 });
-                                Console.WriteLine($"[HandleMemberChat] ✅ Added image: {file.FileName} ({file.MimeType})");
+                                Console.WriteLine($"[HandleMemberChat] ✅ Added image: {file.FileName}");
                             }
                             else if (file.MimeType == "application/pdf")
                             {
-                                // ✅ PDF FILES - Extract text
                                 var pdfText = ExtractTextFromPdf(file.Base64Data);
-                                initialParts.Add(new { text = $"\n\n--- Content from {file.FileName} ---\n{pdfText}\n--- End of {file.FileName} ---\n" });
-                                Console.WriteLine($"[HandleMemberChat] ✅ Extracted text from PDF: {file.FileName}");
+                                initialParts.Add(new { text = $"\n\n--- Content from {file.FileName} ---\n{pdfText}\n--- End ---\n" });
+                                Console.WriteLine($"[HandleMemberChat] ✅ Extracted PDF: {file.FileName}");
                             }
                             else if (file.MimeType.StartsWith("text/"))
                             {
-                                // ✅ TEXT FILES
                                 var textContent = Encoding.UTF8.GetString(Convert.FromBase64String(file.Base64Data));
-                                initialParts.Add(new { text = $"\n\n--- Content from {file.FileName} ---\n{textContent}\n--- End of {file.FileName} ---\n" });
-                                Console.WriteLine($"[HandleMemberChat] ✅ Added text file: {file.FileName}");
+                                initialParts.Add(new { text = $"\n\n--- Content from {file.FileName} ---\n{textContent}\n--- End ---\n" });
+                                Console.WriteLine($"[HandleMemberChat] ✅ Added text: {file.FileName}");
                             }
                             else if (file.MimeType.Contains("wordprocessingml"))
                             {
-                                // ✅ DOCX FILES
                                 var docxText = ExtractTextFromDocx(file.Base64Data);
-                                initialParts.Add(new { text = $"\n\n--- Content from {file.FileName} ---\n{docxText}\n--- End of {file.FileName} ---\n" });
-                                Console.WriteLine($"[HandleMemberChat] ✅ Extracted text from DOCX: {file.FileName}");
-                            }
-                            else
-                            {
-                                Console.WriteLine($"[HandleMemberChat] ⚠️ Unsupported file type: {file.FileName} ({file.MimeType})");
+                                initialParts.Add(new { text = $"\n\n--- Content from {file.FileName} ---\n{docxText}\n--- End ---\n" });
+                                Console.WriteLine($"[HandleMemberChat] ✅ Extracted DOCX: {file.FileName}");
                             }
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine($"[HandleMemberChat] ❌ Error processing file {file.FileName}: {ex.Message}");
-                            // Continue processing other files
+                            Console.WriteLine($"[HandleMemberChat] ❌ Error: {file.FileName} - {ex.Message}");
                         }
                     }
                 }
 
                 var tools = new List<GeminiTool> {
-                    new GeminiTool {
-                        FunctionDeclarations = new List<GeminiFunctionDeclaration> {
-                            new GeminiFunctionDeclaration {
-                                Name = "get_my_performance_analysis",
-                                Description = "Get detailed analysis of student's current ability including IRT analysis, part scores, and progress to target.",
-                                Parameters = new GeminiSchema {
-                                    Properties = new Dictionary<string, GeminiSchemaProperty> { }
-                                }
-                            },
-                            new GeminiFunctionDeclaration {
-                                Name = "get_my_error_analysis",
-                                Description = "Get detailed error analysis including top grammar/vocabulary/error type mistakes.",
-                                Parameters = new GeminiSchema {
-                                    Properties = new Dictionary<string, GeminiSchemaProperty> {
-                                        { "limit", new GeminiSchemaProperty { Type = "NUMBER", Description = "Number of errors to analyze (default: 50)" } }
-                                    }
-                                }
-                            },
-                            new GeminiFunctionDeclaration {
-                                Name = "get_my_recent_mistakes",
-                                Description = "Get detailed list of recent incorrect questions with explanations.",
-                                Parameters = new GeminiSchema {
-                                    Properties = new Dictionary<string, GeminiSchemaProperty> {
-                                        { "limit", new GeminiSchemaProperty { Type = "NUMBER", Description = "Number of mistakes to show (default: 10)" } }
-                                    }
-                                }
-                            },
-                            new GeminiFunctionDeclaration {
-                                Name = "get_my_behavior_analysis",
-                                Description = "Get analysis of test-taking behavior (time management, answer changes, etc.).",
-                                Parameters = new GeminiSchema {
-                                    Properties = new Dictionary<string, GeminiSchemaProperty> { }
-                                }
-                            },
-                            new GeminiFunctionDeclaration {
-                                Name = "load_recent_feedbacks",
-                                Description = "Get student's recent feedback/questions about test items.",
-                                Parameters = new GeminiSchema {
-                                    Properties = new Dictionary<string, GeminiSchemaProperty> { }
-                                }
-                            },
-                            new GeminiFunctionDeclaration {
-                                Name = "get_recommended_questions",
-                                Description = @"Get personalized practice questions based on error patterns and IRT ability.
+            new GeminiTool {
+                FunctionDeclarations = new List<GeminiFunctionDeclaration> {
+                    new GeminiFunctionDeclaration {
+                        Name = "get_my_performance_analysis",
+                        Description = "Get detailed analysis of student's current ability including IRT analysis, part scores, and progress to target.",
+                        Parameters = new GeminiSchema { Properties = new Dictionary<string, GeminiSchemaProperty> { } }
+                    },
+                    new GeminiFunctionDeclaration {
+                        Name = "get_my_error_analysis",
+                        Description = "Get detailed error analysis including top grammar/vocabulary/error type mistakes.",
+                        Parameters = new GeminiSchema {
+                            Properties = new Dictionary<string, GeminiSchemaProperty> {
+                                { "limit", new GeminiSchemaProperty { Type = "NUMBER", Description = "Number of errors to analyze (default: 50)" } }
+                            }
+                        }
+                    },
+                    new GeminiFunctionDeclaration {
+                        Name = "get_my_recent_mistakes",
+                        Description = "Get detailed list of recent incorrect questions with explanations.",
+                        Parameters = new GeminiSchema {
+                            Properties = new Dictionary<string, GeminiSchemaProperty> {
+                                { "limit", new GeminiSchemaProperty { Type = "NUMBER", Description = "Number of mistakes to show (default: 10)" } }
+                            }
+                        }
+                    },
+                    new GeminiFunctionDeclaration {
+                        Name = "get_my_behavior_analysis",
+                        Description = "Get analysis of test-taking behavior (time management, answer changes, etc.).",
+                        Parameters = new GeminiSchema { Properties = new Dictionary<string, GeminiSchemaProperty> { } }
+                    },
+                    new GeminiFunctionDeclaration {
+                        Name = "load_recent_feedbacks",
+                        Description = "Get student's recent feedback/questions about test items.",
+                        Parameters = new GeminiSchema { Properties = new Dictionary<string, GeminiSchemaProperty> { } }
+                    },
+                    new GeminiFunctionDeclaration {
+                        Name = "get_recommended_questions",
+                        Description = @"Get personalized practice questions based on error patterns and IRT ability.
 
 **IMPORTANT RENDERING RULES:**
 - For Part 3, 4, 6, 7: Questions may share the same passage/audio (ParentText/ParentAudioUrl)
 - When displaying results, show the SHARED PASSAGE ONCE at the top, then list all questions below it
 - DO NOT repeat the passage for each question",
-                                Parameters = new GeminiSchema {
-                                    Properties = new Dictionary<string, GeminiSchemaProperty> {
-                                        { "part", new GeminiSchemaProperty { Type = "NUMBER", Description = "TOEIC part (1-7)" } },
-                                        { "limit", new GeminiSchemaProperty { Type = "NUMBER", Description = "Number of questions (default: 10)" } }
-                                    },
-                                    Required = new List<string> { "part" }
-                                }
+                        Parameters = new GeminiSchema {
+                            Properties = new Dictionary<string, GeminiSchemaProperty> {
+                                { "part", new GeminiSchemaProperty { Type = "NUMBER", Description = "TOEIC part (1-7)" } },
+                                { "limit", new GeminiSchemaProperty { Type = "NUMBER", Description = "Number of questions (default: 10)" } }
                             },
-                            new GeminiFunctionDeclaration {
-                                Name = "get_test_analysis_by_date",
-                                Description = "Get detailed error analysis for a specific test taken on a given date.",
-                                Parameters = new GeminiSchema {
-                                    Properties = new Dictionary<string, GeminiSchemaProperty> {
-                                        { "test_date", new GeminiSchemaProperty { Type = "STRING", Description = "Date in 'yyyy-mm-dd' format" } },
-                                        { "exact_score", new GeminiSchemaProperty { Type = "NUMBER", Description = "Optional: exact score" } },
-                                        { "exact_time", new GeminiSchemaProperty { Type = "STRING", Description = "Optional: time in 'HH:mm' format" } }
-                                    },
-                                    Required = new List<string> { "test_date" }
-                                }
+                            Required = new List<string> { "part" }
+                        }
+                    },
+                    new GeminiFunctionDeclaration {
+                        Name = "get_test_analysis_by_date",
+                        Description = "Get detailed error analysis for a specific test taken on a given date.",
+                        Parameters = new GeminiSchema {
+                            Properties = new Dictionary<string, GeminiSchemaProperty> {
+                                { "test_date", new GeminiSchemaProperty { Type = "STRING", Description = "Date in 'yyyy-mm-dd' format" } },
+                                { "exact_score", new GeminiSchemaProperty { Type = "NUMBER", Description = "Optional: exact score" } },
+                                { "exact_time", new GeminiSchemaProperty { Type = "STRING", Description = "Optional: time in 'HH:mm' format" } }
                             },
-                            new GeminiFunctionDeclaration {
-                                Name = "get_my_incorrect_questions_by_part",
-                                Description = "Get detailed list of recent incorrect questions for a specific TOEIC Part (1-7).",
-                                Parameters = new GeminiSchema {
-                                    Properties = new Dictionary<string, GeminiSchemaProperty> {
-                                        { "part", new GeminiSchemaProperty { Type = "NUMBER", Description = "TOEIC part number (1-7)" } },
-                                        { "limit", new GeminiSchemaProperty { Type = "NUMBER", Description = "Number of mistakes to show (default: 10)" } }
-                                    },
-                                    Required = new List<string> { "part" }
-                                }
+                            Required = new List<string> { "test_date" }
+                        }
+                    },
+                    new GeminiFunctionDeclaration {
+                        Name = "get_my_incorrect_questions_by_part",
+                        Description = "Get detailed list of recent incorrect questions for a specific TOEIC Part (1-7).",
+                        Parameters = new GeminiSchema {
+                            Properties = new Dictionary<string, GeminiSchemaProperty> {
+                                { "part", new GeminiSchemaProperty { Type = "NUMBER", Description = "TOEIC part number (1-7)" } },
+                                { "limit", new GeminiSchemaProperty { Type = "NUMBER", Description = "Number of mistakes to show (default: 10)" } }
                             },
-                            new GeminiFunctionDeclaration {
-                                Name = "find_my_incorrect_questions_by_topics",
-                                Description = @"Find incorrect questions by topic names. 
+                            Required = new List<string> { "part" }
+                        }
+                    },
+                    new GeminiFunctionDeclaration {
+                        Name = "find_my_incorrect_questions_by_topics",
+                        Description = @"Find incorrect questions by topic names. 
 **IMPORTANT:** ALL database topics are in ENGLISH. 
 You MUST translate Vietnamese keywords to English before calling this tool.",
-                                Parameters = new GeminiSchema {
-                                    Properties = new Dictionary<string, GeminiSchemaProperty> {
-                                        {
-                                            "grammar_topics",
-                                            new GeminiSchemaProperty {
-                                                Type = "ARRAY",
-                                                Description = "English grammar topic names (e.g., 'Preposition', 'Tense')",
-                                                Items = new GeminiSchemaProperty { Type = "STRING" }
-                                            }
-                                        },
-                                        {
-                                            "vocabulary_topics",
-                                            new GeminiSchemaProperty {
-                                                Type = "ARRAY",
-                                                Description = "English vocabulary topic names (e.g., 'Marketing')",
-                                                Items = new GeminiSchemaProperty { Type = "STRING" }
-                                            }
-                                        },
-                                        {
-                                            "categories",
-                                            new GeminiSchemaProperty {
-                                                Type = "ARRAY",
-                                                Description = "English category names (e.g., 'Inference')",
-                                                Items = new GeminiSchemaProperty { Type = "STRING" }
-                                            }
-                                        },
-                                        {
-                                            "error_types",
-                                            new GeminiSchemaProperty {
-                                                Type = "ARRAY",
-                                                Description = "English error type names (e.g., 'Word Form Error')",
-                                                Items = new GeminiSchemaProperty { Type = "STRING" }
-                                            }
-                                        },
-                                        {
-                                            "limit",
-                                            new GeminiSchemaProperty {
-                                                Type = "NUMBER",
-                                                Description = "Max results (default: 10)"
-                                            }
-                                        }
+                        Parameters = new GeminiSchema {
+                            Properties = new Dictionary<string, GeminiSchemaProperty> {
+                                {
+                                    "grammar_topics",
+                                    new GeminiSchemaProperty {
+                                        Type = "ARRAY",
+                                        Description = "English grammar topic names (e.g., 'Preposition', 'Tense')",
+                                        Items = new GeminiSchemaProperty { Type = "STRING" }
+                                    }
+                                },
+                                {
+                                    "vocabulary_topics",
+                                    new GeminiSchemaProperty {
+                                        Type = "ARRAY",
+                                        Description = "English vocabulary topic names (e.g., 'Marketing')",
+                                        Items = new GeminiSchemaProperty { Type = "STRING" }
+                                    }
+                                },
+                                {
+                                    "categories",
+                                    new GeminiSchemaProperty {
+                                        Type = "ARRAY",
+                                        Description = "English category names (e.g., 'Inference')",
+                                        Items = new GeminiSchemaProperty { Type = "STRING" }
+                                    }
+                                },
+                                {
+                                    "error_types",
+                                    new GeminiSchemaProperty {
+                                        Type = "ARRAY",
+                                        Description = "English error type names (e.g., 'Word Form Error')",
+                                        Items = new GeminiSchemaProperty { Type = "STRING" }
+                                    }
+                                },
+                                {
+                                    "limit",
+                                    new GeminiSchemaProperty {
+                                        Type = "NUMBER",
+                                        Description = "Max results (default: 10)"
                                     }
                                 }
                             }
                         }
                     }
-                };
+                }
+            }
+        };
 
                 var apiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={apiKey}";
                 string finalAnswer = null;
-
-                // ✅ USE initialParts INSTEAD OF PLAIN TEXT
-                var contentsList = new List<object> {
-                    new { role = "user", parts = initialParts }
-                };
+                var contentsList = new List<object> { new { role = "user", parts = initialParts } };
 
                 using (var client = new HttpClient())
                 {
@@ -440,10 +419,8 @@ You MUST translate Vietnamese keywords to English before calling this tool.",
 
                     while (true)
                     {
-                        JObject responseJson;
                         var payload = new { contents = contentsList, tools };
-
-                        responseJson = await CallGeminiApiWithRetryAsync(client, apiUrl, payload);
+                        JObject responseJson = await CallGeminiApiWithRetryAsync(client, apiUrl, payload);
 
                         var candidate = responseJson["candidates"]?[0];
                         var functionCallPart = candidate?["content"]?["parts"]?.FirstOrDefault(p => p["functionCall"] != null);
@@ -455,160 +432,136 @@ You MUST translate Vietnamese keywords to English before calling this tool.",
                             var args = functionCall["args"];
 
                             Console.WriteLine($"[AI Function Call] {functionName}");
-                            Console.WriteLine($"[AI Arguments] {args.ToString()}");
-
                             object functionResult = null;
 
-                            if (functionName == "get_my_performance_analysis")
+                            // ✅ TOOL HANDLERS
+                            switch (functionName)
                             {
-                                var perfCacheKey = $"PerformanceAnalysis_{memberKey}";
-                                if (!_cache.TryGetValue(perfCacheKey, out object cachedPerf))
-                                {
-                                    cachedPerf = await ChatWithAIAccessData.GetMyPerformanceAnalysisAsync(memberKey);
-                                    _cache.Set(perfCacheKey, cachedPerf, TimeSpan.FromMinutes(15));
-                                }
-                                functionResult = cachedPerf;
-                            }
-                            else if (functionName == "get_my_error_analysis")
-                            {
-                                var errCacheKey = $"ErrorAnalysis_{memberKey}";
-                                if (!_cache.TryGetValue(errCacheKey, out object cachedErr))
-                                {
-                                    int limit = args["limit"]?.ToObject<int?>() ?? 50;
-                                    cachedErr = await ChatWithAIAccessData.GetMyErrorAnalysisAsync(memberKey, limit);
-                                    _cache.Set(errCacheKey, cachedErr, TimeSpan.FromMinutes(15));
-                                }
-                                functionResult = cachedErr;
-                            }
-                            else if (functionName == "get_my_recent_mistakes")
-                            {
-                                int limit = args["limit"]?.ToObject<int?>() ?? 10;
-                                functionResult = await ChatWithAIAccessData.GetMyRecentMistakesAsync(memberKey, limit);
-                            }
-                            else if (functionName == "get_my_behavior_analysis")
-                            {
-                                var behavCacheKey = $"BehaviorAnalysis_{memberKey}";
-                                if (!_cache.TryGetValue(behavCacheKey, out object cachedBehav))
-                                {
-                                    cachedBehav = await ChatWithAIAccessData.GetMyBehaviorAnalysisAsync(memberKey);
-                                    _cache.Set(behavCacheKey, cachedBehav, TimeSpan.FromMinutes(15));
-                                }
-                                functionResult = cachedBehav;
-                            }
-                            else if (functionName == "get_my_incorrect_questions_by_part")
-                            {
-                                int part = args["part"]?.ToObject<int>() ?? 1;
-                                int limit = args["limit"]?.ToObject<int?>() ?? 10;
-                                functionResult = await ChatWithAIAccessData.GetMyIncorrectQuestionsByPartAsync(memberKey, part, limit);
-                            }
-                            else if (functionName == "load_recent_feedbacks")
-                            {
-                                functionResult = await ChatWithAIAccessData.LoadRecentFeedbacksAsync(memberKey);
-                            }
-                            else if (functionName == "get_recommended_questions")
-                            {
-                                try
-                                {
-                                    int part = args["part"]?.ToObject<int>() ?? 1;
-                                    int limit = args["limit"]?.ToObject<int?>() ?? 10;
-
-                                    var result = await ChatWithAIAccessData.GetRecommendedQuestionsAsync(memberKey, part, limit);
-
-                                    if (result == null || result.Count == 0)
+                                case "get_my_performance_analysis":
+                                    var perfCacheKey = $"PerformanceAnalysis_{memberKey}";
+                                    if (!_cache.TryGetValue(perfCacheKey, out object cachedPerf))
                                     {
-                                        functionResult = new
+                                        cachedPerf = await ChatWithAIAccessData.GetMyPerformanceAnalysisAsync(memberKey);
+                                        _cache.Set(perfCacheKey, cachedPerf, TimeSpan.FromMinutes(15));
+                                    }
+                                    functionResult = cachedPerf;
+                                    await RebuildPromptWithLimitedHistoryAsync(contentsList, data.ConversationId, basicProfile, data.Message, 5);
+                                    break;
+
+                                case "get_my_error_analysis":
+                                    var errCacheKey = $"ErrorAnalysis_{memberKey}";
+                                    if (!_cache.TryGetValue(errCacheKey, out object cachedErr))
+                                    {
+                                        int limit = args["limit"]?.ToObject<int?>() ?? 50;
+                                        cachedErr = await ChatWithAIAccessData.GetMyErrorAnalysisAsync(memberKey, limit);
+                                        _cache.Set(errCacheKey, cachedErr, TimeSpan.FromMinutes(15));
+                                    }
+                                    functionResult = cachedErr;
+                                    await RebuildPromptWithLimitedHistoryAsync(contentsList, data.ConversationId, basicProfile, data.Message, 5);
+                                    break;
+
+                                case "get_my_recent_mistakes":
+                                    int mistakesLimit = args["limit"]?.ToObject<int?>() ?? 10;
+                                    functionResult = await ChatWithAIAccessData.GetMyRecentMistakesAsync(memberKey, mistakesLimit);
+                                    await RebuildPromptWithLimitedHistoryAsync(contentsList, data.ConversationId, basicProfile, data.Message, 5);
+                                    break;
+
+                                case "get_my_behavior_analysis":
+                                    var behavCacheKey = $"BehaviorAnalysis_{memberKey}";
+                                    if (!_cache.TryGetValue(behavCacheKey, out object cachedBehav))
+                                    {
+                                        cachedBehav = await ChatWithAIAccessData.GetMyBehaviorAnalysisAsync(memberKey);
+                                        _cache.Set(behavCacheKey, cachedBehav, TimeSpan.FromMinutes(15));
+                                    }
+                                    functionResult = cachedBehav;
+                                    await RebuildPromptWithLimitedHistoryAsync(contentsList, data.ConversationId, basicProfile, data.Message, 5);
+                                    break;
+
+                                case "get_my_incorrect_questions_by_part":
+                                    int part = args["part"]?.ToObject<int>() ?? 1;
+                                    int partLimit = args["limit"]?.ToObject<int?>() ?? 10;
+                                    functionResult = await ChatWithAIAccessData.GetMyIncorrectQuestionsByPartAsync(memberKey, part, partLimit);
+                                    await RebuildPromptWithLimitedHistoryAsync(contentsList, data.ConversationId, basicProfile, data.Message, 5);
+                                    break;
+
+                                case "load_recent_feedbacks":
+                                    functionResult = await ChatWithAIAccessData.LoadRecentFeedbacksAsync(memberKey);
+                                    await RebuildPromptWithLimitedHistoryAsync(contentsList, data.ConversationId, basicProfile, data.Message, 5);
+                                    break;
+
+                                case "get_recommended_questions":
+                                    try
+                                    {
+                                        int recPart = args["part"]?.ToObject<int>() ?? 1;
+                                        int recLimit = args["limit"]?.ToObject<int?>() ?? 10;
+                                        var result = await ChatWithAIAccessData.GetRecommendedQuestionsAsync(memberKey, recPart, recLimit);
+
+                                        if (result == null || result.Count == 0)
                                         {
-                                            success = false,
-                                            message = $"No suitable questions available for Part {part} at this time.",
-                                            suggestions = new[]
+                                            functionResult = new
                                             {
-                    "Try practicing other parts",
-                    "Complete more tests to generate personalized recommendations"
-                }
-                                        };
+                                                success = false,
+                                                message = $"No suitable questions available for Part {recPart} at this time.",
+                                                suggestions = new[] { "Try practicing other parts", "Complete more tests to generate personalized recommendations" }
+                                            };
+                                        }
+                                        else
+                                        {
+                                            functionResult = result;
+
+                                            // ✅ PART 7: LITE PROMPT (NO HISTORY)
+                                            if (recPart == 7)
+                                            {
+                                                Console.WriteLine($"[Part 7] Switching to LITE prompt (no history)...");
+                                                string litePrompt = _promptService.BuildLitePromptForToolResult(basicProfile, data.Message, functionName, recPart);
+                                                contentsList[0] = new { role = "user", parts = new[] { new { text = litePrompt } } };
+                                                Console.WriteLine($"[Part 7] Lite prompt: {litePrompt.Length} chars");
+                                            }
+                                            // ✅ OTHER PARTS: LIMITED HISTORY (5 MESSAGES)
+                                            else
+                                            {
+                                                await RebuildPromptWithLimitedHistoryAsync(contentsList, data.ConversationId, basicProfile, data.Message, 5);
+                                            }
+                                        }
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Console.WriteLine($"[get_recommended_questions ERROR]: {ex.Message}");
+                                        functionResult = new { success = false, error = "Failed to retrieve recommendations", details = ex.Message };
+                                    }
+                                    break;
+
+                                case "get_test_analysis_by_date":
+                                    if (DateTime.TryParse(args["test_date"].ToString(), out var testDate))
+                                    {
+                                        int? score = args["exact_score"]?.ToObject<int?>();
+                                        TimeSpan? time = null;
+                                        if (args["exact_time"] != null && TimeSpan.TryParse(args["exact_time"].ToString(), out var parsedTime))
+                                            time = parsedTime;
+                                        functionResult = await ChatWithAIAccessData.GetTestAnalysisByDateAsync(memberKey, testDate, score, time);
                                     }
                                     else
                                     {
-                                        functionResult = result;
-
-                                        // ✅✅✅ NEW CODE: SWITCH TO LITE PROMPT FOR PART 7 ✅✅✅
-                                        if (part == 7)
-                                        {
-                                            var resultJson = JsonConvert.SerializeObject(result);
-                                            Console.WriteLine($"[Part 7 Detected] Tool result size: {resultJson.Length} chars");
-                                            Console.WriteLine($"[Part 7 Detected] Switching to LITE prompt to reduce payload...");
-
-                                            // ✅ Tạo LITE prompt
-                                            string litePrompt = _promptService.BuildLitePromptForToolResult(
-                                                basicProfile,
-                                                data.Message,  // ← Original user message: "cho tôi câu hỏi Part 7"
-                                                functionName,  // ← "get_recommended_questions"
-                                                part           // ← 7
-                                            );
-
-                                            // ✅ REPLACE contentsList[0] với LITE prompt
-                                            contentsList[0] = new
-                                            {
-                                                role = "user",
-                                                parts = new[] { new { text = litePrompt } }
-                                            };
-
-                                            Console.WriteLine($"[Part 7 Prompt] Original: ~25KB → Lite: {litePrompt.Length} chars");
-                                        }
-                                        // ✅✅✅ END NEW CODE ✅✅✅
+                                        functionResult = "Invalid date format. Use yyyy-mm-dd.";
                                     }
-                                }
-                                catch (Exception ex)
-                                {
-                                    Console.WriteLine($"[get_recommended_questions ERROR]: {ex.Message}");
-                                    functionResult = new
-                                    {
-                                        success = false,
-                                        error = "Failed to retrieve recommendations",
-                                        details = ex.Message
-                                    };
-                                }
-                            }
-                            else if (functionName == "get_test_analysis_by_date")
-                            {
-                                if (DateTime.TryParse(args["test_date"].ToString(), out var testDate))
-                                {
-                                    int? score = args["exact_score"]?.ToObject<int?>();
-                                    TimeSpan? time = null;
-                                    if (args["exact_time"] != null && TimeSpan.TryParse(args["exact_time"].ToString(), out var parsedTime))
-                                        time = parsedTime;
-                                    functionResult = await ChatWithAIAccessData.GetTestAnalysisByDateAsync(memberKey, testDate, score, time);
-                                }
-                                else
-                                {
-                                    functionResult = "Invalid date format. Use yyyy-mm-dd.";
-                                }
-                            }
-                            else if (functionName == "find_my_incorrect_questions_by_topics")
-                            {
-                                var grammarTopics = args["grammar_topics"]?.ToObject<List<string>>();
-                                var vocabularyTopics = args["vocabulary_topics"]?.ToObject<List<string>>();
-                                var categories = args["categories"]?.ToObject<List<string>>();
-                                var errorTypes = args["error_types"]?.ToObject<List<string>>();
-                                int limit = args["limit"]?.ToObject<int?>() ?? 10;
+                                    await RebuildPromptWithLimitedHistoryAsync(contentsList, data.ConversationId, basicProfile, data.Message, 5);
+                                    break;
 
-                                functionResult = await ChatWithAIAccessData.FindMyIncorrectQuestionsByTopicNamesAsync(
-                                    memberKey,
-                                    grammarTopics,
-                                    vocabularyTopics,
-                                    categories,
-                                    errorTypes,
-                                    limit
-                                );
+                                case "find_my_incorrect_questions_by_topics":
+                                    var grammarTopics = args["grammar_topics"]?.ToObject<List<string>>();
+                                    var vocabularyTopics = args["vocabulary_topics"]?.ToObject<List<string>>();
+                                    var categories = args["categories"]?.ToObject<List<string>>();
+                                    var errorTypes = args["error_types"]?.ToObject<List<string>>();
+                                    int topicLimit = args["limit"]?.ToObject<int?>() ?? 10;
+                                    functionResult = await ChatWithAIAccessData.FindMyIncorrectQuestionsByTopicNamesAsync(
+                                        memberKey, grammarTopics, vocabularyTopics, categories, errorTypes, topicLimit);
+                                    await RebuildPromptWithLimitedHistoryAsync(contentsList, data.ConversationId, basicProfile, data.Message, 5);
+                                    break;
                             }
 
                             var functionResponsePartObj = new
                             {
-                                functionResponse = new
-                                {
-                                    name = functionName,
-                                    response = new { result = functionResult }
-                                }
+                                functionResponse = new { name = functionName, response = new { result = functionResult } }
                             };
 
                             contentsList.Add(candidate["content"]);
@@ -624,35 +577,19 @@ You MUST translate Vietnamese keywords to English before calling this tool.",
 
                 if (!string.IsNullOrEmpty(finalAnswer))
                 {
-                    // ❌ XÓA ĐOẠN NÀY:
-                    // finalAnswer = System.Net.WebUtility.HtmlDecode(finalAnswer);
-
-                    // ✅ CHỈ GIỮ LOGGING
-                    Console.WriteLine($"[HandleMemberChat] Final answer length: {finalAnswer.Length} chars");
-
+                    Console.WriteLine($"[HandleMemberChat] Final answer: {finalAnswer.Length} chars");
                     if (finalAnswer.Contains("<img") || finalAnswer.Contains("<audio"))
-                    {
-                        Console.WriteLine("[HandleMemberChat] ✅ Response contains HTML media tags");
-                    }
-                    else if (finalAnswer.Contains("http"))
-                    {
-                        Console.WriteLine("[HandleMemberChat] ⚠️ Response contains URLs but no HTML tags");
-                    }
+                        Console.WriteLine("[HandleMemberChat] ✅ Contains HTML media tags");
                 }
 
                 await ChatWithAIAccessData.SaveMessageAsync(data.ConversationId, "user", data.Message);
                 await ChatWithAIAccessData.SaveMessageAsync(data.ConversationId, "AI", finalAnswer);
 
-                // ✅ CRITICAL: Return as ContentResult to prevent auto-encoding
                 return new ContentResult
                 {
                     StatusCode = 200,
                     ContentType = "application/json; charset=utf-8",
-                    Content = JsonConvert.SerializeObject(new
-                    {
-                        success = true,
-                        message = finalAnswer ?? "Sorry, I couldn't process the request."
-                    })
+                    Content = JsonConvert.SerializeObject(new { success = true, message = finalAnswer ?? "Sorry, I couldn't process the request." })
                 };
             }
             catch (Exception ex)
@@ -661,20 +598,10 @@ You MUST translate Vietnamese keywords to English before calling this tool.",
 
                 if (ex.Message.Contains("503") || ex.Message.Contains("overloaded"))
                 {
-                    return StatusCode(503, new
-                    {
-                        success = false,
-                        message = "⚠️ AI service is currently overloaded. Please try again in a few seconds.",
-                        isRetryable = true
-                    });
+                    return StatusCode(503, new { success = false, message = "⚠️ AI service is currently overloaded. Please try again in a few seconds.", isRetryable = true });
                 }
 
-                return StatusCode(500, new
-                {
-                    success = false,
-                    message = $"An error occurred: {ex.Message}",
-                    isRetryable = false
-                });
+                return StatusCode(500, new { success = false, message = $"An error occurred: {ex.Message}", isRetryable = false });
             }
         }
 
@@ -994,7 +921,44 @@ You MUST translate Vietnamese keywords to English before calling this tool.",
         // ═════════════════════════════════════════════════════════════
         // ✅ DTO CLASSES
         // ═════════════════════════════════════════════════════════════
+        // ═════════════════════════════════════════════════════════════
+        // ✅ HELPER METHOD FOR PROMPT OPTIMIZATION
+        // ═════════════════════════════════════════════════════════════
 
+        /// <summary>
+        /// Rebuild prompt with limited chat history to reduce token usage
+        /// </summary>
+        private async Task RebuildPromptWithLimitedHistoryAsync(
+            List<object> contentsList,
+            Guid conversationId,
+            string basicProfile,
+            string originalMessage,
+            int historyLimit = 5)
+        {
+            Console.WriteLine($"[Prompt Optimization] Rebuilding with {historyLimit} messages history...");
+
+            // Get limited history
+            var limitedHistory = await ChatWithAIAccessData.GetMessageHistoryForApiAsync(
+                conversationId,
+                historyLimit
+            );
+
+            // Rebuild prompt
+            string reducedPrompt = _promptService.BuildPromptForMember(
+                basicProfile,
+                limitedHistory,
+                originalMessage
+            );
+
+            // Replace contentsList[0]
+            contentsList[0] = new
+            {
+                role = "user",
+                parts = new[] { new { text = reducedPrompt } }
+            };
+
+            Console.WriteLine($"[Prompt Optimization] Completed - {historyLimit} messages included");
+        }
         public class ChatRequest
         {
             public Guid ConversationId { get; set; }

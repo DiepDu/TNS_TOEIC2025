@@ -16,61 +16,718 @@
     <link rel="shortcut icon" href="/images/favicon.ico" />
     <link href="/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
     <link href="/css/site.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+    @RenderSection("Styles", required: false)
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --secondary: #64748b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --dark: #0f172a;
+            --light: #f8fafc;
+            --white: #ffffff;
+            --border: #e2e8f0;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,0.15);
+            --navbar-height: 70px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--light);
+            color: var(--dark);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        #layout-wrapper {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* ========================================
+                   🎯 NAVBAR - CRITICAL Z-INDEX FIX
+                   ======================================== */
+        #page-topbar {
+            position: sticky;
+            top: 0;
+            z-index: 99999 !important; /* ✅ MAX Z-INDEX để luôn trên cùng */
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .navbar-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            height: var(--navbar-height);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* ========================================
+                   🖼️ LOGO - NO HOVER EFFECTS
+                   ======================================== */
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            /* ❌ REMOVED: All transition and hover effects */
+        }
+
+            .navbar-brand img {
+                height: 45px;
+                width: auto;
+                /* ❌ REMOVED: All animations and filters */
+            }
+
+        /* ========================================
+                   🧭 NAVIGATION - INCREASED SPACING
+                   ======================================== */
+        .nav-menu {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem; /* ✅ Tăng từ 0.75rem lên 1.5rem */
+        }
+
+        .nav-list {
+            list-style: none;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem; /* ✅ Tăng từ 0.75rem lên 1.5rem */
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-item {
+            position: relative;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1rem;
+            color: var(--dark);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9375rem;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+            position: relative;
+            z-index: 100001 !important; /* ✅ Cao hơn navbar */
+        }
+
+            .nav-link i {
+                font-size: 1rem;
+            }
+
+            .nav-link:hover {
+                background: var(--light);
+                color: var(--primary);
+            }
+
+        /* ========================================
+                   📋 DROPDOWN - SUPER HIGH Z-INDEX
+                   ======================================== */
+        .dropdown-toggle::after {
+            content: "\f078";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            border: none;
+            font-size: 0.65rem;
+            margin-left: 0.375rem;
+            transition: transform 0.2s;
+        }
+
+        .nav-item.dropdown:hover .dropdown-toggle::after {
+            transform: rotate(180deg);
+        }
+
+        .dropdown-menu {
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            box-shadow: var(--shadow-lg);
+            padding: 0.5rem;
+            min-width: 240px;
+            margin-top: 0.5rem;
+            z-index: 100002 !important; /* ✅ Cao nhất trong navbar */
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            color: var(--dark);
+            font-size: 0.9375rem;
+            transition: all 0.2s;
+            position: relative;
+            z-index: 100003;
+        }
+
+            .dropdown-item i {
+                width: 1.25rem;
+                color: var(--primary);
+            }
+
+            .dropdown-item:hover {
+                background: var(--light);
+                color: var(--primary);
+                transform: translateX(4px);
+            }
+
+        /* User Info */
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            position: relative;
+            z-index: 100001;
+        }
+
+        /* Hamburger */
+        .hamburger-btn {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            position: relative;
+            z-index: 100001;
+        }
+
+            .hamburger-btn span {
+                width: 24px;
+                height: 2px;
+                background: var(--dark);
+                border-radius: 2px;
+                transition: all 0.3s;
+            }
+
+            .hamburger-btn:hover span {
+                background: var(--primary);
+            }
+
+        /* ========================================
+                   📱 MOBILE MENU
+                   ======================================== */
+        .mobile-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 99998;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+            .mobile-overlay.active {
+                opacity: 1;
+                visibility: visible;
+            }
+
+        .mobile-menu {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 100%;
+            max-width: 380px;
+            height: 100%;
+            background: var(--white);
+            box-shadow: var(--shadow-lg);
+            z-index: 99999;
+            transform: translateX(100%);
+            transition: transform 0.3s;
+            overflow-y: auto;
+        }
+
+            .mobile-menu.active {
+                transform: translateX(0);
+            }
+
+        .mobile-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+            .mobile-header h3 {
+                font-size: 1.25rem;
+                font-weight: 700;
+                margin: 0;
+            }
+
+        .mobile-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--secondary);
+            transition: color 0.2s;
+        }
+
+            .mobile-close:hover {
+                color: var(--danger);
+            }
+
+        .mobile-body {
+            padding: 1rem;
+        }
+
+        .mobile-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .mobile-section-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--secondary);
+            padding: 0.5rem 1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .mobile-link {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.875rem 1rem;
+            color: var(--dark);
+            text-decoration: none;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+            .mobile-link i {
+                width: 1.25rem;
+                text-align: center;
+            }
+
+            .mobile-link:hover {
+                background: var(--light);
+                color: var(--primary);
+            }
+
+            .mobile-link.sub {
+                padding-left: 2.5rem;
+                font-size: 0.9375rem;
+            }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 2rem 0;
+        }
+
+        .page-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* ========================================
+                   💬 CHAT BUTTONS - STACKED VERTICALLY
+                   ======================================== */
+
+        /* Chat Popup Button - TOP POSITION */
+        .chat-bubble {
+            position: fixed;
+            bottom: 90px; /* ✅ Moved UP để tránh overlap với AI button */
+            right: 2rem;
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%); /* ✅ Green color để phân biệt */
+            color: white;
+            border: none;
+            border-radius: 50%;
+            box-shadow: var(--shadow-lg);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.375rem;
+            z-index: 9998; /* ✅ Lower than navbar but high enough */
+            transition: all 0.3s;
+        }
+
+            .chat-bubble:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 12px 28px rgba(16, 185, 129, 0.4);
+            }
+
+        /* AI Chatbot Button - BOTTOM POSITION */
+        .ai-chat-bubble {
+            position: fixed;
+            bottom: 20px; /* ✅ Giữ nguyên vị trí thấp nhất */
+            right: 2rem;
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%); /* ✅ Blue/Purple */
+            color: white;
+            border: none;
+            border-radius: 50%;
+            box-shadow: var(--shadow-lg);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9997; /* ✅ Slightly lower than chat bubble */
+            transition: all 0.3s;
+        }
+
+            .ai-chat-bubble:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 12px 28px rgba(37, 99, 235, 0.4);
+            }
+
+        .chat-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: var(--danger);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.25rem 0.5rem;
+            border-radius: 1rem;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        /* Scroll Top */
+        .scroll-top {
+            position: fixed;
+            bottom: 2rem;
+            right: 5.5rem;
+            width: 48px;
+            height: 48px;
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            box-shadow: var(--shadow-md);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.125rem;
+            color: var(--dark);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+            z-index: 9996;
+        }
+
+            .scroll-top.visible {
+                opacity: 1;
+                visibility: visible;
+            }
+
+            .scroll-top:hover {
+                background: var(--primary);
+                color: white;
+                transform: translateY(-4px);
+            }
+
+        /* ========================================
+                   🔧 MODAL Z-INDEX FIX
+                   ======================================== */
+        .modal-backdrop {
+            z-index: 10000 !important; /* ✅ Below navbar */
+        }
+
+        .modal {
+            z-index: 10001 !important; /* ✅ Below navbar */
+        }
+
+        .modal-content {
+            border: none;
+            border-radius: 1rem;
+            overflow: hidden;
+        }
+
+        .modal-header {
+            background: var(--light);
+            border-bottom: 1px solid var(--border);
+            padding: 1.5rem;
+        }
+
+        .modal-title {
+            font-weight: 600;
+        }
+
+        /* ========================================
+                   📱 RESPONSIVE
+                   ======================================== */
+        @@media (max-width: 992px) {
+            .nav-menu
+
+        {
+            display: none;
+        }
+
+        .hamburger-btn {
+            display: flex;
+        }
+
+        .navbar-container {
+            padding: 0 1rem;
+        }
+
+        .page-content {
+            padding: 0 1rem;
+        }
+
+        .chat-bubble {
+            width: 48px;
+            height: 48px;
+            font-size: 1.125rem;
+            bottom: 80px;
+            right: 1rem;
+        }
+
+        .ai-chat-bubble {
+            width: 48px;
+            height: 48px;
+            bottom: 15px;
+            right: 1rem;
+        }
+
+        .scroll-top {
+            display: none;
+        }
+
+        .mobile-menu {
+            max-width: 100%;
+        }
+
+        }
+
+        @@media (max-width: 576px) {
+            .navbar-container
+
+        {
+            padding: 0 1rem;
+        }
+
+        }
+
+        /* Utility */
+        .d-none {
+            display: none !important;
+        }
+
+        .spinner-border-sm {
+            width: 1rem;
+            height: 1rem;
+            border-width: 0.15em;
+        }
+    </style>
 </head>
 <body>
     <div id="layout-wrapper">
+        <!-- Header -->
         <header id="page-topbar">
-            <div class="navbar-ellipse">
+            <div class="navbar-container">
+                <!-- Brand - NO HOVER EFFECTS -->
                 <a href="~/Index" class="navbar-brand">
-                    <img src="~/images/logo-dark.png" alt="Logo" />
+                    <img src="~/images/logo-dark.png" alt="TNS TOEIC" />
                 </a>
-                <button type="button" class="hamburger-btn">
-                    <i class="fa fa-fw fa-bars"></i>
-                </button>
+
+                <!-- Desktop Menu -->
                 <nav class="nav-menu">
                     <ul class="nav-list">
-                        <li class="nav-item"><a href="~/Index" class="nav-link">Home</a></li>
+                        <li class="nav-item">
+                            <a href="~/Index" class="nav-link">
+                                <i class="fas fa-home"></i>
+                                <span>Home</span>
+                            </a>
+                        </li>
                         <li class="nav-item dropdown">
-                            <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Practice Tests</a>
+                            <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="fas fa-pencil-alt"></i>
+                                <span>Practice Tests</span>
+                            </a>
                             <ul class="dropdown-menu">
-                                <li><a href="/Test/Ready" class="dropdown-item">Full Test</a></li>
-                                <li><a href="/Study/Index" class="dropdown-item">Part Practice</a></li>
+                                <li>
+                                    <a href="/Test/Ready" class="dropdown-item">
+                                        <i class="fas fa-file-alt"></i>
+                                        <span>Full Test</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="/Study/Index" class="dropdown-item">
+                                        <i class="fas fa-puzzle-piece"></i>
+                                        <span>Part Practice</span>
+                                    </a>
+                                </li>
                             </ul>
                         </li>
                         <li class="nav-item dropdown">
-                            <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">History</a>
+                            <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="fas fa-history"></i>
+                                <span>History</span>
+                            </a>
                             <ul class="dropdown-menu">
-                                <li><a href="/Test/TestHistory" class="dropdown-item">Test History</a></li>
-                                <li><a href="/Study/StudyHistory" class="dropdown-item">Study History</a></li>
+                                <li>
+                                    <a href="/Test/TestHistory" class="dropdown-item">
+                                        <i class="fas fa-chart-line"></i>
+                                        <span>Test History</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="/Study/StudyHistory" class="dropdown-item">
+                                        <i class="fas fa-book-open"></i>
+                                        <span>Study History</span>
+                                    </a>
+                                </li>
                             </ul>
                         </li>
                         <li class="nav-item dropdown">
-                            <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Study Resources</a>
+                            <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="fas fa-book"></i>
+                                <span>Study Resources</span>
+                            </a>
                             <ul class="dropdown-menu">
-                                <li><a href="~/Resources/Vocabulary" class="dropdown-item">Vocabulary</a></li>
-                                <li><a href="~/Resources/Tips" class="dropdown-item">Tips & Tricks</a></li>
-                                <li><a href="~/Resources/SampleQuestions" class="dropdown-item">Sample Questions</a></li>
+                                <li>
+                                    <a href="~/Resources/Vocabulary" class="dropdown-item">
+                                        <i class="fas fa-language"></i>
+                                        <span>Vocabulary</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="~/Resources/Tips" class="dropdown-item">
+                                        <i class="fas fa-lightbulb"></i>
+                                        <span>Tips & Tricks</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="~/Resources/SampleQuestions" class="dropdown-item">
+                                        <i class="fas fa-question-circle"></i>
+                                        <span>Sample Questions</span>
+                                    </a>
+                                </li>
                             </ul>
                         </li>
                     </ul>
                 </nav>
+
+                <!-- User & Hamburger -->
                 <div class="user-info">
                     @await Html.PartialAsync("_MemberInfo")
+                    <button type="button" class="hamburger-btn" id="mobileToggle">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
                 </div>
             </div>
         </header>
-        <div class="main-content">
-            <div class="page-content">
-                <div class="container-fluid">
-                    @RenderBody()
+
+        <!-- Mobile Overlay -->
+        <div class="mobile-overlay" id="mobileOverlay"></div>
+
+        <!-- Mobile Menu -->
+        <div class="mobile-menu" id="mobileMenu">
+            <div class="mobile-header">
+                <h3>Menu</h3>
+                <button class="mobile-close" id="mobileClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="mobile-body">
+                <a href="~/Index" class="mobile-link">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </a>
+
+                <div class="mobile-section">
+                    <div class="mobile-section-title">Practice Tests</div>
+                    <a href="/Test/Ready" class="mobile-link sub">
+                        <i class="fas fa-file-alt"></i>
+                        <span>Full Test</span>
+                    </a>
+                    <a href="/Study/Index" class="mobile-link sub">
+                        <i class="fas fa-puzzle-piece"></i>
+                        <span>Part Practice</span>
+                    </a>
+                </div>
+
+                <div class="mobile-section">
+                    <div class="mobile-section-title">History</div>
+                    <a href="/Test/TestHistory" class="mobile-link sub">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Test History</span>
+                    </a>
+                    <a href="/Study/StudyHistory" class="mobile-link sub">
+                        <i class="fas fa-book-open"></i>
+                        <span>Study History</span>
+                    </a>
+                </div>
+
+                <div class="mobile-section">
+                    <div class="mobile-section-title">Study Resources</div>
+                    <a href="~/Resources/Vocabulary" class="mobile-link sub">
+                        <i class="fas fa-language"></i>
+                        <span>Vocabulary</span>
+                    </a>
+                    <a href="~/Resources/Tips" class="mobile-link sub">
+                        <i class="fas fa-lightbulb"></i>
+                        <span>Tips & Tricks</span>
+                    </a>
+                    <a href="~/Resources/SampleQuestions" class="mobile-link sub">
+                        <i class="fas fa-question-circle"></i>
+                        <span>Sample Questions</span>
+                    </a>
                 </div>
             </div>
         </div>
-        <button id="openChat" class="chat-bubble">
-            <i class="fas fa-message"></i>
-            <span id="unreadCount" class="badge bg-danger rounded-pill position-absolute top-0 start-100 translate-middle d-none">0</span>
-            <span id="chatLoading" class="spinner-border spinner-border-sm text-light d-none" role="status"></span>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-content">
+                @RenderBody()
+            </div>
+        </main>
+
+        <!-- Chat Button - TOP (Green) -->
+        <button id="openChat" class="chat-bubble" title="Open Chat">
+            <i class="fas fa-comments"></i>
+            <span id="unreadCount" class="chat-badge d-none">0</span>
+            <span id="chatLoading" class="spinner-border spinner-border-sm text-light d-none"></span>
+        </button>
+
+        <!-- Scroll Top -->
+        <button id="scrollTop" class="scroll-top" title="Back to top">
+            <i class="fas fa-arrow-up"></i>
         </button>
     </div>
 
@@ -88,238 +745,99 @@
     <script src="~/js/chatbot_ai.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
 
-
-    <!-- _MessPopup.cshtml -->
+    <!-- Modal -->
     <div class="modal fade" id="group_details_modal" tabindex="-1" aria-labelledby="groupDetailsModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" style="max-width: 600px;">
-            <div class="modal-content" style="background: rgba(0, 0, 0, 0.5); width: 600px; border-radius: 12px;">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="groupDetailsModalLabel"></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body" id="group_details_modal_content" style="background: transparent; padding: 0;">
+                <div class="modal-body" id="group_details_modal_content">
                     @Html.Partial("_GroupDetails")
                 </div>
             </div>
         </div>
     </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // Mobile Menu
+            const mobileToggle = document.getElementById('mobileToggle');
+            const mobileMenu = document.getElementById('mobileMenu');
+            const mobileOverlay = document.getElementById('mobileOverlay');
+            const mobileClose = document.getElementById('mobileClose');
+
+            function openMobile() {
+                mobileMenu.classList.add('active');
+                mobileOverlay.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeMobile() {
+                mobileMenu.classList.remove('active');
+                mobileOverlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+
+            if (mobileToggle) {
+                mobileToggle.addEventListener('click', openMobile);
+            }
+
+            if (mobileClose) {
+                mobileClose.addEventListener('click', closeMobile);
+            }
+
+            if (mobileOverlay) {
+                mobileOverlay.addEventListener('click', closeMobile);
+            }
+
+            // Close on link click
+            document.querySelectorAll('.mobile-link').forEach(link => {
+                link.addEventListener('click', closeMobile);
+            });
+
+            // Scroll Top
+            const scrollTop = document.getElementById('scrollTop');
+
+            function toggleScrollTop() {
+                if (window.pageYOffset > 300) {
+                    scrollTop.classList.add('visible');
+                } else {
+                    scrollTop.classList.remove('visible');
+                }
+            }
+
+            window.addEventListener('scroll', toggleScrollTop);
+
+            if (scrollTop) {
+                scrollTop.addEventListener('click', function() {
+                    window.scrollTo({
+                        top: 0,
+                        behavior: 'smooth'
+                    });
+                });
+            }
+
+            // Active Link
+            const currentPath = window.location.pathname;
+            document.querySelectorAll('.nav-link, .dropdown-item, .mobile-link').forEach(link => {
+                const href = link.getAttribute('href');
+                if (href && currentPath.includes(href) && href !== '#') {
+                    link.style.color = 'var(--primary)';
+                    link.style.background = 'var(--light)';
+                }
+            });
+
+            // Close mobile on Escape
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && mobileMenu.classList.contains('active')) {
+                    closeMobile();
+                }
+            });
+        })();
+    </script>
 </body>
 </html>
-<style>
-    /* Giữ nguyên CSS như file gốc */
-    body {
-        background-color: #f8f9fa;
-        font-family: sans-serif;
-        margin: 0;
-        padding: 0;
-    }
-
-    #layout-wrapper {
-        display: flex;
-        flex-direction: column;
-        min-height: 100vh;
-    }
-
-    #page-topbar {
-        position: relative;
-        padding: 30px 0;
-    }
-
-    .navbar-ellipse {
-        background: linear-gradient(to right, #ffffff, #f0f6ff);
-        border-radius: 60px;
-        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-        max-width: 1300px;
-        margin: 0 auto;
-        padding: 20px 40px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        transition: all 0.3s ease;
-    }
-
-    .navbar-brand {
-        display: flex;
-        align-items: center;
-        text-decoration: none;
-        color: #333;
-        font-size: 24px;
-    }
-
-        .navbar-brand img {
-            height: 60px;
-            margin-right: 10px;
-        }
-
-    .nav-menu {
-        display: flex;
-        align-items: center;
-        margin: 0 30px;
-    }
-
-    .nav-list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        display: flex;
-    }
-
-    .nav-item {
-        margin-left: 20px;
-        position: relative;
-    }
-
-    .nav-link {
-        text-decoration: none;
-        color: #333;
-        font-size: 16px;
-        padding: 5px 10px;
-        display: block;
-        position: relative;
-        transition: color 0.3s ease;
-    }
-
-        .nav-link::after {
-            content: "";
-            position: absolute;
-            bottom: -3px;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: #007bff;
-            transform: scaleX(0);
-            transform-origin: right center;
-            transition: transform 0.3s ease;
-        }
-
-        .nav-link:hover {
-            color: #007bff;
-        }
-
-            .nav-link:hover::after {
-                transform: scaleX(1);
-                transform-origin: left center;
-            }
-
-    .dropdown-menu {
-        min-width: 200px;
-        border: none;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    }
-
-    .dropdown-item {
-        font-size: 14px;
-        padding: 8px 15px;
-        color: #333;
-    }
-
-        .dropdown-item:hover {
-            background-color: #f0f0f0;
-            color: #007bff;
-        }
-
-    .hamburger-btn {
-        display: none;
-        background: none;
-        border: none;
-        font-size: 20px;
-        cursor: pointer;
-    }
-
-    .user-info {
-        display: flex;
-        align-items: center;
-        margin-left: 20px;
-    }
-
-    .header-profile-user {
-        width: 60px;
-        height: 60px;
-        object-fit: cover;
-        border-radius: 50%;
-        margin-left: 10px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-    }
-
-    .main-content {
-        flex-grow: 1;
-    }
-
-    .page-content {
-        padding: 20px;
-    }
-
-    .container-fluid {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 15px;
-    }
-
-    .chat-bubble {
-        position: fixed;
-        top: 90px;
-        right: 20px;
-        width: 50px;
-        height: 50px;
-        background-color: #007bff;
-        color: white;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        font-size: 20px;
-        z-index: 1000;
-        transition: transform 0.2s;
-    }
-
-        .chat-bubble:hover {
-            transform: scale(1.1);
-        }
-
-    #chatLoading {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-    }
-
-    @@media (max-width: 768px) {
-        .navbar-ellipse {
-            flex-direction: column;
-            border-radius: 30px;
-        }
-
-        .hamburger-btn {
-            display: block;
-            margin-left: auto;
-        }
-
-        .nav-menu {
-            display: none;
-            flex-direction: column;
-            width: 100%;
-            margin: 20px 0;
-        }
-
-            .nav-menu.show {
-                display: flex;
-            }
-
-        .nav-list {
-            flex-direction: column;
-            width: 100%;
-            align-items: flex-start;
-        }
-
-        .nav-item {
-            margin: 10px 0;
-            margin-left: 0;
-        }
-
-        .chat-bubble {
-            top: 110px;
-            right: 15px;
-        }
-    }
-</style>

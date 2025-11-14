@@ -4,161 +4,553 @@
     ViewData["Title"] = "Ready for TOEIC Test";
 }
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@ViewData["Title"]</title>
-    <!-- Bootstrap CSS -->
-    <link href="/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Montserrat:wght@700&display=swap" rel="stylesheet">
-    <style>
-        html, body {
-            height: 100vh;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #ff7e5f, #feb47b, #86a8e7, #91eae4);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-        }
+<style>
+    :root {
+        --primary-navy: #1A237E;
+        --primary-blue: #1976D2;
+        --accent-gold: #FFB300;
+        --success-green: #43A047;
+        --bg-gradient: linear-gradient(135deg, #E8EAF6 0%, #FFF8E1 100%);
+        --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+        --border-radius: 16px;
+        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
 
-        /* Hiệu ứng nền động */
-        body::before {
+    /* Full-screen container */
+    .ready-fullscreen-wrapper {
+        position: fixed;
+        top: 70px;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--bg-gradient);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1;
+        overflow: hidden;
+        font-family: 'Poppins', sans-serif;
+        padding: 20px;
+    }
+
+        .ready-fullscreen-wrapper::before {
             content: '';
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: url('https://www.transparenttextures.com/patterns/cubes.png');
-            opacity: 0.1;
+            background: url('https://www.transparenttextures.com/patterns/subtle-dots.png');
+            opacity: 0.05;
             z-index: 0;
         }
 
-        .ready-container {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            max-width: 600px;
-            width: 90%; /* Đảm bảo không quá rộng trên màn hình nhỏ */
-            text-align: center;
-            z-index: 1;
-            animation: zoomIn 1s ease-in-out;
-            margin-left: 250px;
+    /* Main container - Optimized height */
+    .ready-container {
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 0;
+        box-shadow: var(--card-shadow);
+        max-width: 1000px;
+        width: 95%;
+        max-height: calc(100vh - 110px);
+        text-align: center;
+        z-index: 2;
+        animation: fadeInUp 0.6s ease-out;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Header - Compact */
+    .ready-header {
+        background: linear-gradient(135deg, var(--primary-navy), var(--primary-blue));
+        padding: 20px;
+        color: white;
+        position: relative;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+
+    .header-content-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+    }
+
+    .header-icon {
+        width: 60px;
+        height: 60px;
+        background: rgba(255, 179, 0, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: pulse 2s ease-in-out infinite;
+        flex-shrink: 0;
+    }
+
+        .header-icon i {
+            font-size: 2em;
+            color: var(--accent-gold);
         }
 
-        .title {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 2.8rem;
-            font-weight: 700;
-            background: linear-gradient(90deg, #ff6f61, #feb47b);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 20px;
-            animation: slideInDown 1s ease-in-out;
+    .header-text {
+        text-align: left;
+    }
+
+    .title {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin: 0 0 5px 0;
+    }
+
+    .subtitle {
+        font-size: 0.95rem;
+        font-weight: 400;
+        opacity: 0.95;
+        margin: 0;
+    }
+
+    /* Content - Compact */
+    .ready-content {
+        padding: 25px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        overflow-y: auto;
+    }
+
+    /* Compact info grid */
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .info-card {
+        background: linear-gradient(135deg, #F5F7FA, #E8EAF6);
+        border-radius: 12px;
+        padding: 15px 10px;
+        border: 2px solid transparent;
+        transition: var(--transition);
+    }
+
+        .info-card:hover {
+            border-color: var(--primary-blue);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(25, 118, 210, 0.15);
         }
 
-        .info-box {
-            background: linear-gradient(135deg, #f3e7ff, #e3f2fd);
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-            border: 2px solid #ff6f61;
-            animation: fadeInUp 1.2s ease-in-out;
+    .info-card-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, var(--primary-blue), var(--primary-navy));
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 10px;
+        color: white;
+        font-size: 1.2em;
+    }
+
+    .info-card-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 6px;
+    }
+
+    .info-card-value {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--primary-navy);
+        line-height: 1.3;
+    }
+
+    /* Compact instructions - 2 columns */
+    .instructions-section {
+        background: linear-gradient(135deg, #FFF8E1, #FFFDE7);
+        border-radius: 12px;
+        padding: 15px 20px;
+        margin-bottom: 15px;
+        border-left: 4px solid var(--accent-gold);
+    }
+
+    .instructions-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--primary-navy);
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .instructions-title i {
+            color: var(--accent-gold);
         }
 
-        .info-box p {
-            margin: 5px 0;
-            font-size: 1.1rem;
-            color: #333;
-            font-weight: 500;
-        }
+    .instructions-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        text-align: left;
+    }
 
-        .info-box p strong {
-            color: #ff6f61;
-        }
+    .instruction-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        font-size: 0.85rem;
+        color: #555;
+    }
 
-        .start-btn {
-            background: linear-gradient(90deg, #ff6f61, #feb47b);
+    .instruction-icon {
+        width: 18px;
+        height: 18px;
+        background: var(--success-green);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+
+        .instruction-icon i {
             color: white;
-            font-size: 1.8rem;
-            font-weight: 700;
-            padding: 15px 60px;
-            border: none;
-            border-radius: 50px;
-            transition: all 0.3s ease;
-            animation: pulse 1.5s infinite;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            font-size: 0.6em;
+        }
+
+    /* Compact tips and button section */
+    .bottom-section {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        align-items: center;
+    }
+
+    .tips-section {
+        background: linear-gradient(135deg, #E3F2FD, #E8EAF6);
+        border-radius: 12px;
+        padding: 15px;
+        border: 2px dashed var(--primary-blue);
+        text-align: left;
+    }
+
+    .tips-title {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--primary-navy);
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+        .tips-title i {
+            color: var(--accent-gold);
+        }
+
+    .tips-content {
+        font-size: 0.8rem;
+        color: #555;
+        line-height: 1.4;
+        font-style: italic;
+    }
+
+    /* Compact start button */
+    .button-section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .start-btn {
+        background: linear-gradient(135deg, var(--accent-gold), #FFA000);
+        color: white;
+        font-size: 1.4rem;
+        font-weight: 700;
+        padding: 15px 50px;
+        border: none;
+        border-radius: 50px;
+        transition: var(--transition);
+        box-shadow: 0 4px 20px rgba(255, 179, 0, 0.4);
+        cursor: pointer;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .start-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .start-btn:hover::before {
+            left: 100%;
         }
 
         .start-btn:hover {
-            background: linear-gradient(90deg, #e65b50, #e89b6b);
-            transform: scale(1.1);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+            background: linear-gradient(135deg, #FFA000, var(--accent-gold));
+            transform: translateY(-3px);
+            box-shadow: 0 6px 25px rgba(255, 179, 0, 0.5);
         }
 
-        /* Animations */
-        @@keyframes zoomIn {
-            from { transform: scale(0.5); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
+        .start-btn i {
+            margin-left: 8px;
+            font-size: 0.9em;
         }
 
-        @@keyframes slideInDown {
-            from { transform: translateY(-50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
+    .footer-note {
+        font-size: 0.75rem;
+        color: #999;
+        font-style: italic;
+        margin: 0;
+    }
 
-        @@keyframes fadeInUp {
-            from { transform: translateY(50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
+    /* Animations */
+    @@keyframes fadeInUp {
+        from
 
-        @@keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
+    {
+        opacity: 0;
+        transform: translateY(20px);
+    }
 
-        /* Responsive Design */
-        @@media (max-width: 576px) {
-            .ready-container {
-                padding: 20px;
-                margin: 10px;
-            }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 
-            .title {
-                font-size: 2rem;
-            }
+    }
 
-            .start-btn {
-                font-size: 1.4rem;
-                padding: 12px 40px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <!-- Main Content -->
+    @@keyframes pulse {
+        0%, 100%
+
+    {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+
+    }
+
+    /* Responsive */
+    @@media (max-width: 1200px) {
+        .info-grid
+
+    {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .bottom-section {
+        grid-template-columns: 1fr;
+    }
+
+    }
+
+    @@media (max-width: 768px) {
+        .ready-fullscreen-wrapper
+
+    {
+        padding: 10px;
+    }
+
+    .ready-container {
+        max-height: calc(100vh - 90px);
+    }
+
+    .header-content-wrapper {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .header-text {
+        text-align: center;
+    }
+
+    .title {
+        font-size: 1.5rem;
+    }
+
+    .subtitle {
+        font-size: 0.85rem;
+    }
+
+    .ready-content {
+        padding: 20px;
+    }
+
+    .info-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .instructions-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .start-btn {
+        font-size: 1.2rem;
+        padding: 12px 40px;
+    }
+
+    }
+
+    @@media (max-width: 480px) {
+        .ready-fullscreen-wrapper
+
+    {
+        top: 60px;
+    }
+
+    .title {
+        font-size: 1.3rem;
+    }
+
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .start-btn {
+        font-size: 1.1rem;
+        padding: 10px 30px;
+    }
+
+    }
+</style>
+
+<div class="ready-fullscreen-wrapper">
     <div class="ready-container">
-        <h1 class="title">Ready for Your TOEIC Test?</h1>
-        <div class="info-box">
-            <p><strong>Test Format:</strong> 200 questions, 7 parts (Listening & Reading)</p>
-            <p><strong>Duration:</strong> Approximately 2 hours</p>
-            <p><strong>Instructions:</strong> Ensure a quiet environment, stable internet connection, and no interruptions.</p>
-            <p><strong>Tip:</strong> Read questions carefully and manage your time effectively!</p>
+        <!-- Compact Header -->
+        <div class="ready-header">
+            <div class="header-content-wrapper">
+                <div class="header-icon">
+                    <i class="fas fa-clipboard-check"></i>
+                </div>
+                <div class="header-text">
+                    <h1 class="title">TOEIC Full Test Assessment</h1>
+                    <p class="subtitle">Standardized English Proficiency Evaluation</p>
+                </div>
+            </div>
         </div>
-        <form method="post">
-            <button type="submit" asp-page-handler="Start" class="start-btn">START</button>
-        </form>
-    </div>
 
-    <script src="/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+        <!-- Compact Content -->
+        <div class="ready-content">
+            <!-- Compact Info Grid (4 columns) -->
+            <div class="info-grid">
+                <div class="info-card">
+                    <div class="info-card-icon">
+                        <i class="fas fa-list-ol"></i>
+                    </div>
+                    <div class="info-card-label">Structure</div>
+                    <div class="info-card-value">200 Questions<br />7 Parts</div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="info-card-label">Duration</div>
+                    <div class="info-card-value">120 Minutes<br />(2 Hours)</div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card-icon">
+                        <i class="fas fa-headphones"></i>
+                    </div>
+                    <div class="info-card-label">Listening</div>
+                    <div class="info-card-value">Parts 1-4<br />45 Minutes</div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card-icon">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <div class="info-card-label">Reading</div>
+                    <div class="info-card-value">Parts 5-7<br />75 Minutes</div>
+                </div>
+            </div>
+
+            <!-- Compact Instructions (2 columns) -->
+            <div class="instructions-section">
+                <div class="instructions-title">
+                    <i class="fas fa-exclamation-circle"></i>
+                    Test Requirements
+                </div>
+                <div class="instructions-grid">
+                    <div class="instruction-item">
+                        <div class="instruction-icon">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div>Quiet environment for optimal focus</div>
+                    </div>
+                    <div class="instruction-item">
+                        <div class="instruction-icon">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div>Stable internet connectivity required</div>
+                    </div>
+                    <div class="instruction-item">
+                        <div class="instruction-icon">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div>Headphones for listening section</div>
+                    </div>
+                    <div class="instruction-item">
+                        <div class="instruction-icon">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div>Uninterrupted time allocation</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Section: Tips + Button -->
+            <div class="bottom-section">
+                <div class="tips-section">
+                    <div class="tips-title">
+                        <i class="fas fa-lightbulb"></i>
+                        Success Strategy
+                    </div>
+                    <div class="tips-content">
+                        Read carefully, manage time strategically, maintain focus, and review uncertain responses if time permits.
+                    </div>
+                </div>
+
+                <div class="button-section">
+                    <form method="post">
+                        <button type="submit" asp-page-handler="Start" class="start-btn">
+                            Begin Assessment
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </form>
+                    <p class="footer-note">
+                        <i class="fas fa-info-circle"></i>
+                        Timer starts immediately upon beginning
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

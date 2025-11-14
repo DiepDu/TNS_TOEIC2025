@@ -38,12 +38,13 @@ namespace TNS_TOEICAdmin.Models
                 WHEN c.ConversationType = 'Group' THEN COALESCE(c.GroupAvatar, '/images/avatar/default-avatar.jpg')
                 ELSE (SELECT TOP 1 m.Avatar FROM ConversationParticipants cp2 JOIN EDU_Member m ON cp2.UserKey = m.MemberKey WHERE cp2.ConversationKey = c.ConversationKey AND cp2.UserKey != @MemberKey)
             END AS Avatar,
-            -- Chỉ lấy PartnerUserKey/Type cho cuộc hội thoại private thông thường
             CASE WHEN c.ConversationType = 'Private' AND c.IsAdminChannelForMemberKey IS NULL THEN (SELECT TOP 1 cp2.UserKey FROM ConversationParticipants cp2 WHERE cp2.ConversationKey = c.ConversationKey AND cp2.UserKey != @MemberKey) ELSE NULL END AS PartnerUserKey,
             CASE WHEN c.ConversationType = 'Private' AND c.IsAdminChannelForMemberKey IS NULL THEN (SELECT TOP 1 cp2.UserType FROM ConversationParticipants cp2 WHERE cp2.ConversationKey = c.ConversationKey AND cp2.UserKey != @MemberKey) ELSE NULL END AS PartnerUserType,
             c.LastMessageTime,
             m.Content,
             m.SenderKey,
+            m.Status,  -- ✅ THÊM DÒNG NÀY
+            m.MessageType, -- ✅ THÊM DÒNG NÀY (để phân biệt tin nhắn Text/Image/Video)
             cp.IsBanned,
             CASE WHEN c.IsAdminChannelForMemberKey IS NOT NULL THEN 1 ELSE 0 END AS IsAdminChannel
         FROM ConversationParticipants cp
@@ -58,18 +59,38 @@ namespace TNS_TOEICAdmin.Models
                     {
                         while (await reader.ReadAsync())
                         {
+                            // ✅ LẤY STATUS VÀ MESSAGETYPE
+                            var status = reader["Status"] != DBNull.Value ? Convert.ToInt32(reader["Status"]) : 0;
+                            var messageType = reader["MessageType"]?.ToString() ?? "Text";
+
                             var lastMessage = "No messages";
+
+                            // ✅ XỬ LÝ HIỂN THỊ TIN NHẮN CUỐI CÙNG
                             if (reader["Content"] != DBNull.Value)
                             {
-                                var senderKeyStr = reader["SenderKey"]?.ToString();
-                                if (senderKeyStr == (memberKey ?? currentMemberKey))
+                                if (status == 2) // Status 2 = Recalled
                                 {
-                                    lastMessage = "You: " + reader["Content"].ToString();
+                                    lastMessage = "Message recalled";
                                 }
                                 else
                                 {
-                                    // Đối với kênh Admin, hiển thị nội dung gốc thay vì "Administrator: ..."
-                                    lastMessage = reader["Content"].ToString();
+                                    var senderKeyStr = reader["SenderKey"]?.ToString();
+                                    var content = reader["Content"].ToString();
+
+                                    // Nếu không phải text message, hiển thị loại file
+                                    if (messageType != "Text")
+                                    {
+                                        content = $"{messageType}"; // Hiển thị "Image", "Video", "Audio"
+                                    }
+
+                                    if (senderKeyStr == (memberKey ?? currentMemberKey))
+                                    {
+                                        lastMessage = "You: " + content;
+                                    }
+                                    else
+                                    {
+                                        lastMessage = content;
+                                    }
                                 }
                             }
 
@@ -82,6 +103,7 @@ namespace TNS_TOEICAdmin.Models
                         { "Avatar", reader["Avatar"]?.ToString() ?? "/images/avatar/default-avatar.jpg" },
                         { "LastMessageTime", reader["LastMessageTime"] ?? (object)DBNull.Value },
                         { "LastMessage", lastMessage },
+                        { "LastMessageStatus", status }, // ✅ THÊM TRƯỜNG MỚI
                         { "IsBanned", reader["IsBanned"] },
                         { "PartnerUserKey", reader["PartnerUserKey"] ?? (object)DBNull.Value },
                         { "PartnerUserType", reader["PartnerUserType"] ?? (object)DBNull.Value },
@@ -99,7 +121,6 @@ namespace TNS_TOEICAdmin.Models
         { "totalUnreadCount", totalUnreadCount }
     };
         }
-
         public static async Task<List<Dictionary<string, object>>> SearchContactsAsync(string query, string memberKey)
         {
             var results = new List<Dictionary<string, object>>();

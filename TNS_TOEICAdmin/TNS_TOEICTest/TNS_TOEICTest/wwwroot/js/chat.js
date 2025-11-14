@@ -577,9 +577,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 return;
             }
 
-            // Gán dữ liệu vào biến toàn cục
             window.allConversations = conversations;
-
             console.log("Successfully stored conversation details.", window.allConversations);
 
             conversationList.innerHTML = "";
@@ -593,6 +591,11 @@ document.addEventListener("DOMContentLoaded", async () => {
             conversations.forEach(conv => {
                 const li = document.createElement("li");
                 li.className = "p-2 border-bottom border-white border-opacity-25";
+
+                // ✅ KIỂM TRA STATUS ĐỂ THÊM CLASS "recalled"
+                const lastMessageStatus = conv.LastMessageStatus || 0;
+                const recalledClass = lastMessageStatus === 2 ? "recalled" : "";
+
                 li.innerHTML = `
             <a href="#" class="d-flex justify-content-between text-white conversation-item" 
                data-conversation-key="${conv.ConversationKey}" 
@@ -602,9 +605,15 @@ document.addEventListener("DOMContentLoaded", async () => {
                data-is-admin-channel="${conv.IsAdminChannel || false}">
                 <div class="d-flex">
                     <img src="${conv.Avatar || '/images/avatar/default-avatar.jpg'}" alt="avatar" class="rounded-circle me-3" style="width: 48px; height: 48px;">
-                    <div><p class="fw-bold mb-0">${conv.DisplayName || "Unknown"}</p><p class="small mb-0">${conv.LastMessage || "No messages"}</p></div>
+                    <div>
+                        <p class="fw-bold mb-0">${conv.DisplayName || "Unknown"}</p>
+                        <p class="small mb-0 last-message ${recalledClass}">${conv.LastMessage || "No messages"}</p>
+                    </div>
                 </div>
-                <div class="text-end"><p class="small mb-1">${conv.LastMessageTime ? formatTime(conv.LastMessageTime) : ""}</p>${conv.UnreadCount > 0 ? `<span class="badge bg-danger rounded-pill px-2">${conv.UnreadCount}</span>` : ''}</div>
+                <div class="text-end">
+                    <p class="small mb-1">${conv.LastMessageTime ? formatTime(conv.LastMessageTime) : ""}</p>
+                    ${conv.UnreadCount > 0 ? `<span class="badge bg-danger rounded-pill px-2">${conv.UnreadCount}</span>` : ''}
+                </div>
             </a>
         `;
                 conversationList.appendChild(li);
@@ -1160,33 +1169,136 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     window.connection.on("RecallResponse", async (conversationKey, messageKey, success, message) => {
-        if (success) {
-            let msg = allMessages.find(m => m.MessageKey === messageKey);
-            if (!msg) {
-                await loadMessageUntilFound(messageKey, skip);
-                msg = allMessages.find(m => m.MessageKey === messageKey);
-            }
-            if (msg) {
-                if (msg.SenderKey !== memberKey) {
-                    msg.Status = 2;
-                    msg.Content = "Message recalled";
-                    if (msg.Url) {
-                        delete msg.Url;
-                        delete msg.MessageType;
-                        delete msg.MimeType;
-                    }
-                }
-                messageList.innerHTML = allMessages.map(m => addMessage(m)).join("");
-                const msgElement = messageList.querySelector(`[data-message-key="${messageKey}"]`);
-                if (msgElement) msgElement.classList.add("recalled");
-                messageList.scrollTop = messageList.scrollHeight;
-                updatePinnedSection();
-            }
-        } else {
+        console.log("[RecallResponse] received", { conversationKey, messageKey, success, message });
+
+        if (!success) {
             console.error("[RecallResponse] Failed:", message);
-            alert(message || "Recalling failed.");
+            showNotification(message || "Failed to recall message", "error");
+            return;
         }
+
+        // ✅ CẬP NHẬT TIN NHẮN TRONG allMessages
+        let msg = allMessages.find(m => m.MessageKey === messageKey);
+        if (!msg) {
+            console.log("[RecallResponse] Message not in current view, loading...");
+            await loadMessageUntilFound(messageKey, skip);
+            msg = allMessages.find(m => m.MessageKey === messageKey);
+        }
+
+        if (msg) {
+            msg.Status = 2;
+            msg.Content = "Message recalled";
+            if (msg.Url) {
+                delete msg.Url;
+                delete msg.MessageType;
+                delete msg.MimeType;
+                delete msg.FileName;
+                delete msg.FileSize;
+            }
+        }
+
+        // ✅ CẬP NHẬT MESSAGE LIST (nếu đang xem conversation này)
+        if (String(conversationKey) === String(currentConversationKey)) {
+            const scrollPos = messageList.scrollTop;
+            const scrollHeight = messageList.scrollHeight;
+            const isAtBottom = scrollPos + messageList.clientHeight >= scrollHeight - 50;
+
+            messageList.innerHTML = allMessages.map(m => addMessage(m)).join("");
+
+            if (isAtBottom) {
+                messageList.scrollTop = messageList.scrollHeight;
+            } else {
+                messageList.scrollTop = scrollPos;
+            }
+
+            const msgElement = messageList.querySelector(`[data-message-key="${messageKey}"]`);
+            if (msgElement) {
+                msgElement.classList.add("recalled");
+            }
+
+            updatePinnedSection();
+        }
+
+        // ✅ === KEY FIX: CẬP NHẬT CONVERSATION LIST CHO CẢ 2 BÊN ===
+        await updateConversationListAfterRecall(conversationKey, messageKey);
+        // ✅ === END KEY FIX ===
+
+        showNotification("Message recalled successfully", "success");
     });
+
+    // ✅ THÊM HÀM MỚI ĐỂ CẬP NHẬT CONVERSATION LIST
+    async function updateConversationListAfterRecall(conversationKey, recalledMessageKey) {
+        try {
+            // Tìm conversation item trong DOM
+            const conversationItem = document.querySelector(
+                `.conversation-item[data-conversation-key="${conversationKey}"]`
+            );
+
+            if (!conversationItem) {
+                console.log("[updateConversationList] Conversation not found in list");
+                return;
+            }
+
+            const lastMessageEl = conversationItem.querySelector("p.small.mb-0");
+            if (!lastMessageEl) return;
+
+            // ✅ KIỂM TRA XEM TIN NHẮN BỊ RECALLED CÓ PHẢI LÀ TIN CUỐI CÙNG KHÔNG
+            // Bằng cách so sánh với tin nhắn hiện có trong allMessages
+            const conversationMessages = allMessages.filter(
+                m => String(m.ConversationKey) === String(conversationKey)
+            );
+
+            if (conversationMessages.length > 0) {
+                // Sắp xếp theo thời gian (mới nhất trước)
+                conversationMessages.sort((a, b) =>
+                    new Date(b.CreatedOn) - new Date(a.CreatedOn)
+                );
+
+                const lastMessage = conversationMessages[0];
+
+                // Nếu tin nhắn cuối cùng là tin vừa bị recalled
+                if (lastMessage.MessageKey === recalledMessageKey) {
+                    lastMessageEl.textContent = "Message recalled";
+                    lastMessageEl.classList.add("recalled");
+                    lastMessageEl.style.fontStyle = "italic";
+                    lastMessageEl.style.opacity = "0.7";
+                    console.log("[updateConversationList] Updated last message to 'recalled'");
+                }
+            } else {
+                // ✅ FALLBACK: Nếu không có tin nhắn trong allMessages 
+                // (có thể conversation chưa được mở), reload conversation list
+                console.log("[updateConversationList] No messages in memory, reloading conversations");
+                await loadConversations();
+            }
+
+        } catch (err) {
+            console.error("[updateConversationList] Error:", err);
+            // Fallback: reload toàn bộ conversation list
+            try {
+                await loadConversations();
+            } catch (reloadErr) {
+                console.error("[updateConversationList] Failed to reload conversations:", reloadErr);
+            }
+        }
+    }
+
+    // ✅ THÊM HÀM HELPER ĐỂ KIỂM TRA TIN NHẮN CUỐI CÙNG
+    function isLastMessageInConversation(conversationKey, messageKey) {
+        // Tìm tất cả tin nhắn của conversation này trong allMessages
+        const conversationMessages = allMessages.filter(
+            m => String(m.ConversationKey) === String(conversationKey)
+        );
+
+        if (conversationMessages.length === 0) return false;
+
+        // Sắp xếp theo thời gian tạo (mới nhất trước)
+        conversationMessages.sort((a, b) =>
+            new Date(b.CreatedOn) - new Date(a.CreatedOn)
+        );
+
+        // Kiểm tra xem messageKey có phải là tin nhắn mới nhất không
+        return conversationMessages[0].MessageKey === messageKey;
+    }
 
     if (fileIcon) fileIcon.addEventListener("click", () => fileInput.click());
     if (fileInput) {

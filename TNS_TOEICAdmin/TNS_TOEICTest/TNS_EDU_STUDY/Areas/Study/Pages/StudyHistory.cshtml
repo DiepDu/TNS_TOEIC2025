@@ -1,69 +1,192 @@
-﻿@page
+﻿
+@page
 @model TNS_EDU_STUDY.Areas.Study.Pages.StudyHistoryModel
 @{
     Layout = "_Layout";
 }
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<!-- THÊM: Các thư viện cần thiết cho zoom và pan -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.0.1/chartjs-plugin-zoom.min.js"></script>
 
-<h1 class="history-title">TOEIC Study History</h1>
+<div class="history-page-wrapper">
+    <!-- Header Section -->
+    <div class="page-header">
+        <div class="header-content">
+            <h1 class="history-title">
+                <i class="fas fa-graduation-cap"></i>
+                TOEIC Practice Analytics Dashboard
+            </h1>
+            <p class="history-subtitle">Comprehensive part-specific performance tracking and progress monitoring</p>
+        </div>
+    </div>
 
-<div class="charts-row">
-    <div class="chart-container">
-        <canvas id="accuracyScoreChart"></canvas>
+    <!-- Chart Section -->
+    <div class="chart-section">
+        <div class="section-header">
+            <h2 class="section-title">
+                <i class="fas fa-chart-area"></i>
+                Performance Trend Analysis
+            </h2>
+            <p class="section-description">Visualize your accuracy progression over time</p>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3 class="chart-title">
+                    <i class="fas fa-chart-line"></i>
+                    <span id="chart-part-label">Part 1 - Photographs</span>
+                </h3>
+                <button class="chart-reset-btn" onclick="myChart.resetZoom()" title="Reset Zoom">
+                    <i class="fas fa-expand"></i>
+                </button>
+            </div>
+            <div class="chart-container">
+                <canvas id="accuracyScoreChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="filter-section">
+        <div class="filter-card">
+            <div class="filter-icon-wrapper">
+                <i class="fas fa-sliders-h"></i>
+            </div>
+            <div class="filter-content">
+                <label for="part-select" class="filter-label">
+                    Filter by TOEIC Part
+                </label>
+                <div class="select-wrapper">
+                    <select id="part-select" onchange="filterHistory()">
+                        <option value="1">Part 1 - Photographs</option>
+                        <option value="2">Part 2 - Question-Response</option>
+                        <option value="3">Part 3 - Conversations</option>
+                        <option value="4">Part 4 - Short Talks</option>
+                        <option value="5">Part 5 - Incomplete Sentences</option>
+                        <option value="6">Part 6 - Text Completion</option>
+                        <option value="7">Part 7 - Reading Comprehension</option>
+                    </select>
+                    <i class="fas fa-chevron-down select-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Section -->
+    <div class="table-section">
+        <div class="section-header">
+            <div>
+                <h2 class="section-title">
+                    <i class="fas fa-table"></i>
+                    Practice Session Records
+                </h2>
+                <p class="section-description">Detailed performance data for all practice attempts</p>
+            </div>
+            <div class="table-stats">
+                <span class="stat-badge stat-primary" id="total-records">
+                    <i class="fas fa-clipboard-check"></i>
+                    <span>@Model.StudyHistoryItems.Count() Sessions</span>
+                </span>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table class="styled-table">
+                <thead>
+                    <tr>
+                        <th class="col-test-name">
+                            <div class="th-content">
+                                <i class="fas fa-file-alt"></i>
+                                <span>Practice Test</span>
+                            </div>
+                        </th>
+                        <th class="col-date">
+                            <div class="th-content">
+                                <i class="fas fa-calendar-day"></i>
+                                <span>Practice Date</span>
+                            </div>
+                        </th>
+                        <th class="col-member">
+                            <div class="th-content">
+                                <i class="fas fa-user-graduate"></i>
+                                <span>Student Name</span>
+                            </div>
+                        </th>
+                        <th class="col-time">
+                            <div class="th-content">
+                                <i class="fas fa-play-circle"></i>
+                                <span>Start Time</span>
+                            </div>
+                        </th>
+                        <th class="col-duration">
+                            <div class="th-content">
+                                <i class="fas fa-stopwatch"></i>
+                                <span>Duration</span>
+                            </div>
+                        </th>
+                        <th class="col-score col-accuracy-score">
+                            <div class="th-content">
+                                <i class="fas fa-bullseye"></i>
+                                <span>Accuracy Rate</span>
+                            </div>
+                        </th>
+                        <th class="col-action">
+                            <div class="th-content">
+                                <i class="fas fa-search-plus"></i>
+                                <span>Review</span>
+                            </div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="history-table-body">
+                    @foreach (var item in Model.StudyHistoryItems)
+                    {
+                        var scoreClass = item.PracticeScore >= 80 ? "excellent" : item.PracticeScore >= 60 ? "good" : "average";
+                        <tr class="data-row">
+                            <td class="test-name-cell">@item.TestName.Replace("STUDY ", "")</td>
+                            <td>@string.Format("{0:dd/MM/yyyy}", item.CreatedOn)</td>
+                            <td class="member-name-cell">@item.MemberName</td>
+                            <td>@string.Format("{0:HH:mm}", item.StartTime)</td>
+                            <td>
+                                <span class="duration-badge">
+                                    <i class="fas fa-clock"></i>
+                                    @(item.TimeSpent != null ? $"{item.TimeSpent} min" : "N/A")
+                                </span>
+                            </td>
+                            <td>
+                                <span class="score-badge score-@scoreClass">
+                                    @(item.PracticeScore.HasValue ? $"{item.PracticeScore}%" : "N/A")
+                                </span>
+                            </td>
+                            <td>
+                                <a class="review-button" href="/Study/ResultStudy?TestKey=@item.TestKey&ResultKey=@item.ResultKey&PartSelect=@item.Part">
+                                    <i class="fas fa-search"></i>
+                                    <span>Review</span>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
-<div class="filter-container">
-    <label for="part-select">Select Part:</label>
-    <select id="part-select" onchange="filterHistory()">
-        <option value="1">Part 1</option>
-        <option value="2">Part 2</option>
-        <option value="3">Part 3</option>
-        <option value="4">Part 4</option>
-        <option value="5">Part 5</option>
-        <option value="6">Part 6</option>
-        <option value="7">Part 7</option>
-    </select>
-</div>
-
-<div class="table-container">
-    <table class="styled-table">
-        <thead>
-            <tr>
-                <th>Test Name</th>
-                <th>Created On</th>
-                <th>Member Name</th>
-                <th>Start Time</th>
-                <th>Time Spent</th>
-                <th>Accuracy Score</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody id="history-table-body">
-            @foreach (var item in Model.StudyHistoryItems)
-            {
-                <tr>
-                    <td>@item.TestName.Replace("STUDY ", "")</td>
-                    <td>@string.Format("{0:dd/MM/yyyy}", item.CreatedOn)</td>
-                    <td>@item.MemberName</td>
-                    <td>@string.Format("{0:HH:mm}", item.StartTime)</td>
-                    <td>@(item.TimeSpent != null ? $"{item.TimeSpent} min" : "N/A")</td>
-                    <td>@(item.PracticeScore.HasValue ? $"{item.PracticeScore}%" : "N/A")</td>
-                    <td>
-                        <a class="review-button" href="/Study/ResultStudy?TestKey=@item.TestKey&ResultKey=@item.ResultKey&PartSelect=@item.Part">Review</a>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-</div>
-
 <style>
-    /* CSS được tái sử dụng và điều chỉnh từ TestHistory.cshtml */
+    :root {
+        --primary-teal: #00897B;
+        --primary-dark: #00695C;
+        --primary-light: #B2DFDB;
+        --accent-amber: #FFA000;
+        --success-green: #43A047;
+        --bg-gradient: linear-gradient(135deg, #E0F2F1 0%, #FFF8E1 100%);
+        --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        --card-hover-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        --border-radius: 16px;
+        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
     * {
         margin: 0;
         padding: 0;
@@ -72,187 +195,583 @@
 
     body {
         font-family: 'Poppins', sans-serif;
-        background: linear-gradient(135deg, #E1F5FE, #FFF8E1);
+        background: var(--bg-gradient);
         color: #333;
-        padding: 40px;
-        min-height: 100vh;
+        line-height: 1.6;
+    }
+
+    .history-page-wrapper {
+        max-width: 1600px;
+        margin: 0 auto;
+        padding: 40px 2rem;
+    }
+
+    /* ========================================
+       PAGE HEADER
+       ======================================== */
+    .page-header {
+        text-align: center;
+        margin-bottom: 50px;
+        animation: fadeInDown 0.6s ease-out;
+    }
+
+    .header-content {
+        display: inline-block;
+        padding: 30px 50px;
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--card-shadow);
+        border-top: 4px solid var(--primary-teal);
     }
 
     .history-title {
-        text-align: center;
         font-size: 2.8em;
         font-weight: 700;
-        margin-bottom: 30px;
-        color: #006064;
+        color: var(--primary-dark);
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        justify-content: center;
     }
 
-    .filter-container {
+    .history-title i {
+        color: var(--primary-teal);
+        font-size: 0.9em;
+    }
+
+    .history-subtitle {
+        font-size: 1.05em;
+        color: #666;
+        font-weight: 400;
+        margin: 0;
+    }
+
+    /* ========================================
+       SECTION HEADERS
+       ======================================== */
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+        padding: 0 10px;
+    }
+
+    .section-title {
+        font-size: 1.8em;
+        font-weight: 600;
+        color: var(--primary-dark);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 5px;
+    }
+
+    .section-title i {
+        color: var(--primary-teal);
+    }
+
+    .section-description {
+        color: #666;
+        font-size: 0.95em;
+        margin: 0;
+    }
+
+    .table-stats {
+        display: flex;
+        gap: 12px;
+    }
+
+    .stat-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        border-radius: 25px;
+        font-weight: 600;
+        font-size: 0.9em;
+    }
+
+    .stat-primary {
+        background: var(--primary-light);
+        color: var(--primary-dark);
+    }
+
+    /* ========================================
+       CHART SECTION
+       ======================================== */
+    .chart-section {
+        margin-bottom: 40px;
+        animation: fadeIn 0.8s ease-out;
+    }
+
+    .chart-card {
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--card-shadow);
+        overflow: hidden;
+        transition: var(--transition);
+    }
+
+    .chart-card:hover {
+        box-shadow: var(--card-hover-shadow);
+        transform: translateY(-2px);
+    }
+
+    .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 25px;
+        background: linear-gradient(135deg, var(--primary-teal), var(--primary-dark));
+        color: white;
+    }
+
+    .chart-title {
+        font-size: 1.15em;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0;
+    }
+
+    .chart-reset-btn {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: var(--transition);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .chart-reset-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: scale(1.1);
+    }
+
+    .chart-container {
+        padding: 25px;
+        height: 450px;
+    }
+
+    /* ========================================
+       FILTER SECTION
+       ======================================== */
+    .filter-section {
+        margin-bottom: 40px;
         display: flex;
         justify-content: center;
-        align-items: center;
-        margin-top: 30px; /* Thêm margin-top để tách khỏi biểu đồ */
-        margin-bottom: 30px;
-        gap: 10px;
-        background-color: #fff;
-        padding: 15px;
-        border-radius: 50px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        max-width: 300px;
-        margin-left: auto;
-        margin-right: auto;
+        animation: fadeIn 1s ease-out;
     }
 
-        .filter-container label {
-            font-weight: 600;
-            font-size: 1.1rem;
-            color: #006064;
-        }
+    .filter-card {
+        background: white;
+        padding: 24px 32px;
+        border-radius: var(--border-radius);
+        box-shadow: var(--card-shadow);
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        transition: var(--transition);
+        border-left: 4px solid var(--primary-teal);
+    }
+
+    .filter-card:hover {
+        box-shadow: var(--card-hover-shadow);
+        transform: translateY(-2px);
+    }
+
+    .filter-icon-wrapper {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, var(--primary-teal), var(--primary-dark));
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.3em;
+    }
+
+    .filter-content {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        flex: 1;
+    }
+
+    .filter-label {
+        font-weight: 600;
+        font-size: 0.9em;
+        color: var(--primary-dark);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .select-wrapper {
+        position: relative;
+        min-width: 320px;
+    }
 
     #part-select {
-        padding: 8px 12px;
-        border-radius: 20px;
-        border: 2px solid #B2EBF2;
+        width: 100%;
+        padding: 12px 40px 12px 16px;
+        border: 2px solid var(--primary-light);
+        border-radius: 12px;
         font-family: 'Poppins', sans-serif;
         font-size: 1rem;
         font-weight: 500;
+        color: #333;
+        background: white;
         cursor: pointer;
-        transition: border-color 0.3s;
+        transition: var(--transition);
+        appearance: none;
     }
 
-        #part-select:focus {
-            outline: none;
-            border-color: #00BCD4;
-        }
-
-    .charts-row {
-        display: flex;
-        justify-content: flex-start; /* Để cuộn từ đầu */
-        margin: 20px auto;
-        /* THÊM: CSS cho thanh cuộn ngang */
-        overflow-x: auto;
-        padding-bottom: 10px;
-        scrollbar-width: thin;
-        scrollbar-color: #0097A7 #e0e0e0;
+    #part-select:hover {
+        border-color: var(--primary-teal);
     }
 
-        .charts-row::-webkit-scrollbar {
-            height: 8px;
-        }
+    #part-select:focus {
+        outline: none;
+        border-color: var(--primary-teal);
+        box-shadow: 0 0 0 3px rgba(0, 137, 123, 0.1);
+    }
 
-        .charts-row::-webkit-scrollbar-track {
-            background: #e0e0e0;
-            border-radius: 4px;
-        }
+    .select-icon {
+        position: absolute;
+        right: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--primary-teal);
+        pointer-events: none;
+        transition: var(--transition);
+    }
 
-        .charts-row::-webkit-scrollbar-thumb {
-            background: #0097A7;
-            border-radius: 4px;
-        }
+    #part-select:focus + .select-icon {
+        transform: translateY(-50%) rotate(180deg);
+    }
 
-            .charts-row::-webkit-scrollbar-thumb:hover {
-                background: #00BCD4;
-            }
-
-
-    .chart-container {
-        width: 100%;
-        min-width: 800px; /* Chiều rộng tối thiểu để không bị co lại */
-        max-width: 1100px;
-        height: 450px;
-        background: #fff;
-        border-radius: 15px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        padding: 20px;
-        flex-shrink: 0; /* Ngăn container co lại */
+    /* ========================================
+       TABLE SECTION
+       ======================================== */
+    .table-section {
+        animation: fadeIn 1.2s ease-out;
     }
 
     .table-container {
-        overflow-x: auto;
-        /* THÊM DÒNG DƯỚI ĐÂY */
-        max-height: 800px; /* Bảng sẽ cao tối đa 800px */
-        overflow-y: auto; /* Thêm thanh cuộn dọc */
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--card-shadow);
+        overflow: hidden;
+        max-height: 700px;
+        overflow-y: auto;
     }
-    /* THÊM KHỐI MỚI DƯỚI ĐÂY */
-    .styled-table thead th {
-        position: sticky; /* "Ghim" header */
-        top: 0; /* Vị trí ghim ở trên cùng */
-        z-index: 1; /* Đảm bảo header luôn nằm trên */
-        background-color: #0097A7; /* Thêm màu nền để che nội dung cuộn bên dưới */
-    }
-    /* THÊM KHỐI MỚI DƯỚI ĐÂY */
-    /* Tùy chỉnh thanh cuộn cho table-container */
+
     .table-container::-webkit-scrollbar {
-        width: 8px;
+        width: 10px;
     }
 
     .table-container::-webkit-scrollbar-track {
         background: #f1f1f1;
-        border-radius: 4px;
     }
 
     .table-container::-webkit-scrollbar-thumb {
-        background: #0097A7;
-        border-radius: 4px;
+        background: var(--primary-teal);
+        border-radius: 5px;
     }
 
-        .table-container::-webkit-scrollbar-thumb:hover {
-            background: #00BCD4;
-        }
+    .table-container::-webkit-scrollbar-thumb:hover {
+        background: var(--primary-dark);
+    }
 
     .styled-table {
         width: 100%;
         border-collapse: collapse;
-        margin: 0 auto;
-        font-size: 1rem;
-        background: #fff;
-        border-radius: 15px;
-       
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        font-size: 0.95rem;
     }
 
-        .styled-table thead tr {
-            background-color: #0097A7;
-            color: #fff;
-            text-transform: uppercase;
-            font-weight: 600;
-        }
+    /* ========================================
+       TABLE HEADER - ACADEMIC DESIGN
+       ======================================== */
+    .styled-table thead {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
 
-        .styled-table th, .styled-table td {
-            padding: 12px 15px;
-            text-align: center;
-        }
+    .styled-table thead tr {
+        background: linear-gradient(135deg, #00796B, #00897B);
+    }
 
-        .styled-table tbody tr {
-            border-bottom: 1px solid #ddd;
-            transition: background-color 0.2s;
-        }
+    .styled-table th {
+        padding: 0;
+        text-align: center;
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+    }
 
-            .styled-table tbody tr:nth-of-type(even) {
-                background: #f8f8f8;
-            }
+    .styled-table th:last-child {
+        border-right: none;
+    }
 
-            .styled-table tbody tr:hover {
-                background-color: #CFD8DC;
-            }
+    .th-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 16px 12px;
+        color: white;
+        min-height: 80px;
+    }
+
+    .th-content i {
+        font-size: 1.3em;
+        opacity: 0.95;
+        margin-bottom: 2px;
+    }
+
+    .th-content span {
+        font-weight: 600;
+        font-size: 0.85em;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        line-height: 1.3;
+    }
+
+    /* Column specific styling */
+    .col-test-name {
+        min-width: 200px;
+    }
+
+    .col-date {
+        min-width: 120px;
+    }
+
+    .col-member {
+        min-width: 150px;
+    }
+
+    .col-time {
+        min-width: 100px;
+    }
+
+    .col-duration {
+        min-width: 110px;
+    }
+
+    .col-score {
+        min-width: 100px;
+    }
+
+    .col-accuracy-score {
+        background: rgba(255, 160, 0, 0.15);
+        border-left: 2px solid rgba(255, 255, 255, 0.3);
+        border-right: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .col-action {
+        min-width: 120px;
+    }
+
+    /* ========================================
+       TABLE BODY
+       ======================================== */
+    .styled-table tbody tr {
+        transition: var(--transition);
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .styled-table tbody tr:nth-of-type(even) {
+        background: #F8F9FA;
+    }
+
+    .styled-table tbody tr:hover {
+        background: #E0F2F1;
+        transform: scale(1.005);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .styled-table td {
+        padding: 16px 12px;
+        text-align: center;
+        font-size: 0.9em;
+    }
+
+    .test-name-cell {
+        font-weight: 600;
+        color: var(--primary-dark);
+        text-align: left;
+    }
+
+    .member-name-cell {
+        font-weight: 500;
+    }
+
+    /* Badges */
+    .duration-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        background: #E8F5E9;
+        color: #2E7D32;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.9em;
+    }
+
+    .duration-badge i {
+        font-size: 0.9em;
+    }
+
+    .score-badge {
+        display: inline-block;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 1.05em;
+        min-width: 60px;
+    }
+
+    .score-excellent {
+        background: linear-gradient(135deg, #66BB6A, #43A047);
+        color: white;
+        border: 2px solid #388E3C;
+    }
+
+    .score-good {
+        background: linear-gradient(135deg, #FFA726, #FF9800);
+        color: white;
+        border: 2px solid #F57C00;
+    }
+
+    .score-average {
+        background: linear-gradient(135deg, #EF5350, #E53935);
+        color: white;
+        border: 2px solid #C62828;
+    }
 
     .review-button {
-        display: inline-block;
-        background-color: #00BCD4;
-        color: #fff;
-        border: none;
-        border-radius: 20px;
-        padding: 8px 18px;
-        font-size: 0.9rem;
-        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: linear-gradient(135deg, var(--primary-teal), var(--primary-dark));
+        color: white;
+        padding: 10px 20px;
+        border-radius: 10px;
         text-decoration: none;
-        transition: all 0.3s ease;
+        font-weight: 600;
+        font-size: 0.9em;
+        transition: var(--transition);
+        box-shadow: 0 2px 8px rgba(0, 137, 123, 0.3);
     }
 
-        .review-button:hover {
-            background-color: #00838F;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 10px rgba(0, 188, 212, 0.4);
+    .review-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 137, 123, 0.4);
+        background: linear-gradient(135deg, var(--primary-dark), var(--primary-teal));
+    }
+
+    /* ========================================
+       ANIMATIONS
+       ======================================== */
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
         }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes fadeInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* ========================================
+       RESPONSIVE
+       ======================================== */
+    @@media (max-width: 1200px) {
+        .history-page-wrapper {
+            padding: 30px 1.5rem;
+        }
+
+        .history-title {
+            font-size: 2.3em;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .history-title {
+            font-size: 2em;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .section-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 15px;
+        }
+
+        .filter-card {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .select-wrapper {
+            min-width: 100%;
+        }
+
+        .chart-container {
+            height: 350px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        .styled-table {
+            min-width: 1000px;
+        }
+
+        .th-content {
+            min-height: 70px;
+            padding: 12px 8px;
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .history-page-wrapper {
+            padding: 20px 1rem;
+        }
+
+        .header-content {
+            padding: 20px 30px;
+        }
+
+        .history-title {
+            font-size: 1.6em;
+        }
+    }
 </style>
 
 <script>
@@ -263,13 +782,20 @@
         const labels = historyData.map(item => new Date(item.createdOn).toLocaleDateString('vi-VN'));
         const scores = historyData.map(item => item.practiceScore || 0);
         const selectedPart = document.getElementById('part-select').value;
-        const color = '#0097A7';
+        const partLabel = document.getElementById('part-select').options[document.getElementById('part-select').selectedIndex].text;
+
+        // Update chart title
+        document.getElementById('chart-part-label').textContent = partLabel;
 
         const ctx = document.getElementById('accuracyScoreChart').getContext('2d');
 
         if(myChart) {
             myChart.destroy();
         }
+
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(0, 137, 123, 0.3)');
+        gradient.addColorStop(1, 'rgba(0, 137, 123, 0.05)');
 
         myChart = new Chart(ctx, {
             type: 'bar',
@@ -278,108 +804,162 @@
                 datasets: [
                     {
                         type: 'bar',
-                        label: 'Accuracy Score (%)',
+                        label: 'Accuracy Score',
                         data: scores,
-                        backgroundColor: color + "80",
-                        borderColor: color,
+                        backgroundColor: gradient,
+                        borderColor: '#00897B',
                         borderWidth: 2,
-                        barThickness: 30,
+                        borderRadius: 8,
+                        barThickness: 'flex',
+                        maxBarThickness: 40,
                     },
                     {
                         type: 'line',
-                        label: 'Score Trend',
+                        label: 'Performance Trend',
                         data: scores,
                         fill: false,
-                        borderColor: '#006064',
+                        borderColor: '#00695C',
                         borderWidth: 3,
-                        tension: 0.3,
-                        pointRadius: 5,
-                        pointBackgroundColor: '#006064',
+                        tension: 0.4,
+                        pointRadius: 6,
+                        pointBackgroundColor: '#00695C',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointHoverRadius: 8,
                     }
                 ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index',
+                },
                 plugins: {
                     legend: {
                         display: true,
                         position: 'top',
-                        labels: { font: { family: 'Poppins', size: 14, weight: '600' }, color: '#333' }
+                        labels: {
+                            font: {
+                                family: 'Poppins',
+                                size: 13,
+                                weight: '600'
+                            },
+                            color: '#333',
+                            padding: 15,
+                            usePointStyle: true,
+                        }
                     },
                     tooltip: {
-                        backgroundColor: '#006064',
-                        titleFont: { family: 'Poppins', size: 14 },
-                        bodyFont: { family: 'Poppins', size: 12 },
-                        callbacks: { label: context => `${context.dataset.label}: ${context.raw}%` }
+                        backgroundColor: 'rgba(0, 105, 92, 0.95)',
+                        titleFont: {
+                            family: 'Poppins',
+                            size: 14,
+                            weight: '600'
+                        },
+                        bodyFont: {
+                            family: 'Poppins',
+                            size: 13
+                        },
+                        padding: 12,
+                        cornerRadius: 8,
+                        displayColors: true,
+                        callbacks: {
+                            label: context => `${context.dataset.label}: ${context.raw}%`
+                        }
                     },
-                    title: {
-                        display: true,
-                        text: `Practice History for Part ${selectedPart}`,
-                        font: { size: 18, family: 'Poppins', weight: '600' },
-                        color: '#006064'
-                    },
-                    // THÊM: Cấu hình cho plugin zoom
                     zoom: {
                         pan: {
-                            enabled: true, // Cho phép kéo/trượt
-                            mode: 'x',     // Chỉ kéo theo trục X (trục ngày tháng)
+                            enabled: true,
+                            mode: 'x',
                         },
                         zoom: {
-                            wheel: {
-                                enabled: true, // Cho phép zoom bằng con lăn chuột
-                            },
-                            pinch: {
-                                enabled: true // Cho phép zoom bằng 2 ngón tay trên màn hình cảm ứng
-                            },
-                            mode: 'x', // Chỉ zoom theo trục X
+                            wheel: { enabled: true },
+                            pinch: { enabled: true },
+                            mode: 'x',
                         }
                     }
                 },
                 scales: {
                     x: {
-                        title: { display: true, text: 'Date', font: { family: 'Poppins', size: 16, weight: '600' }, color: '#00796B' },
-                        ticks: { font: { family: 'Poppins', size: 12 }, color: '#333' },
-                        grid: { display: false }
+                        grid: { display: false },
+                        ticks: {
+                            font: {
+                                family: 'Poppins',
+                                size: 12
+                            },
+                            color: '#666',
+                            maxRotation: 45,
+                            minRotation: 0
+                        }
                     },
                     y: {
-                        title: { display: true, text: 'Score (%)', font: { family: 'Poppins', size: 16, weight: '600' }, color: '#00796B' },
                         min: 0,
                         max: 100,
                         ticks: {
                             stepSize: 10,
-                            font: { family: 'Poppins', size: 12 },
-                            color: '#333',
-                            callback: function(value) { return value + '%'; }
+                            font: {
+                                family: 'Poppins',
+                                size: 12
+                            },
+                            color: '#666',
+                            callback: value => value + '%'
                         },
-                        grid: { color: '#e0e0e0' }
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)',
+                            drawBorder: false
+                        }
                     }
                 },
-                animation: { duration: 1500, easing: 'easeOutBounce' }
+                animation: {
+                    duration: 1000,
+                    easing: 'easeInOutQuart'
+                }
             }
         });
     }
 
     function updateTable(historyData) {
         const tableBody = document.getElementById('history-table-body');
+        const totalRecords = document.getElementById('total-records');
+
         tableBody.innerHTML = '';
 
         if (historyData.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="7">No history found for this part.</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="7" style="padding: 40px; color: #999;">No practice records found for this part.</td></tr>';
+            totalRecords.innerHTML = '<i class="fas fa-clipboard-check"></i> <span>0 Sessions</span>';
             return;
         }
 
+        totalRecords.innerHTML = `<i class="fas fa-clipboard-check"></i> <span>${historyData.length} Sessions</span>`;
+
         historyData.forEach(item => {
+            const score = item.practiceScore || 0;
+            const scoreClass = score >= 80 ? 'excellent' : score >= 60 ? 'good' : 'average';
+
             const row = `
-                <tr>
-                    <td>${item.testName.replace("STUDY ", "")}</td>
+                <tr class="data-row">
+                    <td class="test-name-cell">${item.testName.replace("STUDY ", "")}</td>
                     <td>${new Date(item.createdOn).toLocaleDateString('vi-VN')}</td>
-                    <td>${item.memberName}</td>
-                    <td>${new Date(item.startTime).toLocaleTimeString('vi-VN')}</td>
-                  <td>${item.timeSpent != null ? `${item.timeSpent} min` : 'N/A'}</td>
-                    <td>${item.practiceScore ? `${item.practiceScore}%` : 'N/A'}</td>
+                    <td class="member-name-cell">${item.memberName}</td>
+                    <td>${new Date(item.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</td>
                     <td>
-                        <a class="review-button" href="/Study/ResultStudy?TestKey=${item.testKey}&ResultKey=${item.resultKey}&PartSelect=${item.part}">Review</a>
+                        <span class="duration-badge">
+                            <i class="fas fa-clock"></i>
+                            ${item.timeSpent != null ? `${item.timeSpent} min` : 'N/A'}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="score-badge score-${scoreClass}">
+                            ${item.practiceScore ? `${item.practiceScore}%` : 'N/A'}
+                        </span>
+                    </td>
+                    <td>
+                        <a class="review-button" href="/Study/ResultStudy?TestKey=${item.testKey}&ResultKey=${item.resultKey}&PartSelect=${item.part}">
+                            <i class="fas fa-search"></i>
+                            <span>Review</span>
+                        </a>
                     </td>
                 </tr>
             `;
@@ -397,7 +977,6 @@
             }
             const newData = await response.json();
 
-            // Sắp xếp dữ liệu mới nhận được theo ngày tạo
             const sortedData = newData.sort((a, b) => new Date(a.createdOn) - new Date(b.createdOn));
 
             studyHistoryData = sortedData;
@@ -406,7 +985,7 @@
         } catch (error) {
             console.error('Failed to fetch study history:', error);
             const tableBody = document.getElementById('history-table-body');
-            tableBody.innerHTML = '<tr><td colspan="7">Error loading history. Please try again.</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="7" style="padding: 40px; color: #D32F2F;"><i class="fas fa-exclamation-circle"></i> Error loading data. Please try again.</td></tr>';
         }
     }
 
@@ -415,4 +994,3 @@
         createOrUpdateChart(studyHistoryData);
     }
 </script>
-

@@ -1,91 +1,220 @@
-﻿@page
+﻿
+@page
 @model TNS_EDU_TEST.Areas.Test.Pages.TestHistoryModel
 @{
     Layout = "_Layout";
 }
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.0.1/chartjs-plugin-zoom.min.js"></script>
 
-<h1 class="test-history-title">TOEIC Test History</h1>
+<div class="history-page-wrapper">
+    <!-- Header Section -->
+    <div class="page-header">
+        <div class="header-content">
+            <h1 class="history-title">
+                <i class="fas fa-chart-line"></i>
+                TOEIC Test Performance Dashboard
+            </h1>
+            <p class="history-subtitle">Comprehensive analysis of your test history and performance metrics</p>
+        </div>
+    </div>
 
-<div class="charts-row">
-    <div class="chart-container">
-        <canvas id="listeningScoreChart"></canvas>
-    </div>
-    <div class="chart-container">
-        <canvas id="readingScoreChart"></canvas>
-    </div>
-    <div class="chart-container">
-        <canvas id="testScoreChart"></canvas>
-    </div>
-</div>
+    <!-- Charts Section -->
+    <div class="charts-section">
+        <div class="section-header">
+            <h2 class="section-title">
+                <i class="fas fa-chart-bar"></i>
+                Performance Analytics
+            </h2>
+            <p class="section-description">Track your progress across multiple test attempts</p>
+        </div>
+        
+        <div class="charts-row">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">
+                        <i class="fas fa-headphones"></i>
+                        Listening Performance
+                    </h3>
+                    <button class="chart-reset-btn" onclick="resetChart('listening')" title="Reset Zoom">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+                <div class="chart-container">
+                    <canvas id="listeningScoreChart"></canvas>
+                </div>
+            </div>
 
-<div class="table-container">
-    <table class="styled-table">
-        <thead>
-            <tr>
-                <th>Test Name</th>
-                <th>Created On</th>
-                <th>Member Name</th>
-                <th>Start Time</th>
-                <th>End Time</th>
-                <th>Time</th>
-                <th>Listening Score</th>
-                <th>Reading Score</th>
-                <th>Test Score</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in Model.TestHistoryItems)
-            {
-                <tr>
-                    <td>@item.TestName</td>
-                    <td>@string.Format("{0:dd/MM/yyyy}", item.CreatedOn)</td>
-                    <td>@item.MemberName</td>
-                    <td>@string.Format("{0:HH:mm}", item.StartTime)</td>
-                    <td>@string.Format("{0:HH:mm}", item.EndTime)</td>
-                    <td>@item.Time phút</td>
-                    <td>@item.ListeningScore</td>
-                    <td>@item.ReadingScore</td>
-                    <td>@item.TestScore</td>
-                    <td>
-                        <a class="review-button" href="/Test/ResultTest?TestKey=@item.TestKey&ResultKey=@item.ResultKey">Review</a>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">
+                        <i class="fas fa-book-reader"></i>
+                        Reading Performance
+                    </h3>
+                    <button class="chart-reset-btn" onclick="resetChart('reading')" title="Reset Zoom">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+                <div class="chart-container">
+                    <canvas id="readingScoreChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">
+                        <i class="fas fa-award"></i>
+                        Overall Performance
+                    </h3>
+                    <button class="chart-reset-btn" onclick="resetChart('test')" title="Reset Zoom">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+                <div class="chart-container">
+                    <canvas id="testScoreChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Section -->
+    <div class="table-section">
+        <div class="section-header">
+            <div>
+                <h2 class="section-title">
+                    <i class="fas fa-history"></i>
+                    Test History Records
+                </h2>
+                <p class="section-description">Detailed overview of all completed tests</p>
+            </div>
+            <div class="table-stats">
+                <span class="stat-badge stat-primary">
+                    <i class="fas fa-list-ol"></i>
+                    <span>@Model.TestHistoryItems.Count() Total Tests</span>
+                </span>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table class="styled-table">
+                <thead>
+                    <tr>
+                        <th class="col-test-name">
+                            <div class="th-content">
+                                <i class="fas fa-clipboard-list"></i>
+                                <span>Test Name</span>
+                            </div>
+                        </th>
+                        <th class="col-date">
+                            <div class="th-content">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span>Test Date</span>
+                            </div>
+                        </th>
+                        <th class="col-member">
+                            <div class="th-content">
+                                <i class="fas fa-user-graduate"></i>
+                                <span>Member</span>
+                            </div>
+                        </th>
+                        <th class="col-time">
+                            <div class="th-content">
+                                <i class="fas fa-clock"></i>
+                                <span>Start Time</span>
+                            </div>
+                        </th>
+                        <th class="col-time">
+                            <div class="th-content">
+                                <i class="fas fa-flag-checkered"></i>
+                                <span>End Time</span>
+                            </div>
+                        </th>
+                        <th class="col-duration">
+                            <div class="th-content">
+                                <i class="fas fa-hourglass-half"></i>
+                                <span>Duration</span>
+                            </div>
+                        </th>
+                        <th class="col-score">
+                            <div class="th-content">
+                                <i class="fas fa-headphones"></i>
+                                <span>Listening</span>
+                            </div>
+                        </th>
+                        <th class="col-score">
+                            <div class="th-content">
+                                <i class="fas fa-book-open"></i>
+                                <span>Reading</span>
+                            </div>
+                        </th>
+                        <th class="col-score col-total-score">
+                            <div class="th-content">
+                                <i class="fas fa-star"></i>
+                                <span>Total Score</span>
+                            </div>
+                        </th>
+                        <th class="col-action">
+                            <div class="th-content">
+                                <i class="fas fa-cog"></i>
+                                <span>Action</span>
+                            </div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.TestHistoryItems)
+                    {
+                        <tr class="data-row">
+                            <td class="test-name-cell">@item.TestName</td>
+                            <td>@string.Format("{0:dd/MM/yyyy}", item.CreatedOn)</td>
+                            <td class="member-name-cell">@item.MemberName</td>
+                            <td>@string.Format("{0:HH:mm}", item.StartTime)</td>
+                            <td>@string.Format("{0:HH:mm}", item.EndTime)</td>
+                            <td>
+                                <span class="duration-badge">
+                                    <i class="fas fa-stopwatch"></i>
+                                    @item.Time min
+                                </span>
+                            </td>
+                            <td>
+                                <span class="score-badge score-listening">@item.ListeningScore</span>
+                            </td>
+                            <td>
+                                <span class="score-badge score-reading">@item.ReadingScore</span>
+                            </td>
+                            <td>
+                                <span class="score-badge score-total">@item.TestScore</span>
+                            </td>
+                            <td>
+                                <a class="review-button" href="/Test/ResultTest?TestKey=@item.TestKey&ResultKey=@item.ResultKey">
+                                    <i class="fas fa-search"></i>
+                                    <span>Review</span>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
 <style>
-    /* === START: THÊM KHỐI MỚI CHO BẢNG CUỘN === */
-    .table-container {
-        max-height: 800px; /* Chiều cao tối đa cho bảng, bạn có thể điều chỉnh */
-        overflow-y: auto; /* Bật thanh cuộn dọc khi cần */
+    :root {
+        --primary-blue: #1976D2;
+        --primary-dark: #0D47A1;
+        --primary-light: #BBDEFB;
+        --accent-gold: #FFC107;
+        --success-green: #4CAF50;
+        --bg-gradient: linear-gradient(135deg, #E3F2FD 0%, #FFF9C4 100%);
+        --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        --card-hover-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        --border-radius: 16px;
+        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-        /* Tùy chỉnh thanh cuộn cho table-container */
-        .table-container::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .table-container::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 4px;
-        }
-
-        .table-container::-webkit-scrollbar-thumb {
-            background: #0288D1;
-            border-radius: 4px;
-        }
-
-            .table-container::-webkit-scrollbar-thumb:hover {
-                background: #4FC3F7;
-            }
-    /* === END: THÊM KHỐI MỚI === */
     * {
         margin: 0;
         padding: 0;
@@ -94,50 +223,124 @@
 
     body {
         font-family: 'Poppins', sans-serif;
-        background: linear-gradient(135deg, #B3E5FC 0%, #FFECB3 100%);
+        background: var(--bg-gradient);
         color: #333;
-        padding: 40px;
-        min-height: 100vh;
-        position: relative;
-        overflow-x: hidden;
+        line-height: 1.6;
     }
 
-    body::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: url('https://www.transparenttextures.com/patterns/stardust.png');
-        opacity: 0.05;
-        z-index: -1;
+    .history-page-wrapper {
+        max-width: 1600px;
+        margin: 0 auto;
+        padding: 40px 2rem;
     }
 
-    .test-history-title {
+    /* ========================================
+       PAGE HEADER
+       ======================================== */
+    .page-header {
         text-align: center;
-        font-size: 3.5em;
+        margin-bottom: 50px;
+        animation: fadeInDown 0.6s ease-out;
+    }
+
+    .header-content {
+        display: inline-block;
+        padding: 30px 50px;
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--card-shadow);
+        border-top: 4px solid var(--primary-blue);
+    }
+
+    .history-title {
+        font-size: 2.8em;
         font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 3px;
-        margin-bottom: 40px;
-        background: linear-gradient(90deg, #0288D1, #FFD54F);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-shadow: 2px 2px 10px rgba(2, 136, 209, 0.3);
-        animation: fadeInDown 1s ease-in-out;
+        color: var(--primary-dark);
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        justify-content: center;
+    }
+
+    .history-title i {
+        color: var(--primary-blue);
+        font-size: 0.9em;
+    }
+
+    .history-subtitle {
+        font-size: 1.05em;
+        color: #666;
+        font-weight: 400;
+        margin: 0;
+    }
+
+    /* ========================================
+       SECTION HEADERS
+       ======================================== */
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+        padding: 0 10px;
+    }
+
+    .section-title {
+        font-size: 1.8em;
+        font-weight: 600;
+        color: var(--primary-dark);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 5px;
+    }
+
+    .section-title i {
+        color: var(--primary-blue);
+    }
+
+    .section-description {
+        color: #666;
+        font-size: 0.95em;
+        margin: 0;
+    }
+
+    .table-stats {
+        display: flex;
+        gap: 12px;
+    }
+
+    .stat-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        border-radius: 25px;
+        font-weight: 600;
+        font-size: 0.9em;
+    }
+
+    .stat-primary {
+        background: var(--primary-light);
+        color: var(--primary-dark);
+    }
+
+    /* ========================================
+       CHARTS SECTION
+       ======================================== */
+    .charts-section {
+        margin-bottom: 50px;
+        animation: fadeIn 0.8s ease-out;
     }
 
     .charts-row {
         display: flex;
-        gap: 30px;
-        margin: 40px auto;
-        max-width: 2400px;
+        gap: 25px;
         overflow-x: auto;
-        padding-bottom: 10px;
+        padding-bottom: 15px;
         scrollbar-width: thin;
-        scrollbar-color: #0288D1 #e0e0e0;
-      
+        scrollbar-color: var(--primary-blue) #e0e0e0;
     }
 
     .charts-row::-webkit-scrollbar {
@@ -150,181 +353,406 @@
     }
 
     .charts-row::-webkit-scrollbar-thumb {
-        background: #0288D1;
+        background: var(--primary-blue);
         border-radius: 4px;
     }
 
-    .charts-row::-webkit-scrollbar-thumb:hover {
-        background: #4FC3F7;
+    .chart-card {
+        min-width: 800px;
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--card-shadow);
+        overflow: hidden;
+        flex-shrink: 0;
+        transition: var(--transition);
+    }
+
+    .chart-card:hover {
+        box-shadow: var(--card-hover-shadow);
+        transform: translateY(-2px);
+    }
+
+    .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 25px;
+        background: linear-gradient(135deg, var(--primary-blue), var(--primary-dark));
+        color: white;
+    }
+
+    .chart-title {
+        font-size: 1.15em;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0;
+    }
+
+    .chart-reset-btn {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: var(--transition);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .chart-reset-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: scale(1.1);
     }
 
     .chart-container {
-        width: 800px;
+        padding: 25px;
         height: 400px;
-        background: #fff;
-        border-radius: 15px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-        padding: 20px;
-        animation: zoomIn 0.8s ease-in-out;
-        flex-shrink: 0;
+    }
+
+    /* ========================================
+       TABLE SECTION
+       ======================================== */
+    .table-section {
+        animation: fadeIn 1s ease-out;
+    }
+
+    .table-container {
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--card-shadow);
+        overflow: hidden;
+        max-height: 700px;
+        overflow-y: auto;
+    }
+
+    .table-container::-webkit-scrollbar {
+        width: 10px;
+    }
+
+    .table-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+
+    .table-container::-webkit-scrollbar-thumb {
+        background: var(--primary-blue);
+        border-radius: 5px;
     }
 
     .styled-table {
         width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-        margin: 0 auto;
-        font-size: 1.1em;
-        background: #fff;
-        border-radius: 15px;
-      
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-        animation: zoomIn 0.8s ease-in-out;
+        border-collapse: collapse;
+        font-size: 0.95rem;
     }
-        /* THÊM KHỐI MỚI DƯỚI ĐÂY ĐỂ BO TRÒN GÓC TIÊU ĐỀ */
-        .styled-table thead th:first-child {
-            border-top-left-radius: 15px;
-        }
 
-        .styled-table thead th:last-child {
-            border-top-right-radius: 15px;
-        }
-        /* THÊM KHỐI MỚI DƯỚI ĐÂY */
-        .styled-table thead th {
-            position: sticky;
-            top: 0;
-            z-index: 1;
-            /* Đặt lại nền để đảm bảo không bị trong suốt khi cuộn */
-            background: linear-gradient(40deg, #278BF5, #4FC3F7);
-        }
+    /* ========================================
+       TABLE HEADER - PROFESSIONAL DESIGN
+       ======================================== */
+    .styled-table thead {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
 
     .styled-table thead tr {
-            background: linear-gradient(90deg, #278BF5, #4FC3F7);
-        color: #fff;
-        text-transform: uppercase;
-        font-weight: 600;
-        letter-spacing: 1px;
+        background: linear-gradient(135deg, #1565C0, #1976D2);
     }
 
     .styled-table th {
-        padding: 15px 20px;
+        padding: 0;
         text-align: center;
-        border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
     }
 
+    .styled-table th:last-child {
+        border-right: none;
+    }
+
+    .th-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 16px 12px;
+        color: white;
+        min-height: 80px;
+    }
+
+    .th-content i {
+        font-size: 1.3em;
+        opacity: 0.95;
+        margin-bottom: 2px;
+    }
+
+    .th-content span {
+        font-weight: 600;
+        font-size: 0.85em;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        line-height: 1.3;
+    }
+
+    /* Column specific styling */
+    .col-test-name {
+        min-width: 200px;
+    }
+
+    .col-date {
+        min-width: 120px;
+    }
+
+    .col-member {
+        min-width: 150px;
+    }
+
+    .col-time {
+        min-width: 100px;
+    }
+
+    .col-duration {
+        min-width: 110px;
+    }
+
+    .col-score {
+        min-width: 100px;
+    }
+
+    .col-total-score {
+        background: rgba(255, 193, 7, 0.15);
+        border-left: 2px solid rgba(255, 255, 255, 0.3);
+        border-right: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .col-action {
+        min-width: 120px;
+    }
+
+    /* ========================================
+       TABLE BODY
+       ======================================== */
     .styled-table tbody tr {
-        background: #fff;
-        transition: all 0.3s ease;
-    }
-
-    .styled-table td {
-        padding: 15px 20px;
-        text-align: center;
-        border-bottom: 1px solid #e0e0e0;
+        transition: var(--transition);
+        border-bottom: 1px solid #f0f0f0;
     }
 
     .styled-table tbody tr:nth-of-type(even) {
-        background: #F9FBE7;
+        background: #F8F9FA;
     }
 
     .styled-table tbody tr:hover {
-        background: #B3E5FC;
-        transform: scale(1.02);
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        background: #E3F2FD;
+        transform: scale(1.005);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     }
 
-    .styled-table tbody tr:last-of-type {
-        border-bottom: none;
+    .styled-table td {
+        padding: 16px 12px;
+        text-align: center;
+        font-size: 0.9em;
+    }
+
+    .test-name-cell {
+        font-weight: 600;
+        color: var(--primary-dark);
+        text-align: left;
+    }
+
+    .member-name-cell {
+        font-weight: 500;
+    }
+
+    /* Badges */
+    .duration-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        background: #E8F5E9;
+        color: #2E7D32;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.9em;
+    }
+
+    .duration-badge i {
+        font-size: 0.9em;
+    }
+
+    .score-badge {
+        display: inline-block;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 1.05em;
+        min-width: 60px;
+    }
+
+    .score-listening {
+        background: linear-gradient(135deg, #E3F2FD, #BBDEFB);
+        color: #0D47A1;
+        border: 2px solid #1976D2;
+    }
+
+    .score-reading {
+        background: linear-gradient(135deg, #FFF9C4, #FFEB3B);
+        color: #F57F17;
+        border: 2px solid #FBC02D;
+    }
+
+    .score-total {
+        background: linear-gradient(135deg, #C8E6C9, #81C784);
+        color: #1B5E20;
+        border: 2px solid #4CAF50;
+        font-size: 1.15em;
     }
 
     .review-button {
-        display: inline-block;
-        background: linear-gradient(90deg, #0288D1, #4FC3F7);
-        color: #fff;
-        border: none;
-        border-radius: 25px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: linear-gradient(135deg, var(--primary-blue), var(--primary-dark));
+        color: white;
         padding: 10px 20px;
-        font-size: 1em;
-        font-weight: 600;
+        border-radius: 10px;
         text-decoration: none;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 10px rgba(2, 136, 209, 0.3);
+        font-weight: 600;
+        font-size: 0.9em;
+        transition: var(--transition);
+        box-shadow: 0 2px 8px rgba(25, 118, 210, 0.3);
     }
 
     .review-button:hover {
-        background: linear-gradient(90deg, #4FC3F7, #0288D1);
-        transform: translateY(-3px) scale(1.05);
-        box-shadow: 0 6px 20px rgba(2, 136, 209, 0.5);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(25, 118, 210, 0.4);
+        background: linear-gradient(135deg, var(--primary-dark), var(--primary-blue));
+    }
+
+    /* ========================================
+       ANIMATIONS
+       ======================================== */
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     @@keyframes fadeInDown {
-        from { opacity: 0; transform: translateY(-30px); }
-        to { opacity: 1; transform: translateY(0); }
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
-    @@keyframes zoomIn {
-        from { opacity: 0; transform: scale(0.9); }
-        to { opacity: 1; transform: scale(1); }
+    /* ========================================
+       RESPONSIVE
+       ======================================== */
+    @@media (max-width: 1200px) {
+        .history-page-wrapper {
+            padding: 30px 1.5rem;
+        }
+
+        .chart-card {
+            min-width: 700px;
+        }
+
+        .history-title {
+            font-size: 2.3em;
+        }
     }
 
     @@media (max-width: 768px) {
-        body { padding: 20px; }
-        .test-history-title { font-size: 2.5em; margin-bottom: 30px; }
-        .styled-table { font-size: 0.9em; }
-        .styled-table th, .styled-table td { padding: 10px; }
-        .review-button { padding: 8px 15px; font-size: 0.9em; }
-        .chart-container { width: 400px; height: 300px; }
+        .history-title {
+            font-size: 2em;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .section-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 15px;
+        }
+
+        .chart-card {
+            min-width: 100%;
+        }
+
+        .chart-container {
+            height: 350px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        .styled-table {
+            min-width: 1000px;
+        }
+
+        .th-content {
+            min-height: 70px;
+            padding: 12px 8px;
+        }
     }
 
     @@media (max-width: 480px) {
-        .styled-table { display: block; overflow-x: auto; white-space: nowrap; }
-        .test-history-title { font-size: 2em; }
-        .charts-row { gap: 10px; }
-        .chart-container { width: 300px; height: 250px; }
+        .history-page-wrapper {
+            padding: 20px 1rem;
+        }
+
+        .header-content {
+            padding: 20px 30px;
+        }
+
+        .history-title {
+            font-size: 1.6em;
+        }
     }
 </style>
 
 <script>
-    // Lấy dữ liệu từ Model
     const testHistoryData = @Html.Raw(Json.Serialize(Model.TestHistoryItems.OrderBy(t => t.CreatedOn)));
+    let charts = {};
 
-    // Debug dữ liệu
-    console.log('Test History Data:', testHistoryData);
-
-    function createChart(canvasId, label, dataKey, color) {
+    function createChart(canvasId, label, dataKey, color, chartKey) {
         if (!testHistoryData || testHistoryData.length === 0) {
-            const canvasEl = document.getElementById(canvasId);
-            if (canvasEl && canvasEl.parentElement) {
-                canvasEl.parentElement.style.display = 'none';
-            }
-            console.warn(`No data available for ${label} chart.`);
+            document.getElementById(canvasId).parentElement.parentElement.style.display = 'none';
             return;
         }
 
-        // Chuẩn bị nhãn (ngày thi)
         const labels = testHistoryData.map(item => {
-            const dateStr = item.createdOn || item.CreatedOn || ''; // Thử cả createdOn và CreatedOn
-            if (dateStr.includes('T')) {
-                const date = new Date(dateStr);
-                return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            } else if (dateStr) {
-                const date = new Date(dateStr);
-                return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            }
-            return 'Unknown Date';
+            const dateStr = item.createdOn || item.CreatedOn || '';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
         });
 
-        // Chuẩn bị dữ liệu điểm số
         const scores = testHistoryData.map(item => {
-            // Thử cả camelCase và PascalCase
             const score = item[dataKey] || item[dataKey.charAt(0).toUpperCase() + dataKey.slice(1)] || 0;
-            const numericScore = (score !== undefined && score !== null) ? Number(score) : 0;
-            console.log(`Score for ${dataKey}:`, numericScore); // Debug điểm số
-            return numericScore;
+            return Number(score);
         });
 
         const ctx = document.getElementById(canvasId).getContext('2d');
-        new Chart(ctx, {
+        
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, color + '80');
+        gradient.addColorStop(1, color + '10');
+
+        charts[chartKey] = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: labels,
@@ -333,10 +761,12 @@
                         type: 'bar',
                         label: label,
                         data: scores,
-                        backgroundColor: color + "80",
+                        backgroundColor: gradient,
                         borderColor: color,
                         borderWidth: 2,
-                        barThickness: 30,
+                        borderRadius: 8,
+                        barThickness: 'flex',
+                        maxBarThickness: 40,
                     },
                     {
                         type: 'line',
@@ -344,72 +774,96 @@
                         data: scores,
                         fill: false,
                         borderColor: color,
-                        borderWidth: 2,
-                        tension: 0.3,
-                        pointRadius: 4,
+                        borderWidth: 3,
+                        tension: 0.4,
+                        pointRadius: 5,
                         pointBackgroundColor: color,
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
                     }
                 ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index',
+                },
                 plugins: {
                     legend: {
                         display: true,
                         position: 'top',
-                        labels: { font: { family: 'Poppins', size: 14, weight: '600' }, color: '#333' }
+                        labels: {
+                            font: { family: 'Poppins', size: 12, weight: '600' },
+                            color: '#333',
+                            usePointStyle: true,
+                            padding: 15
+                        }
                     },
                     tooltip: {
-                        backgroundColor: '#0288D1',
-                        titleFont: { family: 'Poppins', size: 14 },
+                        backgroundColor: 'rgba(13, 71, 161, 0.95)',
+                        titleFont: { family: 'Poppins', size: 13, weight: '600' },
                         bodyFont: { family: 'Poppins', size: 12 },
-                        callbacks: { label: context => `${context.dataset.label}: ${context.raw}` }
+                        padding: 12,
+                        cornerRadius: 8,
+                        callbacks: {
+                            label: context => `${context.dataset.label}: ${context.raw}`
+                        }
                     },
-                             zoom: {
-            pan: {
-                enabled: true, // Cho phép kéo/trượt
-                mode: 'x',     // Chỉ kéo theo trục X (trục ngày thi)
-            },
-            zoom: {
-                wheel: {
-                    enabled: true, // Cho phép zoom bằng con lăn chuột
-                },
-                pinch: {
-                    enabled: true // Cho phép zoom bằng 2 ngón tay trên màn hình cảm ứng
-                },
-                mode: 'x', // Chỉ zoom theo trục X
-            }
-        }
-        
-    
+                    zoom: {
+                        pan: {
+                            enabled: true,
+                            mode: 'x',
+                        },
+                        zoom: {
+                            wheel: { enabled: true },
+                            pinch: { enabled: true },
+                            mode: 'x',
+                        }
+                    }
                 },
                 scales: {
                     x: {
-                        title: { display: true, text: 'Test Date', font: { family: 'Poppins', size: 16, weight: '600' }, color: '#0288D1' },
-                        ticks: { font: { family: 'Poppins', size: 12 }, color: '#333', maxRotation: 45, minRotation: 45 },
-                        grid: { display: false }
+                        grid: { display: false },
+                        ticks: {
+                            font: { family: 'Poppins', size: 11 },
+                            color: '#666',
+                            maxRotation: 45,
+                            minRotation: 0
+                        }
                     },
                     y: {
-                        title: { display: true, text: 'Score', font: { family: 'Poppins', size: 16, weight: '600' }, color: '#0288D1' },
                         min: 0,
                         max: 1000,
                         ticks: {
-                            stepSize: 100, // 10 bậc: 0, 100, 200, ..., 1000
-                            font: { family: 'Poppins', size: 12 },
-                            color: '#333',
-                            callback: function(value) { return value; }
+                            stepSize: 100,
+                            font: { family: 'Poppins', size: 11 },
+                            color: '#666',
+                            callback: value => value
                         },
-                        grid: { color: '#e0e0e0' }
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)',
+                            drawBorder: false
+                        }
                     }
                 },
-                animation: { duration: 1500, easing: 'easeOutBounce' }
+                animation: {
+                    duration: 1000,
+                    easing: 'easeInOutQuart'
+                }
             }
         });
     }
 
-    // Tạo 3 biểu đồ
-    createChart('listeningScoreChart', 'Listening Score', 'listeningScore', '#0288D1');
-    createChart('readingScoreChart', 'Reading Score', 'readingScore', '#FFD54F');
-    createChart('testScoreChart', 'Test Score', 'testScore', '#4FC3F7');
+    function resetChart(chartKey) {
+        if (charts[chartKey]) {
+            charts[chartKey].resetZoom();
+        }
+    }
+
+    // Initialize charts
+    createChart('listeningScoreChart', 'Listening Score', 'listeningScore', '#1976D2', 'listening');
+    createChart('readingScoreChart', 'Reading Score', 'readingScore', '#FBC02D', 'reading');
+    createChart('testScoreChart', 'Total Score', 'testScore', '#4CAF50', 'test');
 </script>

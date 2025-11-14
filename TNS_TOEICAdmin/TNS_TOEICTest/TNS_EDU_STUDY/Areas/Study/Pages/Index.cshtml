@@ -5,250 +5,587 @@
 }
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-    /* ----- General Design ----- */
-    body {
-        background-color: #f8f9fa;
-        font-family: 'Poppins', sans-serif; /* Adding Poppins font for a better look */
+    :root {
+        --primary-teal: #00897B;
+        --primary-dark: #00695C;
+        --primary-light: #B2DFDB;
+        --accent-amber: #FFA000;
+        --success-green: #43A047;
+        --bg-gradient: linear-gradient(135deg, #E0F2F1 0%, #FFF8E1 100%);
+        --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        --border-radius: 16px;
+        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .study-page-container {
-        max-width: 1100px;
-        margin: 50px auto;
+    /* Full screen wrapper */
+    .study-fullscreen-wrapper {
+        position: fixed;
+        top: 70px;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--bg-gradient);
+        overflow: hidden;
+        font-family: 'Poppins', sans-serif;
+    }
+
+        .study-fullscreen-wrapper::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('https://www.transparenttextures.com/patterns/subtle-dots.png');
+            opacity: 0.05;
+            z-index: 0;
+        }
+
+    /* Main container - fits in viewport */
+    .study-container {
+        max-width: 1400px;
+        height: calc(100vh - 90px);
+        margin: 0 auto;
         padding: 20px;
-        animation: fadeIn 0.8s ease-in-out;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        z-index: 1;
     }
 
-    @@keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    /* ----- Header/Hero Section ----- */
+    /* Compact header */
     .study-header {
-        text-align: center;
-        margin-bottom: 60px;
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 20px 30px;
+        margin-bottom: 20px;
+        box-shadow: var(--card-shadow);
+        border-top: 4px solid var(--primary-teal);
+        animation: fadeInDown 0.6s ease-out;
+    }
+
+    .header-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+    }
+
+    .header-text {
+        flex: 1;
     }
 
     .study-title {
-        font-size: 3rem;
+        font-size: 2rem;
         font-weight: 700;
-        background: linear-gradient(90deg, #00796b, #4db6ac);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 15px;
+        color: var(--primary-dark);
+        margin: 0 0 8px 0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
     }
+
+        .study-title i {
+            color: var(--primary-teal);
+        }
 
     .study-description {
-        font-size: 1.15rem;
+        font-size: 0.95rem;
         color: #666;
-        max-width: 700px;
-        margin: 0 auto;
+        margin: 0;
     }
 
-    /* ----- Skill Groups ----- */
-    .skill-group {
-        margin-bottom: 50px;
+    .header-badge {
+        background: var(--primary-light);
+        color: var(--primary-dark);
+        padding: 8px 20px;
+        border-radius: 25px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+
+    /* Main content - fits remaining space */
+    .study-content {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        overflow: hidden;
+    }
+
+    /* Skill group cards */
+    .skill-section {
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 20px;
+        box-shadow: var(--card-shadow);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        animation: fadeIn 0.8s ease-out;
+    }
+
+    .skill-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 15px;
+        padding-bottom: 12px;
+        border-bottom: 3px solid var(--primary-teal);
+    }
+
+    .skill-icon {
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, var(--primary-teal), var(--primary-dark));
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5em;
+        flex-shrink: 0;
     }
 
     .skill-title {
-        font-size: 1.8rem;
+        font-size: 1.5rem;
         font-weight: 600;
-        color: #333;
-        margin-bottom: 25px;
-        padding-bottom: 10px;
-        border-bottom: 3px solid #00796b;
-        display: inline-block;
+        color: var(--primary-dark);
+        margin: 0;
     }
 
-    /* ----- Part Selection Grid ----- */
-    .part-selection-grid {
+    /* Parts grid - compact */
+    .parts-grid {
         display: grid;
-        gap: 25px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        flex: 1;
+        overflow-y: auto;
     }
 
-    /* 4-column grid for Listening group */
-    .grid-listening {
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    }
+        .parts-grid::-webkit-scrollbar {
+            width: 6px;
+        }
 
-    /* 3-column grid for Reading group */
-    .grid-reading {
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    }
+        .parts-grid::-webkit-scrollbar-thumb {
+            background: var(--primary-light);
+            border-radius: 3px;
+        }
 
-    /* ----- Part Selection Card ----- */
+    /* Compact part cards */
     .part-card {
-        background-color: #ffffff;
-        border: 1px solid #e0e0e0;
-        border-radius: 15px;
-        padding: 25px;
+        background: linear-gradient(135deg, #F5F7FA, #E8EAF6);
+        border: 2px solid transparent;
+        border-radius: 12px;
+        padding: 15px;
         cursor: pointer;
-        transition: all 0.3s ease;
+        transition: var(--transition);
         text-align: center;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        position: relative;
+        overflow: hidden;
     }
+
+        .part-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--primary-teal);
+            transform: scaleY(0);
+            transition: var(--transition);
+        }
 
         .part-card:hover {
-            transform: scale(1.05);
-            box-shadow: 0 10px 25px rgba(0, 121, 107, 0.15);
-            border-color: #4db6ac;
+            border-color: var(--primary-teal);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 137, 123, 0.15);
         }
+
+            .part-card:hover::before {
+                transform: scaleY(1);
+            }
 
         .part-card.selected {
-            border-color: #00796b;
-            background-color: #e8f5e9;
-            box-shadow: 0 0 0 3px #81c784, 0 8px 20px rgba(76, 175, 80, 0.2);
-            transform: scale(1.05);
+            border-color: var(--primary-teal);
+            background: linear-gradient(135deg, #E0F2F1, #B2DFDB);
+            box-shadow: 0 0 0 3px rgba(0, 137, 123, 0.2), 0 6px 20px rgba(0, 137, 123, 0.2);
+            transform: scale(1.02);
         }
 
+            .part-card.selected::before {
+                transform: scaleY(1);
+            }
+
     .part-card-icon {
-        font-size: 3rem;
-        color: #00796b;
-        margin-bottom: 15px;
-        transition: color 0.3s ease;
+        font-size: 2em;
+        color: var(--primary-teal);
+        margin-bottom: 10px;
+        transition: var(--transition);
     }
 
     .part-card.selected .part-card-icon {
-        color: #388e3c;
+        color: var(--primary-dark);
+        animation: bounce 0.5s ease;
     }
 
-    .part-card-title {
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: #333;
-        margin-bottom: 5px;
+    .part-number {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--primary-dark);
+        margin: 0 0 5px 0;
     }
 
-    .part-card.selected .part-card-title {
-        color: #388e3c;
+    .part-card.selected .part-number {
+        color: var(--primary-dark);
     }
 
-    .part-card-desc {
-        font-size: 0.9rem;
-        color: #777;
+    .part-desc {
+        font-size: 0.85rem;
+        color: #666;
+        margin: 0;
     }
 
-    /* ----- Start Button ----- */
-    .start-button-container {
-        text-align: center;
+    /* Bottom action bar */
+    .action-bar {
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 15px 30px;
         margin-top: 20px;
+        box-shadow: var(--card-shadow);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        animation: fadeInUp 0.6s ease-out;
     }
 
+    .selection-info {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        font-size: 0.95rem;
+        color: #666;
+    }
+
+        .selection-info i {
+            color: var(--primary-teal);
+            font-size: 1.2em;
+        }
+
+    .selected-part-label {
+        font-weight: 600;
+        color: var(--primary-dark);
+    }
+
+    /* Compact start button */
     .start-study-btn {
-        background: linear-gradient(45deg, #26a69a, #00897b);
+        background: linear-gradient(135deg, var(--accent-amber), #FFA000);
         color: white;
-        padding: 15px 45px;
+        padding: 12px 40px;
         border: none;
         border-radius: 50px;
-        font-size: 1.2rem;
-        font-weight: 600;
+        font-size: 1.1rem;
+        font-weight: 700;
         cursor: pointer;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 20px rgba(0, 121, 107, 0.3);
+        transition: var(--transition);
+        box-shadow: 0 4px 20px rgba(255, 160, 0, 0.4);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        position: relative;
+        overflow: hidden;
         opacity: 0.5;
         pointer-events: none;
-        transform: scale(0.95);
     }
+
+        .start-study-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
 
         .start-study-btn.active {
             opacity: 1;
             pointer-events: auto;
-            transform: scale(1);
         }
 
-        .start-study-btn:hover.active {
-            transform: scale(1.05);
-            box-shadow: 0 7px 25px rgba(0, 121, 107, 0.4);
-        }
+            .start-study-btn.active:hover::before {
+                left: 100%;
+            }
+
+            .start-study-btn.active:hover {
+                background: linear-gradient(135deg, #FFA000, var(--accent-amber));
+                transform: translateY(-2px);
+                box-shadow: 0 6px 25px rgba(255, 160, 0, 0.5);
+            }
 
         .start-study-btn i {
-            margin-right: 10px;
+            margin-right: 8px;
         }
 
+    /* Animations */
+    @@keyframes fadeIn {
+        from
+
+    {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    }
+
+    @@keyframes fadeInDown {
+        from
+
+    {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    }
+
+    @@keyframes fadeInUp {
+        from
+
+    {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    }
+
+    @@keyframes bounce {
+        0%, 100%
+
+    {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.2);
+    }
+
+    }
+
+    /* Responsive */
+    @@media (max-width: 1200px) {
+        .study-content
+
+    {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .parts-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    }
+
+    @@media (max-width: 768px) {
+        .study-fullscreen-wrapper
+
+    {
+        top: 60px;
+    }
+
+    .study-container {
+        padding: 15px;
+    }
+
+    .study-header {
+        padding: 15px 20px;
+    }
+
+    .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .study-title {
+        font-size: 1.6rem;
+    }
+
+    .parts-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .action-bar {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .start-study-btn {
+        width: 100%;
+    }
+
+    }
+
+    @@media (max-width: 480px) {
+        .study-title
+
+    {
+        font-size: 1.4rem;
+    }
+
+    .parts-grid {
+        grid-template-columns: 1fr;
+    }
+
+    }
 </style>
 
-<div class="study-page-container">
-    <div class="study-header">
-        <h1 class="study-title">TOEIC Practice by Part</h1>
-        <p class="study-description">Choose a part you want to practice below. The system will create a dedicated test for that part to help you improve your skills.</p>
+<div class="study-fullscreen-wrapper">
+    <div class="study-container">
+        <!-- Compact Header -->
+        <div class="study-header">
+            <div class="header-content">
+                <div class="header-text">
+                    <h1 class="study-title">
+                        <i class="fas fa-graduation-cap"></i>
+                        TOEIC Part-Specific Practice
+                    </h1>
+                    <p class="study-description">Select a part to focus on and improve your skills with targeted practice exercises</p>
+                </div>
+                <div class="header-badge">
+                    <i class="fas fa-layer-group"></i>
+                    7 Parts Available
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <form method="post" style="display: contents;">
+            <div class="study-content">
+                <!-- Listening Section -->
+                <div class="skill-section">
+                    <div class="skill-header">
+                        <div class="skill-icon">
+                            <i class="fas fa-headphones"></i>
+                        </div>
+                        <h2 class="skill-title">Listening Comprehension</h2>
+                    </div>
+                    <div class="parts-grid">
+                        <div class="part-card" data-part="1" onclick="selectPart(1, this)">
+                            <div class="part-card-icon"><i class="fas fa-camera"></i></div>
+                            <div class="part-number">Part 1</div>
+                            <p class="part-desc">Photographs</p>
+                        </div>
+                        <div class="part-card" data-part="2" onclick="selectPart(2, this)">
+                            <div class="part-card-icon"><i class="fas fa-question-circle"></i></div>
+                            <div class="part-number">Part 2</div>
+                            <p class="part-desc">Question-Response</p>
+                        </div>
+                        <div class="part-card" data-part="3" onclick="selectPart(3, this)">
+                            <div class="part-card-icon"><i class="fas fa-comments"></i></div>
+                            <div class="part-number">Part 3</div>
+                            <p class="part-desc">Conversations</p>
+                        </div>
+                        <div class="part-card" data-part="4" onclick="selectPart(4, this)">
+                            <div class="part-card-icon"><i class="fas fa-bullhorn"></i></div>
+                            <div class="part-number">Part 4</div>
+                            <p class="part-desc">Short Talks</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reading Section -->
+                <div class="skill-section">
+                    <div class="skill-header">
+                        <div class="skill-icon">
+                            <i class="fas fa-book-reader"></i>
+                        </div>
+                        <h2 class="skill-title">Reading Comprehension</h2>
+                    </div>
+                    <div class="parts-grid">
+                        <div class="part-card" data-part="5" onclick="selectPart(5, this)">
+                            <div class="part-card-icon"><i class="fas fa-edit"></i></div>
+                            <div class="part-number">Part 5</div>
+                            <p class="part-desc">Incomplete Sentences</p>
+                        </div>
+                        <div class="part-card" data-part="6" onclick="selectPart(6, this)">
+                            <div class="part-card-icon"><i class="fas fa-file-alt"></i></div>
+                            <div class="part-number">Part 6</div>
+                            <p class="part-desc">Text Completion</p>
+                        </div>
+                        <div class="part-card" data-part="7" onclick="selectPart(7, this)">
+                            <div class="part-card-icon"><i class="fas fa-newspaper"></i></div>
+                            <div class="part-number">Part 7</div>
+                            <p class="part-desc">Reading Comprehension</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <input type="hidden" id="selectedPartInput" name="selectedPart" asp-for="SelectedPart" />
+
+            <!-- Action Bar -->
+            <div class="action-bar">
+                <div class="selection-info">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Selected: <span class="selected-part-label" id="selected-label">None</span></span>
+                </div>
+                <button type="submit" class="start-study-btn" id="start-study-btn" disabled>
+                    <i class="fas fa-play-circle"></i>
+                    Begin Practice
+                </button>
+            </div>
+        </form>
     </div>
-
-    <form method="post">
-        <div class="skill-group">
-            <h2 class="skill-title">Listening Comprehension</h2>
-            <div class="part-selection-grid grid-listening">
-                <div class="part-card" data-part="1" onclick="selectPart(1, this)">
-                    <div class="part-card-icon"><i class="fas fa-camera"></i></div>
-                    <div class="part-card-title">Part 1</div>
-                    <p class="part-card-desc">Photographs</p>
-                </div>
-                <div class="part-card" data-part="2" onclick="selectPart(2, this)">
-                    <div class="part-card-icon"><i class="fas fa-question-circle"></i></div>
-                    <div class="part-card-title">Part 2</div>
-                    <p class="part-card-desc">Question-Response</p>
-                </div>
-                <div class="part-card" data-part="3" onclick="selectPart(3, this)">
-                    <div class="part-card-icon"><i class="fas fa-comments"></i></div>
-                    <div class="part-card-title">Part 3</div>
-                    <p class="part-card-desc">Conversations</p>
-                </div>
-                <div class="part-card" data-part="4" onclick="selectPart(4, this)">
-                    <div class="part-card-icon"><i class="fas fa-bullhorn"></i></div>
-                    <div class="part-card-title">Part 4</div>
-                    <p class="part-card-desc">Talks</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="skill-group">
-            <h2 class="skill-title">Reading Comprehension</h2>
-            <div class="part-selection-grid grid-reading">
-                <div class="part-card" data-part="5" onclick="selectPart(5, this)">
-                    <div class="part-card-icon"><i class="fas fa-edit"></i></div>
-                    <div class="part-card-title">Part 5</div>
-                    <p class="part-card-desc">Incomplete Sentences</p>
-                </div>
-                <div class="part-card" data-part="6" onclick="selectPart(6, this)">
-                    <div class="part-card-icon"><i class="fas fa-file-alt"></i></div>
-                    <div class="part-card-title">Part 6</div>
-                    <p class="part-card-desc">Text Completion</p>
-                </div>
-                <div class="part-card" data-part="7" onclick="selectPart(7, this)">
-                    <div class="part-card-icon"><i class="fas fa-newspaper"></i></div>
-                    <div class="part-card-title">Part 7</div>
-                    <p class="part-card-desc">Reading Passages</p>
-                </div>
-            </div>
-        </div>
-
-        <input type="hidden" id="selectedPartInput" name="selectedPart" asp-for="SelectedPart" />
-
-        <div class="start-button-container">
-            <button type="submit" class="start-study-btn" id="start-study-btn" disabled>
-                <i class="fas fa-play-circle"></i> Start Practice
-            </button>
-        </div>
-    </form>
 </div>
 
 @section Scripts {
     <script>
-        // JavaScript logic remains the same
         function selectPart(partNumber, element) {
+            // Remove selection from all cards
             document.querySelectorAll('.part-card').forEach(card => {
                 card.classList.remove('selected');
             });
+
+            // Add selection to clicked card
             element.classList.add('selected');
+
+            // Update hidden input
             document.getElementById('selectedPartInput').value = partNumber;
+
+            // Update selected label
+            const partNames = {
+                1: 'Part 1 - Photographs',
+                2: 'Part 2 - Question-Response',
+                3: 'Part 3 - Conversations',
+                4: 'Part 4 - Short Talks',
+                5: 'Part 5 - Incomplete Sentences',
+                6: 'Part 6 - Text Completion',
+                7: 'Part 7 - Reading Comprehension'
+            };
+            document.getElementById('selected-label').textContent = partNames[partNumber];
+
+            // Enable button
             const startButton = document.getElementById('start-study-btn');
             startButton.disabled = false;
             startButton.classList.add('active');

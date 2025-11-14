@@ -1,169 +1,223 @@
 ﻿<div id="group_details_modal_content" class="group-details-content">
-    <div id="group-details-view">
+    <!-- MAIN VIEW -->
+    <div id="group-details-view" class="details-wrapper">
+        <!-- HEADER -->
         <div class="group-header">
-            <img src="/images/avatar/default-avatar.jpg" alt="Group Avatar" class="group-avatar rounded-circle" id="groupAvatar">
+            <img src="/images/avatar/default-avatar.jpg" alt="Group Avatar" class="group-avatar" id="groupAvatar">
             <h3 class="group-name" id="groupName">Unnamed Group</h3>
         </div>
-        <div class="member-list" style="overflow-y: auto; max-height: 350px;" id="memberList">
+
+        <!-- MEMBER LIST -->
+        <div class="member-list" id="memberList">
+            <!-- ✅ Nội dung sẽ được load bởi JavaScript -->
         </div>
+
+        <!-- ACTIONS BUTTONS -->
         <div class="group-actions">
-            <button class="add-member-btn btn btn-primary">Add Member</button>
-            <button class="leave-group-btn btn btn-danger">Leave Group</button>
+            <button class="add-member-btn">Add Member</button>
+            <button class="leave-group-btn">Leave Group</button>
         </div>
     </div>
+
+    <!-- CONFIRMATION VIEW -->
     <div id="remove-member-confirmation-view" style="display: none;"></div>
 </div>
 
-<!-- Add Member Popup -->
-<div id="addMemberPopup" class="add-member-content" style="display: none;">
-    <h4 class="add-member-title">Add Member</h4>
-    <div class="member-selection" style="max-height: 250px; overflow-y: auto;" id="memberSelection">
-        <!-- Member options will be populated dynamically -->
-    </div>
-    <div class="member-actions" style="margin-top: 15px;">
-        <button class="btn btn-success ok-btn">OK</button>
-        <button class="btn btn-secondary cancel-btn">Cancel</button>
-    </div>
-</div>
-
-<!-- Leave Confirmation Popup -->
-<div id="leaveConfirmationPopup" class="confirmation-content" style="display: none;">
-    <h4 class="confirmation-title">Confirm Leave Group</h4>
-    <p>Are you sure you want to leave this group?</p>
-    <div class="confirmation-actions">
-        <button class="btn btn-danger confirm-leave">Yes</button>
-        <button class="btn btn-secondary cancel-leave">No</button>
+<!-- ========================================
+     POPUP WRAPPERS
+     ======================================== -->
+<div id="addMemberPopup" style="display: none;">
+    <div class="add-member-content">
+        <h4 class="add-member-title">Add Member</h4>
+        <div class="member-selection" id="memberSelection"></div>
+        <div class="member-actions">
+            <button class="ok-btn">OK</button>
+            <button class="cancel-btn">Cancel</button>
+        </div>
     </div>
 </div>
 
-<!-- Remove Member Confirmation Popup -->
-<div id="removeMemberPopup" class="confirmation-content" style="display: none;">
-    <h4 class="confirmation-title">Remove Member</h4>
-    <p id="removeMemberMessage">Are you sure you want to remove this member?</p>
-    <div class="confirmation-actions">
-        <button class="btn btn-secondary cancel-remove">No</button>
-        <button class="btn btn-danger confirm-remove">Yes</button>
+<div id="leaveConfirmationPopup" style="display: none;">
+    <div class="confirmation-content">
+        <h4 class="confirmation-title">Confirm Leave Group</h4>
+        <p>Are you sure you want to leave this group?</p>
+        <div class="confirmation-actions">
+            <button class="confirm-leave">Yes</button>
+            <button class="cancel-leave">No</button>
+        </div>
+    </div>
+</div>
+
+<div id="removeMemberPopup" style="display: none;">
+    <div class="confirmation-content">
+        <h4 class="confirmation-title">Remove Member</h4>
+        <p id="removeMemberMessage">Are you sure?</p>
+        <div class="confirmation-actions">
+            <button class="cancel-remove">No</button>
+            <button class="confirm-remove">Yes</button>
+        </div>
     </div>
 </div>
 
 <style>
-    .group-details-content {
-        background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
-        padding: 15px;
-        border-radius: 12px;
-        width: 600px;
-        max-height: 80vh;
-        overflow-y: auto;
-        color: #fff;
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
-        position: relative;
+    /* ========================================
+           🎨 MODAL OVERRIDE
+           ======================================== */
+    #group_details_modal.modal.show ~ .modal-backdrop {
+        display: none !important;
     }
 
+    #group_details_modal {
+        background: transparent !important;
+    }
+
+        #group_details_modal .modal-dialog {
+            max-width: 680px;
+            margin: 1rem auto;
+        }
+
+        #group_details_modal .modal-header {
+            background: linear-gradient(135deg, #2c3e50, #34495e) !important;
+            border-bottom: 1px solid #3a3a3a !important;
+            padding: 10px 20px !important;
+        }
+
+        #group_details_modal .modal-title {
+            color: #00e1ff !important;
+            font-weight: 600 !important;
+            font-size: 1.1em;
+        }
+
+        #group_details_modal .btn-close {
+            filter: invert(1) brightness(1.5) !important;
+            opacity: 0.8 !important;
+        }
+
+            #group_details_modal .btn-close:hover {
+                opacity: 1 !important;
+                transform: scale(1.1);
+            }
+
+        #group_details_modal .modal-body {
+            padding: 0 !important;
+            background: transparent !important;
+        }
+
+    /* ========================================
+           📦 MAIN CONTAINER
+           ======================================== */
+    .group-details-content {
+        background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
+        border-radius: 12px;
+        width: 100%;
+        max-height: calc(100vh - 140px);
+        color: #fff;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .details-wrapper {
+        display: flex;
+        flex-direction: column;
+        max-height: calc(100vh - 140px);
+        overflow: hidden;
+    }
+
+    /* ========================================
+           📌 HEADER
+           ======================================== */
     .group-header {
+        flex-shrink: 0;
         text-align: center;
-        margin-bottom: 15px;
-        padding-bottom: 10px;
+        padding: 12px;
         border-bottom: 1px solid #3a3a3a;
+        background: linear-gradient(135deg, #2c3e50, #34495e);
     }
 
     .group-avatar {
-        width: 90px;
-        height: 90px;
+        width: 65px;
+        height: 65px;
         object-fit: cover;
-        border: 4px solid #444;
-        margin-bottom: 8px;
+        border: 3px solid #00e1ff;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: transform 0.3s;
+        margin-bottom: 6px;
     }
+
+        .group-avatar:hover {
+            transform: scale(1.08);
+            box-shadow: 0 4px 15px rgba(0, 225, 255, 0.4);
+        }
 
     .group-name {
-        font-size: 1.3em;
+        font-size: 1.2em;
         color: #00e1ff;
         margin: 0;
+        font-weight: 600;
     }
 
+    /* ========================================
+           📜 MEMBER LIST - SCROLLABLE
+           ======================================== */
     .member-list {
-        margin-bottom: 15px;
+        flex: 1 1 auto;
+        overflow-y: auto;
+        overflow-x: hidden;
         padding: 10px;
-        background: #252525;
-        border-radius: 10px;
+        background: #1a1a1a;
+        min-height: 150px;
     }
 
-        /* ===== BẮT ĐẦU KHỐI CSS THANH CUỘN TỔNG HỢP ===== */
-
-        /* Áp dụng cho TẤT CẢ các thanh cuộn trong toàn bộ giao diện chat */
-        .conversation-list::-webkit-scrollbar,
-        .message-list-container::-webkit-scrollbar,
-        .user-list::-webkit-scrollbar,
-        .selected-users::-webkit-scrollbar,
-        .search-results::-webkit-scrollbar,
-        .group-details-content::-webkit-scrollbar, /* <--- THÊM MỚI */
-        .member-list::-webkit-scrollbar, /* <--- THÊM MỚI */
-        .member-selection::-webkit-scrollbar { /* <--- THÊM MỚI */
-            width: 4px; /* Làm thanh cuộn dọc hẹp hơn */
-            height: 4px; /* Làm thanh cuộn ngang hẹp hơn */
+        .member-list::-webkit-scrollbar {
+            width: 6px;
         }
 
-        /* Phần nền (track) của thanh cuộn */
-        .conversation-list::-webkit-scrollbar-track,
-        .message-list-container::-webkit-scrollbar-track,
-        .user-list::-webkit-scrollbar-track,
-        .selected-users::-webkit-scrollbar-track,
-        .search-results::-webkit-scrollbar-track,
-        .group-details-content::-webkit-scrollbar-track, /* <--- THÊM MỚI */
-        .member-list::-webkit-scrollbar-track, /* <--- THÊM MỚI */
-        .member-selection::-webkit-scrollbar-track { /* <--- THÊM MỚI */
-            background: transparent; /* Nền trong suốt để chìm vào giao diện */
+        .member-list::-webkit-scrollbar-track {
+            background: #0d0d0d;
+            border-radius: 3px;
         }
 
-        /* Phần con trượt (thumb) của thanh cuộn */
-        .conversation-list::-webkit-scrollbar-thumb,
-        .message-list-container::-webkit-scrollbar-thumb,
-        .user-list::-webkit-scrollbar-thumb,
-        .selected-users::-webkit-scrollbar-thumb,
-        .search-results::-webkit-scrollbar-thumb,
-        .group-details-content::-webkit-scrollbar-thumb, /* <--- THÊM MỚI */
-        .member-list::-webkit-scrollbar-thumb, /* <--- THÊM MỚI */
-        .member-selection::-webkit-scrollbar-thumb { /* <--- THÊM MỚI */
-            background: #273746; /* Màu đậm hơn nền một chút */
-            border-radius: 2px;
-            transition: background 0.3s ease;
+        .member-list::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #3a3a3a, #2a2a2a);
+            border-radius: 3px;
         }
 
-            /* Phần con trượt khi di chuột vào */
-            .conversation-list::-webkit-scrollbar-thumb:hover,
-            .message-list-container::-webkit-scrollbar-thumb:hover,
-            .user-list::-webkit-scrollbar-thumb:hover,
-            .selected-users::-webkit-scrollbar-thumb:hover,
-            .search-results::-webkit-scrollbar-thumb:hover,
-            .group-details-content::-webkit-scrollbar-thumb:hover, /* <--- THÊM MỚI */
-            .member-list::-webkit-scrollbar-thumb:hover, /* <--- THÊM MỚI */
-            .member-selection::-webkit-scrollbar-thumb:hover { /* <--- THÊM MỚI */
-                background: #34495e; /* Màu sáng hơn một chút khi di chuột vào */
+            .member-list::-webkit-scrollbar-thumb:hover {
+                background: linear-gradient(180deg, #4a4a4a, #3a3a3a);
             }
-
-    /* ===== KẾT THÚC KHỐI CSS THANH CUỘN TỔNG HỢP ===== */
 
     .member-item {
         display: flex;
         align-items: center;
         padding: 8px;
-        border-bottom: 1px solid #3a3a3a;
-        transition: background 0.3s;
+        border-bottom: 1px solid #2a2a2a;
+        border-radius: 6px;
+        margin-bottom: 5px;
+        background: rgba(52, 73, 94, 0.3);
+        transition: all 0.2s;
     }
 
-    .member-item:hover {
-        background: #2e2e2e;
-    }
+        .member-item:hover {
+            background: rgba(52, 73, 94, 0.6);
+            transform: translateX(5px);
+        }
 
     .member-avatar {
-        width: 35px;
-        height: 35px;
-        margin-right: 10px;
+        width: 36px;
+        height: 36px;
+        margin-right: 8px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid #00e1ff;
     }
 
     .member-name {
         flex-grow: 1;
-        font-size: 1em;
-        color: #ccc;
+        font-size: 0.9em;
+        color: #e0e0e0;
+        font-weight: 500;
     }
 
     .remove-member-icon {
@@ -173,180 +227,280 @@
         align-items: center;
         justify-content: center;
         border-radius: 50%;
-        background: #3a3a3a;
+        background: rgba(255, 77, 79, 0.2);
         color: #ff6b6b;
         font-weight: 700;
-        line-height: 1;
-        border: none;
+        font-size: 1.1em;
+        border: 2px solid rgba(255, 77, 79, 0.4);
         cursor: pointer;
-        transition: transform .15s ease, background .15s ease, color .15s ease;
+        transition: all 0.2s;
     }
 
-    .remove-member-icon:hover {
-        background: #ff4d4f;
-        color: #fff;
-        transform: scale(1.06);
-    }
+        .remove-member-icon:hover {
+            background: #ff4d4f;
+            color: #fff;
+            transform: scale(1.15) rotate(90deg);
+            box-shadow: 0 3px 10px rgba(255, 77, 79, 0.5);
+        }
 
-    .remove-member-icon:focus {
-        outline: none;
-        box-shadow: 0 0 0 2px rgba(255, 77, 79, .35);
-    }
-
+    /* ========================================
+           📌 ACTIONS - ALWAYS VISIBLE
+           ======================================== */
     .group-actions {
-        display: flex;
+        flex-shrink: 0;
+        display: flex !important;
         justify-content: space-between;
         gap: 10px;
-        padding-top: 10px;
-        border-top: 1px solid #3a3a3a;
+        padding: 10px 18px;
+        border-top: 2px solid #3a3a3a;
+        background: linear-gradient(135deg, #2c3e50, #34495e);
+        height: 55px;
     }
 
-    .add-member-btn, .leave-group-btn {
+    .add-member-btn,
+    .leave-group-btn {
         flex: 1;
-        padding: 8px;
+        padding: 9px;
         border-radius: 8px;
         font-weight: 600;
-        font-size: 1em;
-        transition: all 0.3s ease;
+        font-size: 0.85em;
+        border: none;
+        cursor: pointer;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.2s;
     }
 
-    .add-member-btn:hover {
-        transform: scale(1.05);
-        background: #0099cc;
+    .add-member-btn {
+        background: linear-gradient(135deg, #00bcd4, #0097a7);
         color: #fff;
     }
 
-    .leave-group-btn:hover {
-        transform: scale(1.05);
-        background: #cc0000;
+        .add-member-btn:hover {
+            background: linear-gradient(135deg, #0097a7, #00838f);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 188, 212, 0.5);
+        }
+
+    .leave-group-btn {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
         color: #fff;
     }
 
-    .add-member-content {
+        .leave-group-btn:hover {
+            background: linear-gradient(135deg, #c0392b, #a93226);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.5);
+        }
+
+    /* ========================================
+           🔔 POPUP OVERLAYS - FIXED POSITIONING
+           ======================================== */
+
+    /* ✅ KEY FIX: Popup overlays */
+    #addMemberPopup,
+    #leaveConfirmationPopup,
+    #removeMemberPopup {
+        display: none; /* ✅ HIDDEN BY DEFAULT */
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        background: rgba(0, 0, 0, 0.85) !important;
+        z-index: 999999 !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+        /* ✅ Show popup when active */
+        #addMemberPopup[style*="display: flex"],
+        #addMemberPopup[style*="display: block"],
+        #leaveConfirmationPopup[style*="display: flex"],
+        #leaveConfirmationPopup[style*="display: block"],
+        #removeMemberPopup[style*="display: flex"],
+        #removeMemberPopup[style*="display: block"] {
+            display: flex !important;
+        }
+
+    .add-member-content,
+    .confirmation-content {
+        position: relative;
         background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
-        padding: 15px;
+        padding: 25px;
         border-radius: 12px;
-        width: 600px;
+        max-width: 550px;
+        width: 90%;
         color: #fff;
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
-        display: none;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9);
+        margin: auto;
+    }
+
+    .add-member-title,
+    .confirmation-title {
+        font-size: 1.4em;
+        margin-bottom: 18px;
+        text-align: center;
+        font-weight: 600;
     }
 
     .add-member-title {
-        font-size: 1.5em;
         color: #00bcd4 !important;
-        margin-bottom: 15px;
-        text-align: center;
+    }
+
+    .confirmation-title {
+        color: #ff4444 !important;
     }
 
     .member-selection {
         background: #252525;
         border-radius: 10px;
         padding: 10px;
+        max-height: 300px;
+        overflow-y: auto;
+        margin-bottom: 15px;
     }
+
+        .member-selection::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .member-selection::-webkit-scrollbar-track {
+            background: #1a1a1a;
+            border-radius: 3px;
+        }
+
+        .member-selection::-webkit-scrollbar-thumb {
+            background: #3a3a3a;
+            border-radius: 3px;
+        }
+
+            .member-selection::-webkit-scrollbar-thumb:hover {
+                background: #4a4a4a;
+            }
 
     .member-option {
         display: flex;
         align-items: center;
         padding: 8px;
         border-bottom: 1px solid #3a3a3a;
+        border-radius: 6px;
+        margin-bottom: 5px;
         cursor: pointer;
-        transition: background 0.3s;
+        transition: background 0.2s;
     }
 
-    .member-option:hover {
-        background: #2e2e2e;
-    }
+        .member-option:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
 
-    .member-selection::-webkit-scrollbar {
-        width: 8px;
-    }
+        .member-option:hover {
+            background: #2e2e2e;
+        }
 
-    .member-selection::-webkit-scrollbar-track {
-        background: #252525;
-    }
-
-    .member-selection::-webkit-scrollbar-thumb {
-        background: #000;
-        border-radius: 4px;
-    }
-
-    .member-selection::-webkit-scrollbar-thumb:hover {
-        background: #111;
-    }
-
-    .member-actions {
+    .member-actions,
+    .confirmation-actions {
         display: flex;
         justify-content: flex-end;
         gap: 10px;
+        margin-top: 15px;
     }
 
-    .ok-btn, .cancel-btn {
-        padding: 8px 20px;
+    .confirmation-actions {
+        justify-content: center;
+    }
+
+    .ok-btn,
+    .cancel-btn,
+    .confirm-leave,
+    .cancel-leave,
+    .confirm-remove,
+    .cancel-remove {
+        padding: 10px 20px;
         border-radius: 8px;
         font-weight: 600;
-        font-size: 1em;
-        transition: all 0.3s ease;
+        font-size: 0.9em;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
     }
 
-    .ok-btn:hover {
+    .ok-btn {
         background: #28a745;
         color: #fff;
     }
 
-    .cancel-btn:hover {
-        background: #555;
+        .ok-btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+        }
+
+    .cancel-btn,
+    .cancel-leave,
+    .cancel-remove {
+        background: #6c757d;
         color: #fff;
     }
 
-.confirmation-content {
-    background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
-    padding: 20px;
-    border-radius: 12px;
-    width: 400px;
-    max-width: 100%;
-    color: #fff;
-    text-align: center;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
-    margin: 0 auto; /* Thêm để căn giữa */
-}
+        .cancel-btn:hover,
+        .cancel-leave:hover,
+        .cancel-remove:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
 
-    .confirmation-title {
-        font-size: 1.5em;
-        color: #ff4444 !important;
-        margin-bottom: 15px;
-    }
-
-    #removeMemberMessage {
-        font-size: 1.1em;
-        color: #f0f0f0 !important;
-        text-align: center;
-        margin: 20px 0;
-    }
-
-    .confirmation-actions {
-        display: flex;
-        justify-content: space-between !important;
-        gap: 15px;
-        margin-top: 20px;
-    }
-
-    .confirm-remove, .cancel-remove, .confirm-leave, .cancel-leave {
-        padding: 8px 25px;
-        border-radius: 8px;
-        font-weight: 600;
-        font-size: 1em;
-        transition: all 0.3s ease;
-        flex: 1;
-    }
-
-    .confirm-remove:hover, .confirm-leave:hover {
-        background: #cc0000;
+    .confirm-leave,
+    .confirm-remove {
+        background: #dc3545;
         color: #fff;
     }
 
-    .cancel-remove:hover, .cancel-leave:hover {
-        background: #555;
-        color: #fff;
+        .confirm-leave:hover,
+        .confirm-remove:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+        }
+
+    /* ========================================
+           📱 RESPONSIVE
+           ======================================== */
+    @@media (max-width: 768px) {
+        .details-wrapper
+
+    {
+        max-height: calc(100vh - 100px);
+    }
+
+    .group-actions {
+        flex-direction: column;
+        height: auto;
+        padding: 10px 15px;
+    }
+
+    .add-member-content,
+    .confirmation-content {
+        width: 95%;
+        padding: 20px;
+    }
+
+    .confirmation-actions,
+    .member-actions {
+        flex-direction: column;
+    }
+
+    .ok-btn,
+    .cancel-btn,
+    .confirm-leave,
+    .cancel-leave,
+    .confirm-remove,
+    .cancel-remove {
+        width: 100%;
+    }
+
     }
 </style>
