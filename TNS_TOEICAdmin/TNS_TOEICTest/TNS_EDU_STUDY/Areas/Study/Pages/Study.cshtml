@@ -782,84 +782,941 @@
 </body>
 </html>
 <style>
-    /* --- Thêm đoạn CSS này vào thẻ <style> --- */
+    /* ============================================
+       BASE STYLES & RESET
+       ============================================ */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
 
-    /* CSS for Confirmation Modal */
-    .modal {
-        display: none; /* Ẩn mặc định */
+    html, body {
+        height: 100vh;
+        margin: 0;
+        overflow: hidden;
+    }
+
+    body {
+        font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: linear-gradient(135deg, #E8F4F8 0%, #FFF9E6 50%, #F0E6F6 100%);
+        display: flex;
+        position: relative;
+        color: #2C3E50;
+        line-height: 1.5;
+    }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('https://www.transparenttextures.com/patterns/stardust.png');
+            opacity: 0.05;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+    /* ============================================
+       HEADER SECTION - Giảm chiều cao
+       ============================================ */
+    .header {
         position: fixed;
-        z-index: 1000;
-        left: 0;
         top: 0;
+        left: 0;
+        width: 100%;
+        background: linear-gradient(90deg, #6B9BC3 0%, #4A7BA7 50%, #2E5C8A 100%);
+        padding: 8px 20px; /* Giảm từ 12px 24px */
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 3px 12px rgba(46, 92, 138, 0.2);
+        z-index: 10;
+        animation: slideInDown 0.6s ease-out;
+        border-bottom: 2px solid #87A878; /* Giảm từ 3px */
+        height: 50px; /* Chiều cao cố định */
+    }
+
+    .hamburger-btn {
+        display: none;
+        font-size: 1.3rem;
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        cursor: pointer;
+        color: white;
+        padding: 6px 12px;
+        border-radius: 6px;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+    }
+
+        .hamburger-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+    @@media (max-width: 768px) {
+        .hamburger-btn
+
+    {
+        display: block;
+    }
+
+    }
+
+    .exit-btn, .submit-btn {
+        padding: 8px 18px; /* Giảm từ 10px 24px */
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.8rem; /* Giảm từ 0.875rem */
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    }
+
+    .exit-btn {
+        background: white;
+        color: #E8956F;
+        border: 2px solid #E8956F;
+    }
+
+        .exit-btn:hover {
+            background: #E8956F;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(232, 149, 111, 0.3);
+        }
+
+    .submit-btn {
+        background: linear-gradient(135deg, #87A878 0%, #A8D8B9 100%);
+        color: white;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+        .submit-btn:hover {
+            background: linear-gradient(135deg, #6B8E5F 0%, #87A878 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(135, 168, 120, 0.3);
+        }
+
+    .timer {
+        font-size: 1.2rem; /* Giảm từ 1.5rem */
+        font-weight: 700;
+        color: white;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 6px 18px; /* Giảm từ 8px 24px */
+        border-radius: 8px;
+        border: 2px solid rgba(255, 255, 255, 0.5);
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0.8px;
+        backdrop-filter: blur(10px);
+    }
+
+        .timer.warning {
+            color: white;
+            background: linear-gradient(135deg, #E8956F 0%, #D97AA6 100%);
+            border-color: white;
+            animation: timerPulse 1s infinite;
+        }
+
+    @@keyframes timerPulse {
+        0%, 100%
+
+    {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+
+    }
+
+    /* ============================================
+       SIDEBAR LEFT - Thu nhỏ
+       ============================================ */
+    .sidebar-left {
+        width: 130px; /* Giảm từ 150px */
+        background: linear-gradient(180deg, #FFF9E6 0%, #E8F4F8 100%);
+        padding: 16px 10px; /* Giảm từ 20px 12px */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: calc(100vh - 50px); /* Điều chỉnh theo header mới */
+        position: fixed;
+        left: 0;
+        top: 50px;
+        box-shadow: 3px 0 12px rgba(46, 92, 138, 0.1);
+        z-index: 1;
+        border-right: 2px solid #87A878;
+    }
+
+    .part-btn {
+        background: linear-gradient(135deg, #FFFFFF 0%, #F9FAFB 100%);
+        color: #2E5C8A;
+        padding: 14px 12px; /* Giảm từ 20px 16px */
+        border: 2px solid #87A878; /* Giảm từ 3px */
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 0.95rem; /* Giảm từ 1.1rem */
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        box-shadow: 0 3px 12px rgba(135, 168, 120, 0.18);
+        width: 100%;
+        height: 110px; /* Giảm từ 140px */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .part-btn:hover {
+            background: linear-gradient(135deg, #A8D8B9 0%, #87A878 100%);
+            color: white;
+            border-color: #6B8E5F;
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 6px 18px rgba(135, 168, 120, 0.35);
+        }
+
+        .part-btn.active {
+            background: linear-gradient(135deg, #87A878 0%, #A8D8B9 100%);
+            color: white;
+            border-color: #6B8E5F;
+            box-shadow: 0 5px 16px rgba(135, 168, 120, 0.35), 0 0 0 3px rgba(135, 168, 120, 0.15);
+            position: relative;
+        }
+
+            .part-btn.active::before {
+                content: '📚';
+                position: absolute;
+                top: 6px;
+                right: 6px;
+                font-size: 1.2rem; /* Giảm từ 1.5rem */
+                animation: float 2s ease-in-out infinite;
+            }
+
+    .part-btn-icon {
+        font-size: 2rem; /* Giảm từ 2.5rem */
+        margin-bottom: 4px;
+        filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.08));
+    }
+
+    .part-btn.active .part-btn-icon {
+        animation: bounce 1s ease-in-out infinite;
+    }
+
+    @@keyframes float {
+        0%, 100%
+
+    {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-4px);
+    }
+
+    }
+
+    @@keyframes bounce {
+        0%, 100%
+
+    {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.08);
+    }
+
+    }
+
+    /* ============================================
+       SIDEBAR RIGHT - Thu nhỏ
+       ============================================ */
+    .sidebar-right {
+        width: 160px; /* Giảm từ 180px */
+        background: linear-gradient(180deg, #FFF9E6 0%, #E8F4F8 100%);
+        padding: 16px; /* Giảm từ 20px */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        height: calc(100vh - 50px);
+        position: fixed;
+        right: 0;
+        top: 50px;
+        box-shadow: -3px 0 12px rgba(46, 92, 138, 0.1);
+        overflow-y: hidden;
+        z-index: 1;
+        border-left: 2px solid #87A878;
+    }
+
+        .sidebar-right h3 {
+            background: linear-gradient(90deg, #2E5C8A 0%, #4A7BA7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 1rem; /* Giảm từ 1.125rem */
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            font-weight: 700;
+        }
+
+    .answered-count {
+        font-size: 0.9rem; /* Giảm từ 1rem */
+        font-weight: 700;
+        color: #2E5C8A;
+        background: linear-gradient(135deg, #FFF4E0 0%, #E8F4F8 100%);
+        margin-bottom: 12px;
+        padding: 8px 16px;
+        border-radius: 16px;
+        text-align: center;
+        box-shadow: 0 2px 6px rgba(46, 92, 138, 0.08);
+        border: 2px solid #87A878;
+        order: 1;
+    }
+
+    .part-section {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px; /* Giảm từ 12px */
+        margin-bottom: 12px;
+        overflow-y: auto;
+        scroll-behavior: smooth;
+        scrollbar-width: thin;
+        scrollbar-color: #87A878 rgba(255, 249, 230, 0.5);
+        padding-bottom: 60px;
+        order: 2;
+    }
+
+        .part-section::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .part-section::-webkit-scrollbar-track {
+            background: rgba(255, 249, 230, 0.5);
+            border-radius: 8px;
+        }
+
+        .part-section::-webkit-scrollbar-thumb {
+            background: #87A878;
+            border-radius: 8px;
+        }
+
+            .part-section::-webkit-scrollbar-thumb:hover {
+                background: #6B8E5F;
+            }
+
+    /* ============================================
+       QUESTION CIRCLES - Thu nhỏ
+       ============================================ */
+    .question-circle {
+        width: 42px; /* Giảm từ 48px */
+        height: 42px;
+        background: white;
+        color: #2E5C8A;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 50%;
+        font-weight: 700;
+        font-size: 0.9rem;
+        text-decoration: none;
+        border: 2px solid #87A878;
+        transition: all 0.3s ease;
+        position: relative;
+        box-shadow: 0 2px 6px rgba(135, 168, 120, 0.15);
+    }
+
+        .question-circle:hover {
+            background: linear-gradient(135deg, #A8D8B9 0%, #87A878 100%);
+            color: white;
+            border-color: #6B8E5F;
+            transform: scale(1.15);
+            box-shadow: 0 3px 10px rgba(135, 168, 120, 0.35);
+        }
+
+        .question-circle.selected {
+            background: linear-gradient(135deg, #87A878 0%, #A8D8B9 100%);
+            color: white;
+            border-color: #6B8E5F;
+        }
+
+        .question-circle.flagged {
+            background: linear-gradient(135deg, #F4A259 0%, #D4AF37 100%);
+            color: white;
+            border-color: #D4AF37;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .question-circle.active {
+            background: linear-gradient(135deg, #2E5C8A 0%, #4A7BA7 100%);
+            color: white;
+            border-color: #2E5C8A;
+            box-shadow: 0 0 0 3px rgba(46, 92, 138, 0.25);
+        }
+
+    @@keyframes pulse {
+        0%, 100%
+
+    {
+        transform: scale(1);
+        box-shadow: 0 2px 6px rgba(212, 175, 55, 0.15);
+    }
+
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 3px 10px rgba(212, 175, 55, 0.35);
+    }
+
+    }
+
+    /* ============================================
+       MAIN CONTENT AREA
+       ============================================ */
+    .main-content {
+        margin-left: 130px; /* Điều chỉnh theo sidebar mới */
+        margin-right: 160px;
+        padding: 60px 24px 24px; /* Giảm padding */
+        flex: 1;
+        overflow-y: auto;
+        min-height: calc(100vh - 50px);
+        -webkit-overflow-scrolling: touch;
+        position: relative;
+    }
+
+    .main-content-wrapper {
+        min-height: 100%;
+        padding-bottom: 24px;
+    }
+
+    /* ============================================
+       QUESTION CONTAINERS - Giảm padding và margin
+       ============================================ */
+    .question-container, .sub-question {
+        position: relative;
+    }
+
+    .question-container {
+        background: linear-gradient(to bottom, #FFFFFF, #F9FAFB);
+        border-radius: 12px; /* Giảm từ 16px */
+        padding: 20px; /* Giảm từ 32px */
+        box-shadow: 0 3px 12px rgba(46, 92, 138, 0.1);
+        max-width: 900px;
+        margin: 0 auto 20px; /* Giảm margin-bottom từ 32px */
+        animation: fadeInUp 0.5s ease-out;
+        border: 2px solid #E8DED2;
+        border-left: 4px solid #87A878;
+    }
+
+        .question-container:hover {
+            border-left-width: 6px;
+            box-shadow: 0 5px 16px rgba(135, 168, 120, 0.18);
+            transform: translateY(-2px);
+        }
+
+        .question-container h2 {
+            font-weight: 700;
+            background: linear-gradient(90deg, #2E5C8A 0%, #4A7BA7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 16px; /* Giảm từ 24px */
+            font-size: 1.3rem; /* Giảm từ 1.5rem */
+            padding-bottom: 12px;
+            border-bottom: 3px solid #87A878;
+        }
+
+    .part3-left h2 {
+        font-weight: 700;
+        background: linear-gradient(90deg, #2E5C8A 0%, #4A7BA7 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 16px;
+        font-size: 1.3rem;
+    }
+
+    /* ============================================
+       FLAG ICON - Thu nhỏ
+       ============================================ */
+    .flag-icon {
+        position: absolute;
+        top: 16px; /* Giảm từ 24px */
+        right: 16px;
+        font-size: 1.5rem; /* Giảm từ 1.8rem */
+        color: #8E9AAF;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        padding: 6px;
+        border-radius: 50%;
+    }
+
+        .flag-icon:hover {
+            color: #F4A259;
+            background: rgba(244, 162, 89, 0.12);
+            transform: scale(1.25) rotate(12deg);
+        }
+
+        .flag-icon.flagged {
+            color: #D4AF37;
+            background: rgba(212, 175, 55, 0.15);
+            animation: flagWave 0.5s ease-in-out;
+        }
+
+    @@keyframes flagWave {
+        0%, 100%
+
+    {
+        transform: rotate(0deg);
+    }
+
+    25% {
+        transform: rotate(-12deg);
+    }
+
+    75% {
+        transform: rotate(12deg);
+    }
+
+    }
+
+    /* ============================================
+       QUESTION MEDIA - Giảm kích thước
+       ============================================ */
+    .question-image {
+        width: 250px; /* Cố định chiều rộng */
+        height: 250px; /* Cố định chiều cao = chiều rộng để tạo hình vuông */
+        object-fit: cover; /* Cắt ảnh vừa khung vuông */
+        border-radius: 10px;
+        margin: 12px auto; /* Giảm margin */
+        display: block;
+        box-shadow: 0 3px 12px rgba(46, 92, 138, 0.1);
+        transition: transform 0.3s ease;
+        border: 2px solid #E8DED2;
+    }
+
+        .question-image:hover {
+            transform: scale(1.02);
+            box-shadow: 0 6px 18px rgba(46, 92, 138, 0.14);
+        }
+
+    .question-audio {
+        margin-bottom: 16px; /* Giảm từ 24px */
+        width: 100%;
+        max-width: 400px; /* Giảm từ 500px */
+        border-radius: 8px;
+        background: linear-gradient(135deg, #FFF4E0 0%, #E8F4F8 100%);
+        padding: 10px;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        box-shadow: 0 2px 6px rgba(46, 92, 138, 0.08);
+        border: 2px solid #E8DED2;
+    }
+
+        .question-audio:hover {
+            transform: scale(1.01);
+            box-shadow: 0 3px 10px rgba(46, 92, 138, 0.12);
+        }
+
+    .question-text {
+        font-size: 1rem; /* Giảm từ 1.125rem */
+        line-height: 1.6; /* Giảm từ 1.8 */
+        color: #2C3E50;
+        font-weight: 400;
+        margin-bottom: 20px; /* Giảm từ 32px */
+        text-align: left;
+        padding: 16px; /* Giảm từ 24px */
+        background: linear-gradient(135deg, #FFF4E0 0%, #E8F4F8 100%);
+        border-radius: 10px;
+        border-left: 4px solid #87A878;
+        box-shadow: 0 2px 6px rgba(46, 92, 138, 0.06);
+    }
+
+    /* ============================================
+       ANSWER OPTIONS - Giảm kích thước
+       ============================================ */
+    .answer-options {
+        display: flex;
+        flex-direction: column;
+        gap: 12px; /* Giảm từ 16px */
+    }
+
+    .answer-option {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: white;
+        padding: 12px 18px; /* Giảm từ 16px 24px */
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid #E8DED2;
+        box-shadow: 0 2px 6px rgba(46, 92, 138, 0.06);
+    }
+
+        .answer-option:hover {
+            background: linear-gradient(135deg, #A8D8B9 0%, #87A878 100%);
+            border-color: #6B8E5F;
+            color: white;
+            transform: translateX(4px);
+            box-shadow: 0 3px 10px rgba(135, 168, 120, 0.25);
+        }
+
+            .answer-option:hover label,
+            .answer-option:hover .label-text,
+            .answer-option:hover .answer-content,
+            .answer-option:hover .colon {
+                color: white;
+            }
+
+        .answer-option.selected {
+            background: linear-gradient(135deg, #87A878 0%, #A8D8B9 100%);
+            border-color: #6B8E5F;
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 3px 10px rgba(135, 168, 120, 0.25);
+        }
+
+            .answer-option.selected label,
+            .answer-option.selected .label-text,
+            .answer-option.selected .answer-content,
+            .answer-option.selected .colon {
+                color: white;
+            }
+
+        .answer-option input[type="radio"] {
+            margin: 0;
+            width: 20px; /* Giảm từ 22px */
+            height: 20px;
+            cursor: pointer;
+            accent-color: #87A878;
+        }
+
+        .answer-option label {
+            display: flex;
+            align-items: center;
+            font-size: 0.95rem; /* Giảm từ 1rem */
+            color: #2C3E50;
+            margin: 0;
+            gap: 8px;
+            pointer-events: none;
+            flex: 1;
+        }
+
+        .answer-option .label-text {
+            font-weight: 700;
+            color: white;
+            min-width: 28px; /* Giảm từ 32px */
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 1rem;
+            background: linear-gradient(135deg, #2E5C8A 0%, #4A7BA7 100%);
+            border-radius: 50%;
+            box-shadow: 0 2px 6px rgba(46, 92, 138, 0.18);
+        }
+
+        .answer-option:hover .label-text {
+            background: white;
+            color: #87A878;
+        }
+
+        .answer-option.selected .label-text {
+            background: white;
+            color: #87A878;
+        }
+
+        .answer-option .answer-content {
+            font-weight: 400;
+            color: #2C3E50;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .answer-option .colon {
+            font-weight: 600;
+            color: #5A6C7D;
+        }
+
+    /* ============================================
+       PART 3/4/6/7 LAYOUT - Giảm padding
+       ============================================ */
+    .part3-container {
+        display: flex;
+        gap: 24px; /* Giảm từ 32px */
+        background: linear-gradient(to bottom, #FFFFFF, #F9FAFB);
+        border-radius: 12px;
+        padding: 20px; /* Giảm từ 32px */
+        box-shadow: 0 3px 12px rgba(46, 92, 138, 0.1);
+        max-width: 1200px;
+        margin: 0 auto 20px;
+        border: 2px solid #E8DED2;
+        border-left: 4px solid #87A878;
+    }
+
+    .part3-left {
+        flex: 1;
+        text-align: center;
+        border-right: 2px solid #87A878;
+        padding-right: 24px;
+        max-height: calc(100vh - 100px);
+        overflow-y: auto;
+        padding-left: 10px;
+        scrollbar-width: thin;
+        scrollbar-color: #87A878 rgba(255, 249, 230, 0.5);
+    }
+
+        .part3-left::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .part3-left::-webkit-scrollbar-track {
+            background: rgba(255, 249, 230, 0.5);
+            border-radius: 8px;
+        }
+
+        .part3-left::-webkit-scrollbar-thumb {
+            background: #87A878;
+            border-radius: 8px;
+        }
+
+            .part3-left::-webkit-scrollbar-thumb:hover {
+                background: #6B8E5F;
+            }
+
+        .part3-left .question-text {
+            text-align: left;
+        }
+
+    .part3-right {
+        flex: 1.2;
+        display: flex;
+        flex-direction: column;
+        gap: 18px; /* Giảm từ 24px */
+        max-height: calc(100vh - 100px);
+        overflow-y: auto;
+        padding-left: 12px;
+        scrollbar-width: thin;
+        scrollbar-color: #87A878 rgba(255, 249, 230, 0.5);
+    }
+
+        .part3-right::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .part3-right::-webkit-scrollbar-track {
+            background: rgba(255, 249, 230, 0.5);
+            border-radius: 8px;
+        }
+
+        .part3-right::-webkit-scrollbar-thumb {
+            background: #87A878;
+            border-radius: 8px;
+        }
+
+            .part3-right::-webkit-scrollbar-thumb:hover {
+                background: #6B8E5F;
+            }
+
+    .sub-question {
+        background: white;
+        padding: 18px; /* Giảm từ 24px */
+        border-radius: 10px;
+        box-shadow: 0 2px 6px rgba(46, 92, 138, 0.06);
+        border: 2px solid #E8DED2;
+        border-left: 3px solid #87A878;
+        transition: all 0.3s ease;
+    }
+
+        .sub-question:hover {
+            border-left-width: 5px;
+            box-shadow: 0 3px 10px rgba(135, 168, 120, 0.15);
+        }
+
+        .sub-question h4 {
+            font-weight: 700;
+            background: linear-gradient(90deg, #2E5C8A 0%, #4A7BA7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 12px;
+            font-size: 1.05rem; /* Giảm từ 1.125rem */
+        }
+
+            .sub-question h4 .question-content {
+                font-weight: 400;
+                color: #2C3E50;
+                display: block;
+                margin-top: 6px;
+                background: none;
+                -webkit-text-fill-color: #2C3E50;
+            }
+
+    .sub-question-image {
+        width: 150px; /* Nhỏ hơn cho sub-question */
+        height: 150px; /* Hình vuông */
+        object-fit: cover;
+        border-radius: 8px;
+        margin: 10px auto;
+        display: block;
+        box-shadow: 0 2px 6px rgba(46, 92, 138, 0.06);
+        border: 2px solid #E8DED2;
+    }
+
+        .sub-question-image:hover {
+            transform: scale(1.03);
+        }
+
+    .sub-question-audio {
+        width: 100%;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #FFF4E0 0%, #E8F4F8 100%);
+        padding: 6px;
+        margin-bottom: 12px;
+        border: 2px solid #E8DED2;
+    }
+
+        .sub-question-audio:hover {
+            transform: scale(1.01);
+            box-shadow: 0 3px 10px rgba(46, 92, 138, 0.1);
+        }
+
+    /* ============================================
+       MODAL STYLES
+       ============================================ */
+    .modal, .confirmation-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
         width: 100%;
         height: 100%;
-        overflow: auto;
-        background-color: rgba(0,0,0,0.6);
-        animation: fadeIn 0.3s;
+        background: rgba(46, 92, 138, 0.5);
+        backdrop-filter: blur(8px);
+        z-index: 1000;
+        justify-content: center; /* Căn giữa theo chiều ngang */
+        align-items: center; /* Căn giữa theo chiều dọc */
     }
 
+        .modal.active, .confirmation-modal.active {
+            display: flex; /* Quan trọng: phải là flex để justify-content và align-items hoạt động */
+            animation: fadeIn 0.3s ease-out;
+        }
+
+    #confirm-submit-modal {
+        display: none;
+    }
+
+        #confirm-submit-modal[style*="display: block"] {
+            display: flex !important; /* Override inline style từ JavaScript */
+        }
     .modal-content {
-        background-color: #fff;
-        margin: 15% auto;
-        padding: 30px;
-        border: 1px solid #888;
-        width: 80%;
+        background: linear-gradient(to bottom, #FFFFFF, #F9FAFB);
+        border-radius: 14px;
+        padding: 28px;
         max-width: 450px;
-        border-radius: 15px;
+        width: 90%;
         text-align: center;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        animation: slideIn 0.3s;
+        box-shadow: 0 6px 24px rgba(46, 92, 138, 0.2);
+        animation: zoomIn 0.3s ease-out;
+        border: 2px solid #87A878;
     }
 
-    .modal-title {
-        font-size: 1.5rem;
-        font-weight: 600;
-        margin-bottom: 15px;
-        color: #333;
-    }
+        .modal-title, .modal-content h3 {
+            font-weight: 700;
+            background: linear-gradient(90deg, #2E5C8A 0%, #4A7BA7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 14px;
+            font-size: 1.3rem;
+        }
 
-    .modal-text {
-        margin-bottom: 25px;
-        color: #555;
-        font-size: 1.1rem;
-    }
+        .modal-text, .modal-content p {
+            font-size: 0.95rem;
+            color: #5A6C7D;
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
 
     .modal-buttons {
         display: flex;
         justify-content: center;
-        gap: 15px;
+        gap: 14px;
     }
 
     .modal-btn {
-        padding: 10px 25px;
+        padding: 10px 28px;
         border: none;
-        border-radius: 25px;
-        font-size: 1rem;
+        border-radius: 8px;
         font-weight: 600;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all 0.3s ease;
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
     }
-
-    .cancel-btn {
-        background-color: #f0f0f0;
-        color: #333;
-    }
-
-        .cancel-btn:hover {
-            background-color: #e0e0e0;
-        }
 
     .confirm-btn {
-        background-color: #d32f2f;
+        background: linear-gradient(135deg, #87A878 0%, #A8D8B9 100%);
         color: white;
     }
 
         .confirm-btn:hover {
-            background-color: #c62828;
+            background: linear-gradient(135deg, #6B8E5F 0%, #87A878 100%);
             transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(135, 168, 120, 0.25);
         }
 
-@@keyframes fadeIn {
+    .cancel-btn {
+        background: white;
+        color: #E8956F;
+        border: 2px solid #E8956F;
+    }
+
+        .cancel-btn:hover {
+            background: #E8956F;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(232, 149, 111, 0.25);
+        }
+
+    /* ============================================
+       ANIMATIONS
+       ============================================ */
+    @@keyframes slideInDown {
+        from
+
+    {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    }
+
+    @@keyframes fadeIn {
         from
 
     {
@@ -871,11 +1728,42 @@
     }
 
     }
-@@keyframes slideIn {
+
+    @@keyframes fadeInUp {
         from
 
     {
-        transform: translateY(-50px);
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    }
+
+    @@keyframes zoomIn {
+        from
+
+    {
+        transform: scale(0.92);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    }
+
+    @@keyframes slideIn {
+        from
+
+    {
+        transform: translateY(-40px);
     }
 
     to {
@@ -884,23 +1772,71 @@
 
     }
 
-    .sidebar-left {
-        justify-content: center;
-        align-items: center;
+    /* ============================================
+       RESPONSIVE DESIGN
+       ============================================ */
+    @@media (max-width: 768px) {
+        .sidebar-left, .sidebar-right
+
+    {
+        width: 100%;
+        height: auto;
+        position: fixed;
+        top: 50px;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        z-index: 100;
     }
 
-        .sidebar-left .part-btn {
-            flex: 0 0 auto; /* Bỏ thuộc tính flex: 1 để nút không bị kéo dài ra */
-            width: 80%; /* Chiều rộng của nút */
-            height: 100px; /* Chiều cao của nút */
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+    .sidebar-right {
+        transform: translateX(100%);
+    }
+
+        .sidebar-left.active, .sidebar-right.active {
+            transform: translateX(0);
         }
 
+    .main-content {
+        margin-left: 0;
+        margin-right: 0;
+        padding: 60px 12px 12px;
+    }
+
+    .question-container {
+        padding: 16px;
+    }
+
+    .part3-container {
+        flex-direction: column;
+        padding: 16px;
+    }
+
+    .part3-left {
+        border-right: none;
+        border-bottom: 2px solid #87A878;
+        padding-right: 0;
+        padding-bottom: 16px;
+        max-height: 45vh;
+    }
+
+    .part3-right {
+        max-height: 50vh;
+        padding-left: 0;
+    }
+
+    .question-image, .sub-question-image {
+        max-width: 280px;
+    }
+
+    .part-btn {
+        font-size: 0.85rem;
+        padding: 12px 10px;
+        height: 100px;
+    }
+
     .part-btn-icon {
-        font-size: 2.5rem;
-        margin-bottom: 5px;
+        font-size: 1.7rem;
+    }
+
     }
 </style>
