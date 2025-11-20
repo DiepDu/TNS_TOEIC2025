@@ -1,0 +1,21 @@
+# FastAPI Web Framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+
+# IRT & Statistics
+numpy==1.26.3
+scipy==1.11.4
+scikit-learn==1.4.0
+
+# Data Processing
+pandas==2.1.4
+
+# Validation
+pydantic==2.5.3
+pydantic-settings==2.1.0
+
+# Environment
+python-dotenv==1.0.0
+
+# Performance
+orjson==3.9.12

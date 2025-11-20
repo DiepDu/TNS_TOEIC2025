@@ -18,10 +18,11 @@ namespace TNS_EDU_STUDY.Areas.Study.Pages
     public class ResultStudyModel : PageModel
     {
         private readonly IConfiguration _configuration;
-
+        private readonly LearningAccessData _learningService;
         public ResultStudyModel(IConfiguration configuration)
         {
             _configuration = configuration;
+            _learningService = new LearningAccessData(configuration);
         }
 
         [BindProperty(SupportsGet = true)]
@@ -54,10 +55,9 @@ namespace TNS_EDU_STUDY.Areas.Study.Pages
                 return NotFound("Could not find the study result.");
             }
 
-            // --- LOGIC MỚI: XỬ LÝ TÊN BÀI THI ---
+            // Clean TestName
             if (!string.IsNullOrEmpty(info.TestName))
             {
-                // Bỏ "TOEIC STUDY " và phần GUID
                 info.TestName = info.TestName.Replace("TOEIC STUDY ", "").Split(" - ")[0].Trim();
             }
 
@@ -71,6 +71,26 @@ namespace TNS_EDU_STUDY.Areas.Study.Pages
             };
             QuestionsJson = JsonSerializer.Serialize(questions, jsonOptions);
             StudyInfoJson = JsonSerializer.Serialize(info, jsonOptions);
+
+            // ✅ TRIGGER BACKGROUND ANALYSIS
+            var memberKey = User.Claims.FirstOrDefault(c =>
+                c.Type == "MemberKey" || c.Type == ClaimTypes.NameIdentifier)?.Value;
+
+            if (!string.IsNullOrEmpty(memberKey) && TestKey != Guid.Empty)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        // ✅ GỌI TRÊN INSTANCE
+                        await _learningService.TriggerAnalysisAsync(memberKey, TestKey.ToString());
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[Background Analysis ERROR]: {ex.Message}");
+                    }
+                });
+            }
 
             return Page();
         }

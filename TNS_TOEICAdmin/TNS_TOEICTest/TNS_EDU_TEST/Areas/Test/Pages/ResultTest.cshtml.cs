@@ -11,17 +11,24 @@ using System.Threading.Tasks;
 using System.Web;
 using TNS_EDU_TEST.Areas.Test.Models;
 
+
 namespace TNS_EDU_TEST.Areas.Test.Pages
 {
     [IgnoreAntiforgeryToken]
     public class ResultTestModel : PageModel
     {
         private readonly IConfiguration _configuration; // Thêm IConfiguration
+        private readonly LearningAccessData _learningService;
 
         public ResultTestModel(IConfiguration configuration) // Thêm constructor
         {
             _configuration = configuration;
+
+            _learningService = new LearningAccessData(configuration);
         }
+      
+
+      
         public Guid TestKey { get; set; }
         public Guid ResultKey { get; set; }
         public int MaximumTime { get; set; }
@@ -69,7 +76,27 @@ namespace TNS_EDU_TEST.Areas.Test.Pages
             string rawJson = JsonSerializer.Serialize(Questions, jsonOptions);
             QuestionsJson = HttpUtility.JavaScriptStringEncode(rawJson, addDoubleQuotes: false);
             ApiKey = _configuration["ApiSettings:ApiKey"];
-            return Page();
+
+            // ✅ CHỈ KHAI BÁO 1 LẦN
+            var memberKey = User.Claims.FirstOrDefault(c =>
+                c.Type == "MemberKey" || c.Type == ClaimTypes.NameIdentifier)?.Value;
+
+            if (!string.IsNullOrEmpty(memberKey) && !string.IsNullOrEmpty(testKey))
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _learningService.TriggerAnalysisAsync(memberKey, testKey);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[Background Analysis ERROR]: {ex.Message}");
+                    }
+                });
+            }
+
+            return Page();  // ✅ XÓA CODE DUPLICATE Ở DƯỚI
         }
         [HttpPost]
         public async Task<IActionResult> OnPostSubmitFeedbackAsync([FromBody] FeedbackRequest feedbackRequest)
