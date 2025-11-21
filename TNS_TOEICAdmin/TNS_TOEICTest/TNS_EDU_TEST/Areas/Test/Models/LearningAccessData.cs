@@ -192,6 +192,7 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                 await AnalyzeSinglePartAsync(memberKey, part, currentTheta,
                     isFullTest: true,
                     forceUseTheta: calculatedTheta);
+                await Task.Delay(5000);
             }
 
             // If calculated new Theta, update ALL existing records
@@ -520,14 +521,15 @@ namespace TNS_EDU_TEST.Areas.Test.Models
             sb.AppendLine("Based on ALL the data above, provide a **comprehensive, personalized coaching report** in **VIETNAMESE**.");
             sb.AppendLine();
             sb.AppendLine("## REQUIREMENTS:");
-            sb.AppendLine("1. **Opening** (1-2 sentences): Acknowledge their effort and current level");
-            sb.AppendLine("2. **Key Observations** (3-5 bullet points): Highlight both strengths and critical weaknesses");
-            sb.AppendLine("3. **Root Cause Analysis**: Explain WHY they're making mistakes (don't just list errors)");
-            sb.AppendLine("4. **Action Plan** (3-5 specific steps):");
+            sb.AppendLine("1. **Executive Summary** (No Fluff): Start DIRECTLY with the performance assessment (Level & Status). **STRICTLY FORBIDDEN**: Do not use greetings (Hello, Hi), do not say 'You just completed...', do not praise 'effort' if the result is bad. Go straight to the point.");
+            sb.AppendLine("2. **Key Observations** (Unlimited): List ALL significant strengths and critical weaknesses found.");
+            sb.AppendLine("   - **CRITICAL LOGIC**: If 'Speed' is fast (< 3s/question) BUT 'Accuracy' is low (< 35%), you MUST conclude this is **'Rushing/Random Guessing'** (Làm ẩu/Khoanh bừa). DO NOT compliment this as 'Fast reaction speed'.");
+            sb.AppendLine("3. **Root Cause Analysis**: Deep dive into WHY they made mistakes based on the specific error types and time spent.");
+            sb.AppendLine("4. **Action Plan** (Unlimited steps): Provide as many specific steps as necessary to fix the issues.");
             sb.AppendLine("   - What to study (specific grammar/vocab topics)");
             sb.AppendLine("   - How to practice (techniques, drills, strategies)");
-            sb.AppendLine("   - Test-taking tactics for this Part");
-            sb.AppendLine("5. **Motivational Closing**: Encourage but be realistic");
+            sb.AppendLine("   - Test-taking tactics for this specific Part");
+            sb.AppendLine("5. **Professional Closing**: A brief, realistic conclusion.");
             sb.AppendLine();
             sb.AppendLine("## TONE:");
             sb.AppendLine("- Professional yet warm");
@@ -543,8 +545,10 @@ namespace TNS_EDU_TEST.Areas.Test.Models
 
             if (isFullTest)
             {
-                sb.AppendLine("- This is from a FULL TEST → Focus on time management and stamina");
-                sb.AppendLine("- Provide brief advice (user will see 7 reports total)");
+                sb.AppendLine("- This is from a FULL TEST (2 hours).");
+                sb.AppendLine("- **INSTRUCTION**: Even though this is a Full Test, provide a **DETAILED, DEEP-DIVE ANALYSIS** for this specific Part.");
+                sb.AppendLine("- Analyze as thoroughly as a single practice session. Do not shorten or summarize.");
+                sb.AppendLine("- Focus heavily on how Stamina/Fatigue affected this specific Part.");
             }
             else
             {
@@ -556,7 +560,8 @@ namespace TNS_EDU_TEST.Areas.Test.Models
             sb.AppendLine("## EXAMPLE STRUCTURE (adapt to data):");
             sb.AppendLine("```markdown");
             sb.AppendLine("## 🎯 Tổng Quan");
-            sb.AppendLine("Bạn vừa hoàn thành [context]. Năng lực hiện tại...");
+            sb.AppendLine("Năng lực hiện tại của bạn ở mức [Level], thể hiện qua [Data]...");
+            sb.AppendLine("(Start directly with analysis, NO greetings like 'Chuc mung' or 'Ban vua hoan thanh')");
             sb.AppendLine();
             sb.AppendLine("## 📊 Điểm Mạnh & Điểm Yếu");
             sb.AppendLine("**Điểm mạnh:**");
@@ -798,7 +803,13 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                 {
                     Console.WriteLine($"[Gemini] Attempt {attempt}/{maxRetries}: Sending {prompt.Length} chars");
 
-                    var apiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={_geminiApiKey}";
+                    ////var apiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={_geminiApiKey}";
+
+                  
+                    //var apiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent?key={_geminiApiKey}";
+
+                 
+                    var apiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key={_geminiApiKey}";
 
                     using (var client = new HttpClient() { Timeout = TimeSpan.FromMinutes(3) })
                     {
@@ -815,7 +826,7 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                             generationConfig = new
                             {
                                 temperature = 0.7,
-                                maxOutputTokens = 2048,
+                                maxOutputTokens = 8192,
                                 topP = 0.95,
                                 topK = 40
                             }

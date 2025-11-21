@@ -260,13 +260,14 @@ body {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 12px;
+    gap: 8px;
     margin-bottom: 16px;
     overflow-y: auto;
     scroll-behavior: smooth;
     scrollbar-width: thin;
     scrollbar-color: #E8C868 rgba(255, 249, 230, 0.5);
     padding-bottom: 80px;
+    margin-bottom: 10px;
     order: 2; /* Đặt xuống dưới - số lớn hơn sẽ hiển thị sau */
 }
 
@@ -409,8 +410,9 @@ body {
    ============================================ */
 .flag-icon {
     position: absolute;
-    top: 24px;
-    right: 24px;
+    top: 5px; /* Giảm từ 24px xuống 10px để sát góc trên */
+    right: 5px; /* Giảm từ 24px xuống 10px để sát góc phải */
+  
     font-size: 1.8rem;
     color: #8E9AAF;
     cursor: pointer;
@@ -713,8 +715,9 @@ body {
         .sub-question h4 .question-content {
             font-weight: 400;
             color: #2C3E50;
-            display: block;
-            margin-top: 8px;
+          
+            display: inline; 
+           
             background: none;
             -webkit-text-fill-color: #2C3E50;
         }
@@ -845,17 +848,23 @@ body {
 /* ============================================
    PROGRESS INDICATOR
    ============================================ */
+/* Tìm đoạn này trong Test.css */
 .progress-text-container {
     position: absolute;
     bottom: 24px;
-    right: 24px;
+    /* right: 24px;  <-- XÓA DÒNG NÀY */
+    left: 50%; /* <-- THÊM: Đẩy sang 50% chiều rộng cha */
+    transform: translateX(-50%); /* <-- THÊM: Dịch ngược lại 50% chiều rộng bản thân để vào chính giữa */
+    /* Các thuộc tính cũ giữ nguyên */
     background: linear-gradient(135deg, #2E5C8A 0%, #4A7BA7 100%);
     padding: 16px 24px;
     border-radius: 30px;
     box-shadow: 0 4px 16px rgba(46, 92, 138, 0.3);
     border: 3px solid #D4AF37;
     z-index: 2;
+    white-space: nowrap; /* Thêm dòng này để đảm bảo text không bị xuống dòng nếu quá dài */
 }
+
 
 .progress-text {
     font-size: 1.5rem;

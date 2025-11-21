@@ -767,8 +767,8 @@
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label for="yearOld" class="form-label">Age <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" id="yearOld" name="yearOld" min="1" max="120" required />
+                            <label for="yearOld" class="form-label">Birth Year <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="yearOld" name="yearOld" min="1900" max="@DateTime.Now.Year" required placeholder="e.g., 2000" />
                         </div>
                         <div class="col-md-6">
                             <label for="departmentKey" class="form-label">Department</label>
@@ -825,7 +825,7 @@
                         <p class="mb-1"><strong>ID:</strong> <span id="detailMemberID" class="text-primary fw-bold">N/A</span></p>
                         <p class="mb-1"><strong>Name:</strong> <span id="detailMemberName" class="fw-bold">N/A</span></p>
                         <p class="mb-1"><strong>Gender:</strong> <span id="detailGender">N/A</span></p>
-                        <p class="mb-1"><strong>Age:</strong> <span id="detailYearOld">N/A</span></p>
+                        <p class="mb-1"><strong>Birth Year:</strong> <span id="detailYearOld">N/A</span></p>
                         <p><strong>Department:</strong> <span id="detailDepartment">N/A</span></p>
                         @* Tìm phần này trong Details Modal (dòng ~486-498) và THAY THẾ hoàn toàn: *@
 
