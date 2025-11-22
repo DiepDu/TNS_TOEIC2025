@@ -1,0 +1,944 @@
+﻿@page
+@model TNS_EDU_STUDY.Areas.Study.Pages.AdaptivePracticeModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Adaptive Learning Practice";
+}
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+<style>
+    :root {
+        --primary: #5E35B1;
+        --primary-dark: #4527A0;
+        --accent-gold: #FFB300;
+        --success: #00897B;
+        --warning: #FF6F00;
+        --danger: #D32F2F;
+        --bg-light: #F5F7FA;
+        --text-dark: #263238;
+        --border-radius: 16px;
+        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Poppins', sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        color: var(--text-dark);
+    }
+
+    /* ============================================
+           MAIN CONTAINER
+           ============================================ */
+    .adaptive-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 40px 20px;
+    }
+
+    /* Header Section */
+    .page-header {
+        text-align: center;
+        margin-bottom: 40px;
+        animation: fadeInDown 0.6s ease-out;
+    }
+
+    .page-title {
+        font-size: 3rem;
+        font-weight: 700;
+        color: white;
+        margin-bottom: 12px;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .page-subtitle {
+        font-size: 1.2rem;
+        color: rgba(255, 255, 255, 0.9);
+        font-weight: 300;
+    }
+
+    .parts-grid {
+        display: flex; /* Dùng Flex để căn chỉnh tự do */
+        flex-wrap: wrap; /* Cho phép xuống dòng */
+        justify-content: center; /* Căn giữa toàn bộ các thẻ */
+        gap: 24px; /* Khoảng cách giữa các thẻ */
+
+        max-width: 1200px;
+        margin: 0 auto 40px auto;
+    }
+
+    .part-card {
+        /* ✅ CÔNG THỨC CHIA CỘT: (100% - (số khoảng trống * 24px)) / số cột */
+        /* 4 cột -> trừ 3 khoảng trống -> chia 4 */
+        width: calc((100% - 72px) / 4);
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 28px 20px;
+        cursor: pointer;
+        transition: var(--transition);
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        border: 3px solid transparent;
+    }
+
+        .part-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--accent-gold));
+            transform: scaleX(0);
+            transition: var(--transition);
+        }
+
+        .part-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .part-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 40px rgba(94, 53, 177, 0.3);
+            border-color: var(--primary);
+        }
+
+        .part-card.has-data {
+            background: linear-gradient(135deg, #E8EAF6, #F3E5F5);
+        }
+
+            .part-card.has-data::after {
+                content: '✓';
+                position: absolute;
+                top: 12px;
+                right: 12px;
+                width: 28px;
+                height: 28px;
+                background: var(--success);
+                color: white;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 700;
+                font-size: 1rem;
+            }
+
+    .part-icon {
+        font-size: 2.5rem; /* ✅ Slightly smaller */
+        color: var(--primary);
+        margin-bottom: 12px;
+        display: block;
+        text-align: center;
+    }
+
+    .part-number {
+        font-size: 1.6rem; /* ✅ Reduced */
+        font-weight: 700;
+        color: var(--primary-dark);
+        text-align: center;
+        margin-bottom: 6px;
+    }
+
+    .part-name {
+        font-size: 0.9rem;
+        color: #666;
+        text-align: center;
+        font-weight: 400;
+    }
+
+    /* ============================================
+           POPUP MODAL - COMPACT HEADER/FOOTER
+           ============================================ */
+    .analysis-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(8px);
+        z-index: 9999;
+        animation: fadeIn 0.3s ease-out;
+    }
+
+        .analysis-modal.active {
+            display: block;
+        }
+
+    .modal-content {
+        position: absolute;
+        top: 55%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 88%; /* ✅ Slightly narrower */
+        max-width: 1000px; /* ✅ Reduced from 1100px */
+        max-height: 85vh; /* ✅ Increased from 82vh */
+        background: white;
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        animation: zoomIn 0.4s ease-out;
+    }
+
+    /* ✅ FIX: COMPACT HEADER */
+    .modal-header {
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        color: white;
+        padding: 14px 24px; /* ✅ Reduced from 20px 28px */
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-title {
+        font-size: 1.3rem; /* ✅ Reduced from 1.6rem */
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+        .modal-title i {
+            font-size: 1.2rem; /* ✅ Smaller icon */
+        }
+
+    .close-modal {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        width: 32px; /* ✅ Reduced from 40px */
+        height: 32px;
+        border-radius: 50%;
+        color: white;
+        font-size: 1.3rem; /* ✅ Smaller */
+        cursor: pointer;
+        transition: var(--transition);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .close-modal:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+
+    /* ✅ FIX: MORE SPACE FOR CONTENT */
+    .modal-body {
+        padding: 20px 24px; /* ✅ Reduced from 28px */
+        overflow-y: auto;
+        max-height: calc(85vh - 130px); /* ✅ Increased available space */
+        scrollbar-width: thin;
+        scrollbar-color: var(--primary) #E0E0E0;
+    }
+
+        .modal-body::-webkit-scrollbar {
+            width: 6px; /* ✅ Thinner */
+        }
+
+        .modal-body::-webkit-scrollbar-track {
+            background: #E8EAF6;
+            border-radius: 10px;
+        }
+
+        .modal-body::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, var(--primary), var(--primary-dark));
+            border-radius: 10px;
+        }
+
+    /* ✅ FIX: COMPACT TABS */
+    .tabs {
+        display: flex;
+        gap: 6px; /* ✅ Reduced */
+        margin-bottom: 18px; /* ✅ Reduced */
+        border-bottom: 2px solid #E0E0E0;
+    }
+
+    .tab-btn {
+        padding: 10px 20px; /* ✅ Reduced from 12px 24px */
+        background: none;
+        border: none;
+        font-size: 0.95rem; /* ✅ Smaller */
+        font-weight: 600;
+        color: #666;
+        cursor: pointer;
+        border-bottom: 3px solid transparent;
+        transition: var(--transition);
+    }
+
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+    .tab-content {
+        display: none;
+    }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeInUp 0.4s ease-out;
+        }
+
+    /* ✅ FIX: COMPACT METRICS */
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); /* ✅ Smaller min */
+        gap: 12px; /* ✅ Reduced from 16px */
+        margin-bottom: 18px; /* ✅ Reduced */
+    }
+
+    .metric-card {
+        background: linear-gradient(135deg, #F5F7FA, #E8EAF6);
+        border-radius: 10px; /* ✅ Smaller radius */
+        padding: 16px; /* ✅ Reduced from 20px */
+        text-align: center;
+        border-left: 3px solid var(--primary);
+    }
+
+    .metric-label {
+        font-size: 0.85rem; /* ✅ Smaller */
+        color: #666;
+        margin-bottom: 6px;
+        font-weight: 500;
+    }
+
+    .metric-value {
+        font-size: 1.6rem; /* ✅ Reduced from 2rem */
+        font-weight: 700;
+        color: var(--primary-dark);
+    }
+
+        .metric-value.good {
+            color: var(--success);
+        }
+
+        .metric-value.warning {
+            color: var(--warning);
+        }
+
+        .metric-value.bad {
+            color: var(--danger);
+        }
+
+    /* ✅ FIX: COMPACT WEAKNESS SECTIONS */
+    .weakness-section {
+        margin-bottom: 18px; /* ✅ Reduced */
+    }
+
+    .weakness-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #1A237E; /* ✅ Màu xanh đậm dễ đọc hơn */
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .weakness-list {
+        list-style: none;
+        padding: 0;
+    }
+
+        .weakness-list li {
+            padding: 10px 14px; /* ✅ Reduced */
+            background: #F5F7FA;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            border-left: 3px solid var(--warning);
+            font-size: 0.9rem; /* ✅ Smaller */
+        }
+
+    /* ✅ FIX: COMPACT AI ADVICE */
+    .ai-advice {
+        line-height: 1.7; /* ✅ Reduced from 1.8 */
+        color: var(--text-dark);
+        background: white;
+        padding: 16px; /* ✅ Reduced from 20px */
+        border-radius: 10px;
+        border: 1px solid #E0E0E0;
+    }
+
+        .ai-advice h2 {
+            color: var(--primary-dark);
+            margin-top: 16px; /* ✅ Reduced */
+            margin-bottom: 10px;
+            font-size: 1.3rem; /* ✅ Smaller */
+            font-weight: 600;
+        }
+
+        .ai-advice h3 {
+            color: var(--primary);
+            margin-top: 12px;
+            margin-bottom: 6px;
+            font-size: 1.1rem; /* ✅ Smaller */
+        }
+
+        .ai-advice ul, .ai-advice ol {
+            margin-left: 20px; /* ✅ Reduced */
+            margin-bottom: 12px;
+        }
+
+        .ai-advice li {
+            margin-bottom: 6px;
+            color: var(--text-dark);
+        }
+
+        .ai-advice p {
+            color: var(--text-dark);
+            margin-bottom: 10px;
+            font-size: 0.95rem; /* ✅ Slightly smaller */
+        }
+
+    /* ✅ FIX: COMPACT FOOTER */
+    .modal-actions {
+        display: flex;
+        justify-content: center;
+        gap: 12px; /* ✅ Reduced */
+        padding: 14px 24px; /* ✅ Reduced from 20px 28px */
+        background: #F5F7FA;
+        border-top: 2px solid #E0E0E0;
+    }
+
+    .btn-primary, .btn-secondary {
+        padding: 11px 28px; /* ✅ Reduced from 14px 32px */
+        border: none;
+        border-radius: 50px;
+        font-size: 1rem; /* ✅ Smaller */
+        font-weight: 700;
+        cursor: pointer;
+        transition: var(--transition);
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+        .btn-primary i, .btn-secondary i {
+            font-size: 0.9rem; /* ✅ Smaller icons */
+        }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--success), #00695C);
+        color: white;
+        box-shadow: 0 3px 12px rgba(0, 137, 123, 0.4);
+    }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 18px rgba(0, 137, 123, 0.5);
+        }
+
+    .btn-secondary {
+        background: white;
+        color: var(--primary);
+        border: 2px solid var(--primary);
+    }
+
+        .btn-secondary:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+    /* No Data State */
+    .no-data-container {
+        text-align: center;
+        padding: 50px 20px; /* ✅ Reduced */
+    }
+
+    .no-data-icon {
+        font-size: 4rem; /* ✅ Smaller */
+        color: #BDBDBD;
+        margin-bottom: 20px;
+    }
+
+    .no-data-title {
+        font-size: 1.6rem;
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 12px;
+    }
+
+    .no-data-text {
+        font-size: 1rem;
+        color: #666;
+        margin-bottom: 24px;
+        line-height: 1.6;
+    }
+
+    /* Animations */
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    @@keyframes fadeInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes zoomIn {
+        from {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.9);
+        }
+
+        to {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+    }
+
+    /* Responsive */
+    /* Responsive */
+    @@media (max-width: 1024px) {
+        /* ✅ FIX LỖI 1: Sửa selector từ .parts-grid thành .part-card */
+        .part-card
+
+    {
+        /* Tablet: 3 cột. Công thức: (100% - 2 khoảng trống * 24px) / 3 */
+        width: calc((100% - 48px) / 3);
+    }
+
+    /* Reset căn lề cho item thứ 5 nếu cần */
+    .part-card:nth-child(5) {
+        grid-column: auto;
+    }
+
+    }
+
+    @@media (max-width: 768px) {
+        .page-title
+
+    {
+        font-size: 2rem;
+    }
+
+    /* ✅ FIX LỖI 2: Điều chỉnh lại layout cho Mobile */
+    .parts-grid {
+        /* Giảm khoảng cách giữa các thẻ trên mobile cho thoáng hơn */
+        gap: 12px;
+        /* Xóa bỏ dòng grid-template-columns gây lỗi */
+    }
+
+    .part-card {
+        /* Mobile: 2 cột. Công thức: (100% - 1 khoảng trống 12px) / 2 */
+        width: calc((100% - 12px) / 2);
+        /* Giảm padding để nội dung bên trong không bị ép */
+        padding: 15px 10px;
+    }
+
+    /* ✅ Tinh chỉnh font chữ nhỏ lại chút cho vừa màn hình điện thoại */
+    .part-icon {
+        font-size: 2rem;
+        margin-bottom: 8px;
+    }
+
+    .part-number {
+        font-size: 1.2rem;
+        margin-bottom: 4px;
+    }
+
+    .part-name {
+        font-size: 0.8rem;
+        line-height: 1.2;
+    }
+
+    /* Các phần modal giữ nguyên */
+    .modal-content {
+        width: 100%;
+        height: 100%;
+        max-height: 100%;
+        border-radius: 0;
+        top: 55%;
+    }
+
+    .metrics-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-actions {
+        flex-direction: column;
+    }
+
+    .btn-primary, .btn-secondary {
+        width: 100%;
+    }
+
+    .modal-body::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    }
+</style>
+
+<div class="adaptive-container">
+    <!-- Header -->
+    <div class="page-header">
+        <h1 class="page-title">🎯 Adaptive Learning Practice</h1>
+        <p class="page-subtitle">Personalized training based on your performance analysis</p>
+    </div>
+
+    <!-- Parts Selection Grid -->
+    <div class="parts-grid">
+        @for (int i = 1; i <= 7; i++)
+        {
+            var hasData = Model.PartsStatus.ContainsKey(i) && Model.PartsStatus[i];
+
+            var (icon, name) = i switch
+            {
+                1 => ("fas fa-camera", "Photographs"),
+                2 => ("fas fa-question-circle", "Question-Response"),
+                3 => ("fas fa-comments", "Conversations"),
+                4 => ("fas fa-bullhorn", "Short Talks"),
+                5 => ("fas fa-edit", "Incomplete Sentences"),
+                6 => ("fas fa-file-alt", "Text Completion"),
+                7 => ("fas fa-newspaper", "Reading Comprehension"),
+                _ => ("fas fa-question", "Unknown")
+            };
+
+            <div class="part-card @(hasData ? "has-data" : "")" onclick="openPartAnalysis(@i)">
+                <i class="@icon part-icon"></i>
+                <div class="part-number">Part @i</div>
+                <div class="part-name">@name</div>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Analysis Popup Modal -->
+<div class="analysis-modal" id="analysisModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title" id="modalTitle">
+                <i class="fas fa-chart-line"></i>
+                <span>Part X Analysis</span>
+            </h2>
+            <button class="close-modal" onclick="closeModal()">×</button>
+        </div>
+
+        <div class="modal-body" id="modalBody">
+            <!-- Content loaded via JavaScript -->
+        </div>
+
+        <div class="modal-actions" id="modalActions">
+            <!-- Buttons loaded via JavaScript -->
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        let currentPart = 0;
+
+        const partInfo = {
+            1: { icon: 'fas fa-camera', name: 'Photographs', recommendedTime: 3 },
+            2: { icon: 'fas fa-question-circle', name: 'Question-Response', recommendedTime: 5 },
+            3: { icon: 'fas fa-comments', name: 'Conversations', recommendedTime: 18 },
+            4: { icon: 'fas fa-bullhorn', name: 'Short Talks', recommendedTime: 18 },
+            5: { icon: 'fas fa-edit', name: 'Incomplete Sentences', recommendedTime: 20 },
+            6: { icon: 'fas fa-file-alt', name: 'Text Completion', recommendedTime: 25 },
+            7: { icon: 'fas fa-newspaper', name: 'Reading Comprehension', recommendedTime: 30 }
+        };
+
+        async function openPartAnalysis(part) {
+            currentPart = part;
+            const modal = document.getElementById('analysisModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalBody = document.getElementById('modalBody');
+            const modalActions = document.getElementById('modalActions');
+
+            modal.classList.add('active');
+            modalTitle.innerHTML = `<i class="${partInfo[part].icon}"></i><span>Part ${part} - ${partInfo[part].name}</span>`;
+            modalBody.innerHTML = '<div style="text-align:center; padding:50px 20px;"><i class="fas fa-spinner fa-spin" style="font-size:2.5rem; color:var(--primary);"></i><p style="margin-top:16px; color:#666;">Loading analysis...</p></div>';
+
+            try {
+                const response = await fetch(`/Study/AdaptivePractice?handler=PartAnalysis&part=${part}`);
+                const result = await response.json();
+
+                if (!result.success) {
+                    modalBody.innerHTML = `<div style="text-align:center; padding:50px 20px; color:var(--danger);"><i class="fas fa-exclamation-triangle" style="font-size:2.5rem;"></i><p style="margin-top:16px;">${result.message}</p></div>`;
+                    modalActions.innerHTML = '<button class="btn-secondary" onclick="closeModal()"><i class="fas fa-times"></i> Close</button>';
+                    return;
+                }
+
+                if (!result.hasData) {
+                    renderNoDataState(modalBody, modalActions, part);
+                } else {
+                    renderAnalysisData(modalBody, modalActions, result.data, part);
+                }
+            } catch (error) {
+                console.error('Error loading analysis:', error);
+                modalBody.innerHTML = '<div style="text-align:center; padding:50px 20px; color:var(--danger);"><i class="fas fa-times-circle" style="font-size:2.5rem;"></i><p style="margin-top:16px;">Failed to load analysis. Please try again.</p></div>';
+                modalActions.innerHTML = '<button class="btn-secondary" onclick="closeModal()"><i class="fas fa-times"></i> Close</button>';
+            }
+        }
+
+        function renderNoDataState(bodyEl, actionsEl, part) {
+            bodyEl.innerHTML = `
+                <div class="no-data-container">
+                    <i class="fas fa-chart-pie no-data-icon"></i>
+                    <h3 class="no-data-title">No Analysis Available Yet</h3>
+                    <p class="no-data-text">
+                        You need to complete more practice exercises for Part ${part}<br>
+                        so we can analyze your performance and provide personalized recommendations.
+                    </p>
+                </div>
+            `;
+
+            actionsEl.innerHTML = `
+                <button class="btn-primary" onclick="window.location.href='/Study/Index'">
+                    <i class="fas fa-play"></i> Practice More
+                </button>
+                <button class="btn-secondary" onclick="closeModal()">
+                    <i class="fas fa-times"></i> Close
+                </button>
+            `;
+        }
+
+        function renderAnalysisData(bodyEl, actionsEl, data, part) {
+            const safeData = {
+                accuracyScore: data.accuracyScore ?? 0,
+                speedScore: data.speedScore ?? 0,
+                decisivenessScore: data.decisivenessScore ?? 0,
+                abilityTemporary: data.abilityTemporary ?? 0,
+                avgTimeSpent: data.avgTimeSpent ?? 0,
+                lastAnalyzed: data.lastAnalyzed ?? new Date().toISOString(),
+                advice: data.advice ?? '',
+                weakTopics: data.weakTopics ?? {
+                    summary: '',
+                    grammar: [],
+                    vocab: [],
+                    errors: [],
+                    categories: [],
+                    actionableRecommendations: []
+                }
+            };
+
+            // Calculate TOEIC Score
+            const toeicScore = Math.round(500 + safeData.abilityTemporary * 100);
+            const toeicRange = `${Math.max(10, toeicScore - 50)}-${Math.min(990, toeicScore + 50)}`;
+
+            let level = 'Beginner';
+            if (safeData.abilityTemporary >= -0.5) level = 'Intermediate';
+            if (safeData.abilityTemporary >= 0.5) level = 'Upper-Intermediate';
+            if (safeData.abilityTemporary >= 1.0) level = 'Advanced';
+
+            const html = `
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="switchTab(0)">Overview</button>
+                    <button class="tab-btn" onclick="switchTab(1)">Weaknesses</button>
+                    <button class="tab-btn" onclick="switchTab(2)">AI Coach</button>
+                </div>
+
+                <!-- TAB 1: OVERVIEW (SIMPLIFIED) -->
+                <div class="tab-content active" data-tab="0">
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 24px; color: white; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+                        <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 8px;">🧠 Estimated TOEIC Score</div>
+                        <div style="font-size: 3rem; font-weight: 700; margin-bottom: 8px;">${toeicScore}</div>
+                        <div style="font-size: 0.95rem; opacity: 0.85;">Range: ${toeicRange}</div>
+                        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.3);">
+                            <div style="font-size: 0.85rem; opacity: 0.8;">Current Level</div>
+                            <div style="font-size: 1.2rem; font-weight: 600; margin-top: 4px;">${level}</div>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px;">
+                        <div style="background: white; border-radius: 8px; padding: 16px; text-align: center; border: 2px solid ${safeData.accuracyScore >= 70 ? '#00897B' : safeData.accuracyScore >= 40 ? '#FF6F00' : '#D32F2F'};">
+                            <div style="font-size: 0.75rem; color: #666; margin-bottom: 4px;">📊 Accuracy</div>
+                            <div style="font-size: 1.8rem; font-weight: 700; color: ${safeData.accuracyScore >= 70 ? '#00897B' : safeData.accuracyScore >= 40 ? '#FF6F00' : '#D32F2F'};">${safeData.accuracyScore.toFixed(1)}%</div>
+                        </div>
+                        <div style="background: white; border-radius: 8px; padding: 16px; text-align: center; border: 2px solid #5E35B1;">
+                            <div style="font-size: 0.75rem; color: #666; margin-bottom: 4px;">⏱️ Avg Time</div>
+                            <div style="font-size: 1.8rem; font-weight: 700; color: #5E35B1;">${safeData.avgTimeSpent.toFixed(1)}s</div>
+                        </div>
+                        <div style="background: white; border-radius: 8px; padding: 16px; text-align: center; border: 2px solid ${safeData.decisivenessScore >= 70 ? '#00897B' : '#FF6F00'};">
+                            <div style="font-size: 0.75rem; color: #666; margin-bottom: 4px;">🛡️ Confidence</div>
+                            <div style="font-size: 1.8rem; font-weight: 700; color: ${safeData.decisivenessScore >= 70 ? '#00897B' : '#FF6F00'};">${safeData.decisivenessScore.toFixed(0)}/100</div>
+                        </div>
+                    </div>
+
+                    <div style="background: #F5F7FA; border-radius: 8px; padding: 12px; margin-top: 16px; font-size: 0.85rem; color: #666; text-align: center;">
+                        Last Analyzed: <strong>${new Date(safeData.lastAnalyzed).toLocaleDateString()}</strong>
+                    </div>
+                </div>
+
+                <!-- TAB 2: WEAKNESSES (CLEAN DATA ONLY) -->
+                <div class="tab-content" data-tab="1">
+                    ${safeData.weakTopics.summary ? `
+                        <div style="background:#FFF3E0; padding:14px; border-radius:8px; border-left:3px solid #FF6F00; margin-bottom:18px; font-size:0.9rem;">
+                 <strong>📋 Summary:</strong> ${safeData.weakTopics.summary.replace(/\s*\(\d+\/\d+\s+errors\)/gi, '')}
+                        </div>` : '<p style="color:#999; text-align:center; padding:30px;">No weakness data available yet.</p>'}
+
+                    ${renderCleanWeaknessSection('Grammar Gaps', safeData.weakTopics.grammar, 'fas fa-book')}
+                    ${renderCleanWeaknessSection('Vocabulary Gaps', safeData.weakTopics.vocab, 'fas fa-language')}
+
+                    ${safeData.weakTopics.errors && safeData.weakTopics.errors.length > 0 ? `
+                        <div class="weakness-section">
+                            <h3 class="weakness-title"><i class="fas fa-exclamation-triangle"></i> Common Error Patterns</h3>
+                            <ul class="weakness-list">
+                                ${safeData.weakTopics.errors.map(e => {
+                                    const name = e.split('(')[0].trim();
+                                    const count = e.match(/\((\d+)/)?.[1] || '0';
+                                    const badge = count > 10 ? '🔴' : count > 5 ? '🟠' : '🟡';
+                                    return `<li><strong>${badge} ${name}</strong> <span style="color:#666;">(${count} times)</span></li>`;
+                                }).join('')}
+                            </ul>
+                        </div>` : ''}
+                </div>
+
+                <!-- TAB 3: AI COACH -->
+                <div class="tab-content" data-tab="2">
+                    <div class="ai-advice" id="aiAdviceContent">
+                        ${safeData.advice ? '' : '<p style="color:#999; text-align:center; padding:30px;">AI coaching advice is being generated...</p>'}
+                    </div>
+                </div>
+            `;
+
+            bodyEl.innerHTML = html;
+
+            if (safeData.advice) {
+                setTimeout(() => {
+                    const adviceEl = document.getElementById('aiAdviceContent');
+                    if (adviceEl) {
+                        adviceEl.innerHTML = marked.parse(safeData.advice);
+                    }
+                }, 100);
+            }
+
+            actionsEl.innerHTML = `
+                <button class="btn-primary" onclick="startAdaptivePractice(${part})">
+                    <i class="fas fa-rocket"></i> Start Adaptive Practice
+                </button>
+                <button class="btn-secondary" onclick="closeModal()">
+                    <i class="fas fa-times"></i> Close
+                </button>
+            `;
+        }
+
+        function renderCleanWeaknessSection(title, items, iconClass) {
+            if (!items || items.length === 0) return '';
+
+            const sortedItems = items.sort((a, b) => {
+                const aCount = parseInt(a.match(/\((\d+)/)?.[1] || 0);
+                const bCount = parseInt(b.match(/\((\d+)/)?.[1] || 0);
+                return bCount - aCount;
+            });
+
+            let html = `<div class="weakness-section">
+                <h3 class="weakness-title"><i class="${iconClass}"></i> ${title}</h3>
+                <ul class="weakness-list">`;
+
+            sortedItems.forEach(item => {
+                const name = item.split('(')[0].trim();
+                const count = item.match(/\((\d+)/)?.[1] || '0';
+
+                let badge = '';
+                let borderColor = 'var(--warning)';
+
+                if (parseInt(count) > 20) {
+                    badge = '🔴 Critical';
+                    borderColor = 'var(--danger)';
+                } else if (parseInt(count) > 10) {
+                    badge = '🟠 High';
+                    borderColor = 'var(--warning)';
+                } else {
+                    badge = '🟡 Medium';
+                }
+
+                html += `<li style="border-left-color:${borderColor}; display:flex; justify-content:space-between; align-items:center;">
+                    <strong>${name}</strong>
+                    <span style="display:flex; align-items:center; gap:8px;">
+                        <span style="color:#666;">(${count} errors)</span>
+                        <span style="background:${borderColor === 'var(--danger)' ? '#D32F2F' : borderColor === 'var(--warning)' ? '#FF6F00' : '#FFB300'}; color:white; padding:2px 8px; border-radius:12px; font-size:0.7rem; font-weight:600;">${badge}</span>
+                    </span>
+                </li>`;
+            });
+
+            html += '</ul></div>';
+            return html;
+        }
+
+        function switchTab(index) {
+            document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+                btn.classList.toggle('active', i === index);
+            });
+            document.querySelectorAll('.tab-content').forEach((content, i) => {
+                content.classList.toggle('active', i === index);
+            });
+        }
+
+        function closeModal() {
+            document.getElementById('analysisModal').classList.remove('active');
+        }
+
+            function startAdaptivePractice(part) {
+            // Show loading state
+            const modal = document.getElementById('analysisModal');
+            const modalBody = document.getElementById('modalBody');
+            modalBody.innerHTML = '<div style="text-align:center; padding:50px 20px;"><i class="fas fa-spinner fa-spin" style="font-size:2.5rem; color:var(--primary);"></i><p style="margin-top:16px; color:#666;">Creating adaptive test...</p></div>';
+
+            // Call backend to create test
+            fetch(`/Study/AdaptivePractice?handler=StartAdaptivePractice&part=${part}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+                }
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    window.location.href = result.redirectUrl;
+                } else {
+                    modalBody.innerHTML = `<div style="text-align:center; padding:50px 20px; color:var(--danger);"><i class="fas fa-exclamation-triangle" style="font-size:2.5rem;"></i><p style="margin-top:16px;">${result.message}</p></div>`;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                modalBody.innerHTML = '<div style="text-align:center; padding:50px 20px; color:var(--danger);"><i class="fas fa-times-circle" style="font-size:2.5rem;"></i><p style="margin-top:16px;">Failed to create test. Please try again.</p></div>';
+            });
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+    </script>
+}

@@ -385,59 +385,36 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                 ? $"The student just completed a **FULL 2-HOUR TOEIC TEST**. This is the detailed analysis for **PART {part}**."
                 : $"The student just completed a **PART {part} PRACTICE SESSION**.";
 
-            // ============================================================
-            // HEADER
-            // ============================================================
-            sb.AppendLine("# YOUR ROLE & MISSION");
-            sb.AppendLine("You are **Mr. TOEIC** - An expert AI TOEIC coach with:");
-            sb.AppendLine("- Deep knowledge of TOEIC test structure and strategies");
-            sb.AppendLine("- Expertise in learner psychology and behavioral analysis");
-            sb.AppendLine("- Ability to provide actionable, personalized advice");
+            sb.AppendLine("# YOUR ROLE");
+            sb.AppendLine("You are **Mr. TOEIC** - An expert AI TOEIC coach specializing in personalized, data-driven analysis.");
             sb.AppendLine();
 
-            sb.AppendLine("# CONTEXT");
+            sb.AppendLine("# STUDENT DATA");
             sb.AppendLine(context);
             sb.AppendLine();
 
             // ============================================================
-            // BEHAVIORAL PROFILE
+            // PERFORMANCE METRICS
             // ============================================================
-            sb.AppendLine("# BEHAVIORAL PROFILE (DNA Analysis)");
-            sb.AppendLine($"- ⚡ **Speed**: {pyData.BehaviorScores.Speed:F1}/100 (Avg: {pyData.BehaviorScores.AvgTime:F1}s per question)");
-            sb.AppendLine($"- 🛡️ **Decisiveness**: {pyData.BehaviorScores.Decisiveness:F1}/100");
-            sb.AppendLine($"- 📊 **Accuracy**: {pyData.BehaviorScores.Accuracy:F1}%");
-            sb.AppendLine($"- 🧠 **Ability (IRT Theta)**: {pyData.NewTheta:F2} (Scale: -3 to +3)");
-
+            sb.AppendLine("## Behavioral Metrics:");
+            sb.AppendLine($"- Accuracy: **{pyData.BehaviorScores.Accuracy:F1}%**");
+            sb.AppendLine($"- Speed: {pyData.BehaviorScores.Speed:F1}/100 (Avg: {pyData.BehaviorScores.AvgTime:F1}s/question)");
+            sb.AppendLine($"- Decisiveness: {pyData.BehaviorScores.Decisiveness:F1}/100");
+            sb.AppendLine($"- IRT Theta: {pyData.NewTheta:F2} (Estimated TOEIC: ~{Math.Round(500 + pyData.NewTheta * 100)})");
             if (pyData.BehaviorScores.Stamina > 0)
-                sb.AppendLine($"- 💪 **Stamina**: {pyData.BehaviorScores.Stamina:F1}/100");
-
+                sb.AppendLine($"- Stamina: {pyData.BehaviorScores.Stamina:F1}/100");
             sb.AppendLine();
 
             // ============================================================
-            // BEHAVIORAL PATTERNS (if available)
+            // WEAKNESSES DATA
             // ============================================================
-            if (pyData.BehavioralPatterns != null)
-            {
-                sb.AppendLine("# BEHAVIORAL INSIGHTS");
-                sb.AppendLine($"- **Answer Change Pattern**: {pyData.BehavioralPatterns.ChangePattern ?? "N/A"}");
-                sb.AppendLine($"- **First Answer Accuracy**: {pyData.BehavioralPatterns.FirstAnswerAccuracy:F1}%");
-                sb.AppendLine($"- **Changed Answer Accuracy**: {pyData.BehavioralPatterns.ChangedAnswerAccuracy:F1}%");
-                sb.AppendLine($"- **Impact**: {pyData.BehavioralPatterns.AnswerChangeImpact ?? "N/A"}");
-                sb.AppendLine($"- **Learner Profile**: {pyData.BehavioralPatterns.LearnerProfile ?? "N/A"}");
-                sb.AppendLine($"- **Time Management**: {pyData.BehavioralPatterns.TimeManagement ?? "N/A"}");
-                sb.AppendLine();
-            }
-
-            // ============================================================
-            // WEAKNESSES
-            // ============================================================
-            sb.AppendLine("# KEY WEAKNESSES");
-            sb.AppendLine(pyData.WeaknessAnalysis.Summary ?? "No specific weaknesses identified.");
+            sb.AppendLine("## Weakness Report:");
+            sb.AppendLine(pyData.WeaknessAnalysis.Summary ?? "No summary available.");
             sb.AppendLine();
 
             if (pyData.WeaknessAnalysis.TopGrammar?.Count > 0)
             {
-                sb.AppendLine("**Grammar Gaps:**");
+                sb.AppendLine("**Grammar Errors:**");
                 foreach (var item in pyData.WeaknessAnalysis.TopGrammar.Take(5))
                     sb.AppendLine($"- {item}");
                 sb.AppendLine();
@@ -453,137 +430,77 @@ namespace TNS_EDU_TEST.Areas.Test.Models
 
             if (pyData.WeaknessAnalysis.TopErrorTypes?.Count > 0)
             {
-                sb.AppendLine("**Common Error Patterns:**");
+                sb.AppendLine("**Error Patterns:**");
                 foreach (var item in pyData.WeaknessAnalysis.TopErrorTypes.Take(5))
                     sb.AppendLine($"- {item}");
                 sb.AppendLine();
             }
 
-            if (pyData.WeaknessAnalysis.TopCategories?.Count > 0)
-            {
-                sb.AppendLine("**Weak Question Categories:**");
-                foreach (var item in pyData.WeaknessAnalysis.TopCategories.Take(3))
-                    sb.AppendLine($"- {item}");
-                sb.AppendLine();
-            }
-
             // ============================================================
-            // PART-SPECIFIC INSIGHTS
-            // ============================================================
-            if (pyData.PartSpecificInsights?.ContainsKey($"part{part}") == true)
-            {
-                var partInsight = pyData.PartSpecificInsights[$"part{part}"];
-                sb.AppendLine($"# PART {part} DETAILED PERFORMANCE");
-                sb.AppendLine($"- **Strength Level**: {partInsight.Strength ?? "N/A"}");
-                sb.AppendLine($"- **Accuracy**: {partInsight.Accuracy:F1}%");
-                sb.AppendLine($"- **Avg Time per Question**: {partInsight.AvgTime:F1}s");
-
-                if (partInsight.WeakAreas?.Count > 0)
-                {
-                    sb.AppendLine($"- **Weak Areas**: {string.Join(", ", partInsight.WeakAreas)}");
-                }
-
-                if (!string.IsNullOrEmpty(partInsight.Advice))
-                    sb.AppendLine($"- **System Advice**: {partInsight.Advice}");
-
-                sb.AppendLine();
-            }
-
-            // ============================================================
-            // SKILL LEVEL ANALYSIS
-            // ============================================================
-            if (pyData.SkillLevelAnalysis != null)
-            {
-                sb.AppendLine("# SKILL LEVEL PERFORMANCE");
-                sb.AppendLine($"- **Comfort Zone**: {pyData.SkillLevelAnalysis.ComfortZone ?? "N/A"}");
-                sb.AppendLine($"- **Challenge Level**: {pyData.SkillLevelAnalysis.ChallengeLevel ?? "N/A"}");
-                sb.AppendLine();
-            }
-
-            // ============================================================
-            // ACTIONABLE RECOMMENDATIONS (from Python)
-            // ============================================================
-            if (pyData.ActionableRecommendations?.Count > 0)
-            {
-                sb.AppendLine("# SYSTEM-GENERATED RECOMMENDATIONS");
-                foreach (var rec in pyData.ActionableRecommendations)
-                    sb.AppendLine($"- {rec}");
-                sb.AppendLine();
-            }
-
-            // ============================================================
-            // INSTRUCTIONS TO AI
+            // AI TASK - STRICT REQUIREMENTS
             // ============================================================
             sb.AppendLine("---");
             sb.AppendLine();
-            sb.AppendLine("# YOUR TASK");
+            sb.AppendLine("# YOUR TASK: CREATE PERSONALIZED ACTION PLAN");
             sb.AppendLine();
-            sb.AppendLine("Based on ALL the data above, provide a **comprehensive, personalized coaching report** in **VIETNAMESE**.");
+            sb.AppendLine("Based on the data above, write a **comprehensive coaching report** in **VIETNAMESE** following this EXACT structure:");
             sb.AppendLine();
-            sb.AppendLine("## REQUIREMENTS:");
-            sb.AppendLine("1. **Executive Summary** (No Fluff): Start DIRECTLY with the performance assessment (Level & Status). **STRICTLY FORBIDDEN**: Do not use greetings (Hello, Hi), do not say 'You just completed...', do not praise 'effort' if the result is bad. Go straight to the point.");
-            sb.AppendLine("2. **Key Observations** (Unlimited): List ALL significant strengths and critical weaknesses found.");
-            sb.AppendLine("   - **CRITICAL LOGIC**: If 'Speed' is fast (< 3s/question) BUT 'Accuracy' is low (< 35%), you MUST conclude this is **'Rushing/Random Guessing'** (Làm ẩu/Khoanh bừa). DO NOT compliment this as 'Fast reaction speed'.");
-            sb.AppendLine("3. **Root Cause Analysis**: Deep dive into WHY they made mistakes based on the specific error types and time spent.");
-            sb.AppendLine("4. **Action Plan** (Unlimited steps): Provide as many specific steps as necessary to fix the issues.");
-            sb.AppendLine("   - What to study (specific grammar/vocab topics)");
-            sb.AppendLine("   - How to practice (techniques, drills, strategies)");
-            sb.AppendLine("   - Test-taking tactics for this specific Part");
-            sb.AppendLine("5. **Professional Closing**: A brief, realistic conclusion.");
-            sb.AppendLine();
-            sb.AppendLine("## TONE:");
-            sb.AppendLine("- Professional yet warm");
-            sb.AppendLine("- Honest but encouraging");
-            sb.AppendLine("- Specific and actionable (no vague advice like 'study more')");
-            sb.AppendLine();
-            sb.AppendLine("## FORMAT:");
-            sb.AppendLine("- Use Markdown formatting");
-            sb.AppendLine("- Use headings (##), bullet points, bold text");
-            sb.AppendLine("- Keep paragraphs short and scannable");
-            sb.AppendLine();
-            sb.AppendLine("## SPECIAL NOTES:");
-
-            if (isFullTest)
-            {
-                sb.AppendLine("- This is from a FULL TEST (2 hours).");
-                sb.AppendLine("- **INSTRUCTION**: Even though this is a Full Test, provide a **DETAILED, DEEP-DIVE ANALYSIS** for this specific Part.");
-                sb.AppendLine("- Analyze as thoroughly as a single practice session. Do not shorten or summarize.");
-                sb.AppendLine("- Focus heavily on how Stamina/Fatigue affected this specific Part.");
-            }
-            else
-            {
-                sb.AppendLine("- This is from PART PRACTICE → Provide detailed, part-specific strategies");
-                sb.AppendLine("- Include specific techniques for this Part type");
-            }
-
-            sb.AppendLine();
-            sb.AppendLine("## EXAMPLE STRUCTURE (adapt to data):");
             sb.AppendLine("```markdown");
-            sb.AppendLine("## 🎯 Tổng Quan");
-            sb.AppendLine("Năng lực hiện tại của bạn ở mức [Level], thể hiện qua [Data]...");
-            sb.AppendLine("(Start directly with analysis, NO greetings like 'Chuc mung' or 'Ban vua hoan thanh')");
+            sb.AppendLine("## 🎯 Đánh Giá Tổng Quan");
+            sb.AppendLine("[Reference specific numbers: Accuracy %, estimated TOEIC score, time spent]");
+            sb.AppendLine("[Identify ROOT CAUSE: Is it lack of vocabulary? Grammar? Test-taking speed? Random guessing?]");
             sb.AppendLine();
-            sb.AppendLine("## 📊 Điểm Mạnh & Điểm Yếu");
-            sb.AppendLine("**Điểm mạnh:**");
-            sb.AppendLine("- [strength 1]");
+            sb.AppendLine("## 📊 Phân Tích Chi Tiết");
+            sb.AppendLine("### Điểm Mạnh");
+            sb.AppendLine("[List 1-2 strengths based on data. If Accuracy < 20%, say: \"Chưa có điểm mạnh rõ ràng\"]");
             sb.AppendLine();
-            sb.AppendLine("**Cần cải thiện:**");
-            sb.AppendLine("- [weakness 1 with explanation]");
+            sb.AppendLine("### Điểm Yếu Nghiêm Trọng");
+            sb.AppendLine("[For EACH weakness from the report above, explain:]");
+            sb.AppendLine("1. **[Weakness Name]** ([X] errors)");
+            sb.AppendLine("   - **Tại sao sai:** [Root cause analysis]");
+            sb.AppendLine("   - **Công thức/Kiến thức cần nhớ:** [Specific formulas/rules]");
+            sb.AppendLine("   - **Impact:** [How it affects score]");
             sb.AppendLine();
-            sb.AppendLine("## 💡 Kế Hoạch Hành Động");
-            sb.AppendLine("1. **[Action 1]**: [Specific details]");
-            sb.AppendLine("2. **[Action 2]**: [Specific details]");
+            sb.AppendLine("## 💡 Kế Hoạch Hành Động (30 Ngày)");
+            sb.AppendLine("### Tuần 1: [Focus on CRITICAL weakness]");
+            sb.AppendLine("- **Học gì:** [Specific grammar topics/vocab lists from data above]");
+            sb.AppendLine("- **Công thức cần thuộc:** [List specific formulas]");
+            sb.AppendLine("- **Làm thế nào:**");
+            sb.AppendLine("  1. [Concrete exercise 1 with website/app name]");
+            sb.AppendLine("  2. [Concrete exercise 2 with specific quantity]");
+            sb.AppendLine("  3. [Concrete exercise 3 with time frame]");
+            sb.AppendLine("- **Tài liệu:** [Specific resources: websites, apps, YouTube channels]");
             sb.AppendLine();
-            sb.AppendLine("## 🚀 Chiến Thuật Làm Bài");
-            sb.AppendLine("[Part-specific strategy]");
+            sb.AppendLine("### Tuần 2-4: [Progressive plan addressing remaining weaknesses...]");
+            sb.AppendLine();
+            sb.AppendLine("## 🚀 Chiến Thuật Làm Bài Phần " + part);
+            sb.AppendLine("[Part-specific strategies based on time management and error patterns]");
+            sb.AppendLine("[Include: pre-listening tips, note-taking methods, elimination strategies]");
             sb.AppendLine();
             sb.AppendLine("## 🎓 Lời Khuyên Cuối");
-            sb.AppendLine("[Motivational message]");
+            sb.AppendLine("[Realistic motivation based on current level. NO generic praise.]");
             sb.AppendLine("```");
             sb.AppendLine();
             sb.AppendLine("---");
             sb.AppendLine();
-            sb.AppendLine("Now, create the coaching report in VIETNAMESE. Be thorough, specific, and actionable!");
+            sb.AppendLine("# MANDATORY RULES:");
+            sb.AppendLine("1. **NO GENERIC ADVICE** - Every recommendation must reference SPECIFIC data points from above");
+            sb.AppendLine("2. **ADDRESS ALL WEAKNESSES** - Do not skip any item from the Grammar/Vocab/Error lists");
+            sb.AppendLine("3. **PRIORITIZE BY SEVERITY** - Start with items having highest error count (Critical 🔴 → High 🟠 → Medium 🟡)");
+            sb.AppendLine("4. **BE SPECIFIC** - Instead of \"study grammar\", write \"Study Present/Past tense (15 exercises on EnglishGrammar.org Section 2.3)\"");
+            sb.AppendLine("5. **ACTIONABLE** - Provide concrete exercises with website names, app names, specific quantities (e.g., \"50 flashcards\", \"20 minutes daily\")");
+            sb.AppendLine("6. **INCLUDE FORMULAS** - For grammar weaknesses, provide actual formulas (e.g., Present Simple: S + V(s/es))");
+            sb.AppendLine();
+            sb.AppendLine("# CRITICAL LOGIC:");
+            sb.AppendLine("- If **Accuracy < 20%** + **Speed > 80** → Diagnose as: \"Làm bừa/Khoanh đại\" (random guessing). MUST explain this is NOT a speed issue but a knowledge gap.");
+            sb.AppendLine("- If **Accuracy < 35%** → Focus 100% on FUNDAMENTALS (vocab + basic grammar), NOT on test-taking strategies or speed.");
+            sb.AppendLine("- If **Decisiveness > 70** + **Accuracy < 20** → Diagnose as \"Overconfident without knowledge\". MUST recommend: stop rushing, verify answers.");
+            sb.AppendLine();
+            sb.AppendLine("# EXAMPLE OF GOOD vs BAD RESPONSE:");
+            sb.AppendLine("❌ BAD: \"Bạn cần học ngữ pháp về câu trần thuật và từ vựng văn phòng.\"");
+            sb.AppendLine("✅ GOOD: \"**Statements (42 lỗi - 64% tổng số sai):** Bạn nhầm lẫn Present Simple vs Past Simple. Công thức: Present: S + V(s/es), Past: S + V-ed. Làm 15 bài tập tại EnglishGrammar.org → Section 2.3 'Present vs Past'. Thời gian: 30 phút/ngày, 7 ngày.\"");
+            sb.AppendLine();
+            sb.AppendLine("NOW CREATE THE REPORT. Start directly with diagnosis (NO greetings like 'Chào bạn'!).");
 
             return sb.ToString();
         }
