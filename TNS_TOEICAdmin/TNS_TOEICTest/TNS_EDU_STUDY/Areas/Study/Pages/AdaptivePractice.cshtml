@@ -609,6 +609,11 @@
 </style>
 
 <div class="adaptive-container">
+    @* ✅ ADD THIS LINE *@
+    <form method="post">
+        @Html.AntiForgeryToken()
+    </form>
+
     <!-- Header -->
     <div class="page-header">
         <h1 class="page-title">🎯 Adaptive Learning Practice</h1>
@@ -909,31 +914,44 @@
             document.getElementById('analysisModal').classList.remove('active');
         }
 
-            function startAdaptivePractice(part) {
+           function startAdaptivePractice(part) {
             // Show loading state
             const modal = document.getElementById('analysisModal');
             const modalBody = document.getElementById('modalBody');
             modalBody.innerHTML = '<div style="text-align:center; padding:50px 20px;"><i class="fas fa-spinner fa-spin" style="font-size:2.5rem; color:var(--primary);"></i><p style="margin-top:16px; color:#666;">Creating adaptive test...</p></div>';
 
-            // Call backend to create test
+            // ✅ Get anti-forgery token
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+            // ✅ Call backend with proper headers
             fetch(`/Study/AdaptivePractice?handler=StartAdaptivePractice&part=${part}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
-                }
+                    'RequestVerificationToken': token  // ✅ Send token
+                },
+                body: JSON.stringify({ part: part })  // ✅ Send part in body
             })
-            .then(response => response.json())
+            .then(response => {
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(result => {
+                console.log('Result:', result);
                 if (result.success) {
                     window.location.href = result.redirectUrl;
                 } else {
-                    modalBody.innerHTML = `<div style="text-align:center; padding:50px 20px; color:var(--danger);"><i class="fas fa-exclamation-triangle" style="font-size:2.5rem;"></i><p style="margin-top:16px;">${result.message}</p></div>`;
+                    modalBody.innerHTML = `<div style="text-align:center; padding:50px 20px; color:var(--danger);"><i class="fas fa-exclamation-triangle" style="font-size:2.5rem;"></i><p style="margin-top:16px;">${result.message || 'Unknown error'}</p></div>`;
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                modalBody.innerHTML = '<div style="text-align:center; padding:50px 20px; color:var(--danger);"><i class="fas fa-times-circle" style="font-size:2.5rem;"></i><p style="margin-top:16px;">Failed to create test. Please try again.</p></div>';
+                console.error('Fetch error:', error);
+                modalBody.innerHTML = `<div style="text-align:center; padding:50px 20px; color:var(--danger);"><i class="fas fa-times-circle" style="font-size:2.5rem;"></i><p style="margin-top:16px;">Failed to create test: ${error.message}</p></div>`;
             });
         }
 

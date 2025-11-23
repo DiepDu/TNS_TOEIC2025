@@ -8,6 +8,7 @@ using TNS_EDU_STUDY.Areas.Study.Models;
 
 namespace TNS_EDU_STUDY.Areas.Study.Pages
 {
+    [IgnoreAntiforgeryToken]
     public class AdaptivePracticeModel : PageModel
     {
         public Dictionary<int, bool> PartsStatus { get; set; } = new Dictionary<int, bool>();
@@ -93,12 +94,15 @@ namespace TNS_EDU_STUDY.Areas.Study.Pages
         }
 
         /// <summary>
-        /// ✅ NEW: Handler for "Start Adaptive Practice" button
+        /// ✅ FIXED: Handler for "Start Adaptive Practice" button with proper anti-forgery
         /// </summary>
-        public async Task<IActionResult> OnPostStartAdaptivePracticeAsync(int part)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> OnPostStartAdaptivePracticeAsync([FromBody] StartAdaptivePracticeRequest request)
         {
             try
             {
+                Console.WriteLine($"[StartAdaptivePractice] Request received for Part: {request?.part}");
+
                 var memberKey = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 var memberName = User.FindFirst("MemberName")?.Value;
 
@@ -107,17 +111,49 @@ namespace TNS_EDU_STUDY.Areas.Study.Pages
                     return new JsonResult(new { success = false, message = "Unauthorized" });
                 }
 
+                if (request == null || request.part < 1 || request.part > 7)
+                {
+                    return new JsonResult(new { success = false, message = "Invalid part number" });
+                }
+
                 var memberKeyGuid = Guid.Parse(memberKey);
 
-                Console.WriteLine($"[StartAdaptivePractice] Member: {memberKey}, Part: {part}");
+                // ---------------------------------------------------------
+                // 1. KIỂM TRA BÀI CŨ CHƯA HOÀN THÀNH
+                // ---------------------------------------------------------
+                Console.WriteLine($"[StartAdaptivePractice] Checking unfinished session for Part {request.part}...");
 
-                // Create adaptive test
+                var (existingTestKey, existingResultKey) = await StartAdaptivePracticeAccessData
+                    .CheckForUnfinishedAdaptiveTestAsync(memberKeyGuid, request.part);
+
+                if (existingTestKey.HasValue && existingResultKey.HasValue)
+                {
+                    Console.WriteLine($"[StartAdaptivePractice] Found unfinished session: {existingTestKey}");
+
+                    // Redirect ngay tới bài cũ
+                    return new JsonResult(new
+                    {
+                        success = true,
+                        redirectUrl = Url.Page("/Study", new
+                        {
+                            area = "Study",
+                            testKey = existingTestKey.ToString(),
+                            resultKey = existingResultKey.ToString(),
+                            selectedPart = request.part
+                        })
+                    });
+                }
+
+                // ---------------------------------------------------------
+                // 2. NẾU KHÔNG CÓ BÀI CŨ -> TẠO BÀI MỚI (Logic cũ)
+                // ---------------------------------------------------------
+                Console.WriteLine($"[StartAdaptivePractice] Creating NEW test - Member: {memberKey}, Part: {request.part}");
+
                 var (testKey, resultKey) = await StartAdaptivePracticeAccessData.CreateAdaptiveTestAsync(
-                    memberKeyGuid, memberName, part);
+                    memberKeyGuid, memberName, request.part);
 
                 Console.WriteLine($"[StartAdaptivePractice] SUCCESS - TestKey: {testKey}, ResultKey: {resultKey}");
 
-                // Return redirect URL
                 return new JsonResult(new
                 {
                     success = true,
@@ -126,19 +162,25 @@ namespace TNS_EDU_STUDY.Areas.Study.Pages
                         area = "Study",
                         testKey = testKey.ToString(),
                         resultKey = resultKey.ToString(),
-                        selectedPart = part
+                        selectedPart = request.part
                     })
                 });
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"[StartAdaptivePractice ERROR]: {ex.Message}");
+                Console.WriteLine($"[StartAdaptivePractice STACK]: {ex.StackTrace}");
                 return new JsonResult(new
                 {
                     success = false,
                     message = $"Failed to create adaptive test: {ex.Message}"
                 });
             }
+        }
+        // ✅ ADD REQUEST MODEL
+        public class StartAdaptivePracticeRequest
+        {
+            public int part { get; set; }
         }
     }
 }
