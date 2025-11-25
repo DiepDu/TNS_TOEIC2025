@@ -134,15 +134,43 @@ namespace TNS_EDU_STUDY.Areas.Study.Models
         }
 
         // ============================================================
-        // 🔍 HELPERS: IRT / ANALYSIS (unchanged names, unique readers inside)
+        // 🔍 HELPERS: IRT / ANALYSIS
         // ============================================================
         private static async Task<float?> GetMemberIrtAbilityAsync(SqlConnection conn, Guid memberKey)
         {
-            string sql = "SELECT IrtAbility FROM EDU_Member WHERE MemberKey = @MemberKey";
-            using var cmd = new SqlCommand(sql, conn);
-            cmd.Parameters.AddWithValue("@MemberKey", memberKey);
-            var result = await cmd.ExecuteScalarAsync();
-            return result != DBNull.Value ? Convert.ToSingle(result) : null;
+            // 1. Thử lấy từ bảng EDU_Member trước (Ưu tiên cao nhất)
+            string sqlMember = "SELECT IrtAbility FROM EDU_Member WHERE MemberKey = @MemberKey";
+            using (var cmd = new SqlCommand(sqlMember, conn))
+            {
+                cmd.Parameters.AddWithValue("@MemberKey", memberKey);
+                var result = await cmd.ExecuteScalarAsync();
+
+                if (result != DBNull.Value && result != null)
+                {
+                    return Convert.ToSingle(result);
+                }
+            }
+
+            // 2. Nếu không có, lấy từ bảng MemberLearningProfile (Lấy giá trị mới nhất)
+            string sqlProfile = @"
+                SELECT TOP 1 AbilityTemporary 
+                FROM MemberLearningProfile 
+                WHERE MemberKey = @MemberKey AND AbilityTemporary IS NOT NULL
+                ORDER BY LastAnalyzed DESC";
+
+            using (var cmd = new SqlCommand(sqlProfile, conn))
+            {
+                cmd.Parameters.AddWithValue("@MemberKey", memberKey);
+                var result = await cmd.ExecuteScalarAsync();
+
+                if (result != DBNull.Value && result != null)
+                {
+                    return Convert.ToSingle(result);
+                }
+            }
+
+            // 3. Không tìm thấy ở đâu cả
+            return null;
         }
 
         private static async Task<(List<Guid> categories, List<Guid> grammar, List<Guid> vocab, List<Guid> errors)>

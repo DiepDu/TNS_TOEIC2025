@@ -58,7 +58,16 @@ namespace TNS_EDU_STUDY.Areas.Study.Pages
             // Clean TestName
             if (!string.IsNullOrEmpty(info.TestName))
             {
-                info.TestName = info.TestName.Replace("TOEIC STUDY ", "").Split(" - ")[0].Trim();
+                // Trường hợp bài Adaptive: "Adaptive Practice Part 3 [GUID]" -> Cắt bỏ phần [GUID]
+                if (info.TestName.Contains("["))
+                {
+                    info.TestName = info.TestName.Split('[')[0].Trim();
+                }
+                // Trường hợp bài Study thường: "TOEIC STUDY Part 1 - GUID" -> Cắt bỏ phần - GUID
+                else
+                {
+                    info.TestName = info.TestName.Replace("TOEIC STUDY ", "").Split(" - ")[0].Trim();
+                }
             }
 
             StudyInfo = info;

@@ -38,20 +38,164 @@ body {
 /* ============================================
    HEADER SECTION
    ============================================ */
+/* ============================================
+       HEADER LAYOUT (FIXED & CLEAN)
+       ============================================ */
 .header {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
+    height: 60px; /* Tăng chiều cao lên xíu cho thoáng */
     background: linear-gradient(90deg, #2E5C8A 0%, #4A7BA7 50%, #6B9BC3 100%);
-    padding: 12px 24px;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    box-shadow: 0 4px 16px rgba(46, 92, 138, 0.2);
-    z-index: 10;
-    animation: slideInDown 0.6s ease-out;
+    justify-content: space-between;
+    padding: 0 20px;
+    box-shadow: 0 4px 12px rgba(46, 92, 138, 0.25);
+    z-index: 100;
     border-bottom: 3px solid #D4AF37;
+}
+
+/* --- Chia 3 cột để căn chỉnh --- */
+.header-left, .header-right {
+    flex: 1; /* Chiếm không gian bằng nhau ở 2 bên */
+    display: flex;
+    align-items: center;
+}
+
+.header-right {
+    justify-content: flex-end; /* Đẩy nút Submit sang phải cùng */
+}
+
+.header-center {
+    flex: 1; /* Ở giữa */
+    display: flex;
+    justify-content: center; /* Căn đồng hồ chính giữa */
+}
+
+/* --- Style các nút --- */
+.hamburger-btn {
+    display: none; /* Ẩn trên Desktop */
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 1.2rem;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+    .hamburger-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+
+.exit-btn {
+    background: white;
+    color: #E8956F;
+    border: 2px solid #E8956F;
+    padding: 8px 20px;
+    border-radius: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+    .exit-btn:hover {
+        background: #E8956F;
+        color: white;
+        transform: translateY(-2px);
+    }
+
+.submit-btn {
+    background: linear-gradient(135deg, #87A878 0%, #6B8E5F 100%);
+    color: white;
+    border: none;
+    padding: 8px 24px;
+    border-radius: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    transition: all 0.2s;
+}
+
+    .submit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 14px rgba(0,0,0,0.2);
+        background: linear-gradient(135deg, #6B8E5F 0%, #557C4B 100%);
+    }
+
+/* --- Style Đồng hồ --- */
+.timer {
+    background: rgba(0, 0, 0, 0.25);
+    color: #FFD700; /* Màu vàng kim cho nổi bật */
+    padding: 8px 24px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 1.4rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Courier New', Courier, monospace; /* Font số cho giống đồng hồ */
+    min-width: 140px;
+    justify-content: center;
+}
+
+    .timer i {
+        font-size: 1rem;
+        color: rgba(255,255,255,0.8);
+    }
+
+    .timer.warning {
+        color: #FF6B6B;
+        border-color: #FF6B6B;
+        animation: pulse 1s infinite;
+    }
+
+/* ============================================
+       RESPONSIVE (MOBILE)
+       ============================================ */
+@media (max-width: 768px) {
+    .header {
+        padding: 0 12px; /* Giảm padding trên mobile */
+    }
+
+    /* Hiện Hamburger, Ẩn Exit trên Header */
+    .hamburger-btn {
+        display: block;
+    }
+
+    .header-left .exit-btn {
+        display: none;
+    }
+
+    .timer {
+        font-size: 1.1rem; /* Nhỏ lại */
+        padding: 6px 16px;
+        min-width: auto;
+    }
+
+    .submit-btn {
+        padding: 8px 14px;
+        font-size: 0.8rem;
+    }
+
+        .submit-btn i {
+            display: none;
+        }
+    /* Ẩn icon submit trên mobile cho gọn */
 }
 
 .hamburger-btn {
@@ -268,7 +412,8 @@ body {
     scrollbar-color: #E8C868 rgba(255, 249, 230, 0.5);
     padding-bottom: 80px;
     margin-bottom: 10px;
-    order: 2; /* Đặt xuống dưới - số lớn hơn sẽ hiển thị sau */
+    order: 2;
+    margin-bottom: 90px;
 }
 
     .part-section::-webkit-scrollbar {
@@ -358,7 +503,30 @@ body {
     min-height: calc(100vh - 60px);
     -webkit-overflow-scrolling: touch;
     position: relative;
+    scrollbar-width: thin;
+    scrollbar-color: #E8C868 rgba(255, 249, 230, 0.5);
 }
+    .main-content::-webkit-scrollbar {
+        width: 10px;
+    }
+
+    .main-content::-webkit-scrollbar-track {
+        background: rgba(255, 249, 230, 0.5);
+        border-radius: 10px;
+    }
+
+    .main-content::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, #E8C868 0%, #F4A259 100%); /* Màu vàng/cam */
+        border-radius: 10px;
+        border: 2px solid transparent;
+        background-clip: content-box;
+    }
+
+        .main-content::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #F4A259 0%, #D4AF37 100%);
+            border: 2px solid transparent;
+            background-clip: content-box;
+        }
 
 .main-content-wrapper {
     min-height: 100%;

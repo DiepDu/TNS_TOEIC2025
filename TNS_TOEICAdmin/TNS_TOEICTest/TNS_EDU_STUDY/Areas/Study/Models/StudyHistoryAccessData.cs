@@ -2,9 +2,8 @@
 using System;
 using System.Collections.Generic;
 
-namespace TNS_EDU_TEST.Areas.Test.Models // Bạn có thể đổi namespace này cho phù hợp
+namespace TNS_EDU_TEST.Areas.Test.Models 
 {
-    // Lớp định nghĩa cấu trúc dữ liệu cho một dòng lịch sử
     public class StudyHistoryItem
     {
         public string TestName { get; set; }
@@ -12,31 +11,31 @@ namespace TNS_EDU_TEST.Areas.Test.Models // Bạn có thể đổi namespace nà
         public string MemberName { get; set; }
         public DateTime? StartTime { get; set; }
         public DateTime? EndTime { get; set; }
-        public int? TimeSpent { get; set; } // Số phút làm bài
-        public int? PracticeScore { get; set; } // Điểm luyện tập (%)
+        public int? TimeSpent { get; set; } 
+        public int? PracticeScore { get; set; } 
         public string TestKey { get; set; }
         public string ResultKey { get; set; }
-        public int Part { get; set; } // Thêm Part để có thể dùng cho link Review
+        public int Part { get; set; } 
     }
 
     public static class StudyHistoryAccessData
     {
         private static readonly string _connectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
 
-        // Hàm chính để tải lịch sử, giờ đây có thêm tham số partSelect
+
         public static List<StudyHistoryItem> LoadStudyHistory(string memberKey, int partSelect)
         {
             var items = new List<StudyHistoryItem>();
 
-            // Xây dựng chuỗi mẫu để tìm kiếm theo tên TestName
-            // Ví dụ: "TOEIC STUDY Part 1%"
-            string testNamePattern = $"TOEIC STUDY Part {partSelect}%";
+            // 1. Định nghĩa 2 mẫu tên bài thi
+            string standardPattern = $"TOEIC STUDY Part {partSelect}%";
+            string adaptivePattern = $"Adaptive Practice Part {partSelect}%";
 
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
 
-                // Câu lệnh SQL đã được sửa đổi để lọc theo TestName Pattern
+                // 2. Sửa câu SQL dùng OR để lấy cả 2 loại
                 string sql = @"
                     SELECT 
                         t.TestName, 
@@ -44,31 +43,46 @@ namespace TNS_EDU_TEST.Areas.Test.Models // Bạn có thể đổi namespace nà
                         r.MemberName, 
                         r.StartTime, 
                         r.EndTime, 
-                        r.Time,  -- Đây là TimeSpent (số phút)
-                        r.TestScore, -- Đây là PracticeScore (%)
+                        r.Time, 
+                        r.TestScore, 
                         t.TestKey,
                         r.ResultKey
                     FROM Test t
                     INNER JOIN ResultOfUserForTest r ON t.TestKey = r.TestKey
                     WHERE 
                         r.MemberKey = @MemberKey 
-                        AND t.TestName LIKE @TestNamePattern
+                        AND (t.TestName LIKE @StandardPattern OR t.TestName LIKE @AdaptivePattern) -- Lấy cả 2 loại
                         AND r.Status = 1 -- Chỉ lấy những bài đã nộp
-                    ORDER BY r.StartTime DESC"; // Sắp xếp theo thời gian bắt đầu gần nhất
+                    ORDER BY r.StartTime DESC";
 
                 using (var cmd = new SqlCommand(sql, conn))
                 {
                     cmd.Parameters.AddWithValue("@MemberKey", memberKey);
-                    cmd.Parameters.AddWithValue("@TestNamePattern", testNamePattern);
+                    cmd.Parameters.AddWithValue("@StandardPattern", standardPattern);
+                    cmd.Parameters.AddWithValue("@AdaptivePattern", adaptivePattern);
 
                     using (var reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
                         {
+                            // 3. Xử lý làm sạch tên hiển thị
+                            string rawName = reader["TestName"].ToString();
+                            string displayName = rawName;
+
+                            // Nếu là bài Study thường: "TOEIC STUDY Part 1 - {Guid}" -> Cắt theo " - "
+                            if (rawName.Contains(" - "))
+                            {
+                                displayName = rawName.Split(" - ")[0].Trim();
+                            }
+                            // Nếu là bài Adaptive: "Adaptive Practice Part 1 [{Guid}]" -> Cắt theo " ["
+                            else if (rawName.Contains(" ["))
+                            {
+                                displayName = rawName.Split(" [")[0].Trim();
+                            }
+
                             items.Add(new StudyHistoryItem
                             {
-                                // Xử lý tên bài thi để hiển thị đẹp hơn (bỏ phần GUID)
-                                TestName = reader["TestName"].ToString().Split(" - ")[0].Trim(),
+                                TestName = displayName, // Tên đã được làm sạch
                                 CreatedOn = reader["CreatedOn"] as DateTime?,
                                 MemberName = reader["MemberName"].ToString(),
                                 StartTime = reader["StartTime"] as DateTime?,
@@ -77,7 +91,7 @@ namespace TNS_EDU_TEST.Areas.Test.Models // Bạn có thể đổi namespace nà
                                 PracticeScore = reader["TestScore"] as int?,
                                 TestKey = reader["TestKey"].ToString(),
                                 ResultKey = reader["ResultKey"].ToString(),
-                                Part = partSelect // Lưu lại part đã chọn
+                                Part = partSelect
                             });
                         }
                     }

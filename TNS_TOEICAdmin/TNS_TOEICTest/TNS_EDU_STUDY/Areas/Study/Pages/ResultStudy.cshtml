@@ -635,7 +635,7 @@
                 .sub-question h4 .question-content {
                     font-weight: 400;
                     color: #2C3E50;
-                    display: block;
+                    display: inline;
                     margin-top: 6px;
                     background: none;
                     -webkit-text-fill-color: #2C3E50;
@@ -718,7 +718,7 @@
             flex-wrap: wrap;
             justify-content: center;
             gap: 10px;
-            margin-bottom: 12px;
+            margin-bottom: 70px;
             overflow-y: auto;
             scroll-behavior: smooth;
             scrollbar-width: thin;
@@ -792,6 +792,7 @@
             box-shadow: 0 4px 16px rgba(46, 92, 138, 0.3);
             border: 3px solid #87A878;
             z-index: 2;
+            transform: translateX(-10px);
         }
 
         .progress-text {
@@ -1163,10 +1164,15 @@
 
             const icon = getPartIcon(partNumber);
 
-            // 🔥 Xử lý tên test hiển thị đẹp
-            const displayName = studyInfo.testName.startsWith("TOEIC")
-                ? studyInfo.testName
-                : `TOEIC ${studyInfo.testName}`;
+          // 🔥 Xử lý tên test hiển thị đẹp
+            let displayName = studyInfo.testName;
+
+            // Logic mới:
+            // 1. Nếu là bài Adaptive -> Giữ nguyên (VD: "Adaptive Practice Part 3")
+            // 2. Nếu là bài thường (VD: "Part 1") -> Thêm chữ "TOEIC" đằng trước
+            if (!displayName.includes("Adaptive") && !displayName.startsWith("TOEIC")) {
+                displayName = `TOEIC ${displayName}`;
+            }
 
             container.innerHTML = `
                 <h2><i class="fa-solid ${icon}"></i> ${displayName}</h2>

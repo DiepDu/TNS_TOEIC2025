@@ -17,10 +17,26 @@
 </head>
 <body>
     <div class="header">
-        <button class="hamburger-btn" onclick="toggleSidebar()">☰</button>
-        <button class="exit-btn" onclick="exitTest()">Exit</button>
-        <div class="timer" id="timer">Time: @Model.TimeRemaining.ToString(@"mm\:ss")</div>
-        <button class="submit-btn" onclick="submitTest()">Submit</button>
+        <div class="header-left">
+            <button class="hamburger-btn" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
+            <button class="exit-btn desktop-only" onclick="exitTest()">
+                <i class="fas fa-sign-out-alt"></i> Exit
+            </button>
+        </div>
+
+        <div class="header-center">
+            <div class="timer" id="timer">
+                <i class="fas fa-clock"></i> <span id="timer-text">@Model.TimeRemaining.ToString(@"mm\:ss")</span>
+            </div>
+        </div>
+
+        <div class="header-right">
+            <button class="submit-btn" onclick="submitTest()">
+                <span class="desktop-text">Submit</span> <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
     </div>
 
     <div class="sidebar-left">
@@ -31,6 +47,10 @@
         <button class="part-btn" data-part="5" onclick="switchPart(5, this)">Part 5</button>
         <button class="part-btn" data-part="6" onclick="switchPart(6, this)">Part 6</button>
         <button class="part-btn" data-part="7" onclick="switchPart(7, this)">Part 7</button>
+
+      @*   <button class="exit-btn-mobile mobile-only" onclick="exitTest()">
+            <i class="fas fa-sign-out-alt"></i> Exit Test
+        </button> *@
     </div>
 
     <!-- Main Content -->
@@ -543,33 +563,26 @@
         );
     }
 
-    function toggleSidebar() {
-        const leftSidebar = document.querySelector('.sidebar-left');
-        const rightSidebar = document.querySelector('.sidebar-right');
+        // Hàm toggle sidebar thông minh cho Mobile
+            function toggleSidebar() {
+                const leftSidebar = document.querySelector('.sidebar-left');
+                const rightSidebar = document.querySelector('.sidebar-right');
 
-        // Hành vi trên màn hình nhỏ (dưới 768px)
-        if (window.innerWidth <= 768) {
-            sidebarState = (sidebarState + 1) % 3; // Chuyển trạng thái: 0 -> 1 -> 2 -> 0
+                if (window.innerWidth <= 768) {
+                    sidebarState = (sidebarState + 1) % 3;
 
-            if (sidebarState === 1) {
-                // Trạng thái 1: Hiển thị sidebar-left, ẩn sidebar-right
-                leftSidebar.classList.add('active');
-                rightSidebar.classList.remove('active');
-            } else if (sidebarState === 2) {
-                // Trạng thái 2: Ẩn sidebar-left, hiển thị sidebar-right
-                leftSidebar.classList.remove('active');
-                rightSidebar.classList.add('active');
-            } else {
-                // Trạng thái 0: Ẩn cả hai
-                leftSidebar.classList.remove('active');
-                rightSidebar.classList.remove('active');
+                    if (sidebarState === 1) { // Hiện Menu Trái (Chọn Part/Exit)
+                        leftSidebar.classList.add('active');
+                        rightSidebar.classList.remove('active');
+                    } else if (sidebarState === 2) { // Hiện Menu Phải (Câu hỏi)
+                        leftSidebar.classList.remove('active');
+                        rightSidebar.classList.add('active');
+                    } else { // Ẩn hết
+                        leftSidebar.classList.remove('active');
+                        rightSidebar.classList.remove('active');
+                    }
+                }
             }
-        } else {
-            // Hành vi trên màn hình lớn (trên 768px): Giữ nguyên như cũ
-            leftSidebar.classList.toggle('active');
-            rightSidebar.classList.toggle('active');
-        }
-    }
 
     window.onload = async function () {
              window.addEventListener('beforeunload', handleBeforeUnload);
