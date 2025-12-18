@@ -1,14 +1,32 @@
-# Virtual Environment
-venv/
-env/
-ENV/
-
+# =========================
 # Python
+# =========================
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
+
+# =========================
+# Virtual Environments
+# =========================
+venv/
+env/
+ENV/
+.venv/
+.ENV/
+
+# =========================
+# Environment Variables
+# =========================
+.env
+.env.local
+.env.*.local
+*.env
+
+# =========================
+# Distribution / Packaging
+# =========================
 build/
 develop-eggs/
 dist/
@@ -22,25 +40,104 @@ sdist/
 var/
 wheels/
 *.egg-info/
-.installed.cfg
 *.egg
+*.manifest
+*.spec
+MANIFEST
 
-# Environment
-.env
-.env.local
+# =========================
+# Installer logs
+# =========================
+pip-log.txt
+pip-delete-this-directory.txt
 
-# IDE
+# =========================
+# Testing
+# =========================
+.pytest_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+pytestdebug.log
+nosetests.xml
+
+# =========================
+# Type Checkers
+# =========================
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+.pyre/
+
+# =========================
+# IDEs and Editors
+# =========================
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+.project
+.pydevproject
+.settings/
+*.sublime-project
+*.sublime-workspace
 
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
+# =========================
+# OS Generated Files
+# =========================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
 
+# =========================
+# Jupyter Notebook
+# =========================
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# =========================
 # Logs
+# =========================
 *.log
 logs/
+log/
+
+# =========================
+# Local Development
+# =========================
+*.local
+local_settings.py
+db.sqlite3
+*.sqlite3
+
+# =========================
+# Cython
+# =========================
+cython_debug/
+
+# =========================
+# Documentation
+# =========================
+docs/_build/
+site/
+
+# =========================
+# Misc
+# =========================
+*.bak
+*.tmp
+*.temp
+.cache/

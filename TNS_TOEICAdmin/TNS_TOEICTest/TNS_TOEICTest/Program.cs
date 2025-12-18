@@ -1,15 +1,20 @@
-﻿using TNS_TOEICTest.Services;
-using Microsoft.AspNetCore.Authentication.Cookies;
+﻿using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
+using TNS_EDU_STUDY.Areas.Study.Services;
 using TNS_TOEICTest.DataAccess;
 using TNS_TOEICTest.Hubs;
+using TNS_TOEICTest.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddHttpClient<TNS_EDU_STUDY.Areas.Study.Services.IContentProcessorService, TNS_EDU_STUDY.Areas.Study.Services.ContentProcessorService>();
 builder.Services.AddControllers();
 builder.Services.AddRazorPages();
 
 builder.Services.AddSingleton<IUserConnectionManager, UserConnectionManager>();
+builder.Services.AddScoped<TNS_TOEICTest.Services.GeminiApiKeyManager>();      // ← Cho Chatbot
+builder.Services.AddScoped<TNS_EDU_TEST.Services.GeminiApiKeyManager>();
 
 builder.Services.AddCors(options =>
 {

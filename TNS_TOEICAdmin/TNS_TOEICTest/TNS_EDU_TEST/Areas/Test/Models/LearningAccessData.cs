@@ -9,19 +9,22 @@ using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using TNS_EDU_TEST.Services;
 
 namespace TNS_EDU_TEST.Areas.Test.Models
 {
     public class LearningAccessData
     {
         private static readonly string _connectionString = TNS.DBConnection.Connecting.SQL_MainDatabase;
-        private readonly string _geminiApiKey;
+        private readonly GeminiApiKeyManager _apiKeyManager;
         private readonly string _pythonServiceUrl = "http://localhost:5002/analyze_result";
 
-        public LearningAccessData(IConfiguration configuration)
+        public LearningAccessData(
+      IConfiguration configuration,
+      GeminiApiKeyManager apiKeyManager) // ✅ THÊM PARAMETER
         {
-           
-            _geminiApiKey = configuration["GeminiApiKey"];
+            _apiKeyManager = apiKeyManager; // ✅ ASSIGN
+                                            // ❌ BỎ DÒNG NÀY: _geminiApiKey = configuration["GeminiApiKey"];
         }
 
         // ============================================================
@@ -192,7 +195,7 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                 await AnalyzeSinglePartAsync(memberKey, part, currentTheta,
                     isFullTest: true,
                     forceUseTheta: calculatedTheta);
-                await Task.Delay(5000);
+                await Task.Delay(25000);
             }
 
             // If calculated new Theta, update ALL existing records
@@ -712,21 +715,36 @@ namespace TNS_EDU_TEST.Areas.Test.Models
         /// <summary>
         /// Call Gemini API with retry logic
         /// </summary>
-        private async Task<string> CallGeminiApiAsync(string prompt, int maxRetries = 2)  // ✅ THÊM RETRY
+        /// <summary>
+        /// Call Gemini API with retry logic + KEY ROTATION
+        /// </summary>
+        /// <summary>
+        /// Call Gemini API with retry logic + KEY ROTATION
+        /// </summary>
+        private async Task<string> CallGeminiApiAsync(string prompt, int maxRetries = 3)
         {
+            // ✅ LẤY KEY KHẢ DỤNG TỪ ROTATION SYSTEM
+            var keyResult = await _apiKeyManager.GetAvailableApiKeyAsync();
+
+            if (!keyResult.Success || keyResult.ApiKey == null)
+            {
+                Console.WriteLine($"[Gemini] ❌ No available API key: {keyResult.ErrorMessage}");
+                return "⚠️ Hệ thống AI tạm thời quá tải. Vui lòng thử lại sau.";
+            }
+
+            var selectedKey = keyResult.ApiKey;
+            var apiKey = selectedKey.ActualApiKey;
+
+            Console.WriteLine($"[Gemini] Using {selectedKey.KeyName} (KeyID: {selectedKey.KeyID}) - Remaining: {selectedKey.RemainingQuota}/{selectedKey.DailyLimit}");
+
+            // ✅ GỌI API VỚI RETRY + LOGGING
             for (int attempt = 1; attempt <= maxRetries; attempt++)
             {
                 try
                 {
                     Console.WriteLine($"[Gemini] Attempt {attempt}/{maxRetries}: Sending {prompt.Length} chars");
 
-                    ////var apiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={_geminiApiKey}";
-
-                  
-                    //var apiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent?key={_geminiApiKey}";
-
-                 
-                    var apiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key={_geminiApiKey}";
+                    var apiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={apiKey}";
 
                     using (var client = new HttpClient() { Timeout = TimeSpan.FromMinutes(3) })
                     {
@@ -743,7 +761,7 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                             generationConfig = new
                             {
                                 temperature = 0.7,
-                                maxOutputTokens = 8192,
+                                maxOutputTokens = 16384,
                                 topP = 0.95,
                                 topK = 40
                             }
@@ -752,44 +770,119 @@ namespace TNS_EDU_TEST.Areas.Test.Models
                         var jsonPayload = JsonConvert.SerializeObject(payload);
                         var httpContent = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
 
+                        // ✅ LOG REQUEST PAYLOAD (CHỈ 500 KÝ TỰ ĐẦU)
+                        Console.WriteLine($"[Gemini] 📤 Request Payload Preview: {jsonPayload.Substring(0, Math.Min(500, jsonPayload.Length))}...");
+
                         var httpResponse = await client.PostAsync(apiUrl, httpContent);
+
+                        // ✅ LOG HTTP STATUS CODE
+                        Console.WriteLine($"[Gemini] 📥 HTTP Status: {(int)httpResponse.StatusCode} {httpResponse.StatusCode}");
 
                         if (httpResponse.IsSuccessStatusCode)
                         {
                             var jsonResponse = await httpResponse.Content.ReadAsStringAsync();
+
+                            // ✅ LOG FULL RESPONSE (QUAN TRỌNG!)
+                            Console.WriteLine($"[Gemini] 📥 Full Response JSON:");
+                            Console.WriteLine($"{jsonResponse}");
+                            Console.WriteLine($"[Gemini] ==================== END RESPONSE ====================");
+
                             var responseObj = JObject.Parse(jsonResponse);
 
                             var advice = responseObj["candidates"]?[0]?["content"]?["parts"]?[0]?["text"]?.ToString();
 
                             if (!string.IsNullOrEmpty(advice))
                             {
-                                Console.WriteLine($"[Gemini] ✅ Success: {advice.Length} chars");
-                                return advice;  // ✅ SUCCESS → RETURN NGAY
+                                // ✅ GHI LOG THÀNH CÔNG
+                                await _apiKeyManager.LogApiCallAttemptAsync(selectedKey.KeyID, isSuccess: true);
+                                Console.WriteLine($"[Gemini] ✅ Success: {advice.Length} chars (KeyID: {selectedKey.KeyID})");
+                                return advice;
+                            }
+                            else
+                            {
+                                // ✅ LOG TRƯỜNG HỢP RESPONSE HỢP LỆ NHƯNG KHÔNG CÓ TEXT
+                                Console.WriteLine($"[Gemini] ⚠️ Valid response but no text found");
+                                Console.WriteLine($"[Gemini] Response structure: {responseObj.ToString()}");
                             }
                         }
                         else
                         {
+                            // ✅ GHI LOG THẤT BẠI
+                            await _apiKeyManager.LogApiCallAttemptAsync(selectedKey.KeyID, isSuccess: false);
+
                             var errorContent = await httpResponse.Content.ReadAsStringAsync();
-                            Console.WriteLine($"[Gemini] HTTP {httpResponse.StatusCode}: {errorContent}");
+
+                            // ✅ LOG FULL ERROR RESPONSE
+                            Console.WriteLine($"[Gemini] ❌ Error Response:");
+                            Console.WriteLine($"[Gemini] Status Code: {httpResponse.StatusCode}");
+                            Console.WriteLine($"[Gemini] Error Content: {errorContent}");
+                            Console.WriteLine($"[Gemini] ==================== END ERROR ====================");
+
+                            // ✅ PARSE ERROR JSON ĐỂ XEM CHI TIẾT
+                            try
+                            {
+                                var errorObj = JObject.Parse(errorContent);
+                                var errorMessage = errorObj["error"]?["message"]?.ToString();
+                                var errorCode = errorObj["error"]?["code"]?.ToString();
+                                var errorStatus = errorObj["error"]?["status"]?.ToString();
+
+                                Console.WriteLine($"[Gemini] Parsed Error:");
+                                Console.WriteLine($"  - Code: {errorCode}");
+                                Console.WriteLine($"  - Status: {errorStatus}");
+                                Console.WriteLine($"  - Message: {errorMessage}");
+                            }
+                            catch
+                            {
+                                Console.WriteLine($"[Gemini] Could not parse error JSON");
+                            }
+
+                            // ✅ NẾU LỖI 429 (QUOTA) → KHÔNG RETRY
+                            if (httpResponse.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                            {
+                                Console.WriteLine($"[Gemini] ⚠️ Key {selectedKey.KeyName} exhausted (429 Too Many Requests)");
+                                // System sẽ tự động chọn key khác ở lần gọi tiếp theo
+                                break; // Thoát retry loop
+                            }
                         }
                     }
                 }
+                catch (TaskCanceledException ex)
+                {
+                    // ✅ TIMEOUT ERROR
+                    await _apiKeyManager.LogApiCallAttemptAsync(selectedKey.KeyID, isSuccess: false);
+                    Console.WriteLine($"[Gemini TIMEOUT] Attempt {attempt}/{maxRetries}:");
+                    Console.WriteLine($"  - Message: {ex.Message}");
+                    Console.WriteLine($"  - Timeout exceeded 3 minutes");
+                }
+                catch (HttpRequestException ex)
+                {
+                    // ✅ NETWORK ERROR
+                    await _apiKeyManager.LogApiCallAttemptAsync(selectedKey.KeyID, isSuccess: false);
+                    Console.WriteLine($"[Gemini NETWORK ERROR] Attempt {attempt}/{maxRetries}:");
+                    Console.WriteLine($"  - Message: {ex.Message}");
+                    Console.WriteLine($"  - InnerException: {ex.InnerException?.Message}");
+                }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[Gemini ERROR] Attempt {attempt}/{maxRetries}: {ex.Message}");
+                    // ✅ OTHER ERRORS
+                    await _apiKeyManager.LogApiCallAttemptAsync(selectedKey.KeyID, isSuccess: false);
+                    Console.WriteLine($"[Gemini ERROR] Attempt {attempt}/{maxRetries}:");
+                    Console.WriteLine($"  - Type: {ex.GetType().Name}");
+                    Console.WriteLine($"  - Message: {ex.Message}");
+                    Console.WriteLine($"  - StackTrace: {ex.StackTrace}");
                 }
 
-                // ✅ NẾU CHƯA HẾT RETRY → ĐỢI RỒI THỬ LẠI
+                // ✅ RETRY VỚI EXPONENTIAL BACKOFF
                 if (attempt < maxRetries)
                 {
-                    int delaySeconds = attempt * 3;  // 3s, 6s (exponential backoff)
+                    int delaySeconds = attempt * 3; // 3s, 6s, 9s
                     Console.WriteLine($"[Gemini] Retrying in {delaySeconds}s...");
                     await Task.Delay(TimeSpan.FromSeconds(delaySeconds));
                 }
             }
 
-            // ❌ HẾT RETRY → FALLBACK MESSAGE
-            Console.WriteLine($"[Gemini] Failed after {maxRetries} attempts, using fallback message");
+            // ❌ HẾT RETRY → FALLBACK
+            Console.WriteLine($"[Gemini] ❌ Failed after {maxRetries} attempts");
             return "Phân tích hoàn tất. Hãy tiếp tục luyện tập để cải thiện kỹ năng.";
         }
 

@@ -1,0 +1,975 @@
+﻿@page
+@model TNS_EDU_STUDY.Areas.Study.Pages.ContentProcessor.IndexModel
+@{
+    ViewData["Title"] = "Smart Content Processor";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-gradient-primary text-white">
+                <div class="card-body py-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-box bg-white text-primary rounded-circle p-3 me-3">
+                            <i class="fas fa-magic fa-2x"></i>
+                        </div>
+                        <div>
+                            <h2 class="mb-1">Smart Content-to-Practice</h2>
+                            <p class="mb-0 opacity-75">Transform any content into TOEIC practice exercises</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Service Status -->
+    @if (!Model.IsServiceAvailable)
+    {
+        <div class="alert alert-danger d-flex align-items-center" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <div>
+                <strong>Content Processor Service unavailable!</strong>
+                <br>Please check service running at <code>http://localhost:5004</code>
+            </div>
+        </div>
+    }
+
+    <div class="row">
+        <!-- Left Panel: Input Selection -->
+        <div class="col-lg-5 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-upload me-2"></i>Step 1: Select Content Source</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Input Type Selection -->
+                    <div class="input-type-grid mb-4">
+                        <div class="row g-2">
+                            <div class="col-6 col-md-4">
+                                <div class="input-type-card" data-type="text" onclick="selectInputType('text')">
+                                    <div class="icon"><i class="fas fa-keyboard"></i></div>
+                                    <div class="label">Text</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <div class="input-type-card" data-type="image" onclick="selectInputType('image')">
+                                    <div class="icon"><i class="fas fa-image text-success"></i></div>
+                                    <div class="label">Image (OCR)</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <div class="input-type-card" data-type="pdf" onclick="selectInputType('pdf')">
+                                    <div class="icon"><i class="fas fa-file-pdf text-danger"></i></div>
+                                    <div class="label">PDF</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <div class="input-type-card" data-type="docx" onclick="selectInputType('docx')">
+                                    <div class="icon"><i class="fas fa-file-word text-primary"></i></div>
+                                    <div class="label">Word</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <div class="input-type-card" data-type="audio" onclick="selectInputType('audio')">
+                                    <div class="icon"><i class="fas fa-headphones text-warning"></i></div>
+                                    <div class="label">Audio</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <div class="input-type-card" data-type="video" onclick="selectInputType('video')">
+                                    <div class="icon"><i class="fas fa-video text-info"></i></div>
+                                    <div class="label">Video</div>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="input-type-card wide" data-type="youtube" onclick="selectInputType('youtube')">
+                                    <div class="icon"><i class="fab fa-youtube text-danger"></i></div>
+                                    <div class="label">YouTube</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Input Area -->
+                    <div id="inputArea">
+                        <!-- Text Input -->
+                        <div id="textInput" class="input-section" style="display: none;">
+                            <label class="form-label fw-bold">Enter English text:</label>
+                            <textarea id="textContent" class="form-control" rows="8"
+                                      placeholder="Paste or type English content here...&#10;&#10;Example: A letter, email, article, dialogue..."
+                                      maxlength="5000"></textarea>
+                            <div class="d-flex justify-content-between mt-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>Min 50, max 5,000 characters
+                                </small>
+                                <small id="charCount" class="text-muted">0 / 5,000</small>
+                            </div>
+                        </div>
+
+                        <!-- Image Input -->
+                        <div id="imageInput" class="input-section" style="display: none;">
+                            <label class="form-label fw-bold">Upload image with text:</label>
+                            <div class="upload-zone" id="imageDropZone" onclick="document.getElementById('imageFile').click()">
+                                <i class="fas fa-image fa-3x text-success mb-3"></i>
+                                <p class="mb-1">Drag & drop image here</p>
+                                <p class="text-muted small">JPG, PNG, BMP, TIFF, WEBP</p>
+                                <input type="file" id="imageFile" accept=".jpg,.jpeg,.png,.bmp,.tiff,.tif,.webp" hidden onchange="handleFileSelect(this, 'image')">
+                            </div>
+                            <div id="imageFileInfo" class="file-info mt-2" style="display: none;"></div>
+                            <div id="imagePreviewContainer" class="mt-2 text-center" style="display: none;">
+                                <img id="imagePreviewImg" src="" alt="Preview" class="img-fluid rounded" style="max-height: 200px;">
+                            </div>
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>Max 5MB. OCR extracts text from images.
+                            </small>
+                        </div>
+
+                        <!-- PDF Input -->
+                        <div id="pdfInput" class="input-section" style="display: none;">
+                            <label class="form-label fw-bold">Upload PDF file:</label>
+                            <div class="upload-zone" id="pdfDropZone" onclick="document.getElementById('pdfFile').click()">
+                                <i class="fas fa-file-pdf fa-3x text-danger mb-3"></i>
+                                <p class="mb-1">Drag & drop PDF here</p>
+                                <p class="text-muted small">or click to select file</p>
+                                <input type="file" id="pdfFile" accept=".pdf" hidden onchange="handleFileSelect(this, 'pdf')">
+                            </div>
+                            <div id="pdfFileInfo" class="file-info mt-2" style="display: none;"></div>
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>Max 5MB, 10 pages
+                            </small>
+                        </div>
+
+                        <!-- DOCX Input -->
+                        <div id="docxInput" class="input-section" style="display: none;">
+                            <label class="form-label fw-bold">Upload Word file:</label>
+                            <div class="upload-zone" id="docxDropZone" onclick="document.getElementById('docxFile').click()">
+                                <i class="fas fa-file-word fa-3x text-primary mb-3"></i>
+                                <p class="mb-1">Drag & drop DOCX here</p>
+                                <p class="text-muted small">or click to select file</p>
+                                <input type="file" id="docxFile" accept=".docx" hidden onchange="handleFileSelect(this, 'docx')">
+                            </div>
+                            <div id="docxFileInfo" class="file-info mt-2" style="display: none;"></div>
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>Max 5MB
+                            </small>
+                        </div>
+
+                        <!-- Audio Input -->
+                        <div id="audioInput" class="input-section" style="display: none;">
+                            <label class="form-label fw-bold">Upload Audio file:</label>
+                            <div class="upload-zone" id="audioDropZone" onclick="document.getElementById('audioFile').click()">
+                                <i class="fas fa-headphones fa-3x text-warning mb-3"></i>
+                                <p class="mb-1">Drag & drop Audio here</p>
+                                <p class="text-muted small">MP3, WAV, M4A, OGG, FLAC</p>
+                                <input type="file" id="audioFile" accept=".mp3,.wav,.m4a,.ogg,.flac,.webm" hidden onchange="handleFileSelect(this, 'audio')">
+                            </div>
+                            <div id="audioFileInfo" class="file-info mt-2" style="display: none;"></div>
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>Max 25MB, 5 minutes. <strong>Requires FFmpeg installed.</strong>
+                            </small>
+                        </div>
+
+                        <!-- Video Input -->
+                        <div id="videoInput" class="input-section" style="display: none;">
+                            <label class="form-label fw-bold">Upload Video file:</label>
+                            <div class="upload-zone" id="videoDropZone" onclick="document.getElementById('videoFile').click()">
+                                <i class="fas fa-video fa-3x text-info mb-3"></i>
+                                <p class="mb-1">Drag & drop Video here</p>
+                                <p class="text-muted small">MP4, MOV, AVI, MKV, WEBM</p>
+                                <input type="file" id="videoFile" accept=".mp4,.mov,.avi,.mkv,.webm" hidden onchange="handleFileSelect(this, 'video')">
+                            </div>
+                            <div id="videoFileInfo" class="file-info mt-2" style="display: none;"></div>
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>Max 50MB, 5 minutes. <strong>Requires FFmpeg installed.</strong>
+                            </small>
+                        </div>
+
+                        <!-- YouTube Input -->
+                        <div id="youtubeInput" class="input-section" style="display: none;">
+                            <label class="form-label fw-bold">Enter YouTube URL:</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fab fa-youtube text-danger"></i></span>
+                                <input type="url" id="youtubeUrl" class="form-control"
+                                       placeholder="https://www.youtube.com/watch?v=...">
+                            </div>
+                            <div id="youtubePreview" class="mt-3" style="display: none;"></div>
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>Max 5 minutes. Video must have subtitles/CC enabled.
+                            </small>
+                        </div>
+
+                        <!-- Placeholder -->
+                        <div id="placeholderInput" class="text-center py-5">
+                            <i class="fas fa-hand-pointer fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Select content type above to begin</p>
+                        </div>
+                    </div>
+
+                    <!-- Process Button -->
+                    <div class="mt-4">
+                        <button id="processBtn" class="btn btn-primary btn-lg w-100" onclick="processInput()" disabled>
+                            <i class="fas fa-cog me-2"></i>Process & Preview
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Preview -->
+        <div class="col-lg-7 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-eye me-2"></i>Step 2: Preview & Edit</h5>
+                    <span id="previewStatus" class="badge bg-secondary">Waiting</span>
+                </div>
+                <div class="card-body">
+                    <!-- Loading State -->
+                    <div id="previewLoading" class="text-center py-5" style="display: none;">
+                        <div class="spinner-border text-primary mb-3" role="status"></div>
+                        <p class="text-muted" id="loadingMessage">Processing content...</p>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="previewEmpty" class="text-center py-5">
+                        <i class="fas fa-file-alt fa-4x text-muted mb-3"></i>
+                        <h5 class="text-muted">No content yet</h5>
+                        <p class="text-muted">Select source and click "Process" to preview</p>
+                    </div>
+
+                    <!-- Preview Content -->
+                    <div id="previewContent" style="display: none;">
+                        <!-- Stats -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-3 col-6">
+                                <div class="stat-card">
+                                    <div class="stat-icon"><i class="fas fa-font"></i></div>
+                                    <div class="stat-value" id="statWords">0</div>
+                                    <div class="stat-label">Words</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="stat-card">
+                                    <div class="stat-icon"><i class="fas fa-text-width"></i></div>
+                                    <div class="stat-value" id="statChars">0</div>
+                                    <div class="stat-label">Characters</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="stat-card">
+                                    <div class="stat-icon"><i class="fas fa-language"></i></div>
+                                    <div class="stat-value" id="statLanguage">--</div>
+                                    <div class="stat-label">Language</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="stat-card" id="statExtraCard">
+                                    <div class="stat-icon"><i class="fas fa-tag"></i></div>
+                                    <div class="stat-value" id="statExtra">--</div>
+                                    <div class="stat-label" id="statExtraLabel">Type</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- OCR Confidence -->
+                        <div id="ocrConfidenceSection" class="mb-3" style="display: none;">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small class="fw-bold">OCR Accuracy:</small>
+                                <small id="ocrConfidenceValue">0%</small>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div id="ocrConfidenceBar" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Errors -->
+                        <div id="previewErrors" class="alert alert-danger" style="display: none;">
+                            <h6 class="alert-heading"><i class="fas fa-exclamation-circle me-2"></i>Errors:</h6>
+                            <ul id="errorList" class="mb-0"></ul>
+                        </div>
+
+                        <!-- Warnings -->
+                        <div id="previewWarnings" class="alert alert-warning" style="display: none;">
+                            <h6 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Warnings:</h6>
+                            <ul id="warningList" class="mb-0"></ul>
+                        </div>
+
+                        <!-- Extracted Text -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label fw-bold mb-0">Extracted Content:</label>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard()">
+                                    <i class="fas fa-copy me-1"></i>Copy
+                                </button>
+                            </div>
+                            <textarea id="extractedText" class="form-control" rows="12"
+                                      placeholder="Content will appear here..."></textarea>
+                            <div class="d-flex justify-content-between mt-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-edit me-1"></i>You can edit before continuing
+                                </small>
+                                <small id="editCharCount" class="text-muted">0 / 5,000</small>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex gap-2 mt-4">
+                            <button id="confirmBtn" class="btn btn-success flex-grow-1" onclick="confirmAndContinue()" disabled>
+                                <i class="fas fa-check me-2"></i>Confirm & Continue
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="resetAll()">
+                                <i class="fas fa-redo me-2"></i>Reset
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .bg-gradient-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .icon-box {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .input-type-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 15px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+            .input-type-card:hover {
+                border-color: #667eea;
+                background-color: #f8f9ff;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+            }
+
+            .input-type-card.active {
+                border-color: #667eea;
+                background-color: #667eea;
+                color: white;
+            }
+
+                .input-type-card.active .icon i {
+                    color: white !important;
+                }
+
+            .input-type-card .icon {
+                font-size: 24px;
+                margin-bottom: 5px;
+            }
+
+            .input-type-card .label {
+                font-size: 11px;
+                font-weight: 600;
+            }
+
+            .input-type-card.wide {
+                padding: 10px;
+            }
+
+                .input-type-card.wide .icon {
+                    display: inline;
+                    margin-right: 8px;
+                    font-size: 20px;
+                }
+
+                .input-type-card.wide .label {
+                    display: inline;
+                    font-size: 12px;
+                }
+
+        .upload-zone {
+            border: 2px dashed #ccc;
+            border-radius: 12px;
+            padding: 30px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: #fafafa;
+        }
+
+            .upload-zone:hover {
+                border-color: #667eea;
+                background-color: #f0f4ff;
+            }
+
+            .upload-zone.drag-over {
+                border-color: #667eea;
+                background-color: #e8edff;
+                border-style: solid;
+            }
+
+        .file-info {
+            background-color: #e8f5e9;
+            padding: 12px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+            .file-info .file-name {
+                font-weight: 600;
+                flex-grow: 1;
+                word-break: break-all;
+            }
+
+            .file-info .file-size {
+                color: #666;
+                font-size: 14px;
+                white-space: nowrap;
+            }
+
+            .file-info .remove-btn {
+                cursor: pointer;
+                color: #dc3545;
+                padding: 5px;
+            }
+
+                .file-info .remove-btn:hover {
+                    color: #a71d2a;
+                }
+
+        .stat-card {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #e9ecef;
+        }
+
+            .stat-card .stat-icon {
+                font-size: 18px;
+                color: #667eea;
+                margin-bottom: 3px;
+            }
+
+            .stat-card .stat-value {
+                font-size: 20px;
+                font-weight: 700;
+                color: #333;
+            }
+
+            .stat-card .stat-label {
+                font-size: 11px;
+                color: #666;
+            }
+
+        #extractedText {
+            font-size: 14px;
+            line-height: 1.6;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        // Suppress external errors
+        (function() {
+            window.onerror = function(m, u) {
+                if (u && (u.indexOf('google.com') > -1 || u.indexOf('gstatic.com') > -1 || u.indexOf('youtube.com') > -1 || u.indexOf('doubleclick') > -1)) return true;
+                return false;
+            };
+            window.onunhandledrejection = function(e) {
+                var r = e.reason ? e.reason.toString() : '';
+                if (r.indexOf('google') > -1 || r.indexOf('Permissions') > -1 || r.indexOf('tracking') > -1) {
+                    e.preventDefault();
+                    return true;
+                }
+            };
+        })();
+
+        var currentInputType = null;
+        var currentFile = null;
+        var processResult = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            setupTextareaCounter();
+            setupDragDrop();
+            setupYouTubeInput();
+        });
+
+        function selectInputType(type) {
+            currentInputType = type;
+            currentFile = null;
+            document.querySelectorAll('.input-type-card').forEach(function(c) { c.classList.remove('active'); });
+            var card = document.querySelector('.input-type-card[data-type="' + type + '"]');
+            if (card) card.classList.add('active');
+            document.querySelectorAll('.input-section').forEach(function(s) { s.style.display = 'none'; });
+            document.getElementById('placeholderInput').style.display = 'none';
+            var inputSection = document.getElementById(type + 'Input');
+            if (inputSection) inputSection.style.display = 'block';
+            ['image', 'pdf', 'docx', 'audio', 'video'].forEach(function(t) {
+                var info = document.getElementById(t + 'FileInfo');
+                if (info) info.style.display = 'none';
+            });
+            var imgPreview = document.getElementById('imagePreviewContainer');
+            if (imgPreview) imgPreview.style.display = 'none';
+            updateProcessButton();
+        }
+
+        function setupTextareaCounter() {
+            var textarea = document.getElementById('textContent');
+            var counter = document.getElementById('charCount');
+            if (textarea && counter) {
+                textarea.addEventListener('input', function() {
+                    var len = this.value.length;
+                    counter.textContent = len.toLocaleString() + ' / 5,000';
+                    counter.className = len > 5000 ? 'text-danger fw-bold' : 'text-muted';
+                    updateProcessButton();
+                });
+            }
+            var extractedText = document.getElementById('extractedText');
+            var editCounter = document.getElementById('editCharCount');
+            if (extractedText && editCounter) {
+                extractedText.addEventListener('input', function() {
+                    var len = this.value.length;
+                    editCounter.textContent = len.toLocaleString() + ' / 5,000';
+                    editCounter.className = len > 5000 ? 'text-danger fw-bold' : 'text-muted';
+                    updateConfirmButton();
+                });
+            }
+        }
+
+        function setupDragDrop() {
+            ['image', 'pdf', 'docx', 'audio', 'video'].forEach(function(type) {
+                var zone = document.getElementById(type + 'DropZone');
+                if (!zone) return;
+                zone.addEventListener('dragover', function(e) { e.preventDefault(); zone.classList.add('drag-over'); });
+                zone.addEventListener('dragleave', function(e) { e.preventDefault(); zone.classList.remove('drag-over'); });
+                zone.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    zone.classList.remove('drag-over');
+                    var file = e.dataTransfer.files[0];
+                    if (file) {
+                        var input = document.getElementById(type + 'File');
+                        if (input) {
+                            var dt = new DataTransfer();
+                            dt.items.add(file);
+                            input.files = dt.files;
+                            handleFileSelect(input, type);
+                        }
+                    }
+                });
+            });
+        }
+
+        function handleFileSelect(input, type) {
+            var file = input.files[0];
+            if (!file) return;
+            currentFile = file;
+            var sizeText = file.size > 1024 * 1024 ? (file.size / 1024 / 1024).toFixed(2) + ' MB' : (file.size / 1024).toFixed(1) + ' KB';
+            var infoDiv = document.getElementById(type + 'FileInfo');
+            if (infoDiv) {
+                infoDiv.innerHTML = '<i class="fas fa-file-' + getFileIcon(type) + '"></i><span class="file-name">' + file.name + '</span><span class="file-size">' + sizeText + '</span><span class="remove-btn" onclick="removeFile(\'' + type + '\')" title="Remove"><i class="fas fa-times-circle"></i></span>';
+                infoDiv.style.display = 'flex';
+            }
+            if (type === 'image') {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var img = document.getElementById('imagePreviewImg');
+                    var container = document.getElementById('imagePreviewContainer');
+                    if (img) img.src = e.target.result;
+                    if (container) container.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+            updateProcessButton();
+        }
+
+        function getFileIcon(type) {
+            return { 'image': 'image', 'pdf': 'pdf', 'docx': 'word', 'audio': 'audio', 'video': 'video' }[type] || 'alt';
+        }
+
+        function removeFile(type) {
+            var fileInput = document.getElementById(type + 'File');
+            var fileInfo = document.getElementById(type + 'FileInfo');
+            if (fileInput) fileInput.value = '';
+            if (fileInfo) fileInfo.style.display = 'none';
+            if (type === 'image') {
+                var container = document.getElementById('imagePreviewContainer');
+                if (container) container.style.display = 'none';
+            }
+            currentFile = null;
+            updateProcessButton();
+        }
+
+        function setupYouTubeInput() {
+            var input = document.getElementById('youtubeUrl');
+            if (!input) return;
+            var timer = null;
+            input.oninput = function() {
+                if (timer) clearTimeout(timer);
+                timer = setTimeout(function() {
+                    updateYouTubePreview(input.value);
+                    updateProcessButton();
+                }, 500);
+            };
+        }
+
+        function updateYouTubePreview(url) {
+            var preview = document.getElementById('youtubePreview');
+            if (!preview) return;
+            var videoId = getYouTubeVideoId(url);
+            if (videoId) {
+                preview.innerHTML = '<div class="youtube-preview-card"><img src="https://img.youtube.com/vi/' + videoId + '/mqdefault.jpg" alt="Thumbnail" class="img-fluid rounded mb-2" style="max-height:180px"><div class="d-flex align-items-center gap-2"><span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Valid video</span><small class="text-muted">ID: ' + videoId + '</small></div><a href="https://www.youtube.com/watch?v=' + videoId + '" target="_blank" class="btn btn-sm btn-outline-danger mt-2"><i class="fab fa-youtube me-1"></i>Watch on YouTube</a></div>';
+                preview.style.display = 'block';
+            } else if (url && url.length > 10) {
+                preview.innerHTML = '<small class="text-warning"><i class="fas fa-exclamation-circle me-1"></i>Invalid URL</small>';
+                preview.style.display = 'block';
+            } else {
+                preview.style.display = 'none';
+            }
+        }
+
+        function getYouTubeVideoId(url) {
+            if (!url) return null;
+            url = String(url).trim();
+            var m = url.match(/youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/);
+            if (m) return m[1];
+            m = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+            if (m) return m[1];
+            m = url.match(/youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/);
+            if (m) return m[1];
+            m = url.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/);
+            if (m) return m[1];
+            m = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+            if (m) return m[1];
+            return null;
+        }
+
+        function updateProcessButton() {
+            var btn = document.getElementById('processBtn');
+            if (!btn) return;
+            var enabled = false;
+            if (currentInputType === 'text') {
+                var el = document.getElementById('textContent');
+                if (el) {
+                    var len = el.value.length;
+                    enabled = len >= 50 && len <= 5000;
+                }
+            } else if (currentInputType === 'youtube') {
+                var el = document.getElementById('youtubeUrl');
+                if (el) enabled = getYouTubeVideoId(el.value) !== null;
+            } else if (currentInputType) {
+                enabled = currentFile !== null;
+            }
+            btn.disabled = !enabled;
+        }
+
+        function updateConfirmButton() {
+            var el = document.getElementById('extractedText');
+            var btn = document.getElementById('confirmBtn');
+            if (el && btn) {
+                var len = el.value.length;
+                btn.disabled = len < 50 || len > 5000;
+            }
+        }
+
+        async function processInput() {
+            if (!currentInputType) return;
+            showLoading(true);
+            hidePreview();
+            try {
+                var response;
+                if (currentInputType === 'text') {
+                    response = await processText();
+                } else if (currentInputType === 'youtube') {
+                    response = await processYouTube();
+                } else {
+                    response = await processFile();
+                }
+                if (response) {
+                    var data = response.Data || response.data || response;
+                    var success = response.Success !== undefined ? response.Success : (response.success !== undefined ? response.success : (data.success || false));
+                    if (success && data) {
+                        processResult = data;
+                        showPreview(data);
+                    } else {
+                        var errorMsg = response.Message || response.message || 'An error occurred';
+                        if (data.errors && data.errors.length > 0) {
+                            errorMsg = data.errors.map(function(e) { return e.message || e; }).join(', ');
+                        }
+                        showError(errorMsg);
+                    }
+                } else {
+                    showError('No response from server');
+                }
+            } catch (error) {
+                showError('Connection error: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function processText() {
+            var content = document.getElementById('textContent').value;
+            var response = await fetch('/api/ContentProcessor/process/text', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: content })
+            });
+            return await response.json();
+        }
+
+        async function processFile() {
+            var formData = new FormData();
+            formData.append('file', currentFile);
+            formData.append('inputType', currentInputType);
+            setLoadingMessage(getLoadingMessage(currentInputType));
+            var response = await fetch('/api/ContentProcessor/process/file', {
+                method: 'POST',
+                body: formData
+            });
+            return await response.json();
+        }
+
+        async function processYouTube() {
+            var url = document.getElementById('youtubeUrl').value;
+            setLoadingMessage('Fetching subtitles from YouTube...');
+            var response = await fetch('/api/ContentProcessor/process/youtube', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: url })
+            });
+            return await response.json();
+        }
+
+        function getLoadingMessage(type) {
+            var messages = {
+                'image': 'Extracting text from image (OCR)...',
+                'pdf': 'Extracting text from PDF...',
+                'docx': 'Extracting text from Word...',
+                'audio': 'Converting speech to text (requires FFmpeg)...',
+                'video': 'Extracting audio and converting (requires FFmpeg)...'
+            };
+            return messages[type] || 'Processing...';
+        }
+
+        function showLoading(show) {
+            var loading = document.getElementById('previewLoading');
+            var empty = document.getElementById('previewEmpty');
+            var btn = document.getElementById('processBtn');
+            var status = document.getElementById('previewStatus');
+            if (loading) loading.style.display = show ? 'block' : 'none';
+            if (empty) empty.style.display = 'none';
+            if (btn) btn.disabled = show;
+            if (show && status) {
+                status.className = 'badge bg-info';
+                status.textContent = 'Processing...';
+            }
+        }
+
+        function setLoadingMessage(message) {
+            var el = document.getElementById('loadingMessage');
+            if (el) el.textContent = message;
+        }
+
+        function hidePreview() {
+            ['previewContent', 'previewErrors', 'previewWarnings', 'ocrConfidenceSection'].forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            });
+        }
+
+        function showPreview(data) {
+            var previewEmpty = document.getElementById('previewEmpty');
+            var previewContent = document.getElementById('previewContent');
+            if (previewEmpty) previewEmpty.style.display = 'none';
+            if (previewContent) previewContent.style.display = 'block';
+
+            var wordCount = data.WordCount || data.wordCount || data.word_count || 0;
+            var charCount = data.CharCount || data.charCount || data.char_count || 0;
+            var language = data.LanguageDetected || data.languageDetected || data.language_detected || data.language || 'N/A';
+            var extractedText = data.ExtractedText || data.extractedText || data.extracted_text || '';
+            var isValid = data.IsValid || data.isValid || data.is_valid || false;
+            var inputType = data.InputType || data.inputType || data.input_type || currentInputType;
+            var errors = data.Errors || data.errors || [];
+            var warnings = data.Warnings || data.warnings || [];
+            var ocrConfidence = data.OcrConfidence || data.ocrConfidence || data.ocr_confidence || null;
+            var pageCount = data.PageCount || data.pageCount || data.page_count || null;
+            var durationSeconds = data.DurationSeconds || data.durationSeconds || data.duration_seconds || null;
+
+            setText('statWords', wordCount.toLocaleString());
+            setText('statChars', charCount.toLocaleString());
+            setText('statLanguage', language.toUpperCase());
+
+            var extraValue = document.getElementById('statExtra');
+            var extraLabel = document.getElementById('statExtraLabel');
+            if (durationSeconds && extraValue && extraLabel) {
+                var mins = Math.floor(durationSeconds / 60);
+                var secs = Math.floor(durationSeconds % 60);
+                extraValue.textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
+                extraLabel.textContent = 'Duration';
+            } else if (pageCount && extraValue && extraLabel) {
+                extraValue.textContent = pageCount;
+                extraLabel.textContent = 'Pages';
+            } else if (extraValue && extraLabel) {
+                extraValue.textContent = inputType.toUpperCase();
+                extraLabel.textContent = 'Type';
+            }
+
+            var ocrSection = document.getElementById('ocrConfidenceSection');
+            if (ocrConfidence !== null && inputType === 'image' && ocrSection) {
+                var confidencePercent = Math.round(ocrConfidence * 100);
+                ocrSection.style.display = 'block';
+                setText('ocrConfidenceValue', confidencePercent + '%');
+                var bar = document.getElementById('ocrConfidenceBar');
+                if (bar) {
+                    bar.style.width = confidencePercent + '%';
+                    bar.className = 'progress-bar ' + (confidencePercent >= 80 ? 'bg-success' : confidencePercent >= 60 ? 'bg-warning' : 'bg-danger');
+                }
+            } else if (ocrSection) {
+                ocrSection.style.display = 'none';
+            }
+
+            var textEl = document.getElementById('extractedText');
+            if (textEl) textEl.value = extractedText;
+            setText('editCharCount', extractedText.length.toLocaleString() + ' / 5,000');
+            updateConfirmButton();
+
+            var errorsDiv = document.getElementById('previewErrors');
+            var errorList = document.getElementById('errorList');
+            if (errorsDiv && errorList) {
+                if (errors && errors.length > 0) {
+                    errorList.innerHTML = errors.map(function(e) {
+                        return '<li>' + (typeof e === 'string' ? e : e.message || JSON.stringify(e)) + '</li>';
+                    }).join('');
+                    errorsDiv.style.display = 'block';
+                } else {
+                    errorsDiv.style.display = 'none';
+                }
+            }
+
+            var warningsDiv = document.getElementById('previewWarnings');
+            var warningList = document.getElementById('warningList');
+            if (warningsDiv && warningList) {
+                if (warnings && warnings.length > 0) {
+                    warningList.innerHTML = warnings.map(function(w) { return '<li>' + w + '</li>'; }).join('');
+                    warningsDiv.style.display = 'block';
+                } else {
+                    warningsDiv.style.display = 'none';
+                }
+            }
+
+            var statusBadge = document.getElementById('previewStatus');
+            if (statusBadge) {
+                if (isValid) {
+                    statusBadge.className = 'badge bg-success';
+                    statusBadge.textContent = 'Valid';
+                } else if (errors && errors.length > 0) {
+                    statusBadge.className = 'badge bg-danger';
+                    statusBadge.textContent = 'Error';
+                } else {
+                    statusBadge.className = 'badge bg-warning';
+                    statusBadge.textContent = 'Review';
+                }
+            }
+        }
+
+        function setText(id, text) {
+            var el = document.getElementById(id);
+            if (el) el.textContent = text;
+        }
+
+        function showError(message) {
+            var previewEmpty = document.getElementById('previewEmpty');
+            var previewContent = document.getElementById('previewContent');
+            var errorsDiv = document.getElementById('previewErrors');
+            var errorList = document.getElementById('errorList');
+            var status = document.getElementById('previewStatus');
+            if (previewEmpty) previewEmpty.style.display = 'none';
+            if (previewContent) previewContent.style.display = 'block';
+            if (errorsDiv && errorList) {
+                errorList.innerHTML = '<li>' + message + '</li>';
+                errorsDiv.style.display = 'block';
+            }
+            if (status) {
+                status.className = 'badge bg-danger';
+                status.textContent = 'Error';
+            }
+        }
+
+        function copyToClipboard() {
+            var textarea = document.getElementById('extractedText');
+            if (!textarea) return;
+            textarea.select();
+            textarea.setSelectionRange(0, 99999);
+            document.execCommand('copy');
+            var btn = document.querySelector('button[onclick="copyToClipboard()"]');
+            if (btn) {
+                var originalHtml = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check me-1"></i>Copied!';
+                btn.className = 'btn btn-sm btn-success';
+                setTimeout(function() {
+                    btn.innerHTML = originalHtml;
+                    btn.className = 'btn btn-sm btn-outline-secondary';
+                }, 2000);
+            }
+        }
+
+        function confirmAndContinue() {
+            var textEl = document.getElementById('extractedText');
+            if (!textEl) return;
+            var extractedText = textEl.value;
+            if (extractedText.length < 50) {
+                alert('Content must have at least 50 characters!');
+                return;
+            }
+            if (extractedText.length > 5000) {
+                alert('Content cannot exceed 5,000 characters!');
+                return;
+            }
+            sessionStorage.setItem('contentProcessor_text', extractedText);
+            sessionStorage.setItem('contentProcessor_type', currentInputType);
+            sessionStorage.setItem('contentProcessor_result', JSON.stringify(processResult));
+            alert('Content confirmed and saved!\n\nYou can now proceed to generate practice exercises.');
+        }
+
+        function resetAll() {
+            currentInputType = null;
+            currentFile = null;
+            processResult = null;
+            document.querySelectorAll('.input-type-card').forEach(function(c) { c.classList.remove('active'); });
+            document.querySelectorAll('.input-section').forEach(function(s) { s.style.display = 'none'; });
+            var el;
+            if (el = document.getElementById('placeholderInput')) el.style.display = 'block';
+            if (el = document.getElementById('processBtn')) el.disabled = true;
+            if (el = document.getElementById('previewContent')) el.style.display = 'none';
+            if (el = document.getElementById('previewEmpty')) el.style.display = 'block';
+            if (el = document.getElementById('previewStatus')) {
+                el.className = 'badge bg-secondary';
+                el.textContent = 'Waiting';
+            }
+            if (el = document.getElementById('textContent')) el.value = '';
+            setText('charCount', '0 / 5,000');
+            if (el = document.getElementById('youtubeUrl')) el.value = '';
+            if (el = document.getElementById('youtubePreview')) el.style.display = 'none';
+            ['image', 'pdf', 'docx', 'audio', 'video'].forEach(function(type) {
+                if (el = document.getElementById(type + 'File')) el.value = '';
+                if (el = document.getElementById(type + 'FileInfo')) el.style.display = 'none';
+            });
+            if (el = document.getElementById('imagePreviewContainer')) el.style.display = 'none';
+            if (el = document.getElementById('imagePreviewImg')) el.src = '';
+        }
+    </script>
+}

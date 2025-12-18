@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using TNS_EDU_STUDY.Areas.Study.Models;
 using TNS_EDU_TEST.Areas.Test.Models;
 using TNS_EDU_TEST.Areas.Test.Pages;
+using TNS_EDU_TEST.Services;
 
 namespace TNS_EDU_STUDY.Areas.Study.Pages
 {
@@ -18,12 +19,17 @@ namespace TNS_EDU_STUDY.Areas.Study.Pages
     public class ResultStudyModel : PageModel
     {
         private readonly IConfiguration _configuration;
-        private readonly LearningAccessData _learningService;
-        public ResultStudyModel(IConfiguration configuration)
+        private readonly GeminiApiKeyManager _apiKeyManager; // ✅ THÊM FIELD
+
+        // ✅ SỬA CONSTRUCTOR - INJECT GeminiApiKeyManager
+        public ResultStudyModel(
+            IConfiguration configuration,
+            GeminiApiKeyManager apiKeyManager)
         {
             _configuration = configuration;
-            _learningService = new LearningAccessData(configuration);
+            _apiKeyManager = apiKeyManager;
         }
+
 
         [BindProperty(SupportsGet = true)]
         public Guid TestKey { get; set; }
@@ -91,8 +97,8 @@ namespace TNS_EDU_STUDY.Areas.Study.Pages
                 {
                     try
                     {
-                        // ✅ GỌI TRÊN INSTANCE
-                        await _learningService.TriggerAnalysisAsync(memberKey, TestKey.ToString());
+                        var learningData = new LearningAccessData(_configuration, _apiKeyManager);
+                        await learningData.TriggerAnalysisAsync(memberKey, TestKey.ToString());
                     }
                     catch (Exception ex)
                     {

@@ -203,7 +203,8 @@
         margin-bottom: 8px;
         transition: all 0.2s ease;
         min-height: 70px;
-        max-height: 90px;
+        max-height: 120px; /* ✅ FIXED: Tăng để chứa rename buttons */
+        flex-wrap: wrap; /* ✅ THÊM DÒNG MỚI */
     }
 
         .ai-conversation-item:hover {
@@ -279,15 +280,20 @@
 
     .rename-container {
         display: none;
-        flex-grow: 1;
+        width: 100%; /* ✅ THÊM DÒNG NÀY */
         align-items: center;
         gap: 5px;
+        margin-top: 5px;
+        
     }
 
     .ai-conversation-item.renaming .ai-conversation-content {
         display: none;
     }
 
+    .ai-conversation-item.renaming .ai-conversation-actions {
+        display: none; /* ✅ THÊM ĐOẠN NÀY */
+    }
     .ai-conversation-item.renaming .rename-container {
         display: flex;
     }
@@ -295,13 +301,16 @@
     .rename-container input {
         flex-grow: 1;
         border: 2px solid var(--ai-primary-color);
+        min-width: 0;
         border-radius: 8px;
         padding: 8px 12px;
         font-size: 0.9rem;
     }
 
     .rename-container button {
-        padding: 6px 12px;
+        padding: 6px 10px; /* ✅ SỬA: giảm padding */
+        min-width: 32px; /* ✅ THÊM DÒNG NÀY */
+        flex-shrink: 0; /* ✅ THÊM DÒNG NÀY */
         border: 1px solid var(--ai-border-color);
         border-radius: 6px;
         background: white;
@@ -838,4 +847,12 @@
         .ai-message-text *:has(> br) {
             display: block;
         }
+
+    .swal2-container {
+        z-index: 200000 !important; /* ✅ Cao hơn chatbot popup (100000) */
+    }
+
+    .swal2-popup {
+        z-index: 200001 !important;
+    }
 </style>

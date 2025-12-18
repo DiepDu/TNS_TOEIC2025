@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Configuration;
@@ -10,6 +11,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using System.Web;
 using TNS_EDU_TEST.Areas.Test.Models;
+using TNS_EDU_TEST.Services;
 
 
 namespace TNS_EDU_TEST.Areas.Test.Pages
@@ -18,17 +20,19 @@ namespace TNS_EDU_TEST.Areas.Test.Pages
     public class ResultTestModel : PageModel
     {
         private readonly IConfiguration _configuration; // Thêm IConfiguration
-        private readonly LearningAccessData _learningService;
+        private readonly GeminiApiKeyManager _apiKeyManager; // ✅ THÊM FIELD
 
-        public ResultTestModel(IConfiguration configuration) // Thêm constructor
+
+        public ResultTestModel(
+           IConfiguration configuration,
+           GeminiApiKeyManager apiKeyManager) // ✅ INJECT
         {
             _configuration = configuration;
-
-            _learningService = new LearningAccessData(configuration);
+            _apiKeyManager = apiKeyManager;
         }
-      
 
-      
+
+
         public Guid TestKey { get; set; }
         public Guid ResultKey { get; set; }
         public int MaximumTime { get; set; }
@@ -87,7 +91,8 @@ namespace TNS_EDU_TEST.Areas.Test.Pages
                 {
                     try
                     {
-                        await _learningService.TriggerAnalysisAsync(memberKey, testKey);
+                        var learningData = new LearningAccessData(_configuration, _apiKeyManager);
+                        await learningData.TriggerAnalysisAsync(memberKey, testKey);
                     }
                     catch (Exception ex)
                     {
